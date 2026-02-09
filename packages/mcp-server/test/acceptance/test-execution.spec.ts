@@ -10,8 +10,8 @@ describe('MCP Test Execution (acceptance)', () => {
     resetRegistry()
   })
 
-  test('retrieves failure details after saving a run with failures', async ({ domain }) => {
-    await domain.saveTestRun({
+  test('retrieves failure details after saving a run with failures', async ({ act, assert }) => {
+    await act.saveTestRun({
       results: [
         { testName: 'passes', domain: 'Cart', status: 'pass', trace: [] },
         { testName: 'fails', domain: 'Cart', status: 'fail', trace: [
@@ -20,14 +20,14 @@ describe('MCP Test Execution (acceptance)', () => {
       ],
     })
 
-    await domain.callTool({ tool: 'get_failure_details' })
+    await act.callTool({ tool: 'get_failure_details' })
 
-    await domain.toolResultContains({ path: 'failures.0.testName', expected: 'fails' })
-    await domain.toolResultContains({ path: 'failures.0.domain', expected: 'Cart' })
+    await assert.toolResultContains({ path: 'failures.0.testName', expected: 'fails' })
+    await assert.toolResultContains({ path: 'failures.0.domain', expected: 'Cart' })
   })
 
-  test('retrieves test trace by name', async ({ domain }) => {
-    await domain.saveTestRun({
+  test('retrieves test trace by name', async ({ act, assert }) => {
+    await act.saveTestRun({
       results: [
         { testName: 'my-test', domain: 'Cart', status: 'pass', trace: [
           { kind: 'action', name: 'addItem', status: 'pass' },
@@ -36,17 +36,17 @@ describe('MCP Test Execution (acceptance)', () => {
       ],
     })
 
-    await domain.callTool({ tool: 'get_test_trace', input: { testName: 'my-test' } })
+    await act.callTool({ tool: 'get_test_trace', input: { testName: 'my-test' } })
 
-    await domain.toolResultContains({ path: 'testName', expected: 'my-test' })
-    await domain.toolResultContains({ path: 'status', expected: 'pass' })
+    await assert.toolResultContains({ path: 'testName', expected: 'my-test' })
+    await assert.toolResultContains({ path: 'status', expected: 'pass' })
   })
 
-  test('returns null trace for unknown test', async ({ domain }) => {
-    await domain.saveTestRun({ results: [] })
+  test('returns null trace for unknown test', async ({ act, assert }) => {
+    await act.saveTestRun({ results: [] })
 
-    await domain.callTool({ tool: 'get_test_trace', input: { testName: 'nonexistent' } })
+    await act.callTool({ tool: 'get_test_trace', input: { testName: 'nonexistent' } })
 
-    await domain.toolResultIsError({ substring: 'not found' })
+    await assert.toolResultIsError({ substring: 'not found' })
   })
 })

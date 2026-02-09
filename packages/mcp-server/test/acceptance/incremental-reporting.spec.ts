@@ -10,9 +10,9 @@ describe('MCP Incremental Reporting (acceptance)', () => {
     resetRegistry()
   })
 
-  test('diffs two runs showing newly passing and newly failing', async ({ domain }) => {
+  test('diffs two runs showing newly passing and newly failing', async ({ act, assert }) => {
     // First run: test-a passes, test-b fails
-    await domain.saveTestRun({
+    await act.saveTestRun({
       results: [
         { testName: 'test-a', domain: 'Cart', status: 'pass', trace: [] },
         { testName: 'test-b', domain: 'Cart', status: 'fail', trace: [] },
@@ -20,22 +20,22 @@ describe('MCP Incremental Reporting (acceptance)', () => {
     })
 
     // Second run: test-a fails, test-b passes
-    await domain.saveTestRun({
+    await act.saveTestRun({
       results: [
         { testName: 'test-a', domain: 'Cart', status: 'fail', trace: [] },
         { testName: 'test-b', domain: 'Cart', status: 'pass', trace: [] },
       ],
     })
 
-    await domain.callTool({ tool: 'get_run_diff' })
+    await act.callTool({ tool: 'get_run_diff' })
 
-    await domain.toolResultContains({ path: 'newlyFailing', expected: ['test-a'] })
-    await domain.toolResultContains({ path: 'newlyPassing', expected: ['test-b'] })
+    await assert.toolResultContains({ path: 'newlyFailing', expected: ['test-a'] })
+    await assert.toolResultContains({ path: 'newlyPassing', expected: ['test-b'] })
   })
 
-  test('returns error when fewer than 2 runs exist', async ({ domain }) => {
-    await domain.callTool({ tool: 'get_run_diff' })
+  test('returns error when fewer than 2 runs exist', async ({ act, assert }) => {
+    await act.callTool({ tool: 'get_run_diff' })
 
-    await domain.toolResultIsError({ substring: 'Need at least 2' })
+    await assert.toolResultIsError({ substring: 'Need at least 2' })
   })
 })

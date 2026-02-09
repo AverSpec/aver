@@ -10,53 +10,53 @@ describe('MCP Domain Exploration (acceptance)', () => {
     resetRegistry()
   })
 
-  test('lists registered domains with vocabulary summaries', async ({ domain }) => {
-    await domain.registerTestDomain({
+  test('lists registered domains with vocabulary summaries', async ({ act, assert }) => {
+    await act.registerTestDomain({
       name: 'Cart',
       actions: ['addItem', 'checkout'],
       queries: ['total'],
       assertions: ['isEmpty'],
     })
 
-    await domain.callTool({ tool: 'list_domains' })
+    await act.callTool({ tool: 'list_domains' })
 
-    await domain.toolResultHasLength({ length: 1 })
-    await domain.toolResultContains({ path: '0.name', expected: 'Cart' })
-    await domain.toolResultContains({ path: '0.actionCount', expected: 2 })
-    await domain.toolResultContains({ path: '0.queryCount', expected: 1 })
+    await assert.toolResultHasLength({ length: 1 })
+    await assert.toolResultContains({ path: '0.name', expected: 'Cart' })
+    await assert.toolResultContains({ path: '0.actionCount', expected: 2 })
+    await assert.toolResultContains({ path: '0.queryCount', expected: 1 })
   })
 
-  test('gets vocabulary for a specific domain', async ({ domain }) => {
-    await domain.registerTestDomain({
+  test('gets vocabulary for a specific domain', async ({ act, assert }) => {
+    await act.registerTestDomain({
       name: 'Auth',
       actions: ['login', 'logout'],
       queries: ['currentUser'],
       assertions: ['isLoggedIn'],
     })
 
-    await domain.callTool({ tool: 'get_domain_vocabulary', input: { domain: 'Auth' } })
+    await act.callTool({ tool: 'get_domain_vocabulary', input: { domain: 'Auth' } })
 
-    await domain.toolResultContains({ path: 'name', expected: 'Auth' })
-    await domain.toolResultContains({ path: 'actions', expected: ['login', 'logout'] })
-    await domain.toolResultContains({ path: 'queries', expected: ['currentUser'] })
+    await assert.toolResultContains({ path: 'name', expected: 'Auth' })
+    await assert.toolResultContains({ path: 'actions', expected: ['login', 'logout'] })
+    await assert.toolResultContains({ path: 'queries', expected: ['currentUser'] })
   })
 
-  test('returns null for unknown domain vocabulary', async ({ domain }) => {
-    await domain.callTool({ tool: 'get_domain_vocabulary', input: { domain: 'NonExistent' } })
+  test('returns null for unknown domain vocabulary', async ({ act, assert }) => {
+    await act.callTool({ tool: 'get_domain_vocabulary', input: { domain: 'NonExistent' } })
 
-    await domain.toolResultIsError({ substring: 'not found' })
+    await assert.toolResultIsError({ substring: 'not found' })
   })
 
-  test('lists all registered adapters', async ({ domain }) => {
-    await domain.registerTestDomain({
+  test('lists all registered adapters', async ({ act, assert }) => {
+    await act.registerTestDomain({
       name: 'Cart',
       actions: ['addItem'],
       queries: [],
       assertions: [],
     })
 
-    await domain.callTool({ tool: 'list_adapters' })
+    await act.callTool({ tool: 'list_adapters' })
 
-    await domain.toolResultContains({ path: '0.domainName', expected: 'Cart' })
+    await assert.toolResultContains({ path: '0.domainName', expected: 'Cart' })
   })
 })

@@ -6,7 +6,7 @@ import {
 import {
   defineDomain, action, query, assertion,
   implement, direct,
-  _resetRegistry, _registerAdapter,
+  resetRegistry, registerAdapter,
 } from 'aver'
 
 const cart = defineDomain({
@@ -36,8 +36,8 @@ describe('describe_domain_structure handler', () => {
 
 describe('describe_adapter_structure handler', () => {
   beforeEach(() => {
-    _resetRegistry()
-    _registerAdapter(cartAdapter)
+    resetRegistry()
+    registerAdapter(cartAdapter)
   })
 
   it('returns handler structure for a domain and protocol', () => {

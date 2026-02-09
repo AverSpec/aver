@@ -1,6 +1,6 @@
 import type { Domain } from './domain'
 import type { Adapter } from './adapter'
-import { _findAdapter } from './registry'
+import { findAdapter, findAdapters, getAdapters } from './registry'
 
 export interface TraceEntry {
   kind: 'action' | 'query' | 'assertion'
@@ -11,18 +11,10 @@ export interface TraceEntry {
   error?: unknown
 }
 
-export interface Suite<D extends Domain> {
-  test: (name: string, fn: () => Promise<void>) => void
-  domain: DomainProxy<D>
-  _setupForTest(): Promise<void>
-  _teardownForTest(): Promise<void>
-  _getTrace(): TraceEntry[]
-}
-
-type DomainProxy<D extends Domain> = {
+export type DomainProxy<D extends Domain> = {
   [K in keyof D['vocabulary']['actions']]:
     D['vocabulary']['actions'][K] extends { __payload?: infer P }
-      ? P extends void ? () => Promise<void> : (payload: P) => Promise<void>
+      ? [P] extends [void] ? () => Promise<void> : (payload: P) => Promise<void>
       : never
 } & {
   [K in keyof D['vocabulary']['queries']]:
@@ -32,126 +24,250 @@ type DomainProxy<D extends Domain> = {
 } & {
   [K in keyof D['vocabulary']['assertions']]:
     D['vocabulary']['assertions'][K] extends { __payload?: infer P }
-      ? P extends void ? () => Promise<void> : (payload: P) => Promise<void>
+      ? [P] extends [void] ? () => Promise<void> : (payload: P) => Promise<void>
       : never
 }
 
-export function suite<D extends Domain>(domain: D): Suite<D> {
-  let adapter: Adapter | undefined
-  let ctx: any
-  const trace: TraceEntry[] = []
+export interface TestContext<D extends Domain> {
+  domain: DomainProxy<D>
+  trace: () => TraceEntry[]
+}
 
-  function resolveAdapter(): Adapter {
-    if (!adapter) {
-      adapter = _findAdapter(domain)
-      if (!adapter) {
-        throw new Error(`No adapter registered for domain "${domain.name}"`)
-      }
-    }
-    return adapter
-  }
+export interface SuiteReturn<D extends Domain> {
+  test: (name: string, fn: (ctx: TestContext<D>) => Promise<void>) => void
+  /** Programmatic API — for manual lifecycle control (meta-testing, adapter handlers). */
+  domain: DomainProxy<D>
+  setup(): Promise<void>
+  teardown(): Promise<void>
+  getTrace(): TraceEntry[]
+}
 
-  async function setup(): Promise<void> {
-    const a = resolveAdapter()
-    ctx = await a.protocol.setup()
-    trace.length = 0
-  }
+function createProxy<D extends Domain>(
+  domain: D,
+  getCtx: () => any,
+  getAdapter: () => Adapter,
+  trace: TraceEntry[],
+): DomainProxy<D> {
+  const proxy: any = {}
 
-  async function teardown(): Promise<void> {
-    const a = resolveAdapter()
-    await a.protocol.teardown(ctx)
-    ctx = undefined
-  }
-
-  function createProxy(): DomainProxy<D> {
-    const proxy: any = {}
-
-    for (const name of Object.keys(domain.vocabulary.actions)) {
-      proxy[name] = async (payload?: any) => {
-        const a = resolveAdapter()
-        const entry: TraceEntry = { kind: 'action', name, payload, status: 'pass' }
-        try {
-          if (payload !== undefined) {
-            await (a.handlers.actions as any)[name](ctx, payload)
-          } else {
-            await (a.handlers.actions as any)[name](ctx)
-          }
-        } catch (error) {
-          entry.status = 'fail'
-          entry.error = error
-          throw error
-        } finally {
-          trace.push(entry)
+  for (const name of Object.keys(domain.vocabulary.actions)) {
+    proxy[name] = async (payload?: any) => {
+      const a = getAdapter()
+      const entry: TraceEntry = { kind: 'action', name, payload, status: 'pass' }
+      try {
+        if (payload !== undefined) {
+          await (a.handlers.actions as any)[name](getCtx(), payload)
+        } else {
+          await (a.handlers.actions as any)[name](getCtx())
         }
+      } catch (error) {
+        entry.status = 'fail'
+        entry.error = error
+        throw error
+      } finally {
+        trace.push(entry)
       }
     }
-
-    for (const name of Object.keys(domain.vocabulary.queries)) {
-      proxy[name] = async () => {
-        const a = resolveAdapter()
-        const entry: TraceEntry = { kind: 'query', name, payload: undefined, status: 'pass' }
-        try {
-          const result = await (a.handlers.queries as any)[name](ctx)
-          entry.result = result
-          return result
-        } catch (error) {
-          entry.status = 'fail'
-          entry.error = error
-          throw error
-        } finally {
-          trace.push(entry)
-        }
-      }
-    }
-
-    for (const name of Object.keys(domain.vocabulary.assertions)) {
-      proxy[name] = async (payload?: any) => {
-        const a = resolveAdapter()
-        const entry: TraceEntry = { kind: 'assertion', name, payload, status: 'pass' }
-        try {
-          if (payload !== undefined) {
-            await (a.handlers.assertions as any)[name](ctx, payload)
-          } else {
-            await (a.handlers.assertions as any)[name](ctx)
-          }
-        } catch (error) {
-          entry.status = 'fail'
-          entry.error = error
-          throw error
-        } finally {
-          trace.push(entry)
-        }
-      }
-    }
-
-    return proxy
   }
 
-  const domainProxy = createProxy()
+  for (const name of Object.keys(domain.vocabulary.queries)) {
+    proxy[name] = async () => {
+      const a = getAdapter()
+      const entry: TraceEntry = { kind: 'query', name, payload: undefined, status: 'pass' }
+      try {
+        const result = await (a.handlers.queries as any)[name](getCtx())
+        entry.result = result
+        return result
+      } catch (error) {
+        entry.status = 'fail'
+        entry.error = error
+        throw error
+      } finally {
+        trace.push(entry)
+      }
+    }
+  }
+
+  for (const name of Object.keys(domain.vocabulary.assertions)) {
+    proxy[name] = async (payload?: any) => {
+      const a = getAdapter()
+      const entry: TraceEntry = { kind: 'assertion', name, payload, status: 'pass' }
+      try {
+        if (payload !== undefined) {
+          await (a.handlers.assertions as any)[name](getCtx(), payload)
+        } else {
+          await (a.handlers.assertions as any)[name](getCtx())
+        }
+      } catch (error) {
+        entry.status = 'fail'
+        entry.error = error
+        throw error
+      } finally {
+        trace.push(entry)
+      }
+    }
+  }
+
+  return proxy
+}
+
+function formatTrace(trace: TraceEntry[], domainName: string): string {
+  return trace
+    .map(e => {
+      const icon = e.status === 'pass' ? '[PASS]' : '[FAIL]'
+      let payloadStr = ''
+      if (e.payload !== undefined) {
+        const json = JSON.stringify(e.payload)
+        payloadStr = json.length > 60 ? json.substring(0, 57) + '...' : json
+      }
+      const errorStr = e.status === 'fail' && e.error
+        ? ` — ${(e.error as Error).message ?? e.error}`
+        : ''
+      return `  ${icon} ${domainName}.${e.name}(${payloadStr})${errorStr}`
+    })
+    .join('\n')
+}
+
+function enhanceWithTrace(error: unknown, trace: TraceEntry[], domain: Domain): Error {
+  if (trace.length === 0) {
+    return error instanceof Error ? error : new Error(String(error))
+  }
+  const traceStr = formatTrace(trace, domain.name)
+  const enhanced = new Error(
+    `${(error as Error).message}\n\nAction trace:\n${traceStr}`
+  )
+  enhanced.cause = error
+  return enhanced
+}
+
+function buildMissingAdapterError(domain: Domain): string {
+  const registered = getAdapters()
+  if (registered.length === 0) {
+    return (
+      `No adapter registered for domain "${domain.name}". ` +
+      `No adapters are registered. ` +
+      `Pass an adapter to suite() or register one via defineConfig().`
+    )
+  }
+  const list = registered
+    .map(a => `${a.domain.name} (${a.protocol.name})`)
+    .join(', ')
+  return (
+    `No adapter registered for domain "${domain.name}". ` +
+    `Registered: ${list}. ` +
+    `Pass an adapter to suite() or register one via defineConfig().`
+  )
+}
+
+export function suite<D extends Domain>(domain: D, adapter?: Adapter): SuiteReturn<D> {
+  // Resolve adapters
+  let resolvedAdapters: Adapter[] | undefined
+  if (adapter) {
+    resolvedAdapters = [adapter]
+  }
+  // If no adapter provided, defer registry lookup to test time
+  // (allows adapters to be registered in config/setup files before tests run)
+
+  function getEffectiveAdapters(): Adapter[] {
+    if (resolvedAdapters) return resolvedAdapters
+
+    let adapters = findAdapters(domain)
+
+    // Filter by AVER_ADAPTER env var if set
+    const adapterFilter = typeof process !== 'undefined' ? process.env.AVER_ADAPTER : undefined
+    if (adapterFilter && adapters.length > 0) {
+      adapters = adapters.filter(a => a.protocol.name === adapterFilter)
+    }
+
+    return adapters
+  }
+
+  // Programmatic API state (uses first/only adapter, lazy resolution)
+  let programmaticCtx: any
+  const programmaticTrace: TraceEntry[] = []
+  let programmaticAdapter: Adapter | undefined = adapter
+
+  function getProgrammaticAdapter(): Adapter {
+    if (!programmaticAdapter) {
+      programmaticAdapter = findAdapter(domain)
+      if (!programmaticAdapter) {
+        throw new Error(buildMissingAdapterError(domain))
+      }
+    }
+    return programmaticAdapter
+  }
+
+  const programmaticProxy = createProxy(
+    domain,
+    () => programmaticCtx,
+    getProgrammaticAdapter,
+    programmaticTrace,
+  )
+
+  function testFn(name: string, fn: (ctx: TestContext<D>) => Promise<void>): void {
+    const vitestTest = (globalThis as any).test
+    if (!vitestTest) return
+
+    const adapters = getEffectiveAdapters()
+
+    if (adapters.length === 0) {
+      // Deferred: register a test that resolves adapter at runtime
+      vitestTest(name, async () => {
+        const a = findAdapter(domain)
+        if (!a) throw new Error(buildMissingAdapterError(domain))
+        await runTestWithAdapter(a, domain, name, fn)
+      })
+      return
+    }
+
+    if (adapters.length === 1) {
+      const a = adapters[0]
+      vitestTest(name, async () => {
+        await runTestWithAdapter(a, domain, name, fn)
+      })
+      return
+    }
+
+    // Multi-adapter: parameterized test names
+    for (const a of adapters) {
+      vitestTest(`${name} [${a.protocol.name}]`, async () => {
+        await runTestWithAdapter(a, domain, name, fn)
+      })
+    }
+  }
 
   return {
-    test: (name: string, fn: () => Promise<void>) => {
-      if (typeof (globalThis as any).test === 'function') {
-        (globalThis as any).test(name, async () => {
-          trace.length = 0
-          try {
-            await fn()
-          } catch (error) {
-            const traceStr = trace
-              .map(e => `  ${domain.name}.${e.name}(${e.payload ? JSON.stringify(e.payload) : ''})  ${e.status === 'pass' ? '\u2713' : '\u2717'}`)
-              .join('\n')
-            const enhanced = new Error(
-              `${(error as Error).message}\n\nAction trace:\n${traceStr}`
-            )
-            enhanced.cause = error
-            throw enhanced
-          }
-        })
-      }
+    test: testFn,
+    domain: programmaticProxy,
+    setup: async () => {
+      const a = getProgrammaticAdapter()
+      programmaticCtx = await a.protocol.setup()
+      programmaticTrace.length = 0
     },
-    domain: domainProxy,
-    _setupForTest: setup,
-    _teardownForTest: teardown,
-    _getTrace: () => [...trace],
+    teardown: async () => {
+      const a = getProgrammaticAdapter()
+      await a.protocol.teardown(programmaticCtx)
+      programmaticCtx = undefined
+    },
+    getTrace: () => [...programmaticTrace],
+  }
+}
+
+async function runTestWithAdapter<D extends Domain>(
+  adapter: Adapter,
+  domain: D,
+  _name: string,
+  fn: (ctx: TestContext<D>) => Promise<void>,
+): Promise<void> {
+  const trace: TraceEntry[] = []
+  const ctx = await adapter.protocol.setup()
+  const proxy = createProxy(domain, () => ctx, () => adapter, trace)
+
+  try {
+    await fn({ domain: proxy, trace: () => [...trace] })
+  } catch (error) {
+    throw enhanceWithTrace(error, trace, domain)
+  } finally {
+    await adapter.protocol.teardown(ctx)
   }
 }

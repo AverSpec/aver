@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+export {}
 
 const [command, ...args] = process.argv.slice(2)
 

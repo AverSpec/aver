@@ -1,0 +1,34 @@
+{
+  "name": "@aver/example-task-board",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && tsc -p tsconfig.server.json",
+    "server": "tsx src/server/index.ts",
+    "test": "vitest run",
+    "test:direct": "AVER_ADAPTER=direct vitest run",
+    "test:http": "AVER_ADAPTER=http vitest run",
+    "test:playwright": "AVER_ADAPTER=playwright vitest run"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "@vitejs/plugin-react": "^4.5.2",
+    "aver": "*",
+    "@aver/protocol-http": "*",
+    "@aver/protocol-playwright": "*",
+    "playwright": "^1.52.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vite": "^6.3.0",
+    "vitest": "^3.0.0"
+  }
+}

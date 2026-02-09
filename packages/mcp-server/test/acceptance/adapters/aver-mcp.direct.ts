@@ -24,6 +24,10 @@ import {
   getFailureDetailsHandler,
   getTestTraceHandler,
 } from '../../../src/tools/execution'
+import {
+  describeDomainStructureHandler,
+  describeAdapterStructureHandler,
+} from '../../../src/tools/scaffolding'
 
 interface McpTestSession {
   lastToolResult?: unknown
@@ -96,6 +100,22 @@ export const averMcpAdapter = implement(averMcp, {
           const result = getTestTraceHandler(session.runStore!, input?.testName as string)
           if (!result) {
             session.lastToolResult = `Test "${input?.testName}" not found in latest run`
+          } else {
+            session.lastToolResult = result
+          }
+          break
+        }
+        case 'describe_domain_structure': {
+          session.lastToolResult = describeDomainStructureHandler(input?.description as string)
+          break
+        }
+        case 'describe_adapter_structure': {
+          const result = describeAdapterStructureHandler(
+            input?.domain as string,
+            input?.protocol as string,
+          )
+          if (!result) {
+            session.lastToolResult = `Adapter for domain "${input?.domain}" with protocol "${input?.protocol}" not found`
           } else {
             session.lastToolResult = result
           }

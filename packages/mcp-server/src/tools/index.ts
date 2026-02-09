@@ -3,12 +3,14 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
 import { listDomainsHandler, getDomainVocabularyHandler, listAdaptersHandler } from './domains.js'
 import { runTestsHandler, getFailureDetailsHandler, getTestTraceHandler } from './execution.js'
+import { describeDomainStructureHandler, describeAdapterStructureHandler } from './scaffolding.js'
 import { RunStore } from '../runs.js'
 
 export function registerTools(server: McpServer): void {
   registerDomainTools(server)
   const store = new RunStore(join(process.cwd(), '.aver', 'runs'))
   registerExecutionTools(server, store)
+  registerScaffoldingTools(server)
 }
 
 function registerDomainTools(server: McpServer): void {
@@ -87,6 +89,39 @@ function registerExecutionTools(server: McpServer, store: RunStore): void {
       const result = getTestTraceHandler(store, testName)
       if (!result) {
         return { content: [{ type: 'text' as const, text: `Test "${testName}" not found in latest run` }] }
+      }
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] }
+    },
+  )
+}
+
+function registerScaffoldingTools(server: McpServer): void {
+  server.registerTool(
+    'describe_domain_structure',
+    {
+      description: 'Generate a template domain structure from a natural-language description',
+      inputSchema: {
+        description: z.string().describe('A short description of the domain (e.g. "shopping cart")'),
+      },
+    },
+    async ({ description }) => ({
+      content: [{ type: 'text' as const, text: JSON.stringify(describeDomainStructureHandler(description), null, 2) }],
+    }),
+  )
+
+  server.registerTool(
+    'describe_adapter_structure',
+    {
+      description: 'Describe the handler structure needed for an adapter given a domain and protocol',
+      inputSchema: {
+        domain: z.string().describe('Domain name'),
+        protocol: z.string().describe('Protocol name'),
+      },
+    },
+    async ({ domain, protocol }) => {
+      const result = describeAdapterStructureHandler(domain, protocol)
+      if (!result) {
+        return { content: [{ type: 'text' as const, text: `Adapter for domain "${domain}" with protocol "${protocol}" not found` }] }
       }
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] }
     },

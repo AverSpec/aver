@@ -2,7 +2,7 @@ import type { ActionMarker, QueryMarker, AssertionMarker } from './types'
 
 export interface DomainConfig<
   A extends Record<string, ActionMarker<any>>,
-  Q extends Record<string, QueryMarker<any>>,
+  Q extends Record<string, QueryMarker<any, any>>,
   S extends Record<string, AssertionMarker<any>>,
 > {
   name: string
@@ -13,7 +13,7 @@ export interface DomainConfig<
 
 export interface Domain<
   A extends Record<string, ActionMarker<any>> = Record<string, ActionMarker<any>>,
-  Q extends Record<string, QueryMarker<any>> = Record<string, QueryMarker<any>>,
+  Q extends Record<string, QueryMarker<any, any>> = Record<string, QueryMarker<any, any>>,
   S extends Record<string, AssertionMarker<any>> = Record<string, AssertionMarker<any>>,
 > {
   readonly name: string
@@ -25,18 +25,18 @@ export interface Domain<
   readonly parent?: Domain<any, any, any>
   extend<_Protocol = unknown>(extension: {
     actions?: Record<string, ActionMarker<any>>
-    queries?: Record<string, QueryMarker<any>>
+    queries?: Record<string, QueryMarker<any, any>>
     assertions?: Record<string, AssertionMarker<any>>
   }): Domain<
     A & Record<string, ActionMarker<any>>,
-    Q & Record<string, QueryMarker<any>>,
+    Q & Record<string, QueryMarker<any, any>>,
     S & Record<string, AssertionMarker<any>>
   >
 }
 
 export function defineDomain<
   A extends Record<string, ActionMarker<any>>,
-  Q extends Record<string, QueryMarker<any>>,
+  Q extends Record<string, QueryMarker<any, any>>,
   S extends Record<string, AssertionMarker<any>>,
 >(config: DomainConfig<A, Q, S>): Domain<A, Q, S> {
   const domain: Domain<A, Q, S> = {
@@ -48,7 +48,7 @@ export function defineDomain<
     },
     extend<_Protocol = unknown>(extension: {
       actions?: Record<string, ActionMarker<any>>
-      queries?: Record<string, QueryMarker<any>>
+      queries?: Record<string, QueryMarker<any, any>>
       assertions?: Record<string, AssertionMarker<any>>
     }) {
       return {

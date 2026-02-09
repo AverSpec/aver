@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { listDomainsHandler, getDomainVocabularyHandler, listAdaptersHandler } from './domains.js'
 import { runTestsHandler, getFailureDetailsHandler, getTestTraceHandler } from './execution.js'
 import { describeDomainStructureHandler, describeAdapterStructureHandler } from './scaffolding.js'
+import { getRunDiffHandler } from './reporting.js'
 import { RunStore } from '../runs.js'
 
 export function registerTools(server: McpServer): void {
@@ -11,6 +12,7 @@ export function registerTools(server: McpServer): void {
   const store = new RunStore(join(process.cwd(), '.aver', 'runs'))
   registerExecutionTools(server, store)
   registerScaffoldingTools(server)
+  registerReportingTools(server, store)
 }
 
 function registerDomainTools(server: McpServer): void {
@@ -124,6 +126,22 @@ function registerScaffoldingTools(server: McpServer): void {
         return { content: [{ type: 'text' as const, text: `Adapter for domain "${domain}" with protocol "${protocol}" not found` }] }
       }
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] }
+    },
+  )
+}
+
+function registerReportingTools(server: McpServer, store: RunStore): void {
+  server.registerTool(
+    'get_run_diff',
+    {
+      description: 'Compare the last two test runs and show newly passing, newly failing, and still-failing tests',
+    },
+    async () => {
+      const diff = getRunDiffHandler(store)
+      if (!diff) {
+        return { content: [{ type: 'text' as const, text: 'Need at least 2 test runs to compare.' }] }
+      }
+      return { content: [{ type: 'text' as const, text: JSON.stringify(diff, null, 2) }] }
     },
   )
 }

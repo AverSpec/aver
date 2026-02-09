@@ -28,6 +28,7 @@ import {
   describeDomainStructureHandler,
   describeAdapterStructureHandler,
 } from '../../../src/tools/scaffolding'
+import { getRunDiffHandler } from '../../../src/tools/reporting'
 
 interface McpTestSession {
   lastToolResult?: unknown
@@ -118,6 +119,15 @@ export const averMcpAdapter = implement(averMcp, {
             session.lastToolResult = `Adapter for domain "${input?.domain}" with protocol "${input?.protocol}" not found`
           } else {
             session.lastToolResult = result
+          }
+          break
+        }
+        case 'get_run_diff': {
+          const diff = getRunDiffHandler(session.runStore!)
+          if (!diff) {
+            session.lastToolResult = 'Need at least 2 test runs to compare.'
+          } else {
+            session.lastToolResult = diff
           }
           break
         }

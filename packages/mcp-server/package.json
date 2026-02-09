@@ -1,0 +1,31 @@
+{
+  "name": "@aver/mcp-server",
+  "version": "0.1.0",
+  "description": "MCP server for Aver domain-driven acceptance testing",
+  "type": "module",
+  "license": "MIT",
+  "engines": { "node": ">=18.0.0" },
+  "bin": { "aver-mcp": "./dist/index.js" },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.26.0",
+    "zod": "^3.24.0"
+  },
+  "peerDependencies": {
+    "aver": "*"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0",
+    "@types/node": "^22.0.0",
+    "aver": "*"
+  }
+}

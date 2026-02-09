@@ -11,42 +11,42 @@ describe('Action trace and error reporting', () => {
     resetRegistry()
   })
 
-  test('records a complete action trace across multiple operations', async ({ domain }) => {
-    await domain.defineDomain({
+  test('records a complete action trace across multiple operations', async ({ act, assert }) => {
+    await act.defineDomain({
       name: 'TraceTest',
       actions: ['doA'],
       queries: [{ name: 'getB', returnType: 'string' }],
       assertions: ['checkC'],
     })
-    await domain.implementDomain()
-    await domain.registerAdapter()
-    await domain.createSuite()
+    await act.implementDomain()
+    await act.registerAdapter()
+    await act.createSuite()
 
-    await domain.executeAction({ name: 'doA' })
-    await domain.executeQuery({ name: 'getB' })
-    await domain.executeAssertion({ name: 'checkC' })
+    await act.executeAction({ name: 'doA' })
+    await act.executeQuery({ name: 'getB' })
+    await act.executeAssertion({ name: 'checkC' })
 
-    await domain.traceHasLength({ length: 3 })
-    await domain.traceContains({ kind: 'action', name: 'doA', status: 'pass' })
-    await domain.traceContains({ kind: 'query', name: 'getB', status: 'pass' })
-    await domain.traceContains({ kind: 'assertion', name: 'checkC', status: 'pass' })
+    await assert.traceHasLength({ length: 3 })
+    await assert.traceContains({ kind: 'action', name: 'doA', status: 'pass' })
+    await assert.traceContains({ kind: 'query', name: 'getB', status: 'pass' })
+    await assert.traceContains({ kind: 'assertion', name: 'checkC', status: 'pass' })
   })
 
-  test('records failure status in trace when assertion fails', async ({ domain }) => {
-    await domain.defineDomain({
+  test('records failure status in trace when assertion fails', async ({ act, assert }) => {
+    await act.defineDomain({
       name: 'FailTrace',
       actions: ['setup'],
       queries: [],
       assertions: ['verify'],
     })
-    await domain.implementDomain()
-    await domain.registerAdapter()
-    await domain.createSuite()
+    await act.implementDomain()
+    await act.registerAdapter()
+    await act.createSuite()
 
-    await domain.executeAction({ name: 'setup' })
-    await domain.executeFailingAssertion({ name: 'verify' })
+    await act.executeAction({ name: 'setup' })
+    await act.executeFailingAssertion({ name: 'verify' })
 
-    await domain.traceContains({ kind: 'action', name: 'setup', status: 'pass' })
-    await domain.traceContains({ kind: 'assertion', name: 'verify', status: 'fail' })
+    await assert.traceContains({ kind: 'action', name: 'setup', status: 'pass' })
+    await assert.traceContains({ kind: 'assertion', name: 'verify', status: 'fail' })
   })
 })

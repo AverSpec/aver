@@ -12,30 +12,30 @@ describe('Domain vocabulary', () => {
     resetRegistry()
   })
 
-  test('captures actions, queries, and assertions', async ({ domain }) => {
-    await domain.defineDomain({
+  test('captures actions, queries, and assertions', async ({ act, assert }) => {
+    await act.defineDomain({
       name: 'TestDomain',
       actions: ['doA', 'doB'],
       queries: [{ name: 'getX', returnType: 'number' }],
       assertions: ['checkY'],
     })
 
-    await domain.hasVocabulary({
+    await assert.hasVocabulary({
       actions: ['doA', 'doB'],
       queries: ['getX'],
       assertions: ['checkY'],
     })
   })
 
-  test('allows empty vocabulary', async ({ domain }) => {
-    await domain.defineDomain({
+  test('allows empty vocabulary', async ({ act, assert }) => {
+    await act.defineDomain({
       name: 'Empty',
       actions: [],
       queries: [],
       assertions: [],
     })
 
-    await domain.hasVocabulary({
+    await assert.hasVocabulary({
       actions: [],
       queries: [],
       assertions: [],

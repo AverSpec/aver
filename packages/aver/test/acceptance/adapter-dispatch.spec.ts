@@ -11,52 +11,52 @@ describe('Adapter dispatch and suite proxy', () => {
     resetRegistry()
   })
 
-  test('dispatches actions through the suite proxy', async ({ domain }) => {
-    await domain.defineDomain({
+  test('dispatches actions through the suite proxy', async ({ act, assert }) => {
+    await act.defineDomain({
       name: 'Dispatch',
       actions: ['submit'],
       queries: [],
       assertions: [],
     })
-    await domain.implementDomain()
-    await domain.registerAdapter()
-    await domain.createSuite()
+    await act.implementDomain()
+    await act.registerAdapter()
+    await act.createSuite()
 
-    await domain.executeAction({ name: 'submit' })
+    await act.executeAction({ name: 'submit' })
 
-    await domain.traceContains({ kind: 'action', name: 'submit', status: 'pass' })
+    await assert.traceContains({ kind: 'action', name: 'submit', status: 'pass' })
   })
 
-  test('dispatches queries and returns typed results', async ({ domain }) => {
-    await domain.defineDomain({
+  test('dispatches queries and returns typed results', async ({ act, assert }) => {
+    await act.defineDomain({
       name: 'QueryTest',
       actions: [],
       queries: [{ name: 'count', returnType: 'number' }],
       assertions: [],
     })
-    await domain.implementDomain()
-    await domain.registerAdapter()
-    await domain.createSuite()
+    await act.implementDomain()
+    await act.registerAdapter()
+    await act.createSuite()
 
-    await domain.executeQuery({ name: 'count' })
+    await act.executeQuery({ name: 'count' })
 
-    await domain.queryReturned({ name: 'count', value: 'result:count' })
-    await domain.traceContains({ kind: 'query', name: 'count', status: 'pass' })
+    await assert.queryReturned({ name: 'count', value: 'result:count' })
+    await assert.traceContains({ kind: 'query', name: 'count', status: 'pass' })
   })
 
-  test('dispatches assertions through the suite proxy', async ({ domain }) => {
-    await domain.defineDomain({
+  test('dispatches assertions through the suite proxy', async ({ act, assert }) => {
+    await act.defineDomain({
       name: 'AssertTest',
       actions: [],
       queries: [],
       assertions: ['isValid'],
     })
-    await domain.implementDomain()
-    await domain.registerAdapter()
-    await domain.createSuite()
+    await act.implementDomain()
+    await act.registerAdapter()
+    await act.createSuite()
 
-    await domain.executeAssertion({ name: 'isValid' })
+    await act.executeAssertion({ name: 'isValid' })
 
-    await domain.traceContains({ kind: 'assertion', name: 'isValid', status: 'pass' })
+    await assert.traceContains({ kind: 'assertion', name: 'isValid', status: 'pass' })
   })
 })

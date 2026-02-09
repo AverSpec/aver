@@ -21,6 +21,10 @@ export function _findAdapter(domain: Domain): Adapter | undefined {
   return undefined
 }
 
+export function _getAdapters(): Adapter[] {
+  return [...adapters]
+}
+
 export function _resetRegistry(): void {
   adapters = []
 }

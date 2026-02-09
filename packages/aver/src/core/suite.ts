@@ -11,17 +11,21 @@ export interface TraceEntry {
   error?: unknown
 }
 
-export type DomainProxy<D extends Domain> = {
+export type ActProxy<D extends Domain> = {
   [K in keyof D['vocabulary']['actions']]:
     D['vocabulary']['actions'][K] extends { __payload?: infer P }
       ? [P] extends [void] ? () => Promise<void> : (payload: P) => Promise<void>
       : never
-} & {
+}
+
+export type QueryProxy<D extends Domain> = {
   [K in keyof D['vocabulary']['queries']]:
     D['vocabulary']['queries'][K] extends { __return?: infer R }
       ? () => Promise<R>
       : never
-} & {
+}
+
+export type AssertProxy<D extends Domain> = {
   [K in keyof D['vocabulary']['assertions']]:
     D['vocabulary']['assertions'][K] extends { __payload?: infer P }
       ? [P] extends [void] ? () => Promise<void> : (payload: P) => Promise<void>
@@ -29,29 +33,41 @@ export type DomainProxy<D extends Domain> = {
 }
 
 export interface TestContext<D extends Domain> {
-  domain: DomainProxy<D>
+  act: ActProxy<D>
+  query: QueryProxy<D>
+  assert: AssertProxy<D>
   trace: () => TraceEntry[]
 }
 
 export interface SuiteReturn<D extends Domain> {
   test: (name: string, fn: (ctx: TestContext<D>) => Promise<void>) => void
   /** Programmatic API — for manual lifecycle control (meta-testing, adapter handlers). */
-  domain: DomainProxy<D>
+  act: ActProxy<D>
+  query: QueryProxy<D>
+  assert: AssertProxy<D>
   setup(): Promise<void>
   teardown(): Promise<void>
   getTrace(): TraceEntry[]
 }
 
-function createProxy<D extends Domain>(
+interface Proxies<D extends Domain> {
+  act: ActProxy<D>
+  query: QueryProxy<D>
+  assert: AssertProxy<D>
+}
+
+function createProxies<D extends Domain>(
   domain: D,
   getCtx: () => any,
   getAdapter: () => Adapter,
   trace: TraceEntry[],
-): DomainProxy<D> {
-  const proxy: any = {}
+): Proxies<D> {
+  const act: any = {}
+  const query: any = {}
+  const assert: any = {}
 
   for (const name of Object.keys(domain.vocabulary.actions)) {
-    proxy[name] = async (payload?: any) => {
+    act[name] = async (payload?: any) => {
       const a = getAdapter()
       const entry: TraceEntry = { kind: 'action', name, payload, status: 'pass' }
       try {
@@ -71,7 +87,7 @@ function createProxy<D extends Domain>(
   }
 
   for (const name of Object.keys(domain.vocabulary.queries)) {
-    proxy[name] = async () => {
+    query[name] = async () => {
       const a = getAdapter()
       const entry: TraceEntry = { kind: 'query', name, payload: undefined, status: 'pass' }
       try {
@@ -89,7 +105,7 @@ function createProxy<D extends Domain>(
   }
 
   for (const name of Object.keys(domain.vocabulary.assertions)) {
-    proxy[name] = async (payload?: any) => {
+    assert[name] = async (payload?: any) => {
       const a = getAdapter()
       const entry: TraceEntry = { kind: 'assertion', name, payload, status: 'pass' }
       try {
@@ -108,7 +124,7 @@ function createProxy<D extends Domain>(
     }
   }
 
-  return proxy
+  return { act, query, assert }
 }
 
 function formatTrace(trace: TraceEntry[], domainName: string): string {
@@ -197,7 +213,7 @@ export function suite<D extends Domain>(domain: D, adapter?: Adapter): SuiteRetu
     return programmaticAdapter
   }
 
-  const programmaticProxy = createProxy(
+  const programmaticProxies = createProxies(
     domain,
     () => programmaticCtx,
     getProgrammaticAdapter,
@@ -238,7 +254,9 @@ export function suite<D extends Domain>(domain: D, adapter?: Adapter): SuiteRetu
 
   return {
     test: testFn,
-    domain: programmaticProxy,
+    act: programmaticProxies.act,
+    query: programmaticProxies.query,
+    assert: programmaticProxies.assert,
     setup: async () => {
       const a = getProgrammaticAdapter()
       programmaticCtx = await a.protocol.setup()
@@ -261,10 +279,10 @@ async function runTestWithAdapter<D extends Domain>(
 ): Promise<void> {
   const trace: TraceEntry[] = []
   const ctx = await adapter.protocol.setup()
-  const proxy = createProxy(domain, () => ctx, () => adapter, trace)
+  const proxies = createProxies(domain, () => ctx, () => adapter, trace)
 
   try {
-    await fn({ domain: proxy, trace: () => [...trace] })
+    await fn({ act: proxies.act, query: proxies.query, assert: proxies.assert, trace: () => [...trace] })
   } catch (error) {
     throw enhanceWithTrace(error, trace, domain)
   } finally {

@@ -7,7 +7,7 @@ import {
 import {
   defineDomain, action, query, assertion,
   implement, direct,
-  _resetRegistry, _registerAdapter,
+  resetRegistry, registerAdapter,
 } from 'aver'
 
 const cart = defineDomain({
@@ -29,7 +29,7 @@ const cartAdapter = implement(cart, {
 
 describe('list_domains handler', () => {
   beforeEach(() => {
-    _resetRegistry()
+    resetRegistry()
   })
 
   it('returns empty array when no adapters registered', () => {
@@ -38,7 +38,7 @@ describe('list_domains handler', () => {
   })
 
   it('returns domain summaries from registered adapters', () => {
-    _registerAdapter(cartAdapter)
+    registerAdapter(cartAdapter)
     const result = listDomainsHandler()
     expect(result).toEqual([
       {
@@ -54,14 +54,14 @@ describe('list_domains handler', () => {
   })
 
   it('deduplicates domains when multiple adapters share a domain', () => {
-    _registerAdapter(cartAdapter)
+    registerAdapter(cartAdapter)
     const cartAdapter2 = implement(cart, {
       protocol: direct(() => null),
       actions: { addItem: async () => {}, checkout: async () => {} },
       queries: { total: async () => 0 },
       assertions: { isEmpty: async () => {} },
     })
-    _registerAdapter(cartAdapter2)
+    registerAdapter(cartAdapter2)
     const result = listDomainsHandler()
     expect(result).toHaveLength(1)
   })
@@ -69,8 +69,8 @@ describe('list_domains handler', () => {
 
 describe('get_domain_vocabulary handler', () => {
   beforeEach(() => {
-    _resetRegistry()
-    _registerAdapter(cartAdapter)
+    resetRegistry()
+    registerAdapter(cartAdapter)
   })
 
   it('returns vocabulary for a named domain', () => {
@@ -91,7 +91,7 @@ describe('get_domain_vocabulary handler', () => {
 
 describe('list_adapters handler', () => {
   beforeEach(() => {
-    _resetRegistry()
+    resetRegistry()
   })
 
   it('returns empty array when no adapters registered', () => {
@@ -100,7 +100,7 @@ describe('list_adapters handler', () => {
   })
 
   it('returns adapter summaries', () => {
-    _registerAdapter(cartAdapter)
+    registerAdapter(cartAdapter)
     const result = listAdaptersHandler()
     expect(result).toEqual([
       { domainName: 'Cart', protocolName: 'direct' },

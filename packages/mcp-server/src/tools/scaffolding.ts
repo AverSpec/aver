@@ -1,4 +1,4 @@
-import { _getAdapters } from 'aver'
+import { getAdapters } from 'aver'
 
 export interface DomainStructure {
   suggestedName: string
@@ -48,7 +48,7 @@ export function describeAdapterStructureHandler(
   domainName: string,
   protocolName: string,
 ): AdapterStructure | null {
-  const adapters = _getAdapters()
+  const adapters = getAdapters()
   const adapter = adapters.find(
     (a) => a.domain.name === domainName && a.protocol.name === protocolName,
   )

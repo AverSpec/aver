@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import {
   defineDomain,
   action,
@@ -8,6 +8,8 @@ import {
   suite,
   defineConfig,
   direct,
+  getAdapters,
+  resetRegistry,
 } from '../src/index'
 
 describe('public API', () => {
@@ -24,6 +26,10 @@ describe('public API', () => {
 })
 
 describe('defineConfig()', () => {
+  beforeEach(() => {
+    resetRegistry()
+  })
+
   it('creates a config with adapters and testDir', () => {
     const config = defineConfig({
       testDir: './tests/acceptance',
@@ -36,5 +42,25 @@ describe('defineConfig()', () => {
   it('defaults testDir', () => {
     const config = defineConfig({ adapters: [] })
     expect(config.testDir).toBe('./tests/acceptance')
+  })
+
+  it('auto-registers adapters', () => {
+    const dom = defineDomain({
+      name: 'ConfigTest',
+      actions: {},
+      queries: {},
+      assertions: {},
+    })
+    const adapter = implement(dom, {
+      protocol: direct(() => null),
+      actions: {},
+      queries: {},
+      assertions: {},
+    })
+
+    defineConfig({ adapters: [adapter] })
+
+    expect(getAdapters()).toHaveLength(1)
+    expect(getAdapters()[0].domain.name).toBe('ConfigTest')
   })
 })

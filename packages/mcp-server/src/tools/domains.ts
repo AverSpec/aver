@@ -1,4 +1,4 @@
-import { _getAdapters } from 'aver'
+import { getAdapters } from 'aver'
 import type { Domain } from 'aver'
 
 export interface DomainSummary {
@@ -24,7 +24,7 @@ export interface AdapterSummary {
 }
 
 function getUniqueDomains(): Map<string, Domain> {
-  const adapters = _getAdapters()
+  const adapters = getAdapters()
   const domains = new Map<string, Domain>()
   for (const adapter of adapters) {
     if (!domains.has(adapter.domain.name)) {
@@ -65,7 +65,7 @@ export function getDomainVocabularyHandler(domainName: string): DomainVocabulary
 }
 
 export function listAdaptersHandler(): AdapterSummary[] {
-  return _getAdapters().map((adapter) => ({
+  return getAdapters().map((adapter) => ({
     domainName: adapter.domain.name,
     protocolName: adapter.protocol.name,
   }))

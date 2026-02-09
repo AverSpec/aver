@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { suite } from '../../src/core/suite'
-import { _resetRegistry, _registerAdapter } from '../../src/core/registry'
+import { _resetRegistry, _registerAdapter, _getAdapters } from '../../src/core/registry'
 import { implement } from '../../src/core/adapter'
 import { defineDomain } from '../../src/core/domain'
 import { action, query, assertion } from '../../src/core/markers'
@@ -133,5 +133,30 @@ describe('suite()', () => {
     _resetRegistry()
     const s = suite(cart)
     await expect(s._setupForTest()).rejects.toThrow('No adapter registered for domain "Cart"')
+  })
+})
+
+describe('_getAdapters()', () => {
+  beforeEach(() => {
+    _resetRegistry()
+  })
+
+  it('returns empty array when no adapters registered', () => {
+    expect(_getAdapters()).toEqual([])
+  })
+
+  it('returns all registered adapters', () => {
+    _registerAdapter(cartAdapter)
+    const adapters = _getAdapters()
+    expect(adapters).toHaveLength(1)
+    expect(adapters[0].domain).toBe(cart)
+  })
+
+  it('returns a copy, not the internal array', () => {
+    _registerAdapter(cartAdapter)
+    const a1 = _getAdapters()
+    const a2 = _getAdapters()
+    expect(a1).not.toBe(a2)
+    expect(a1).toEqual(a2)
   })
 })

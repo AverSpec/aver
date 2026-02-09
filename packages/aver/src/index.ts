@@ -3,6 +3,7 @@ export { defineDomain } from './core/domain'
 export { implement } from './core/adapter'
 export { suite } from './core/suite'
 export { defineConfig } from './core/config'
+export { _getAdapters, _registerAdapter, _findAdapter, _resetRegistry } from './core/registry'
 export { direct } from './protocols/direct'
 
 export type { ActionMarker, QueryMarker, AssertionMarker } from './core/types'

@@ -10,40 +10,40 @@ describe('MCP Scaffolding (acceptance)', () => {
     resetRegistry()
   })
 
-  test('generates a domain structure template from a description', async ({ domain }) => {
-    await domain.callTool({
+  test('generates a domain structure template from a description', async ({ act, assert }) => {
+    await act.callTool({
       tool: 'describe_domain_structure',
       input: { description: 'user authentication' },
     })
 
-    await domain.toolResultContains({ path: 'suggestedName', expected: 'userAuthentication' })
+    await assert.toolResultContains({ path: 'suggestedName', expected: 'userAuthentication' })
     // Template always returns standard CRUD-like actions
-    await domain.toolResultContains({ path: 'actions.0.name', expected: 'create' })
+    await assert.toolResultContains({ path: 'actions.0.name', expected: 'create' })
   })
 
-  test('describes adapter structure for an existing domain', async ({ domain }) => {
-    await domain.registerTestDomain({
+  test('describes adapter structure for an existing domain', async ({ act, assert }) => {
+    await act.registerTestDomain({
       name: 'Cart',
       actions: ['addItem'],
       queries: ['total'],
       assertions: ['isEmpty'],
     })
 
-    await domain.callTool({
+    await act.callTool({
       tool: 'describe_adapter_structure',
       input: { domain: 'Cart', protocol: 'test-inner' },
     })
 
-    await domain.toolResultContains({ path: 'domain', expected: 'Cart' })
-    await domain.toolResultContains({ path: 'handlers.actions', expected: ['addItem'] })
+    await assert.toolResultContains({ path: 'domain', expected: 'Cart' })
+    await assert.toolResultContains({ path: 'handlers.actions', expected: ['addItem'] })
   })
 
-  test('returns null for unknown domain adapter structure', async ({ domain }) => {
-    await domain.callTool({
+  test('returns null for unknown domain adapter structure', async ({ act, assert }) => {
+    await act.callTool({
       tool: 'describe_adapter_structure',
       input: { domain: 'Unknown', protocol: 'direct' },
     })
 
-    await domain.toolResultIsError({ substring: 'not found' })
+    await assert.toolResultIsError({ substring: 'not found' })
   })
 })

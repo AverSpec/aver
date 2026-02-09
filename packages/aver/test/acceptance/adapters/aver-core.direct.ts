@@ -9,22 +9,22 @@ import {
   direct,
 } from '../../../src/index'
 import type { Domain, Adapter, Protocol } from '../../../src/index'
-import type { Suite, TraceEntry } from '../../../src/core/suite'
-import { _registerAdapter, _resetRegistry } from '../../../src/core/registry'
+import type { SuiteReturn, TraceEntry } from '../../../src/core/suite'
+import { registerAdapter, resetRegistry } from '../../../src/core/registry'
 import { averCore } from '../domains/aver-core'
 
 interface AverTestSession {
   domain?: Domain
   extendedDomain?: Domain
   adapter?: Adapter
-  suiteInstance?: Suite<any>
+  suiteInstance?: SuiteReturn<any>
   lastQueryResult?: unknown
   lastQueryName?: string
 }
 
 export const averCoreAdapter = implement(averCore, {
   protocol: direct<AverTestSession>(() => {
-    // Do NOT call _resetRegistry() here -- that would wipe
+    // Do NOT call resetRegistry() here -- that would wipe
     // the outer adapter registration needed by the outer suite.
     return {}
   }),
@@ -101,14 +101,14 @@ export const averCoreAdapter = implement(averCore, {
 
     registerAdapter: async (session) => {
       if (!session.adapter) throw new Error('No adapter created')
-      _registerAdapter(session.adapter)
+      registerAdapter(session.adapter)
     },
 
     createSuite: async (session) => {
       const dom = session.extendedDomain ?? session.domain
       if (!dom) throw new Error('No domain defined')
       session.suiteInstance = realSuite(dom)
-      await session.suiteInstance._setupForTest()
+      await session.suiteInstance.setup()
     },
 
     executeAction: async (session, { name, payload }) => {
@@ -166,7 +166,7 @@ export const averCoreAdapter = implement(averCore, {
 
     actionTrace: async (session) => {
       if (!session.suiteInstance) throw new Error('No suite created')
-      return session.suiteInstance._getTrace().map((e: TraceEntry) => ({
+      return session.suiteInstance.getTrace().map((e: TraceEntry) => ({
         kind: e.kind,
         name: e.name,
         status: e.status,
@@ -195,7 +195,7 @@ export const averCoreAdapter = implement(averCore, {
 
     traceContains: async (session, { kind, name, status }) => {
       if (!session.suiteInstance) throw new Error('No suite created')
-      const trace = session.suiteInstance._getTrace()
+      const trace = session.suiteInstance.getTrace()
       const match = trace.find(
         (e: TraceEntry) => e.kind === kind && e.name === name && e.status === status,
       )
@@ -204,7 +204,7 @@ export const averCoreAdapter = implement(averCore, {
 
     traceHasLength: async (session, { length }) => {
       if (!session.suiteInstance) throw new Error('No suite created')
-      expect(session.suiteInstance._getTrace()).toHaveLength(length)
+      expect(session.suiteInstance.getTrace()).toHaveLength(length)
     },
 
     hasParent: async (session, { name }) => {

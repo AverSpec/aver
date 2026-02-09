@@ -1,55 +1,49 @@
-import { describe, it, beforeEach, afterEach } from 'vitest'
-import { suite, _resetRegistry, _registerAdapter } from 'aver'
+import { describe, beforeEach } from 'vitest'
+import { suite, resetRegistry } from 'aver'
 import { averMcp } from './domains/aver-mcp'
 import { averMcpAdapter } from './adapters/aver-mcp.direct'
 
 describe('MCP Scaffolding (acceptance)', () => {
-  const s = suite(averMcp)
+  const { test } = suite(averMcp, averMcpAdapter)
 
-  beforeEach(async () => {
-    _resetRegistry()
-    _registerAdapter(averMcpAdapter)
-    await s._setupForTest()
+  beforeEach(() => {
+    resetRegistry()
   })
 
-  afterEach(async () => {
-    await s._teardownForTest()
-  })
-
-  it('generates a domain structure template from a description', async () => {
-    await s.domain.callTool({
+  test('generates a domain structure template from a description', async ({ domain }) => {
+    await domain.callTool({
       tool: 'describe_domain_structure',
       input: { description: 'user authentication' },
     })
 
-    await s.domain.toolResultContains({ path: 'suggestedName', expected: 'userAuthentication' })
+    await domain.toolResultContains({ path: 'suggestedName', expected: 'userAuthentication' })
     // Template always returns standard CRUD-like actions
-    await s.domain.toolResultContains({ path: 'actions.0.name', expected: 'create' })
+    await domain.toolResultContains({ path: 'actions.0.name', expected: 'create' })
   })
 
-  it('describes adapter structure for an existing domain', async () => {
-    await s.domain.registerTestDomain({
+  test('describes adapter structure for an existing domain', async ({ domain }) => {
+    await domain.registerTestDomain({
       name: 'Cart',
       actions: ['addItem'],
       queries: ['total'],
       assertions: ['isEmpty'],
     })
 
-    await s.domain.callTool({
+    await domain.callTool({
       tool: 'describe_adapter_structure',
       input: { domain: 'Cart', protocol: 'test-inner' },
     })
 
-    await s.domain.toolResultContains({ path: 'domain', expected: 'Cart' })
-    await s.domain.toolResultContains({ path: 'handlers.actions', expected: ['addItem'] })
+    await domain.toolResultContains({ path: 'domain', expected: 'Cart' })
+    await domain.toolResultContains({ path: 'handlers.actions', expected: ['addItem'] })
   })
 
-  it('returns null for unknown domain adapter structure', async () => {
-    await s.domain.callTool({
+  test('returns null for unknown domain adapter structure', async ({ domain }) => {
+    await domain.callTool({
       tool: 'describe_adapter_structure',
       input: { domain: 'Unknown', protocol: 'direct' },
     })
 
-    await s.domain.toolResultIsError({ substring: 'not found' })
+    await domain.toolResultIsError({ substring: 'not found' })
   })
 })

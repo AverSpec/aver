@@ -3,11 +3,11 @@ import type { Domain } from './domain'
 
 let adapters: Adapter[] = []
 
-export function _registerAdapter(adapter: Adapter): void {
+export function registerAdapter(adapter: Adapter): void {
   adapters.push(adapter)
 }
 
-export function _findAdapter(domain: Domain): Adapter | undefined {
+export function findAdapter(domain: Domain): Adapter | undefined {
   const exact = adapters.find(a => a.domain === domain)
   if (exact) return exact
 
@@ -21,10 +21,33 @@ export function _findAdapter(domain: Domain): Adapter | undefined {
   return undefined
 }
 
-export function _getAdapters(): Adapter[] {
+export function findAdapters(domain: Domain): Adapter[] {
+  const results: Adapter[] = []
+
+  // Exact matches first
+  for (const a of adapters) {
+    if (a.domain === domain) results.push(a)
+  }
+
+  // Then parent-chain matches
+  if (results.length === 0) {
+    let current: Domain | undefined = domain
+    while (current?.parent) {
+      current = current.parent
+      for (const a of adapters) {
+        if (a.domain === current) results.push(a)
+      }
+      if (results.length > 0) break
+    }
+  }
+
+  return results
+}
+
+export function getAdapters(): Adapter[] {
   return [...adapters]
 }
 
-export function _resetRegistry(): void {
+export function resetRegistry(): void {
   adapters = []
 }

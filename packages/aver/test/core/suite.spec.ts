@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { suite } from '../../src/core/suite'
-import { _resetRegistry, _registerAdapter, _getAdapters } from '../../src/core/registry'
+import { resetRegistry, registerAdapter, getAdapters } from '../../src/core/registry'
 import { implement } from '../../src/core/adapter'
 import { defineDomain } from '../../src/core/domain'
 import { action, query, assertion } from '../../src/core/markers'
@@ -45,62 +45,56 @@ const cartAdapter = implement(cart, {
   },
 })
 
-describe('suite()', () => {
+describe('suite() — programmatic API', () => {
   beforeEach(() => {
-    _resetRegistry()
-    _registerAdapter(cartAdapter)
+    resetRegistry()
     calls.length = 0
   })
 
-  it('returns a test function', () => {
-    const s = suite(cart)
-    expect(typeof s.test).toBe('function')
-  })
-
   it('dispatches actions through adapter', async () => {
-    const s = suite(cart)
-    await s._setupForTest()
+    const s = suite(cart, cartAdapter)
+    await s.setup()
 
     await s.domain.addItem({ name: 'Widget' })
     expect(calls).toContain('add:Widget')
 
-    await s._teardownForTest()
+    await s.teardown()
   })
 
   it('dispatches queries through adapter', async () => {
-    const s = suite(cart)
-    await s._setupForTest()
+    const s = suite(cart, cartAdapter)
+    await s.setup()
 
     const total = await s.domain.total()
     expect(total).toBe(42)
 
-    await s._teardownForTest()
+    await s.teardown()
   })
 
   it('dispatches assertions through adapter', async () => {
-    const s = suite(cart)
-    await s._setupForTest()
+    const s = suite(cart, cartAdapter)
+    await s.setup()
 
     await s.domain.isEmpty()
 
-    await s._teardownForTest()
+    await s.teardown()
   })
 
   it('records action trace', async () => {
-    const s = suite(cart)
-    await s._setupForTest()
+    const s = suite(cart, cartAdapter)
+    await s.setup()
 
     await s.domain.addItem({ name: 'A' })
     await s.domain.total()
     await s.domain.isEmpty()
 
-    expect(s._getTrace()).toEqual([
+    expect(s.getTrace()).toEqual([
       { kind: 'action', name: 'addItem', payload: { name: 'A' }, status: 'pass' },
       { kind: 'query', name: 'total', payload: undefined, status: 'pass', result: 42 },
       { kind: 'assertion', name: 'isEmpty', payload: undefined, status: 'pass' },
     ])
 
-    await s._teardownForTest()
+    await s.teardown()
   })
 
   it('records failure in trace', async () => {
@@ -116,46 +110,73 @@ describe('suite()', () => {
       queries: {},
       assertions: { check: async () => { throw new Error('boom') } },
     })
-    _registerAdapter(failAdapter)
 
-    const s = suite(failDomain)
-    await s._setupForTest()
+    const s = suite(failDomain, failAdapter)
+    await s.setup()
 
     await expect(s.domain.check()).rejects.toThrow('boom')
 
-    const trace = s._getTrace()
+    const trace = s.getTrace()
     expect(trace[0]).toMatchObject({ kind: 'assertion', name: 'check', status: 'fail' })
 
-    await s._teardownForTest()
+    await s.teardown()
   })
 
-  it('throws when no adapter registered', async () => {
-    _resetRegistry()
+  it('throws descriptive error when no adapter registered', async () => {
     const s = suite(cart)
-    await expect(s._setupForTest()).rejects.toThrow('No adapter registered for domain "Cart"')
+    await expect(() => s.setup()).rejects.toThrow('No adapter registered for domain "Cart"')
+  })
+
+  it('resolves adapter from registry when not passed directly', async () => {
+    registerAdapter(cartAdapter)
+    const s = suite(cart)
+    await s.setup()
+
+    await s.domain.addItem({ name: 'FromRegistry' })
+    expect(calls).toContain('add:FromRegistry')
+
+    await s.teardown()
   })
 })
 
-describe('_getAdapters()', () => {
+describe('suite().test() — callback API', () => {
+  const { test: suiteTest } = suite(cart, cartAdapter)
+
+  suiteTest('dispatches through callback domain proxy', async ({ domain }) => {
+    await domain.addItem({ name: 'Callback' })
+    // If this runs without error, setup/teardown and dispatch worked
+  })
+
+  suiteTest('provides trace in callback', async ({ domain, trace }) => {
+    await domain.addItem({ name: 'Traced' })
+    await domain.total()
+    const t = trace()
+    expect(t).toHaveLength(2)
+    expect(t[0]).toMatchObject({ kind: 'action', name: 'addItem', status: 'pass' })
+    expect(t[1]).toMatchObject({ kind: 'query', name: 'total', status: 'pass' })
+  })
+})
+
+describe('getAdapters()', () => {
   beforeEach(() => {
-    _resetRegistry()
+    resetRegistry()
   })
 
   it('returns empty array when no adapters registered', () => {
-    expect(_getAdapters()).toEqual([])
+    expect(getAdapters()).toEqual([])
   })
 
   it('returns all registered adapters', () => {
-    _registerAdapter(cartAdapter)
-    const adapters = _getAdapters()
+    registerAdapter(cartAdapter)
+    const adapters = getAdapters()
     expect(adapters).toHaveLength(1)
     expect(adapters[0].domain).toBe(cart)
   })
 
   it('returns a copy, not the internal array', () => {
-    _registerAdapter(cartAdapter)
-    const a1 = _getAdapters()
-    const a2 = _getAdapters()
+    registerAdapter(cartAdapter)
+    const a1 = getAdapters()
+    const a2 = getAdapters()
     expect(a1).not.toBe(a2)
     expect(a1).toEqual(a2)
   })

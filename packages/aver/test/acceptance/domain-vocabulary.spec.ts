@@ -1,46 +1,41 @@
-import { describe, it, beforeEach, afterEach } from 'vitest'
+import { describe } from 'vitest'
 import { suite } from '../../src/index'
-import { _resetRegistry, _registerAdapter } from '../../src/core/registry'
+import { resetRegistry } from '../../src/core/registry'
 import { averCore } from './domains/aver-core'
 import { averCoreAdapter } from './adapters/aver-core.direct'
+import { beforeEach } from 'vitest'
 
 describe('Domain vocabulary', () => {
-  const s = suite(averCore)
+  const { test } = suite(averCore, averCoreAdapter)
 
-  beforeEach(async () => {
-    _resetRegistry()
-    _registerAdapter(averCoreAdapter)
-    await s._setupForTest()
+  beforeEach(() => {
+    resetRegistry()
   })
 
-  afterEach(async () => {
-    await s._teardownForTest()
-  })
-
-  it('captures actions, queries, and assertions', async () => {
-    await s.domain.defineDomain({
+  test('captures actions, queries, and assertions', async ({ domain }) => {
+    await domain.defineDomain({
       name: 'TestDomain',
       actions: ['doA', 'doB'],
       queries: [{ name: 'getX', returnType: 'number' }],
       assertions: ['checkY'],
     })
 
-    await s.domain.hasVocabulary({
+    await domain.hasVocabulary({
       actions: ['doA', 'doB'],
       queries: ['getX'],
       assertions: ['checkY'],
     })
   })
 
-  it('allows empty vocabulary', async () => {
-    await s.domain.defineDomain({
+  test('allows empty vocabulary', async ({ domain }) => {
+    await domain.defineDomain({
       name: 'Empty',
       actions: [],
       queries: [],
       assertions: [],
     })
 
-    await s.domain.hasVocabulary({
+    await domain.hasVocabulary({
       actions: [],
       queries: [],
       assertions: [],

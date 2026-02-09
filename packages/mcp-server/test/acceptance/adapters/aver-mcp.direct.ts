@@ -9,8 +9,8 @@ import {
   query as realQuery,
   assertion as realAssertion,
   direct,
-  _registerAdapter,
-  _resetRegistry,
+  registerAdapter,
+  resetRegistry,
 } from 'aver'
 import type { Protocol } from 'aver'
 import { averMcp } from '../domains/aver-mcp'
@@ -37,7 +37,7 @@ interface McpTestSession {
 
 export const averMcpAdapter = implement(averMcp, {
   protocol: direct<McpTestSession>(() => {
-    // Do NOT call _resetRegistry() here -- that would wipe
+    // Do NOT call resetRegistry() here -- that would wipe
     // the outer adapter registration needed by the outer suite.
     // Registry isolation is handled by beforeEach in the test files.
     const runStoreDir = mkdtempSync(join(tmpdir(), 'aver-mcp-test-'))
@@ -75,7 +75,7 @@ export const averMcpAdapter = implement(averMcp, {
         assertions: Object.fromEntries(Object.keys(assertionMarkers).map(k => [k, async () => {}])),
       })
 
-      _registerAdapter(adapter)
+      registerAdapter(adapter)
     },
 
     callTool: async (session, { tool, input }) => {
@@ -144,8 +144,8 @@ export const averMcpAdapter = implement(averMcp, {
     },
 
     resetState: async (session) => {
-      _resetRegistry()
-      _registerAdapter(averMcpAdapter)
+      resetRegistry()
+      registerAdapter(averMcpAdapter)
       session.lastToolResult = undefined
     },
   },

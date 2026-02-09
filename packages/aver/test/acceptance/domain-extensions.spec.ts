@@ -11,60 +11,60 @@ describe('Domain extensions', () => {
     resetRegistry()
   })
 
-  test('extended domain inherits parent vocabulary and adds new items', async ({ domain }) => {
-    await domain.defineDomain({
+  test('extended domain inherits parent vocabulary and adds new items', async ({ act, assert }) => {
+    await act.defineDomain({
       name: 'Base',
       actions: ['doA'],
       queries: [],
       assertions: ['checkA'],
     })
 
-    await domain.extendDomain({
+    await act.extendDomain({
       assertions: ['checkB'],
     })
 
-    await domain.hasVocabulary({
+    await assert.hasVocabulary({
       actions: ['doA'],
       queries: [],
       assertions: ['checkA', 'checkB'],
     })
   })
 
-  test('extended domain tracks its parent', async ({ domain }) => {
-    await domain.defineDomain({
+  test('extended domain tracks its parent', async ({ act, assert }) => {
+    await act.defineDomain({
       name: 'ParentDomain',
       actions: [],
       queries: [],
       assertions: [],
     })
 
-    await domain.extendDomain({
+    await act.extendDomain({
       assertions: ['extra'],
     })
 
-    await domain.hasParent({ name: 'ParentDomain' })
+    await assert.hasParent({ name: 'ParentDomain' })
   })
 
-  test('extended domain can be implemented and used in a suite', async ({ domain }) => {
-    await domain.defineDomain({
+  test('extended domain can be implemented and used in a suite', async ({ act, assert }) => {
+    await act.defineDomain({
       name: 'ExtImpl',
       actions: ['create'],
       queries: [],
       assertions: ['exists'],
     })
 
-    await domain.extendDomain({
+    await act.extendDomain({
       assertions: ['isVisible'],
     })
 
-    await domain.implementDomain()
-    await domain.registerAdapter()
-    await domain.createSuite()
+    await act.implementDomain()
+    await act.registerAdapter()
+    await act.createSuite()
 
-    await domain.executeAction({ name: 'create' })
-    await domain.executeAssertion({ name: 'exists' })
-    await domain.executeAssertion({ name: 'isVisible' })
+    await act.executeAction({ name: 'create' })
+    await act.executeAssertion({ name: 'exists' })
+    await act.executeAssertion({ name: 'isVisible' })
 
-    await domain.traceHasLength({ length: 3 })
+    await assert.traceHasLength({ length: 3 })
   })
 })

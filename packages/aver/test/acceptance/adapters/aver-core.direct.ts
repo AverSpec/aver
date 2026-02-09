@@ -113,14 +113,14 @@ export const averCoreAdapter = implement(averCore, {
 
     executeAction: async (session, { name, payload }) => {
       if (!session.suiteInstance) throw new Error('No suite created')
-      const fn = (session.suiteInstance.domain as any)[name]
+      const fn = (session.suiteInstance.act as any)[name]
       if (!fn) throw new Error(`No action "${name}" on domain proxy`)
       await fn(payload)
     },
 
     executeQuery: async (session, { name }) => {
       if (!session.suiteInstance) throw new Error('No suite created')
-      const fn = (session.suiteInstance.domain as any)[name]
+      const fn = (session.suiteInstance.query as any)[name]
       if (!fn) throw new Error(`No query "${name}" on domain proxy`)
       session.lastQueryResult = await fn()
       session.lastQueryName = name
@@ -128,7 +128,7 @@ export const averCoreAdapter = implement(averCore, {
 
     executeAssertion: async (session, { name, payload }) => {
       if (!session.suiteInstance) throw new Error('No suite created')
-      const fn = (session.suiteInstance.domain as any)[name]
+      const fn = (session.suiteInstance.assert as any)[name]
       if (!fn) throw new Error(`No assertion "${name}" on domain proxy`)
       await fn(payload)
     },
@@ -142,7 +142,7 @@ export const averCoreAdapter = implement(averCore, {
       }
       ;(adapter.handlers as any).assertions = origAssertions
 
-      const fn = (session.suiteInstance.domain as any)[name]
+      const fn = (session.suiteInstance.assert as any)[name]
       try {
         await fn(payload)
         throw new Error(`Expected assertion "${name}" to fail but it passed`)

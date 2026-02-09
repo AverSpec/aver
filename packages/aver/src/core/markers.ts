@@ -4,8 +4,8 @@ export function action<P = void>(): ActionMarker<P> {
   return { kind: 'action' } as ActionMarker<P>
 }
 
-export function query<R = unknown>(): QueryMarker<R> {
-  return { kind: 'query' } as QueryMarker<R>
+export function query<P = void, R = unknown>(): QueryMarker<P, R> {
+  return { kind: 'query' } as QueryMarker<P, R>
 }
 
 export function assertion<P = void>(): AssertionMarker<P> {

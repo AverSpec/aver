@@ -5,9 +5,10 @@ export interface ActionMarker<P = void> {
   readonly __payload?: P
 }
 
-/** Marker for a query declaration. R = return type. */
-export interface QueryMarker<R = unknown> {
+/** Marker for a query declaration. P = payload type (void if no payload), R = return type. */
+export interface QueryMarker<P = void, R = unknown> {
   readonly kind: 'query'
+  readonly __payload?: P
   readonly __return?: R
 }
 
@@ -18,7 +19,7 @@ export interface AssertionMarker<P = void> {
 }
 
 /** Any vocabulary marker. */
-export type VocabMarker = ActionMarker<any> | QueryMarker<any> | AssertionMarker<any>
+export type VocabMarker = ActionMarker<any> | QueryMarker<any, any> | AssertionMarker<any>
 
 /** Extract payload type from an ActionMarker or AssertionMarker. */
 export type PayloadOf<M> =
@@ -28,5 +29,5 @@ export type PayloadOf<M> =
 
 /** Extract return type from a QueryMarker. */
 export type ReturnOf<M> =
-  M extends QueryMarker<infer R> ? R :
+  M extends QueryMarker<any, infer R> ? R :
   never

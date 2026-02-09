@@ -10,8 +10,10 @@ type ActionHandler<Ctx, M> =
     : never
 
 type QueryHandler<Ctx, M> =
-  M extends QueryMarker<infer R>
-    ? (ctx: Ctx) => Promise<R>
+  M extends QueryMarker<infer P, infer R>
+    ? P extends void
+      ? (ctx: Ctx) => Promise<R>
+      : (ctx: Ctx, payload: P) => Promise<R>
     : never
 
 type AssertionHandler<Ctx, M> =
@@ -25,7 +27,7 @@ type ActionHandlers<Ctx, A extends Record<string, ActionMarker<any>>> = {
   [K in keyof A]: ActionHandler<Ctx, A[K]>
 }
 
-type QueryHandlers<Ctx, Q extends Record<string, QueryMarker<any>>> = {
+type QueryHandlers<Ctx, Q extends Record<string, QueryMarker<any, any>>> = {
   [K in keyof Q]: QueryHandler<Ctx, Q[K]>
 }
 
@@ -36,7 +38,7 @@ type AssertionHandlers<Ctx, S extends Record<string, AssertionMarker<any>>> = {
 export interface AdapterConfig<
   Ctx,
   A extends Record<string, ActionMarker<any>>,
-  Q extends Record<string, QueryMarker<any>>,
+  Q extends Record<string, QueryMarker<any, any>>,
   S extends Record<string, AssertionMarker<any>>,
 > {
   protocol: Protocol<Ctx>
@@ -48,7 +50,7 @@ export interface AdapterConfig<
 export interface Adapter<
   Ctx = any,
   A extends Record<string, ActionMarker<any>> = any,
-  Q extends Record<string, QueryMarker<any>> = any,
+  Q extends Record<string, QueryMarker<any, any>> = any,
   S extends Record<string, AssertionMarker<any>> = any,
 > {
   readonly domain: Domain<A, Q, S>
@@ -63,7 +65,7 @@ export interface Adapter<
 export function implement<
   Ctx,
   A extends Record<string, ActionMarker<any>>,
-  Q extends Record<string, QueryMarker<any>>,
+  Q extends Record<string, QueryMarker<any, any>>,
   S extends Record<string, AssertionMarker<any>>,
 >(
   domain: Domain<A, Q, S>,

@@ -127,6 +127,42 @@ describe('suite() — programmatic API', () => {
     await expect(() => s.setup()).rejects.toThrow('No adapter registered for domain "Cart"')
   })
 
+  it('dispatches parameterized queries through adapter', async () => {
+    const filterDomain = defineDomain({
+      name: 'Filter',
+      actions: {},
+      queries: {
+        itemsByStatus: query<{ status: string }, string[]>(),
+      },
+      assertions: {},
+    })
+    const items = { active: ['a', 'b'], done: ['c'] }
+    const filterAdapter = implement(filterDomain, {
+      protocol: testProtocol,
+      actions: {},
+      queries: {
+        itemsByStatus: async (_ctx, { status }) => items[status as keyof typeof items] ?? [],
+      },
+      assertions: {},
+    })
+
+    const s = suite(filterDomain, filterAdapter)
+    await s.setup()
+
+    const result = await s.query.itemsByStatus({ status: 'active' })
+    expect(result).toEqual(['a', 'b'])
+
+    const trace = s.getTrace()
+    expect(trace[0]).toMatchObject({
+      kind: 'query',
+      name: 'itemsByStatus',
+      payload: { status: 'active' },
+      status: 'pass',
+    })
+
+    await s.teardown()
+  })
+
   it('resolves adapter from registry when not passed directly', async () => {
     registerAdapter(cartAdapter)
     const s = suite(cart)

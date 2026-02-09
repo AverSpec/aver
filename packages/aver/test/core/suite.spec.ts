@@ -55,7 +55,7 @@ describe('suite() — programmatic API', () => {
     const s = suite(cart, cartAdapter)
     await s.setup()
 
-    await s.domain.addItem({ name: 'Widget' })
+    await s.act.addItem({ name: 'Widget' })
     expect(calls).toContain('add:Widget')
 
     await s.teardown()
@@ -65,7 +65,7 @@ describe('suite() — programmatic API', () => {
     const s = suite(cart, cartAdapter)
     await s.setup()
 
-    const total = await s.domain.total()
+    const total = await s.query.total()
     expect(total).toBe(42)
 
     await s.teardown()
@@ -75,7 +75,7 @@ describe('suite() — programmatic API', () => {
     const s = suite(cart, cartAdapter)
     await s.setup()
 
-    await s.domain.isEmpty()
+    await s.assert.isEmpty()
 
     await s.teardown()
   })
@@ -84,9 +84,9 @@ describe('suite() — programmatic API', () => {
     const s = suite(cart, cartAdapter)
     await s.setup()
 
-    await s.domain.addItem({ name: 'A' })
-    await s.domain.total()
-    await s.domain.isEmpty()
+    await s.act.addItem({ name: 'A' })
+    await s.query.total()
+    await s.assert.isEmpty()
 
     expect(s.getTrace()).toEqual([
       { kind: 'action', name: 'addItem', payload: { name: 'A' }, status: 'pass' },
@@ -114,7 +114,7 @@ describe('suite() — programmatic API', () => {
     const s = suite(failDomain, failAdapter)
     await s.setup()
 
-    await expect(s.domain.check()).rejects.toThrow('boom')
+    await expect(s.assert.check()).rejects.toThrow('boom')
 
     const trace = s.getTrace()
     expect(trace[0]).toMatchObject({ kind: 'assertion', name: 'check', status: 'fail' })
@@ -132,7 +132,7 @@ describe('suite() — programmatic API', () => {
     const s = suite(cart)
     await s.setup()
 
-    await s.domain.addItem({ name: 'FromRegistry' })
+    await s.act.addItem({ name: 'FromRegistry' })
     expect(calls).toContain('add:FromRegistry')
 
     await s.teardown()
@@ -142,14 +142,14 @@ describe('suite() — programmatic API', () => {
 describe('suite().test() — callback API', () => {
   const { test: suiteTest } = suite(cart, cartAdapter)
 
-  suiteTest('dispatches through callback domain proxy', async ({ domain }) => {
-    await domain.addItem({ name: 'Callback' })
+  suiteTest('dispatches through callback domain proxy', async ({ act }) => {
+    await act.addItem({ name: 'Callback' })
     // If this runs without error, setup/teardown and dispatch worked
   })
 
-  suiteTest('provides trace in callback', async ({ domain, trace }) => {
-    await domain.addItem({ name: 'Traced' })
-    await domain.total()
+  suiteTest('provides trace in callback', async ({ act, query, trace }) => {
+    await act.addItem({ name: 'Traced' })
+    await query.total()
     const t = trace()
     expect(t).toHaveLength(2)
     expect(t[0]).toMatchObject({ kind: 'action', name: 'addItem', status: 'pass' })

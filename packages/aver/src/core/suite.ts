@@ -20,8 +20,8 @@ export type ActProxy<D extends Domain> = {
 
 export type QueryProxy<D extends Domain> = {
   [K in keyof D['vocabulary']['queries']]:
-    D['vocabulary']['queries'][K] extends { __return?: infer R }
-      ? () => Promise<R>
+    D['vocabulary']['queries'][K] extends { __payload?: infer P; __return?: infer R }
+      ? [P] extends [void] ? () => Promise<R> : (payload: P) => Promise<R>
       : never
 }
 
@@ -87,11 +87,13 @@ function createProxies<D extends Domain>(
   }
 
   for (const name of Object.keys(domain.vocabulary.queries)) {
-    query[name] = async () => {
+    query[name] = async (payload?: any) => {
       const a = getAdapter()
-      const entry: TraceEntry = { kind: 'query', name, payload: undefined, status: 'pass' }
+      const entry: TraceEntry = { kind: 'query', name, payload, status: 'pass' }
       try {
-        const result = await (a.handlers.queries as any)[name](getCtx())
+        const result = payload !== undefined
+          ? await (a.handlers.queries as any)[name](getCtx(), payload)
+          : await (a.handlers.queries as any)[name](getCtx())
         entry.result = result
         return result
       } catch (error) {

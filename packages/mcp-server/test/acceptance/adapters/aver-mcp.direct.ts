@@ -1,4 +1,7 @@
 import { expect } from 'vitest'
+import { mkdtempSync } from 'node:fs'
+import { join } from 'node:path'
+import { tmpdir } from 'node:os'
 import {
   implement,
   defineDomain as realDefineDomain,
@@ -16,9 +19,15 @@ import {
   getDomainVocabularyHandler,
   listAdaptersHandler,
 } from '../../../src/tools/domains'
+import { RunStore } from '../../../src/runs'
+import {
+  getFailureDetailsHandler,
+  getTestTraceHandler,
+} from '../../../src/tools/execution'
 
 interface McpTestSession {
   lastToolResult?: unknown
+  runStore?: RunStore
 }
 
 export const averMcpAdapter = implement(averMcp, {
@@ -26,7 +35,8 @@ export const averMcpAdapter = implement(averMcp, {
     // Do NOT call _resetRegistry() here -- that would wipe
     // the outer adapter registration needed by the outer suite.
     // Registry isolation is handled by beforeEach in the test files.
-    return {}
+    const runStoreDir = mkdtempSync(join(tmpdir(), 'aver-mcp-test-'))
+    return { runStore: new RunStore(runStoreDir) }
   }),
 
   actions: {
@@ -74,13 +84,33 @@ export const averMcpAdapter = implement(averMcp, {
         case 'list_adapters':
           session.lastToolResult = listAdaptersHandler()
           break
+        case 'get_failure_details': {
+          const result = getFailureDetailsHandler(session.runStore!, {
+            domain: input?.domain as string | undefined,
+            testName: input?.testName as string | undefined,
+          })
+          session.lastToolResult = result
+          break
+        }
+        case 'get_test_trace': {
+          const result = getTestTraceHandler(session.runStore!, input?.testName as string)
+          if (!result) {
+            session.lastToolResult = `Test "${input?.testName}" not found in latest run`
+          } else {
+            session.lastToolResult = result
+          }
+          break
+        }
         default:
           throw new Error(`Unknown tool: ${tool}`)
       }
     },
 
-    saveTestRun: async () => {
-      // Will be implemented when RunStore is added (Task 4)
+    saveTestRun: async (session, { results }) => {
+      session.runStore!.save({
+        timestamp: new Date().toISOString(),
+        results,
+      })
     },
 
     resetState: async (session) => {

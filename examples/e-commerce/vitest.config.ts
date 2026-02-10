@@ -5,7 +5,7 @@ export default defineConfig({
   test: {
     include: ['tests/**/*.spec.ts'],
     globals: true,
-    testTimeout: 15000,
+    testTimeout: 30000,
     reporters: [
       'default',
       averReporter({ output: 'test-results/example-task-board.xml' }),

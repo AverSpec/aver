@@ -41,69 +41,29 @@ jobs:
           npm run build -w examples/e-commerce
 
       - name: Test aver (core)
-        run: npx vitest run --reporter=junit --reporter=html --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/aver.xml --outputFile.html=../../test-results/html/aver/index.html
+        run: npx vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/aver.xml
         working-directory: packages/aver
 
       - name: Test mcp-server
         if: ${{ !cancelled() }}
-        run: npx vitest run --reporter=junit --reporter=html --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/mcp-server.xml --outputFile.html=../../test-results/html/mcp-server/index.html
+        run: npx vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/mcp-server.xml
         working-directory: packages/mcp-server
 
       - name: Test protocol-http
         if: ${{ !cancelled() }}
-        run: npx vitest run --reporter=junit --reporter=html --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/protocol-http.xml --outputFile.html=../../test-results/html/protocol-http/index.html
+        run: npx vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/protocol-http.xml
         working-directory: packages/protocol-http
 
       - name: Test protocol-playwright
         if: ${{ !cancelled() }}
-        run: npx vitest run --reporter=junit --reporter=html --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/protocol-playwright.xml --outputFile.html=../../test-results/html/protocol-playwright/index.html
+        run: npx vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/protocol-playwright.xml
         working-directory: packages/protocol-playwright
 
       - name: Test example app
         if: ${{ !cancelled() }}
-        run: npx vitest run --reporter=junit --reporter=html --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/e-commerce.xml --outputFile.html=../../test-results/html/e-commerce/index.html
+        run: npx vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/e-commerce.xml
         working-directory: examples/e-commerce
 
       - name: Test summary
         if: ${{ !cancelled() }}
-        run: |
-          echo '### Test Results' >> $GITHUB_STEP_SUMMARY
-          echo '' >> $GITHUB_STEP_SUMMARY
-          echo '| Package | Tests | Passed | Failed | Skipped | Time |' >> $GITHUB_STEP_SUMMARY
-          echo '|---------|-------|--------|--------|---------|------|' >> $GITHUB_STEP_SUMMARY
-          for xml in test-results/*.xml; do
-            name=$(basename "$xml" .xml)
-            tests=$(grep -o 'tests="[0-9]*"' "$xml" | head -1 | grep -o '[0-9]*')
-            failures=$(grep -o 'failures="[0-9]*"' "$xml" | head -1 | grep -o '[0-9]*')
-            skipped=$(grep -o 'skipped="[0-9]*"' "$xml" | head -1 | grep -o '[0-9]*')
-            time=$(grep -o 'time="[0-9.]*"' "$xml" | head -1 | grep -o '[0-9.]*')
-            passed=$((tests - failures - skipped))
-            if [ "$failures" -gt 0 ]; then
-              status="❌"
-            else
-              status="✅"
-            fi
-            echo "| ${status} ${name} | ${tests} | ${passed} | ${failures} | ${skipped} | ${time}s |" >> $GITHUB_STEP_SUMMARY
-          done
-          echo '' >> $GITHUB_STEP_SUMMARY
-          total_tests=0; total_pass=0; total_fail=0; total_skip=0
-          for xml in test-results/*.xml; do
-            t=$(grep -o 'tests="[0-9]*"' "$xml" | head -1 | grep -o '[0-9]*')
-            f=$(grep -o 'failures="[0-9]*"' "$xml" | head -1 | grep -o '[0-9]*')
-            s=$(grep -o 'skipped="[0-9]*"' "$xml" | head -1 | grep -o '[0-9]*')
-            total_tests=$((total_tests + t))
-            total_fail=$((total_fail + f))
-            total_skip=$((total_skip + s))
-          done
-          total_pass=$((total_tests - total_fail - total_skip))
-          if [ "$total_fail" -gt 0 ]; then
-            echo "**${total_tests} tests: ${total_pass} passed, ${total_fail} failed, ${total_skip} skipped**" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "**${total_tests} tests: all passed ✅**" >> $GITHUB_STEP_SUMMARY
-          fi
-
-      - uses: actions/upload-artifact@v4
-        if: ${{ !cancelled() }}
-        with:
-          name: test-results
-          path: test-results/html/
+        run: node .github/scripts/test-summary.mjs >> $GITHUB_STEP_SUMMARY

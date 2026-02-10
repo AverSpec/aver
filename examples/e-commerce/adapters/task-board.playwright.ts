@@ -1,35 +1,39 @@
 import { implement } from 'aver'
-import { playwright } from '@aver/protocol-playwright'
 import { taskBoard } from '../domains/task-board.js'
 import { createServer } from '../src/server/index.js'
 import type { Server } from 'node:http'
-import type { Page } from 'playwright'
+import type { Browser, Page } from 'playwright'
 
-let server: Server | undefined
-let baseUrl: string
+let browser: Browser | undefined
 
 const playwrightProtocol = {
   name: 'playwright',
   async setup(): Promise<Page> {
-    // Start Express server
+    // Start Express server with fresh Board
     const { app } = createServer()
-    server = await new Promise<Server>(resolve => {
+    const server = await new Promise<Server>(resolve => {
       const s = app.listen(0, () => resolve(s))
     })
     const addr = server.address()
     const port = typeof addr === 'object' && addr ? addr.port : 3000
-    baseUrl = `http://localhost:${port}`
+    const baseUrl = `http://localhost:${port}`
 
-    // Launch browser via parent protocol
-    const page = await playwright({ headless: true }).setup()
+    // Launch browser once, reuse across tests
+    if (!browser) {
+      const pw = await import('playwright')
+      browser = await pw.chromium.launch({ headless: true })
+    }
+    const page = await browser.newPage()
+    // Stash server on page for teardown
+    ;(page as any).__server = server
     await page.goto(baseUrl)
     return page
   },
   async teardown(page: Page) {
-    await page.context().browser()?.close()
+    const server = (page as any).__server as Server | undefined
+    await page.close()
     if (server) {
-      await new Promise<void>((resolve) => server!.close(() => resolve()))
-      server = undefined
+      await new Promise<void>((resolve) => server.close(() => resolve()))
     }
   },
 }
@@ -65,8 +69,8 @@ export const playwrightAdapter = implement(taskBoard, {
       const tasks = []
       for (let i = 0; i < count; i++) {
         const card = cards.nth(i)
-        const taskTitle = await card.getByTestId('task-title').textContent() ?? ''
-        const assigneeEl = card.getByTestId('task-assignee')
+        const taskTitle = await card.getByTestId('card-title').textContent() ?? ''
+        const assigneeEl = card.getByTestId('card-assignee')
         const assignee = (await assigneeEl.count()) > 0 ? await assigneeEl.textContent() : undefined
         tasks.push({ title: taskTitle.trim(), status, assignee: assignee?.trim() || undefined })
       }
@@ -76,7 +80,7 @@ export const playwrightAdapter = implement(taskBoard, {
       const card = page.getByTestId(`task-${title}`)
       if ((await card.count()) === 0) return undefined
       const status = await card.getAttribute('data-status') ?? ''
-      const assigneeEl = card.getByTestId('task-assignee')
+      const assigneeEl = card.getByTestId('card-assignee')
       const assignee = (await assigneeEl.count()) > 0 ? await assigneeEl.textContent() : undefined
       return { title, status, assignee: assignee?.trim() || undefined }
     },
@@ -91,7 +95,7 @@ export const playwrightAdapter = implement(taskBoard, {
       }
     },
     taskAssignedTo: async (page, { title, assignee }) => {
-      const text = await page.getByTestId(`task-${title}`).getByTestId('task-assignee').textContent()
+      const text = await page.getByTestId(`task-${title}`).getByTestId('card-assignee').textContent()
       if (text?.trim() !== assignee) {
         throw new Error(`Expected task "${title}" assigned to "${assignee}" but was "${text?.trim()}"`)
       }

@@ -10,8 +10,9 @@ switch (command) {
     break
   }
   case 'init': {
-    console.log('aver init is not yet implemented.')
-    process.exit(1)
+    const { runInit } = await import('./init.js')
+    await runInit(args[0])
+    break
   }
   case '--help':
   case '-h':

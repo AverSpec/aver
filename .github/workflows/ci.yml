@@ -32,27 +32,27 @@ jobs:
       - run: npx playwright install --with-deps chromium
 
       - name: Test aver (core)
-        run: npx vitest run --reporter=junit --reporter=default --outputFile=../../test-results/aver.xml
+        run: npx vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile=../../test-results/aver.xml
         working-directory: packages/aver
 
       - name: Test mcp-server
         if: ${{ !cancelled() }}
-        run: npx vitest run --reporter=junit --reporter=default --outputFile=../../test-results/mcp-server.xml
+        run: npx vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile=../../test-results/mcp-server.xml
         working-directory: packages/mcp-server
 
       - name: Test protocol-http
         if: ${{ !cancelled() }}
-        run: npx vitest run --reporter=junit --reporter=default --outputFile=../../test-results/protocol-http.xml
+        run: npx vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile=../../test-results/protocol-http.xml
         working-directory: packages/protocol-http
 
       - name: Test protocol-playwright
         if: ${{ !cancelled() }}
-        run: npx vitest run --reporter=junit --reporter=default --outputFile=../../test-results/protocol-playwright.xml
+        run: npx vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile=../../test-results/protocol-playwright.xml
         working-directory: packages/protocol-playwright
 
       - name: Test example app
         if: ${{ !cancelled() }}
-        run: npx vitest run
+        run: npx vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile=../../test-results/e-commerce.xml
         working-directory: examples/e-commerce
 
       - name: Test Report
@@ -62,6 +62,8 @@ jobs:
           report_paths: '**/test-results/*.xml'
           check_name: Test Results
           fail_on_failure: true
+          detailed_summary: true
+          include_passed: true
 
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}

@@ -4,8 +4,12 @@
   "description": "Domain-driven acceptance testing framework",
   "type": "module",
   "license": "MIT",
-  "engines": { "node": ">=18.0.0" },
-  "bin": { "aver": "./dist/cli.js" },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "bin": {
+    "aver": "./dist/cli.js"
+  },
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -21,7 +25,9 @@
       }
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
@@ -34,9 +40,12 @@
     "vitest": ">=2.0.0"
   },
   "devDependencies": {
+    "@types/node": "^22.0.0",
     "tsup": "^8.0.0",
     "typescript": "^5.7.0",
-    "vitest": "^3.0.0",
-    "@types/node": "^22.0.0"
+    "vitest": "^3.0.0"
+  },
+  "dependencies": {
+    "@clack/prompts": "^1.0.0"
   }
 }

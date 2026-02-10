@@ -27,6 +27,7 @@ jobs:
           npm run build -w packages/aver
           npm run build -w packages/protocol-http
           npm run build -w packages/protocol-playwright
+          npm run build -w examples/e-commerce
 
       - run: npx playwright install --with-deps chromium
 

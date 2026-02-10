@@ -26,15 +26,11 @@ export class RunStore {
   }
 
   save(run: RunData): void {
-    let filename = run.timestamp.replace(/[:.]/g, '-') + '.json'
-    let fullPath = join(this.dir, filename)
-    let counter = 1
-    while (existsSync(fullPath)) {
-      filename = run.timestamp.replace(/[:.]/g, '-') + `-${counter}.json`
-      fullPath = join(this.dir, filename)
-      counter++
-    }
-    writeFileSync(fullPath, JSON.stringify(run, null, 2))
+    const base = run.timestamp.replace(/[:.]/g, '-')
+    const existing = this.listRuns().filter(f => f.startsWith(base))
+    const seq = String(existing.length).padStart(3, '0')
+    const filename = `${base}_${seq}.json`
+    writeFileSync(join(this.dir, filename), JSON.stringify(run, null, 2))
     this.enforceRetention()
   }
 

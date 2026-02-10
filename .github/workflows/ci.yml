@@ -25,10 +25,14 @@ jobs:
       - name: Build packages
         run: |
           npm run build -w packages/aver
+          npm run build -w packages/mcp-server
           npm run build -w packages/protocol-http
           npm run build -w packages/protocol-playwright
 
       - run: npx playwright install --with-deps chromium
+
+      - name: Create test results directory
+        run: mkdir -p test-results
 
       - name: Test aver (core)
         run: npx vitest run --reporter=junit --reporter=default --outputFile=../../test-results/aver.xml
@@ -62,6 +66,8 @@ jobs:
           report_paths: |
             test-results/*.xml
             examples/e-commerce/test-results/*.xml
+          token: ${{ github.token }}
+          check_retries: 'true'
 
       - uses: actions/upload-artifact@v4
         if: always()

@@ -16,7 +16,13 @@
       "Bash(npm test:*)",
       "Bash(npm run test:*)",
       "mcp__ide__getDiagnostics",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(npm run typecheck:*)",
+      "Bash(AVER_ADAPTER=direct npx vitest run:*)",
+      "Bash(npx tsx:*)",
+      "Bash(npx playwright install:*)",
+      "Bash(npx vite build:*)",
+      "Bash(git checkout:*)"
     ]
   },
   "hooks": {

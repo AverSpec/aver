@@ -1,0 +1,19 @@
+title: Aver
+description: Domain-driven acceptance testing for TypeScript
+remote_theme: just-the-docs/just-the-docs
+
+url: ""
+baseurl: ""
+
+exclude:
+  - design/
+  - plans/
+  - Gemfile
+  - Gemfile.lock
+
+nav_order_base: 1
+
+aux_links:
+  GitHub: https://github.com/njackson/aver
+
+footer_content: "MIT License &copy; 2026 Nate Jackson"

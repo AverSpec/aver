@@ -7,6 +7,7 @@ export const averInit = defineDomain({
     initDomain: action<{ dir: string; name: string; protocol: string }>(),
   },
   queries: {
+    sessionDir: query<void, string>(),
     fileContents: query<{ path: string }, string>(),
     generatedFiles: query<{ dir: string }, string[]>(),
   },

@@ -1,0 +1,37 @@
+import { expect } from 'vitest'
+import { suite } from 'aver'
+import { taskBoard } from '../domains/task-board.js'
+
+// Import config to auto-register all adapters
+import '../aver.config.js'
+
+const { test } = suite(taskBoard)
+
+test('create a task in backlog', async ({ act, assert }) => {
+  await act.createTask({ title: 'Fix login bug' })
+  await assert.taskInStatus({ title: 'Fix login bug', status: 'backlog' })
+  await assert.taskCount({ status: 'backlog', count: 1 })
+})
+
+test('move task through workflow', async ({ act, assert }) => {
+  await act.createTask({ title: 'Fix login bug' })
+  await act.moveTask({ title: 'Fix login bug', status: 'in-progress' })
+  await assert.taskInStatus({ title: 'Fix login bug', status: 'in-progress' })
+  await assert.taskCount({ status: 'backlog', count: 0 })
+})
+
+test('assign task to team member', async ({ act, assert }) => {
+  await act.createTask({ title: 'Fix login bug' })
+  await act.assignTask({ title: 'Fix login bug', assignee: 'Alice' })
+  await assert.taskAssignedTo({ title: 'Fix login bug', assignee: 'Alice' })
+})
+
+test('track full task lifecycle', async ({ act, query }) => {
+  await act.createTask({ title: 'Fix login bug' })
+  await act.assignTask({ title: 'Fix login bug', assignee: 'Alice' })
+  await act.moveTask({ title: 'Fix login bug', status: 'in-progress' })
+
+  const task = await query.taskDetails({ title: 'Fix login bug' })
+  expect(task?.status).toBe('in-progress')
+  expect(task?.assignee).toBe('Alice')
+})

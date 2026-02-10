@@ -110,8 +110,8 @@ function TaskCard({
 
   return (
     <div className="card" data-testid={`task-${task.title}`} data-status={task.status}>
-      <div data-testid="task-title">{task.title}</div>
-      {task.assignee && <div data-testid="task-assignee">{task.assignee}</div>}
+      <div data-testid="card-title">{task.title}</div>
+      {task.assignee && <div data-testid="card-assignee">{task.assignee}</div>}
 
       <div className="actions">
         {COLUMNS.filter(c => c !== task.status).map(c => (

@@ -3,8 +3,5 @@
   "workspaces": [
     "packages/*",
     "examples/*"
-  ],
-  "devDependencies": {
-    "@vitest/ui": "^4.0.18"
-  }
+  ]
 }

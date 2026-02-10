@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run build -w packages/aver
+
+      - run: npx playwright install --with-deps chromium
+
+      - name: Test aver (core)
+        run: npx vitest run --reporter=junit --reporter=default --outputFile=../../test-results/aver.xml
+        working-directory: packages/aver
+        continue-on-error: true
+
+      - name: Test mcp-server
+        run: npx vitest run --reporter=junit --reporter=default --outputFile=../../test-results/mcp-server.xml
+        working-directory: packages/mcp-server
+        continue-on-error: true
+
+      - name: Test protocol-http
+        run: npx vitest run --reporter=junit --reporter=default --outputFile=../../test-results/protocol-http.xml
+        working-directory: packages/protocol-http
+        continue-on-error: true
+
+      - name: Test protocol-playwright
+        run: npx vitest run --reporter=junit --reporter=default --outputFile=../../test-results/protocol-playwright.xml
+        working-directory: packages/protocol-playwright
+        continue-on-error: true
+
+      - name: Test example app
+        run: npx vitest run
+        working-directory: examples/e-commerce
+        continue-on-error: true
+
+      - name: Test Report
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: Tests
+          path: |
+            test-results/*.xml
+            examples/e-commerce/test-results/*.xml
+          reporter: java-junit
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: |
+            test-results/
+            examples/e-commerce/test-results/

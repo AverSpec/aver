@@ -6,7 +6,7 @@ import {
   query as realQuery,
   assertion as realAssertion,
   suite as realSuite,
-  direct,
+  unit,
 } from '../../../src/index'
 import type { Domain, Adapter, Protocol } from '../../../src/index'
 import type { SuiteReturn, TraceEntry } from '../../../src/core/suite'
@@ -23,7 +23,7 @@ interface AverTestSession {
 }
 
 export const averCoreAdapter = implement(averCore, {
-  protocol: direct<AverTestSession>(() => {
+  protocol: unit<AverTestSession>(() => {
     // Do NOT call resetRegistry() here -- that would wipe
     // the outer adapter registration needed by the outer suite.
     return {}

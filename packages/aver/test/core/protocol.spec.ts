@@ -1,7 +1,7 @@
 // packages/aver/test/core/protocol.spec.ts
 import { describe, it, expect } from 'vitest'
 import type { Protocol } from '../../src/core/protocol'
-import { direct } from '../../src/protocols/direct'
+import { unit } from '../../src/protocols/unit'
 
 describe('Protocol interface', () => {
   it('can create a protocol with setup and teardown', async () => {
@@ -26,33 +26,33 @@ describe('Protocol interface', () => {
   })
 })
 
-describe('direct()', () => {
-  it('creates a protocol named "direct"', () => {
-    const proto = direct(() => ({ count: 0 }))
-    expect(proto.name).toBe('direct')
+describe('unit()', () => {
+  it('creates a protocol named "unit"', () => {
+    const proto = unit(() => ({ count: 0 }))
+    expect(proto.name).toBe('unit')
   })
 
   it('calls factory on setup', async () => {
-    const proto = direct(() => ({ count: 0 }))
+    const proto = unit(() => ({ count: 0 }))
     const ctx = await proto.setup()
     expect(ctx).toEqual({ count: 0 })
   })
 
   it('creates fresh context each setup', async () => {
-    const proto = direct(() => ({ count: 0 }))
+    const proto = unit(() => ({ count: 0 }))
     const ctx1 = await proto.setup()
     const ctx2 = await proto.setup()
     expect(ctx1).not.toBe(ctx2)
   })
 
   it('accepts async factory', async () => {
-    const proto = direct(async () => ({ data: 'loaded' }))
+    const proto = unit(async () => ({ data: 'loaded' }))
     const ctx = await proto.setup()
     expect(ctx).toEqual({ data: 'loaded' })
   })
 
   it('teardown is a no-op', async () => {
-    const proto = direct(() => ({}))
+    const proto = unit(() => ({}))
     const ctx = await proto.setup()
     await expect(proto.teardown(ctx)).resolves.toBeUndefined()
   })

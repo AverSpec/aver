@@ -4,7 +4,7 @@ export { implement } from './core/adapter'
 export { suite } from './core/suite'
 export { defineConfig } from './core/config'
 export { getAdapters, registerAdapter, findAdapter, findAdapters, resetRegistry } from './core/registry'
-export { direct } from './protocols/direct'
+export { unit } from './protocols/unit'
 
 export type { ActionMarker, QueryMarker, AssertionMarker } from './core/types'
 export type { Domain } from './core/domain'

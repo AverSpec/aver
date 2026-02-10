@@ -1,9 +1,9 @@
-import { implement, direct } from 'aver'
+import { implement, unit } from 'aver'
 import { Board } from '../src/server/board.js'
 import { taskBoard } from '../domains/task-board.js'
 
-export const directAdapter = implement(taskBoard, {
-  protocol: direct(() => new Board()),
+export const unitAdapter = implement(taskBoard, {
+  protocol: unit(() => new Board()),
 
   actions: {
     createTask: async (board, { title, status }) => {

@@ -5,7 +5,7 @@ import {
 } from '../../src/tools/scaffolding'
 import {
   defineDomain, action, query, assertion,
-  implement, direct,
+  implement, unit,
   resetRegistry, registerAdapter,
 } from 'aver'
 
@@ -17,7 +17,7 @@ const cart = defineDomain({
 })
 
 const cartAdapter = implement(cart, {
-  protocol: direct(() => null),
+  protocol: unit(() => null),
   actions: { addItem: async () => {}, removeItem: async () => {} },
   queries: { total: async () => 0 },
   assertions: { isEmpty: async () => {}, hasTotal: async () => {} },
@@ -41,10 +41,10 @@ describe('describe_adapter_structure handler', () => {
   })
 
   it('returns handler structure for a domain and protocol', () => {
-    const result = describeAdapterStructureHandler('Cart', 'direct')
+    const result = describeAdapterStructureHandler('Cart', 'unit')
     expect(result).toEqual({
       domain: 'Cart',
-      protocol: 'direct',
+      protocol: 'unit',
       handlers: {
         actions: ['addItem', 'removeItem'],
         queries: ['total'],
@@ -54,7 +54,7 @@ describe('describe_adapter_structure handler', () => {
   })
 
   it('returns null when domain not found', () => {
-    const result = describeAdapterStructureHandler('Unknown', 'direct')
+    const result = describeAdapterStructureHandler('Unknown', 'unit')
     expect(result).toBeNull()
   })
 

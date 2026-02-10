@@ -2,7 +2,7 @@ import { describe, beforeEach } from 'vitest'
 import { suite } from '../../src/index'
 import { resetRegistry } from '../../src/core/registry'
 import { averCore } from './domains/aver-core'
-import { averCoreAdapter } from './adapters/aver-core.direct'
+import { averCoreAdapter } from './adapters/aver-core.unit'
 
 describe('Adapter dispatch and suite proxy', () => {
   const { test } = suite(averCore, averCoreAdapter)

@@ -1,8 +1,8 @@
 import { defineConfig } from 'aver'
-import { directAdapter } from './adapters/task-board.direct.js'
+import { unitAdapter } from './adapters/task-board.unit.js'
 import { httpAdapter } from './adapters/task-board.http.js'
 import { playwrightAdapter } from './adapters/task-board.playwright.js'
 
 export default defineConfig({
-  adapters: [directAdapter, httpAdapter, playwrightAdapter],
+  adapters: [unitAdapter, httpAdapter, playwrightAdapter],
 })

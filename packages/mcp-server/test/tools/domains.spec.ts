@@ -6,7 +6,7 @@ import {
 } from '../../src/tools/domains'
 import {
   defineDomain, action, query, assertion,
-  implement, direct,
+  implement, unit,
   resetRegistry, registerAdapter,
 } from 'aver'
 
@@ -18,7 +18,7 @@ const cart = defineDomain({
 })
 
 const cartAdapter = implement(cart, {
-  protocol: direct(() => null),
+  protocol: unit(() => null),
   actions: {
     addItem: async () => {},
     checkout: async () => {},
@@ -56,7 +56,7 @@ describe('list_domains handler', () => {
   it('deduplicates domains when multiple adapters share a domain', () => {
     registerAdapter(cartAdapter)
     const cartAdapter2 = implement(cart, {
-      protocol: direct(() => null),
+      protocol: unit(() => null),
       actions: { addItem: async () => {}, checkout: async () => {} },
       queries: { total: async () => 0 },
       assertions: { isEmpty: async () => {} },
@@ -103,7 +103,7 @@ describe('list_adapters handler', () => {
     registerAdapter(cartAdapter)
     const result = listAdaptersHandler()
     expect(result).toEqual([
-      { domainName: 'Cart', protocolName: 'direct' },
+      { domainName: 'Cart', protocolName: 'unit' },
     ])
   })
 })

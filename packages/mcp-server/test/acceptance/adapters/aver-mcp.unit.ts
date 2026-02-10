@@ -8,7 +8,7 @@ import {
   action as realAction,
   query as realQuery,
   assertion as realAssertion,
-  direct,
+  unit,
   registerAdapter,
   resetRegistry,
 } from 'aver'
@@ -36,7 +36,7 @@ interface McpTestSession {
 }
 
 export const averMcpAdapter = implement(averMcp, {
-  protocol: direct<McpTestSession>(() => {
+  protocol: unit<McpTestSession>(() => {
     // Do NOT call resetRegistry() here -- that would wipe
     // the outer adapter registration needed by the outer suite.
     // Registry isolation is handled by beforeEach in the test files.

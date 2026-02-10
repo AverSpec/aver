@@ -1,7 +1,7 @@
 import { describe, beforeEach } from 'vitest'
 import { suite, resetRegistry } from 'aver'
 import { averMcp } from './domains/aver-mcp'
-import { averMcpAdapter } from './adapters/aver-mcp.direct'
+import { averMcpAdapter } from './adapters/aver-mcp.unit'
 
 describe('MCP Domain Exploration (acceptance)', () => {
   const { test } = suite(averMcp, averMcpAdapter)

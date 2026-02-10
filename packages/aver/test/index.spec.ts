@@ -7,7 +7,7 @@ import {
   implement,
   suite,
   defineConfig,
-  direct,
+  unit,
   getAdapters,
   resetRegistry,
 } from '../src/index'
@@ -21,7 +21,7 @@ describe('public API', () => {
     expect(typeof implement).toBe('function')
     expect(typeof suite).toBe('function')
     expect(typeof defineConfig).toBe('function')
-    expect(typeof direct).toBe('function')
+    expect(typeof unit).toBe('function')
   })
 })
 
@@ -52,7 +52,7 @@ describe('defineConfig()', () => {
       assertions: {},
     })
     const adapter = implement(dom, {
-      protocol: direct(() => null),
+      protocol: unit(() => null),
       actions: {},
       queries: {},
       assertions: {},

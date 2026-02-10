@@ -1,0 +1,309 @@
+---
+layout: default
+title: API Reference
+nav_order: 4
+---
+
+# API Reference
+
+All public exports from the `aver` package.
+
+## Domain Definition
+
+### `defineDomain(config)`
+
+Creates a domain with a named vocabulary.
+
+```typescript
+import { defineDomain, action, query, assertion } from 'aver'
+
+const cart = defineDomain({
+  name: 'shopping-cart',
+  actions: {
+    addItem: action<{ name: string; qty: number }>(),
+  },
+  queries: {
+    cartTotal: query<void, number>(),
+  },
+  assertions: {
+    hasItems: assertion<{ count: number }>(),
+  },
+})
+```
+
+**Returns:** `Domain` — a domain object with vocabulary metadata and an `extend()` method.
+
+### `action<Payload>()`
+
+Creates an action marker. Actions perform side effects and return void.
+
+```typescript
+addItem: action<{ name: string }>()  // typed payload
+checkout: action()                    // no payload
+```
+
+### `query<Payload, Return>()`
+
+Creates a query marker. Queries read data and return a typed result.
+
+```typescript
+cartTotal: query<void, number>()                       // no input, returns number
+tasksByStatus: query<{ status: string }, Task[]>()     // input + return type
+```
+
+### `assertion<Payload>()`
+
+Creates an assertion marker. Assertions verify expectations and throw on failure.
+
+```typescript
+hasItems: assertion<{ count: number }>()  // typed payload
+isEmpty: assertion()                       // no payload
+```
+
+### `domain.extend(config)`
+
+Extends a domain with additional vocabulary. The extended domain inherits all items from the parent.
+
+```typescript
+const cartUI = cart.extend({
+  name: 'shopping-cart-ui',
+  assertions: {
+    showsSpinner: assertion(),
+  },
+})
+```
+
+---
+
+## Adapters
+
+### `implement(domain, config)`
+
+Creates an adapter binding a domain to a protocol with handler implementations.
+
+```typescript
+import { implement, unit } from 'aver'
+
+const adapter = implement(cart, {
+  protocol: unit(() => []),
+  actions: {
+    addItem: async (ctx, payload) => { /* ... */ },
+  },
+  queries: {
+    cartTotal: async (ctx) => { /* ... */ },
+  },
+  assertions: {
+    hasItems: async (ctx, payload) => { /* ... */ },
+  },
+})
+```
+
+TypeScript enforces that every action, query, and assertion declared in the domain is provided. Missing handlers are compile errors.
+
+**Returns:** `Adapter` — an adapter object with domain, protocol, and handler references.
+
+---
+
+## Protocols
+
+### `unit(factory)`
+
+Built-in protocol for in-memory testing. Zero dependencies.
+
+```typescript
+import { unit } from 'aver'
+
+protocol: unit(() => new Cart())         // object context
+protocol: unit(() => ({ db: new DB() })) // compound context
+protocol: unit<Cart[]>(() => [])         // typed context
+```
+
+The factory runs on each test setup, creating a fresh context. Teardown is a no-op.
+
+### `http(options)` <small>from `@aver/protocol-http`</small>
+
+HTTP protocol providing a fetch-based client.
+
+```typescript
+import { http } from '@aver/protocol-http'
+
+protocol: http({ baseUrl: 'http://localhost:3000' })
+```
+
+Context provides `get`, `post`, `put`, `patch`, `delete` methods.
+
+### `playwright(options)` <small>from `@aver/protocol-playwright`</small>
+
+Playwright protocol providing a browser page.
+
+```typescript
+import { playwright } from '@aver/protocol-playwright'
+
+protocol: playwright({ baseUrl: 'http://localhost:3000' })
+```
+
+Context is a Playwright `Page`. Browser is launched once and reused; a fresh page is created per test.
+
+---
+
+## Suite
+
+### `suite(domain, adapter?)`
+
+Creates a test suite for a domain.
+
+```typescript
+import { suite } from 'aver'
+
+// Multi-adapter: resolves from registry
+const { test } = suite(cart)
+
+// Single adapter: passed directly
+const { test } = suite(cart, unitAdapter)
+```
+
+**Returns:** `SuiteReturn` with the following:
+
+| Property | Type | Description |
+|:---------|:-----|:------------|
+| `test` | `(name, fn) => void` | Wraps Vitest's `test()` with domain proxies |
+| `act` | `ActProxy` | Programmatic access to actions |
+| `query` | `QueryProxy` | Programmatic access to queries |
+| `assert` | `AssertProxy` | Programmatic access to assertions |
+| `setup` | `() => Promise<void>` | Manual setup (for programmatic use) |
+| `teardown` | `() => Promise<void>` | Manual teardown (for programmatic use) |
+| `getTrace` | `() => TraceEntry[]` | Get the current action trace |
+
+### `test(name, fn)`
+
+Wraps Vitest's `test()`, passing typed domain proxies via callback:
+
+```typescript
+test('add item', async ({ act, query, assert, trace }) => {
+  await act.addItem({ name: 'Widget' })
+  await assert.hasItems({ count: 1 })
+  const total = await query.cartTotal()
+})
+```
+
+The callback receives:
+
+| Property | Description |
+|:---------|:------------|
+| `act` | Typed proxy for actions |
+| `query` | Typed proxy for queries |
+| `assert` | Typed proxy for assertions |
+| `trace` | Current action trace array |
+
+---
+
+## Configuration
+
+### `defineConfig(config)`
+
+Creates an Aver configuration and auto-registers adapters.
+
+```typescript
+import { defineConfig } from 'aver'
+import { unitAdapter } from './adapters/cart.unit'
+import { httpAdapter } from './adapters/cart.http'
+
+export default defineConfig({
+  adapters: [unitAdapter, httpAdapter],
+  testDir: './tests',  // optional, defaults to '.'
+})
+```
+
+### `registerAdapter(adapter)`
+
+Manually registers an adapter in the global registry.
+
+### `findAdapter(domain)`
+
+Returns the first registered adapter matching a domain, or `undefined`.
+
+### `findAdapters(domain)`
+
+Returns all registered adapters matching a domain.
+
+### `getAdapters()`
+
+Returns all registered adapters.
+
+### `resetRegistry()`
+
+Clears all registered adapters. Useful in test setup.
+
+---
+
+## Types
+
+```typescript
+import type {
+  Domain,
+  Adapter,
+  Protocol,
+  AverConfig,
+  TraceEntry,
+  ActProxy,
+  QueryProxy,
+  AssertProxy,
+  TestContext,
+  SuiteReturn,
+  ActionMarker,
+  QueryMarker,
+  AssertionMarker,
+} from 'aver'
+```
+
+### `TraceEntry`
+
+```typescript
+interface TraceEntry {
+  kind: 'action' | 'query' | 'assertion'
+  name: string
+  payload?: unknown
+  status: 'pass' | 'fail'
+  error?: string
+  returnValue?: unknown
+}
+```
+
+### `Protocol<Context>`
+
+```typescript
+interface Protocol<Context> {
+  name: string
+  setup(): Promise<Context>
+  teardown(ctx: Context): Promise<void>
+}
+```
+
+---
+
+## CLI
+
+### `aver run`
+
+Runs tests via Vitest.
+
+```bash
+npx aver run                         # all tests
+npx aver run --adapter unit          # filter by adapter
+npx aver run --domain ShoppingCart   # filter by domain
+npx aver run --watch                 # watch mode
+```
+
+### `aver init`
+
+Scaffolds a new domain with adapter and test files.
+
+```bash
+npx aver init --domain ShoppingCart --protocol unit
+```
+
+Generates:
+- `domains/shopping-cart.ts`
+- `adapters/shopping-cart.unit.ts`
+- `tests/shopping-cart.spec.ts`
+- `aver.config.ts` (if it doesn't exist)

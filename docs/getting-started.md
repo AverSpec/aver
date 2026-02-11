@@ -10,7 +10,7 @@ This tutorial walks you through creating a domain, implementing an adapter, and 
 
 ## Prerequisites
 
-- Node.js 20+
+- Node.js 18+
 - A project with Vitest (or Jest) configured
 
 ## Install
@@ -137,6 +137,7 @@ Tests speak domain language — no implementation details:
 
 ```typescript
 // tests/shopping-cart.spec.ts
+import { expect } from 'vitest'
 import { suite } from 'aver'
 import { shoppingCart } from '../domains/shopping-cart'
 import '../aver.config'  // auto-registers adapters
@@ -171,6 +172,7 @@ npx vitest run
 
 ## Next Steps
 
+- [Example App](example-app) — full task board tested across unit, HTTP, and Playwright
 - [Architecture](architecture) — understand the three-layer model
 - [Multi-Adapter Testing](guides/multi-adapter) — same test against HTTP and Playwright
 - [MCP Server](guides/mcp-server) — AI-assisted testing with Claude

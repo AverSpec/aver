@@ -3,6 +3,7 @@ layout: default
 title: CI Integration
 parent: Guides
 nav_order: 3
+render_with_liquid: false
 ---
 
 # CI Integration

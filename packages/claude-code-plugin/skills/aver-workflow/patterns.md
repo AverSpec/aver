@@ -239,7 +239,7 @@ import { suite } from 'aver'
 import { taskBoard } from '../domains/task-board.js'
 
 // Config import auto-registers adapters
-import '../aver.config.js'
+// Config is loaded via vitest setupFiles (see vitest.config.ts)
 
 // suite(domain) without a specific adapter → runs all registered adapters
 const { test } = suite(taskBoard)

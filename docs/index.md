@@ -40,6 +40,10 @@ test('move task through workflow', async ({ act, assert }) => {
 
 This test runs identically against a unit adapter (1ms), an HTTP adapter (12ms), and a Playwright browser adapter (280ms). The test never changes — only the adapter does.
 
+## See It In Action
+
+The [Task Board Example](example-app) is a complete React + Express app tested across all three adapters — unit, HTTP, and Playwright — with a single set of domain-language tests.
+
 ## Packages
 
 | Package | Description |

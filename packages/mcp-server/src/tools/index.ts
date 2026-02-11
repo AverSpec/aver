@@ -3,7 +3,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
 import { listDomainsHandler, getDomainVocabularyHandler, listAdaptersHandler } from './domains.js'
 import { runTestsHandler, getFailureDetailsHandler, getTestTraceHandler } from './execution.js'
-import { describeDomainStructureHandler, describeAdapterStructureHandler } from './scaffolding.js'
+import { describeDomainStructureHandler, describeAdapterStructureHandler, getProjectContextHandler } from './scaffolding.js'
 import { getRunDiffHandler } from './reporting.js'
 import { RunStore } from '../runs.js'
 import { reloadConfig } from '../config.js'
@@ -102,6 +102,21 @@ function registerExecutionTools(server: McpServer, store: RunStore): void {
 }
 
 function registerScaffoldingTools(server: McpServer): void {
+  server.registerTool(
+    'get_project_context',
+    {
+      description: 'Get project structure including config path, domain files, adapter files, test files, and naming conventions. Use this to locate source files before reading them for type signatures.',
+    },
+    async () => {
+      await reloadConfig()
+      const result = getProjectContextHandler()
+      if (!result) {
+        return { content: [{ type: 'text' as const, text: 'No aver config found. Run aver init or create an aver.config.ts file.' }] }
+      }
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] }
+    },
+  )
+
   server.registerTool(
     'describe_domain_structure',
     {

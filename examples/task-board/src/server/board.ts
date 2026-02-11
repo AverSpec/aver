@@ -22,6 +22,12 @@ export class Board {
     return task
   }
 
+  delete(title: string): void {
+    const idx = this.tasks.findIndex(t => t.title === title)
+    if (idx === -1) throw new Error(`Task "${title}" not found`)
+    this.tasks.splice(idx, 1)
+  }
+
   assign(title: string, assignee: string): Task {
     const task = this.tasks.find(t => t.title === title)
     if (!task) throw new Error(`Task "${title}" not found`)

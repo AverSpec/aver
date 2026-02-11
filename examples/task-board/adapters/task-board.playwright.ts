@@ -42,6 +42,10 @@ export const playwrightAdapter = implement(taskBoard, {
   protocol: playwrightProtocol,
 
   actions: {
+    deleteTask: async (page, { title }) => {
+      await page.getByTestId(`task-${title}`).getByTestId('delete-btn').click()
+      await page.getByTestId(`task-${title}`).waitFor({ state: 'detached' })
+    },
     createTask: async (page, { title, status }) => {
       await page.getByTestId('new-task-title').fill(title)
       if (status && status !== 'backlog') {

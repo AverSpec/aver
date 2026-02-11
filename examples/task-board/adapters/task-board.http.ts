@@ -35,6 +35,10 @@ export const httpAdapter = implement(taskBoard, {
       const res = await ctx.post('/api/tasks', { title, status })
       if (!res.ok) throw new Error(`Failed to create task: ${res.status}`)
     },
+    deleteTask: async (ctx, { title }) => {
+      const res = await ctx.delete(`/api/tasks/${encodeURIComponent(title)}`)
+      if (!res.ok) throw new Error(`Failed to delete task: ${res.status}`)
+    },
     moveTask: async (ctx, { title, status }) => {
       const res = await ctx.patch(`/api/tasks/${encodeURIComponent(title)}`, { status })
       if (!res.ok) throw new Error(`Failed to move task: ${res.status}`)

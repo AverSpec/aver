@@ -7,6 +7,7 @@ export const taskBoard = defineDomain({
   name: 'task-board',
   actions: {
     createTask: action<{ title: string; status?: string }>(),
+    deleteTask: action<{ title: string }>(),
     moveTask: action<{ title: string; status: string }>(),
     assignTask: action<{ title: string; assignee: string }>(),
   },

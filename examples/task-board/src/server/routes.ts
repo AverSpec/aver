@@ -23,6 +23,16 @@ export function createRouter(board: Board): Router {
     }
   })
 
+  router.delete('/tasks/:title', (req, res) => {
+    const { title } = req.params
+    try {
+      board.delete(title)
+      res.status(204).end()
+    } catch (e: any) {
+      res.status(404).json({ error: e.message })
+    }
+  })
+
   router.get('/tasks', (req, res) => {
     const status = req.query.status as string
     res.json(board.byStatus(status))

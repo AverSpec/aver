@@ -38,7 +38,7 @@ jobs:
           npm run build -w packages/aver
           npm run build -w packages/protocol-http
           npm run build -w packages/protocol-playwright
-          npm run build -w examples/e-commerce
+          npm run build -w examples/task-board
 
       - name: Test aver (core)
         run: npx vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/aver.xml
@@ -61,8 +61,8 @@ jobs:
 
       - name: Test example app
         if: ${{ !cancelled() }}
-        run: npx vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/e-commerce.xml
-        working-directory: examples/e-commerce
+        run: npx vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/task-board.xml
+        working-directory: examples/task-board
 
       - name: Test summary
         if: ${{ !cancelled() }}

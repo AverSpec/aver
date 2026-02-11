@@ -11,17 +11,27 @@ The `@aver/mcp-server` package lets AI assistants (Claude Code, Cursor, etc.) ex
 
 ## Install
 
+### Claude Code Plugin (Recommended)
+
+The easiest way to get started is with the Claude Code plugin, which bundles the MCP server and a workflow skill:
+
+```bash
+claude plugin add @aver/claude-code-plugin
+```
+
+This gives you all ten MCP tools plus the `aver-workflow` skill — a step-by-step guide the AI follows when adding features or writing tests.
+
+### Manual Setup
+
+Install the MCP server package:
+
 ```bash
 npm install @aver/mcp-server
 ```
 
-## Configure Your MCP Client
+Then add the server to your MCP client configuration.
 
-Add the Aver MCP server to your client configuration.
-
-### Claude Code
-
-Add to `.mcp.json` in your project root:
+**Claude Code** — add to `.mcp.json` in your project root:
 
 ```json
 {
@@ -34,20 +44,7 @@ Add to `.mcp.json` in your project root:
 }
 ```
 
-### Cursor
-
-Add to your Cursor MCP settings:
-
-```json
-{
-  "mcpServers": {
-    "aver": {
-      "command": "npx",
-      "args": ["aver-mcp"]
-    }
-  }
-}
-```
+**Cursor** — add to your Cursor MCP settings with the same configuration.
 
 The server auto-detects `aver.config.ts` in the working directory. Use `--config path/to/aver.config.ts` to specify a different location.
 
@@ -78,19 +75,27 @@ Results are persisted in `.aver/runs/` (JSON files, 10-run retention).
 
 | Tool | Description |
 |:-----|:------------|
+| `get_project_context` | Get project file paths, adapter mappings, and naming conventions |
 | `describe_domain_structure` | Generate a domain template from a natural language description |
 | `describe_adapter_structure` | Show handler structure for a domain/protocol pair |
 
-These tools help the AI generate correctly-structured domain and adapter code.
+`get_project_context` is particularly important because Aver uses phantom types — `action<{ title: string }>()` produces just `{ kind: 'action' }` at runtime. The MCP server can tell the AI *where* files live, but the AI needs to read the TypeScript source to see payload and return types.
 
 ## Example Workflow
 
-A typical AI-assisted workflow:
+A typical AI-assisted workflow when adding a new feature:
 
-1. **AI explores the domain:** `list_domains` → `get_domain_vocabulary("shopping-cart")`
-2. **AI runs tests:** `run_tests` → sees 2 failures
-3. **AI investigates:** `get_failure_details` → `get_test_trace("checkout flow")`
-4. **AI fixes code** based on the trace
-5. **AI verifies:** `run_tests` → `get_run_diff` → confirms the 2 failures are now passing
+1. **Explore:** `list_domains` → `get_domain_vocabulary` to understand existing vocabulary
+2. **Locate:** `get_project_context` to find file paths, then read the domain file for type signatures
+3. **Define:** Add the action/query/assertion to the domain — TypeScript flags all adapters
+4. **Test:** Write the test first using domain language
+5. **Implement:** Add handlers to each adapter
+6. **Verify:** `run_tests` → `get_run_diff` to confirm new tests pass and nothing broke
 
-The action trace in step 3 shows exactly what happened in domain language, so the AI understands the business intent without reading implementation code.
+For debugging existing failures:
+
+1. **Investigate:** `get_failure_details` → `get_test_trace("checkout flow")`
+2. **Fix code** based on the domain-language trace
+3. **Verify:** `run_tests` → `get_run_diff` → confirms failures are now passing
+
+The plugin's `aver-workflow` skill teaches this pattern automatically, so the AI follows it without needing manual guidance.

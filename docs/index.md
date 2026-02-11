@@ -52,3 +52,4 @@ The [Task Board Example](example-app) is a complete React + Express app tested a
 | `@aver/protocol-http` | HTTP protocol adapter (fetch-based) |
 | `@aver/protocol-playwright` | Playwright browser protocol adapter |
 | `@aver/mcp-server` | MCP server for AI-assisted testing |
+| `@aver/claude-code-plugin` | Claude Code plugin — MCP server + workflow skill |

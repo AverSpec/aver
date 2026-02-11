@@ -88,6 +88,7 @@ npx vitest run
 | [`@aver/protocol-http`](packages/protocol-http) | HTTP protocol adapter (fetch-based) |
 | [`@aver/protocol-playwright`](packages/protocol-playwright) | Playwright browser protocol adapter |
 | [`@aver/mcp-server`](packages/mcp-server) | MCP server for AI-assisted testing |
+| [`@aver/claude-code-plugin`](packages/claude-code-plugin) | Claude Code plugin — MCP server + workflow skill |
 
 ## Key Concepts
 

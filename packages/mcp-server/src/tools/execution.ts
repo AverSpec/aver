@@ -36,14 +36,20 @@ export function runTestsHandler(
   if (opts?.domain) env.AVER_DOMAIN = opts.domain
   if (opts?.adapter) env.AVER_ADAPTER = opts.adapter
 
+  const npx = process.platform === 'win32' ? 'npx.cmd' : 'npx'
   let jsonOutput: string
   try {
-    jsonOutput = execFileSync('npx', vitestArgs, {
+    jsonOutput = execFileSync(npx, vitestArgs, {
       env,
       encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'pipe'],
+      timeout: 5 * 60 * 1000,
+      maxBuffer: 10 * 1024 * 1024,
     })
   } catch (err: any) {
+    if (err.killed) {
+      throw new Error('Test run timed out after 5 minutes')
+    }
     // vitest exits non-zero on test failures but still outputs JSON
     jsonOutput = err.stdout ?? ''
   }

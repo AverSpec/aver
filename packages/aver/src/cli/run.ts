@@ -35,8 +35,11 @@ export async function runCommand(argv: string[]): Promise<void> {
   if (args.domain) env.AVER_DOMAIN = args.domain
 
   const { execFileSync } = await import('node:child_process')
-  execFileSync('npx', ['vitest', ...vitestArgs], {
+  const npx = process.platform === 'win32' ? 'npx.cmd' : 'npx'
+  execFileSync(npx, ['vitest', ...vitestArgs], {
     stdio: 'inherit',
     env: { ...process.env, ...env },
+    timeout: 10 * 60 * 1000,
+    maxBuffer: 10 * 1024 * 1024,
   })
 }

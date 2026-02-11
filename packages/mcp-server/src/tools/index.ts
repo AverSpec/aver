@@ -6,6 +6,7 @@ import { runTestsHandler, getFailureDetailsHandler, getTestTraceHandler } from '
 import { describeDomainStructureHandler, describeAdapterStructureHandler } from './scaffolding.js'
 import { getRunDiffHandler } from './reporting.js'
 import { RunStore } from '../runs.js'
+import { reloadConfig } from '../config.js'
 
 export function registerTools(server: McpServer): void {
   registerDomainTools(server)
@@ -19,9 +20,10 @@ function registerDomainTools(server: McpServer): void {
   server.registerTool(
     'list_domains',
     { description: 'List all registered domains with vocabulary summaries' },
-    async () => ({
-      content: [{ type: 'text' as const, text: JSON.stringify(listDomainsHandler(), null, 2) }],
-    }),
+    async () => {
+      await reloadConfig()
+      return { content: [{ type: 'text' as const, text: JSON.stringify(listDomainsHandler(), null, 2) }] }
+    },
   )
 
   server.registerTool(
@@ -31,6 +33,7 @@ function registerDomainTools(server: McpServer): void {
       inputSchema: { domain: z.string().describe('Domain name') },
     },
     async ({ domain }) => {
+      await reloadConfig()
       const result = getDomainVocabularyHandler(domain)
       if (!result) {
         return { content: [{ type: 'text' as const, text: `Domain "${domain}" not found` }] }
@@ -42,9 +45,10 @@ function registerDomainTools(server: McpServer): void {
   server.registerTool(
     'list_adapters',
     { description: 'List all registered adapters with their domain and protocol names' },
-    async () => ({
-      content: [{ type: 'text' as const, text: JSON.stringify(listAdaptersHandler(), null, 2) }],
-    }),
+    async () => {
+      await reloadConfig()
+      return { content: [{ type: 'text' as const, text: JSON.stringify(listAdaptersHandler(), null, 2) }] }
+    },
   )
 }
 
@@ -101,9 +105,9 @@ function registerScaffoldingTools(server: McpServer): void {
   server.registerTool(
     'describe_domain_structure',
     {
-      description: 'Generate a template domain structure from a natural-language description',
+      description: 'Generate a generic CRUD domain template. Returns a starting-point structure with common actions, queries, and assertions that you can customize.',
       inputSchema: {
-        description: z.string().describe('A short description of the domain (e.g. "shopping cart")'),
+        description: z.string().describe('A name for the domain (e.g. "shopping cart") — used to generate a camelCase suggested name'),
       },
     },
     async ({ description }) => ({
@@ -121,6 +125,7 @@ function registerScaffoldingTools(server: McpServer): void {
       },
     },
     async ({ domain, protocol }) => {
+      await reloadConfig()
       const result = describeAdapterStructureHandler(domain, protocol)
       if (!result) {
         return { content: [{ type: 'text' as const, text: `Adapter for domain "${domain}" with protocol "${protocol}" not found` }] }

@@ -4,7 +4,10 @@ import type { Domain } from './domain'
 let adapters: Adapter[] = []
 
 export function registerAdapter(adapter: Adapter): void {
-  adapters.push(adapter)
+  const exists = adapters.some(
+    a => a.domain === adapter.domain && a.protocol === adapter.protocol
+  )
+  if (!exists) adapters.push(adapter)
 }
 
 export function findAdapter(domain: Domain): Adapter | undefined {

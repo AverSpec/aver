@@ -263,9 +263,15 @@ The trace is in domain language. You see what the test *intended* to do and wher
 
 ## AI-Native Testing via MCP
 
-Aver ships an MCP server (`@aver/mcp-server`) that lets AI assistants explore your domains, run tests, and analyze failures through the Model Context Protocol. This isn't theoretical — I used it to build the `deleteTask` feature you just read about.
+Aver ships a Claude Code plugin (`@aver/claude-code-plugin`) that bundles an MCP server and a workflow skill. Install it and your AI assistant gets ten tools for exploring domains, running tests, and scaffolding code — plus a skill that teaches the domain-first workflow with code examples.
 
-Add it to your project's `.mcp.json`:
+This isn't theoretical — I used it to build the `deleteTask` feature you just read about.
+
+```bash
+claude plugin add @aver/claude-code-plugin
+```
+
+Or configure the MCP server directly in `.mcp.json`:
 
 ```json
 {
@@ -278,7 +284,7 @@ Add it to your project's `.mcp.json`:
 }
 ```
 
-Now your AI assistant has nine tools for domain exploration, test execution, scaffolding, and incremental reporting. Here's what the workflow actually looks like.
+Here's what the AI-assisted workflow actually looks like.
 
 **Step 1: Explore the domain.** The AI calls `list_domains`:
 
@@ -298,33 +304,45 @@ Now your AI assistant has nine tools for domain exploration, test execution, sca
 
 Three actions, two queries, three assertions. The AI now understands the testing vocabulary — without reading a single source file.
 
-**Step 2: Check the adapters.** `list_adapters` shows what's wired up:
-
-```json
-[
-  { "domainName": "task-board", "protocolName": "unit" },
-  { "domainName": "task-board", "protocolName": "http" },
-  { "domainName": "task-board", "protocolName": "playwright" }
-]
-```
-
-**Step 3: Plan the feature.** The AI calls `describe_adapter_structure` to see what handlers it needs to implement for the new `deleteTask` action:
+**Step 2: Locate source files.** The AI calls `get_project_context` to discover where everything lives:
 
 ```json
 {
-  "domain": "task-board",
-  "protocol": "unit",
-  "handlers": {
-    "actions": ["createTask", "deleteTask", "moveTask", "assignTask"],
-    "queries": ["tasksByStatus", "taskDetails"],
-    "assertions": ["taskInStatus", "taskAssignedTo", "taskCount"]
-  }
+  "configPath": "aver.config.ts",
+  "domains": [{
+    "name": "task-board",
+    "domainFile": "domains/task-board.ts",
+    "testFile": "tests/task-board.spec.ts",
+    "adapters": [
+      { "protocol": "unit", "file": "adapters/task-board.unit.ts" },
+      { "protocol": "http", "file": "adapters/task-board.http.ts" },
+      { "protocol": "playwright", "file": "adapters/task-board.playwright.ts" }
+    ]
+  }]
 }
 ```
 
-**Step 4: Implement and verify.** The AI adds the domain vocabulary, writes the test, implements the adapters, then calls `run_tests`. After confirming all 15 tests pass, it calls `get_domain_vocabulary` again — the server automatically reloads the config, so it now shows the updated vocabulary with `deleteTask` included.
+This is important because Aver uses phantom types for compile-time enforcement — `action<{ title: string }>()` produces just `{ kind: 'action' }` at runtime. The MCP server can tell the AI *where* to look, but the AI needs to read the actual TypeScript source to see the type signatures.
 
-The key insight: the AI never needs to read your Playwright selectors, parse your Express routes, or understand your React component tree. It interacts with your system through the domain vocabulary — the same stable contract your tests use.
+**Step 3: Define, test, implement.** The AI adds `deleteTask` to the domain, writes a test, then implements the handler in each adapter. TypeScript flags every adapter that's missing the new handler — the compiler enforces completeness.
+
+**Step 4: Verify.** The AI calls `run_tests`, then `get_run_diff` to see what changed:
+
+```json
+{
+  "newlyPassing": [
+    "delete a task [unit]",
+    "delete a task [http]",
+    "delete a task [playwright]"
+  ],
+  "newlyFailing": [],
+  "stillFailing": []
+}
+```
+
+Three new tests, all passing, nothing broken. Feature done.
+
+The key insight: the AI never needs to read your Playwright selectors, parse your Express routes, or understand your React component tree. It interacts with your system through the domain vocabulary — the same stable contract your tests use. The plugin's workflow skill teaches this pattern, so every AI interaction follows the domain-first approach.
 
 ## Standing on Shoulders
 

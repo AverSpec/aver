@@ -1,0 +1,10 @@
+{
+  "name": "@aver/claude-code-plugin",
+  "version": "0.1.0",
+  "description": "Claude Code plugin for Aver — MCP server + domain-first BDD skill",
+  "license": "MIT",
+  "files": [".claude-plugin", "skills", ".mcp.json"],
+  "peerDependencies": {
+    "@aver/mcp-server": "*"
+  }
+}

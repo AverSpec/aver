@@ -53,7 +53,7 @@ import { suite } from 'aver'
 import { myDomain } from '../domains/my-domain.js'
 
 // Auto-register all adapters
-import '../aver.config.js'
+// Config is loaded via vitest setupFiles (see vitest.config.ts)
 
 const { test } = suite(myDomain)
 

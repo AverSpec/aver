@@ -68,14 +68,10 @@ function createProxies<D extends Domain>(
 
   for (const name of Object.keys(domain.vocabulary.actions)) {
     act[name] = async (payload?: any) => {
-      const a = getAdapter()
+      const handler = (getAdapter().handlers.actions as any)[name]
       const entry: TraceEntry = { kind: 'action', name, payload, status: 'pass' }
       try {
-        if (payload !== undefined) {
-          await (a.handlers.actions as any)[name](getCtx(), payload)
-        } else {
-          await (a.handlers.actions as any)[name](getCtx())
-        }
+        await handler(getCtx(), payload)
       } catch (error) {
         entry.status = 'fail'
         entry.error = error
@@ -88,12 +84,10 @@ function createProxies<D extends Domain>(
 
   for (const name of Object.keys(domain.vocabulary.queries)) {
     query[name] = async (payload?: any) => {
-      const a = getAdapter()
+      const handler = (getAdapter().handlers.queries as any)[name]
       const entry: TraceEntry = { kind: 'query', name, payload, status: 'pass' }
       try {
-        const result = payload !== undefined
-          ? await (a.handlers.queries as any)[name](getCtx(), payload)
-          : await (a.handlers.queries as any)[name](getCtx())
+        const result = await handler(getCtx(), payload)
         entry.result = result
         return result
       } catch (error) {
@@ -108,14 +102,10 @@ function createProxies<D extends Domain>(
 
   for (const name of Object.keys(domain.vocabulary.assertions)) {
     assert[name] = async (payload?: any) => {
-      const a = getAdapter()
+      const handler = (getAdapter().handlers.assertions as any)[name]
       const entry: TraceEntry = { kind: 'assertion', name, payload, status: 'pass' }
       try {
-        if (payload !== undefined) {
-          await (a.handlers.assertions as any)[name](getCtx(), payload)
-        } else {
-          await (a.handlers.assertions as any)[name](getCtx())
-        }
+        await handler(getCtx(), payload)
       } catch (error) {
         entry.status = 'fail'
         entry.error = error
@@ -135,8 +125,12 @@ function formatTrace(trace: TraceEntry[], domainName: string): string {
       const icon = e.status === 'pass' ? '[PASS]' : '[FAIL]'
       let payloadStr = ''
       if (e.payload !== undefined) {
-        const json = JSON.stringify(e.payload)
-        payloadStr = json.length > 60 ? json.substring(0, 57) + '...' : json
+        try {
+          const json = JSON.stringify(e.payload)
+          payloadStr = json.length > 60 ? json.substring(0, 57) + '...' : json
+        } catch {
+          payloadStr = '[unserializable]'
+        }
       }
       const errorStr = e.status === 'fail' && e.error
         ? ` — ${(e.error as Error).message ?? e.error}`
@@ -233,7 +227,7 @@ export function suite<D extends Domain>(domain: D, adapter?: Adapter): SuiteRetu
       vitestTest(name, async () => {
         const a = findAdapter(domain)
         if (!a) throw new Error(buildMissingAdapterError(domain))
-        await runTestWithAdapter(a, domain, name, fn)
+        await runTestWithAdapter(a, domain, fn)
       })
       return
     }
@@ -241,7 +235,7 @@ export function suite<D extends Domain>(domain: D, adapter?: Adapter): SuiteRetu
     if (adapters.length === 1) {
       const a = adapters[0]
       vitestTest(name, async () => {
-        await runTestWithAdapter(a, domain, name, fn)
+        await runTestWithAdapter(a, domain, fn)
       })
       return
     }
@@ -249,7 +243,7 @@ export function suite<D extends Domain>(domain: D, adapter?: Adapter): SuiteRetu
     // Multi-adapter: parameterized test names
     for (const a of adapters) {
       vitestTest(`${name} [${a.protocol.name}]`, async () => {
-        await runTestWithAdapter(a, domain, name, fn)
+        await runTestWithAdapter(a, domain, fn)
       })
     }
   }
@@ -276,7 +270,6 @@ export function suite<D extends Domain>(domain: D, adapter?: Adapter): SuiteRetu
 async function runTestWithAdapter<D extends Domain>(
   adapter: Adapter,
   domain: D,
-  _name: string,
   fn: (ctx: TestContext<D>) => Promise<void>,
 ): Promise<void> {
   const trace: TraceEntry[] = []

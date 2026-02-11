@@ -22,7 +22,7 @@ aver - Domain-driven acceptance testing
 
 Commands:
   aver run     Run acceptance tests
-  aver init    Scaffold a new domain (coming soon)
+  aver init    Scaffold a new domain
 
 Options:
   --help       Show this help message

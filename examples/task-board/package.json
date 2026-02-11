@@ -8,7 +8,7 @@
     "build": "vite build && tsc -p tsconfig.server.json",
     "server": "tsx src/server/index.ts",
     "test": "vitest run",
-    "test:direct": "AVER_ADAPTER=direct vitest run",
+    "test:unit": "AVER_ADAPTER=unit vitest run",
     "test:http": "AVER_ADAPTER=http vitest run",
     "test:playwright": "AVER_ADAPTER=playwright vitest run"
   },

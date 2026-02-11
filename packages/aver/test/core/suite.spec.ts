@@ -176,7 +176,7 @@ describe('suite() — programmatic API', () => {
 })
 
 describe('suite().test() — callback API', () => {
-  const { test: suiteTest } = suite(cart, cartAdapter)
+  const { test: suiteTest, it: suiteIt, describe: suiteDescribe, context: suiteContext } = suite(cart, cartAdapter)
 
   suiteTest('dispatches through callback domain proxy', async ({ act }) => {
     await act.addItem({ name: 'Callback' })
@@ -190,6 +190,58 @@ describe('suite().test() — callback API', () => {
     expect(t).toHaveLength(2)
     expect(t[0]).toMatchObject({ kind: 'action', name: 'addItem', status: 'pass' })
     expect(t[1]).toMatchObject({ kind: 'query', name: 'total', status: 'pass' })
+  })
+
+  it('exposes alias helpers and modifiers', async () => {
+    expect(suiteIt).toBe(suiteTest)
+    expect(typeof suiteDescribe).toBe('function')
+    expect(typeof suiteContext).toBe('function')
+    expect(typeof (suiteTest as any).only).toBe('function')
+    expect(typeof (suiteTest as any).skip).toBe('function')
+    expect(typeof (suiteTest as any).each).toBe('function')
+  })
+})
+
+describe('suite() — domain filtering', () => {
+  const originalTest = (globalThis as any).test
+  const originalIt = (globalThis as any).it
+
+  afterEach(() => {
+    if (originalTest) (globalThis as any).test = originalTest
+    if (originalIt) (globalThis as any).it = originalIt
+    delete process.env.AVER_DOMAIN
+  })
+
+  it('skips tests when AVER_DOMAIN does not match', () => {
+    const calls: string[] = []
+    const skipCalls: string[] = []
+    const fakeTest = (name: string, _fn: any) => { calls.push(name) }
+    fakeTest.skip = (name: string, _fn: any) => { skipCalls.push(name) }
+
+    ;(globalThis as any).test = fakeTest
+    const { test: suiteTest } = suite(cart, cartAdapter)
+
+    process.env.AVER_DOMAIN = 'OtherDomain'
+    suiteTest('filtered test', async () => {})
+
+    expect(calls).toHaveLength(0)
+    expect(skipCalls).toEqual(['filtered test'])
+  })
+
+  it('registers tests when AVER_DOMAIN matches', () => {
+    const calls: string[] = []
+    const skipCalls: string[] = []
+    const fakeTest = (name: string, _fn: any) => { calls.push(name) }
+    fakeTest.skip = (name: string, _fn: any) => { skipCalls.push(name) }
+
+    ;(globalThis as any).test = fakeTest
+    const { test: suiteTest } = suite(cart, cartAdapter)
+
+    process.env.AVER_DOMAIN = 'Cart'
+    suiteTest('allowed test', async () => {})
+
+    expect(calls).toEqual(['allowed test'])
+    expect(skipCalls).toHaveLength(0)
   })
 })
 

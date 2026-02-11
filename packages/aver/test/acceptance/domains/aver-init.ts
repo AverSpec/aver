@@ -13,7 +13,7 @@ export const averInit = defineDomain({
   },
   assertions: {
     fileExists: assertion<{ path: string }>(),
-    fileContains: assertion<{ path: string; content: string }>(),
+    fileContains: assertion<{ path: string; content: string; shouldContain?: boolean }>(),
     configRegistersAdapter: assertion<{ dir: string; adapterImport: string }>(),
     throwsError: assertion<{ message: string }>(),
   },

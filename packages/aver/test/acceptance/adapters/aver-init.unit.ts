@@ -57,9 +57,13 @@ export const averInitAdapter = implement(averInit, {
     fileExists: async (_session, { path }) => {
       expect(existsSync(path)).toBe(true)
     },
-    fileContains: async (_session, { path, content }) => {
+    fileContains: async (_session, { path, content, shouldContain }) => {
       const actual = readFileSync(path, 'utf-8')
-      expect(actual).toContain(content)
+      if (shouldContain === false) {
+        expect(actual).not.toContain(content)
+      } else {
+        expect(actual).toContain(content)
+      }
     },
     configRegistersAdapter: async (_session, { dir, adapterImport }) => {
       const configPath = join(dir, 'aver.config.ts')

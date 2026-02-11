@@ -1,6 +1,9 @@
 import type { Domain } from './domain'
 import type { Adapter } from './adapter'
 import { findAdapter, findAdapters, getAdapters } from './registry'
+import { existsSync } from 'node:fs'
+import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 
 export interface TraceEntry {
   kind: 'action' | 'query' | 'assertion'
@@ -41,6 +44,9 @@ export interface TestContext<D extends Domain> {
 
 export interface SuiteReturn<D extends Domain> {
   test: (name: string, fn: (ctx: TestContext<D>) => Promise<void>) => void
+  it: (name: string, fn: (ctx: TestContext<D>) => Promise<void>) => void
+  describe: (name: string, fn: () => void) => void
+  context: (name: string, fn: () => void) => void
   /** Programmatic API — for manual lifecycle control (meta-testing, adapter handlers). */
   act: ActProxy<D>
   query: QueryProxy<D>
@@ -209,6 +215,10 @@ export function suite<D extends Domain>(domain: D, adapter?: Adapter): SuiteRetu
     return programmaticAdapter
   }
 
+  const globalDescribe = getGlobalDescribe()
+  const globalTest = getGlobalTest()
+  const globalTestSkip = globalTest?.skip
+
   const programmaticProxies = createProxies(
     domain,
     () => programmaticCtx,
@@ -216,40 +226,13 @@ export function suite<D extends Domain>(domain: D, adapter?: Adapter): SuiteRetu
     programmaticTrace,
   )
 
-  function testFn(name: string, fn: (ctx: TestContext<D>) => Promise<void>): void {
-    const vitestTest = (globalThis as any).test
-    if (!vitestTest) return
-
-    const adapters = getEffectiveAdapters()
-
-    if (adapters.length === 0) {
-      // Deferred: register a test that resolves adapter at runtime
-      vitestTest(name, async () => {
-        const a = findAdapter(domain)
-        if (!a) throw new Error(buildMissingAdapterError(domain))
-        await runTestWithAdapter(a, domain, fn)
-      })
-      return
-    }
-
-    if (adapters.length === 1) {
-      const a = adapters[0]
-      vitestTest(name, async () => {
-        await runTestWithAdapter(a, domain, fn)
-      })
-      return
-    }
-
-    // Multi-adapter: parameterized test names
-    for (const a of adapters) {
-      vitestTest(`${name} [${a.protocol.name}]`, async () => {
-        await runTestWithAdapter(a, domain, fn)
-      })
-    }
-  }
+  const testApi = buildTestApi(globalTest, domain, getEffectiveAdapters, globalTestSkip)
 
   return {
-    test: testFn,
+    test: testApi,
+    it: testApi,
+    describe: globalDescribe,
+    context: globalDescribe,
     act: programmaticProxies.act,
     query: programmaticProxies.query,
     assert: programmaticProxies.assert,
@@ -282,5 +265,166 @@ async function runTestWithAdapter<D extends Domain>(
     throw enhanceWithTrace(error, trace, domain)
   } finally {
     await adapter.protocol.teardown(ctx)
+  }
+}
+
+function getGlobalTest(): any {
+  return (globalThis as any).test ?? (globalThis as any).it
+}
+
+function getGlobalDescribe(): (name: string, fn: () => void) => void {
+  const describe = (globalThis as any).describe
+  if (typeof describe !== 'function') {
+    return () => {
+      throw new Error('Aver requires a test runner with describe(). Did you forget to run Vitest or Jest?')
+    }
+  }
+  return describe
+}
+
+function buildTestApi<D extends Domain>(
+  testImpl: any,
+  domain: D,
+  getEffectiveAdapters: () => Adapter[],
+  globalSkipImpl?: any,
+): any {
+  const api: any = makeTestFn(testImpl, domain, getEffectiveAdapters, globalSkipImpl)
+
+  if (!testImpl) return api
+
+  if (typeof testImpl.only === 'function') {
+    api.only = makeTestFn(testImpl.only, domain, getEffectiveAdapters, globalSkipImpl)
+  }
+  if (typeof testImpl.skip === 'function') {
+    api.skip = makeTestFn(testImpl.skip, domain, getEffectiveAdapters, globalSkipImpl)
+  }
+
+  if (typeof testImpl.todo === 'function') {
+    api.todo = (name: string, fn?: (ctx: TestContext<D>) => Promise<void>) => {
+      return (testImpl.todo as any)(name, fn)
+    }
+  }
+
+  if (typeof testImpl.concurrent === 'function') {
+    const concurrentApi: any = makeTestFn(testImpl.concurrent, domain, getEffectiveAdapters, globalSkipImpl)
+    if (typeof testImpl.concurrent.only === 'function') {
+      concurrentApi.only = makeTestFn(testImpl.concurrent.only, domain, getEffectiveAdapters, globalSkipImpl)
+    }
+    if (typeof testImpl.concurrent.skip === 'function') {
+      concurrentApi.skip = makeTestFn(testImpl.concurrent.skip, domain, getEffectiveAdapters, globalSkipImpl)
+    }
+    api.concurrent = concurrentApi
+  }
+
+  if (typeof testImpl.each === 'function') {
+    api.each = (...args: any[]) => {
+      const eachImpl = testImpl.each(...args)
+      const eachApi: any = makeTestFn(eachImpl, domain, getEffectiveAdapters, globalSkipImpl)
+      if (typeof eachImpl.only === 'function') {
+        eachApi.only = makeTestFn(eachImpl.only, domain, getEffectiveAdapters, globalSkipImpl)
+      }
+      if (typeof eachImpl.skip === 'function') {
+        eachApi.skip = makeTestFn(eachImpl.skip, domain, getEffectiveAdapters, globalSkipImpl)
+      }
+      return eachApi
+    }
+    if (typeof testImpl.each.only === 'function') {
+      api.each.only = (...args: any[]) => {
+        const eachImpl = testImpl.each.only(...args)
+        return makeTestFn(eachImpl, domain, getEffectiveAdapters, globalSkipImpl)
+      }
+    }
+    if (typeof testImpl.each.skip === 'function') {
+      api.each.skip = (...args: any[]) => {
+        const eachImpl = testImpl.each.skip(...args)
+        return makeTestFn(eachImpl, domain, getEffectiveAdapters, globalSkipImpl)
+      }
+    }
+  }
+
+  return api
+}
+
+function makeTestFn<D extends Domain>(
+  testImpl: any,
+  domain: D,
+  getEffectiveAdapters: () => Adapter[],
+  globalSkipImpl?: any,
+): (name: string, fn: (ctx: TestContext<D>) => Promise<void>) => void {
+  return (name, fn) => {
+    if (!testImpl) {
+      throw new Error('Aver requires a test runner. Did you forget to run Vitest or Jest?')
+    }
+
+    if (shouldFilterOutDomain(domain)) {
+      if (typeof globalSkipImpl === 'function') {
+        globalSkipImpl(name, async () => {})
+      }
+      return
+    }
+
+    const adapters = getEffectiveAdapters()
+
+    if (adapters.length === 0) {
+      // Deferred: register a test that resolves adapter at runtime
+      testImpl(name, async () => {
+        await maybeAutoloadConfig()
+        const a = findAdapter(domain)
+        if (!a) throw new Error(buildMissingAdapterError(domain))
+        await runTestWithAdapter(a, domain, fn)
+      })
+      return
+    }
+
+    if (adapters.length === 1) {
+      const a = adapters[0]
+      testImpl(name, async () => {
+        await runTestWithAdapter(a, domain, fn)
+      })
+      return
+    }
+
+    // Multi-adapter: parameterized test names
+    for (const a of adapters) {
+      testImpl(`${name} [${a.protocol.name}]`, async () => {
+        await runTestWithAdapter(a, domain, fn)
+      })
+    }
+  }
+}
+
+function shouldFilterOutDomain(domain: Domain): boolean {
+  if (typeof process === 'undefined') return false
+  const filter = process.env.AVER_DOMAIN
+  if (!filter) return false
+  return filter !== domain.name
+}
+
+let configAutoloadAttempted = false
+async function maybeAutoloadConfig(): Promise<void> {
+  if (configAutoloadAttempted) return
+  configAutoloadAttempted = true
+  if (typeof process === 'undefined') return
+  if (process.env.AVER_AUTOLOAD_CONFIG === 'false') return
+  const cwd = process.cwd()
+  const filenames = [
+    'aver.config.ts',
+    'aver.config.js',
+    'aver.config.mjs',
+    'aver.config.cjs',
+  ]
+  for (const filename of filenames) {
+    const path = join(cwd, filename)
+    if (!existsSync(path)) continue
+    try {
+      await import(pathToFileURL(path).href)
+    } catch (error) {
+      throw new Error(
+        `Found ${filename} but failed to load it. ` +
+        `Ensure your test runner can import TypeScript config files.`,
+        { cause: error as Error },
+      )
+    }
+    return
   }
 }

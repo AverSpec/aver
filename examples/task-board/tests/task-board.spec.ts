@@ -3,8 +3,6 @@ import { suite } from 'aver'
 import { taskBoard } from '../domains/task-board.js'
 
 // Import config to auto-register all adapters
-import '../aver.config.js'
-
 const { test } = suite(taskBoard)
 
 test('create a task in backlog', async ({ act, assert }) => {

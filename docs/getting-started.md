@@ -136,11 +136,21 @@ export default defineConfig({
 Tests speak domain language — no implementation details:
 
 ```typescript
+// vitest.config.ts
+import { defineConfig } from 'vitest/config'
+
+export default defineConfig({
+  test: {
+    setupFiles: ['./aver.config.ts'],
+  },
+})
+```
+
+```typescript
 // tests/shopping-cart.spec.ts
 import { expect } from 'vitest'
 import { suite } from 'aver'
 import { shoppingCart } from '../domains/shopping-cart'
-import '../aver.config'  // auto-registers adapters
 
 const { test } = suite(shoppingCart)
 

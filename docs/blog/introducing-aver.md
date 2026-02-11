@@ -127,7 +127,7 @@ Tests import the domain, not the adapter. They speak only domain language:
 ```typescript
 import { suite } from 'aver'
 import { taskBoard } from '../domains/task-board'
-import '../aver.config'  // auto-registers adapters
+// Config is loaded via vitest setupFiles (see vitest.config.ts)
 
 const { test } = suite(taskBoard)
 

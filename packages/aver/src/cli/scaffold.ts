@@ -98,8 +98,12 @@ function updateConfig(dir: string, name: string, kebab: string, protocol: string
   const importLine = `import { ${adapterName} } from './adapters/${kebab}.${protocol}.js'`
 
   const importLines = config.split('\n').filter(l => l.startsWith('import '))
-  const lastImport = importLines[importLines.length - 1]
-  config = config.replace(lastImport, `${lastImport}\n${importLine}`)
+  if (importLines.length > 0) {
+    const lastImport = importLines[importLines.length - 1]
+    config = config.replace(lastImport, `${lastImport}\n${importLine}`)
+  } else {
+    config = `${importLine}\n${config}`
+  }
 
   config = config.replace(
     /adapters: \[(.*?)\]/s,

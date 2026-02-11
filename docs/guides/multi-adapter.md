@@ -139,10 +139,20 @@ export default defineConfig({
 The test file imports the domain, never the adapters:
 
 ```typescript
+// vitest.config.ts
+import { defineConfig } from 'vitest/config'
+
+export default defineConfig({
+  test: {
+    setupFiles: ['./aver.config.ts'],
+  },
+})
+```
+
+```typescript
 // tests/task-board.spec.ts
 import { suite } from 'aver'
 import { taskBoard } from '../domains/task-board'
-import '../aver.config'
 
 const { test } = suite(taskBoard)
 

@@ -33,6 +33,7 @@ export async function runCommand(argv: string[]): Promise<void> {
   const env: Record<string, string> = {}
   if (args.adapter) env.AVER_ADAPTER = args.adapter
   if (args.domain) env.AVER_DOMAIN = args.domain
+  if (!process.env.AVER_AUTOLOAD_CONFIG) env.AVER_AUTOLOAD_CONFIG = 'true'
 
   const { execFileSync } = await import('node:child_process')
   const npx = process.platform === 'win32' ? 'npx.cmd' : 'npx'

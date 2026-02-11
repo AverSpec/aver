@@ -20,6 +20,19 @@ export default defineConfig({
 })
 `
   writeFileSync(join(dir, 'aver.config.ts'), configContent)
+
+  const vitestConfigPath = join(dir, 'vitest.config.ts')
+  if (!existsSync(vitestConfigPath)) {
+    const vitestConfigContent = `import { defineConfig } from 'vitest/config'
+
+export default defineConfig({
+  test: {
+    setupFiles: ['./aver.config.ts'],
+  },
+})
+`
+    writeFileSync(vitestConfigPath, vitestConfigContent)
+  }
 }
 
 export function initDomainFiles(dir: string, name: string, protocol: string): void {
@@ -77,7 +90,6 @@ export const ${protocol}Adapter = implement(${name}, {
   const testPath = join(dir, 'tests', `${kebab}.spec.ts`)
   writeFileSync(testPath, `import { suite } from 'aver'
 import { ${name} } from '../domains/${kebab}.js'
-import '../aver.config.js'
 
 const { test } = suite(${name})
 

@@ -21,6 +21,7 @@ describe('Scaffolding', () => {
       await assert.fileExists({ path: join(dir, 'adapters') })
       await assert.fileExists({ path: join(dir, 'tests') })
       await assert.fileExists({ path: join(dir, 'aver.config.ts') })
+      await assert.fileExists({ path: join(dir, 'vitest.config.ts') })
     })
 
     test('generates valid aver.config.ts', async ({ act, query }) => {
@@ -77,6 +78,11 @@ describe('Scaffolding', () => {
       await assert.fileContains({
         path: join(dir, 'tests', 'task-board.spec.ts'),
         content: 'act, query, assert',
+      })
+      await assert.fileContains({
+        path: join(dir, 'tests', 'task-board.spec.ts'),
+        content: "import '../aver.config'",
+        shouldContain: false,
       })
     })
 

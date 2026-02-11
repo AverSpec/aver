@@ -1,4 +1,3 @@
-// packages/aver/test/core/domain.spec.ts
 import { describe, it, expect } from 'vitest'
 import { defineDomain } from '../../src/core/domain'
 import { action, query, assertion } from '../../src/core/markers'
@@ -86,6 +85,23 @@ describe('domain.extend()', () => {
 
     const extended = base.extend({ assertions: { foo: assertion() } })
     expect(extended.parent).toBe(base)
+  })
+
+  it('chains multiple extends accumulating vocabulary', () => {
+    const base = defineDomain({
+      name: 'Cart',
+      actions: { addItem: action() },
+      queries: {},
+      assertions: {},
+    })
+
+    const extended = base
+      .extend({ queries: { total: query<number>() } })
+      .extend({ assertions: { isEmpty: assertion() } })
+
+    expect(extended.vocabulary.actions.addItem).toEqual({ kind: 'action' })
+    expect(extended.vocabulary.queries.total).toEqual({ kind: 'query' })
+    expect(extended.vocabulary.assertions.isEmpty).toEqual({ kind: 'assertion' })
   })
 
   it('allows extending with empty sections', () => {

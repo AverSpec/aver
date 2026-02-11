@@ -9,6 +9,9 @@ export const unitAdapter = implement(taskBoard, {
     createTask: async (board, { title, status }) => {
       board.create(title, status)
     },
+    deleteTask: async (board, { title }) => {
+      board.delete(title)
+    },
     moveTask: async (board, { title, status }) => {
       board.move(title, status)
     },

@@ -48,6 +48,11 @@ export function App() {
     await refresh()
   }
 
+  const handleDelete = async (title: string) => {
+    await fetch(`/api/tasks/${encodeURIComponent(title)}`, { method: 'DELETE' })
+    await refresh()
+  }
+
   const handleAssign = async (title: string, assignee: string) => {
     await fetch(`/api/tasks/${encodeURIComponent(title)}`, {
       method: 'PATCH',
@@ -88,6 +93,7 @@ export function App() {
                 task={task}
                 onMove={handleMove}
                 onAssign={handleAssign}
+                onDelete={handleDelete}
               />
             ))}
           </div>
@@ -101,10 +107,12 @@ function TaskCard({
   task,
   onMove,
   onAssign,
+  onDelete,
 }: {
   task: Task
   onMove: (title: string, status: string) => void
   onAssign: (title: string, assignee: string) => void
+  onDelete: (title: string) => void
 }) {
   const [assignInput, setAssignInput] = useState('')
 
@@ -120,6 +128,8 @@ function TaskCard({
           </button>
         ))}
       </div>
+
+      <button data-testid="delete-btn" onClick={() => onDelete(task.title)}>Delete</button>
 
       <div className="assign">
         <input

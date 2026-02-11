@@ -26,6 +26,13 @@ test('assign task to team member', async ({ act, assert }) => {
   await assert.taskAssignedTo({ title: 'Fix login bug', assignee: 'Alice' })
 })
 
+test('delete a task', async ({ act, assert }) => {
+  await act.createTask({ title: 'Stale task' })
+  await assert.taskCount({ status: 'backlog', count: 1 })
+  await act.deleteTask({ title: 'Stale task' })
+  await assert.taskCount({ status: 'backlog', count: 0 })
+})
+
 test('track full task lifecycle', async ({ act, query }) => {
   await act.createTask({ title: 'Fix login bug' })
   await act.assignTask({ title: 'Fix login bug', assignee: 'Alice' })

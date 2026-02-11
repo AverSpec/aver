@@ -3,6 +3,7 @@ dist/
 *.tsbuildinfo
 .DS_Store
 .aver/
+.mcp.json
 test-results/
 docs/_site/
 docs/.jekyll-cache/

@@ -1,13 +1,24 @@
-import type { Protocol } from 'aver'
+import type { Protocol, TestCompletion, TraceAttachment } from 'aver'
 import type { Browser, Page } from 'playwright'
+import { mkdirSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 
 export interface PlaywrightOptions {
   headless?: boolean
   browserType?: 'chromium' | 'firefox' | 'webkit'
+  artifactsDir?: string
+  captureScreenshot?: boolean
+  captureHtml?: boolean
+  captureConsole?: boolean
 }
 
 export function playwright(options?: PlaywrightOptions): Protocol<Page> {
   let browser: Browser | undefined
+  const consoleLogs = new WeakMap<Page, string[]>()
+  const artifactsDir = options?.artifactsDir ?? join(process.cwd(), 'test-results', 'aver-artifacts')
+  const captureScreenshot = options?.captureScreenshot ?? true
+  const captureHtml = options?.captureHtml ?? true
+  const captureConsole = options?.captureConsole ?? true
 
   return {
     name: 'playwright',
@@ -17,13 +28,59 @@ export function playwright(options?: PlaywrightOptions): Protocol<Page> {
       browser = await pw[browserType].launch({
         headless: options?.headless ?? true,
       })
-      return await browser.newPage()
+      const page = await browser.newPage()
+      if (captureConsole) {
+        const logs: string[] = []
+        consoleLogs.set(page, logs)
+        page.on('console', msg => {
+          logs.push(`[${msg.type()}] ${msg.text()}`)
+        })
+      }
+      return page
     },
     async teardown(_ctx: Page): Promise<void> {
       await browser?.close()
       browser = undefined
     },
+    async onTestFail(ctx: Page, meta: TestCompletion): Promise<TraceAttachment[]> {
+      const attachments: TraceAttachment[] = []
+      const safeName = toSafeFileName(meta.testName)
+      const baseName = `${safeName}-${Date.now()}`
+      mkdirSync(artifactsDir, { recursive: true })
+
+      if (captureScreenshot) {
+        const screenshotPath = join(artifactsDir, `${baseName}.png`)
+        await ctx.screenshot({ path: screenshotPath, fullPage: true })
+        attachments.push({ name: 'screenshot', path: screenshotPath, mime: 'image/png' })
+      }
+
+      if (captureHtml) {
+        const htmlPath = join(artifactsDir, `${baseName}.html`)
+        const html = await ctx.content()
+        writeFileSync(htmlPath, html, 'utf-8')
+        attachments.push({ name: 'page-html', path: htmlPath, mime: 'text/html' })
+      }
+
+      if (captureConsole) {
+        const logs = consoleLogs.get(ctx) ?? []
+        if (logs.length > 0) {
+          const logPath = join(artifactsDir, `${baseName}.console.log`)
+          writeFileSync(logPath, logs.join('\n') + '\n', 'utf-8')
+          attachments.push({ name: 'console-log', path: logPath, mime: 'text/plain' })
+        }
+      }
+
+      return attachments
+    },
   }
 }
 
 export type PlaywrightProtocol = ReturnType<typeof playwright>
+
+function toSafeFileName(input: string): string {
+  return input
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80) || 'test'
+}

@@ -88,11 +88,11 @@ describe('suite() — programmatic API', () => {
     await s.query.total()
     await s.assert.isEmpty()
 
-    expect(s.getTrace()).toEqual([
-      { kind: 'action', name: 'addItem', payload: { name: 'A' }, status: 'pass' },
-      { kind: 'query', name: 'total', payload: undefined, status: 'pass', result: 42 },
-      { kind: 'assertion', name: 'isEmpty', payload: undefined, status: 'pass' },
-    ])
+    const trace = s.getTrace()
+    expect(trace).toHaveLength(3)
+    expect(trace[0]).toMatchObject({ kind: 'action', name: 'addItem', payload: { name: 'A' }, status: 'pass' })
+    expect(trace[1]).toMatchObject({ kind: 'query', name: 'total', payload: undefined, status: 'pass', result: 42 })
+    expect(trace[2]).toMatchObject({ kind: 'assertion', name: 'isEmpty', payload: undefined, status: 'pass' })
 
     await s.teardown()
   })
@@ -242,6 +242,67 @@ describe('suite() — domain filtering', () => {
 
     expect(calls).toEqual(['allowed test'])
     expect(skipCalls).toHaveLength(0)
+  })
+})
+
+describe('suite() — failure artifacts', () => {
+  const originalTest = (globalThis as any).test
+  const originalIt = (globalThis as any).it
+
+  afterEach(() => {
+    if (originalTest) (globalThis as any).test = originalTest
+    if (originalIt) (globalThis as any).it = originalIt
+  })
+
+  it('records artifacts from onTestFail in trace', async () => {
+    let pending: Promise<void> | undefined
+    let lastTrace: any[] = []
+
+    const fakeTest = (name: string, fn: () => Promise<void>) => {
+      pending = fn()
+      return pending
+    }
+    fakeTest.skip = () => {}
+    ;(globalThis as any).test = fakeTest
+
+    const failDomain = defineDomain({
+      name: 'Artifacts',
+      actions: {},
+      queries: {},
+      assertions: { boom: assertion() },
+    })
+
+    const protocol: Protocol<{}> = {
+      name: 'artifact-proto',
+      async setup() { return {} },
+      async teardown() {},
+      async onTestFail() {
+        return [{ name: 'log', path: '/tmp/failure.log', mime: 'text/plain' }]
+      },
+      async onTestEnd(_ctx, meta) {
+        lastTrace = meta.trace
+      },
+    }
+
+    const adapter = implement(failDomain, {
+      protocol,
+      actions: {},
+      queries: {},
+      assertions: { boom: async () => { throw new Error('boom') } },
+    })
+
+    const { test: suiteTest } = suite(failDomain, adapter)
+    suiteTest('captures artifacts', async ({ assert }) => {
+      await assert.boom()
+    })
+
+    let caught: any
+    await pending!.catch(e => { caught = e })
+    expect(caught).toBeDefined()
+
+    const artifactEntry = lastTrace.find(e => e.kind === 'test' && e.attachments?.length)
+    expect(artifactEntry).toBeDefined()
+    expect(artifactEntry.attachments[0]).toMatchObject({ name: 'log', path: '/tmp/failure.log' })
   })
 })
 

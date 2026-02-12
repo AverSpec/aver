@@ -9,7 +9,8 @@ import {
   unit,
 } from '../../../src/index'
 import type { Domain, Adapter, Protocol } from '../../../src/index'
-import type { SuiteReturn, TraceEntry } from '../../../src/core/suite'
+import type { SuiteReturn } from '../../../src/core/suite'
+import type { TraceEntry } from '../../../src/core/trace'
 import { registerAdapter, resetRegistry } from '../../../src/core/registry'
 import { averCore } from '../domains/aver-core'
 

@@ -2,7 +2,6 @@ import { expect } from 'vitest'
 import { suite } from 'aver'
 import { taskBoard } from '../domains/task-board.js'
 
-// Import config to auto-register all adapters
 const { test } = suite(taskBoard)
 
 test('create a task in backlog', async ({ act, assert }) => {
@@ -39,4 +38,9 @@ test('track full task lifecycle', async ({ act, query }) => {
   const task = await query.taskDetails({ title: 'Fix login bug' })
   expect(task?.status).toBe('in-progress')
   expect(task?.assignee).toBe('Alice')
+})
+
+test('demo failure artifacts (set AVER_DEMO_FAIL=1)', async ({ assert }) => {
+  if (process.env.AVER_DEMO_FAIL !== '1') return
+  await assert.taskInStatus({ title: 'Nonexistent', status: 'done' })
 })

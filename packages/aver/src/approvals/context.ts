@@ -1,11 +1,13 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
 import type { TraceAttachment, TraceEntry } from '../core/trace'
+import type { ApprovalArtifactProvider } from '../core/protocol'
 
 export interface ApprovalContext {
   testName: string
   domainName: string
   protocolName: string
   trace: TraceEntry[]
+  approvalArtifacts?: ApprovalArtifactProvider
 }
 
 const storage = new AsyncLocalStorage<ApprovalContext>()

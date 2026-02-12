@@ -273,6 +273,7 @@ async function runTestWithAdapter<D extends Domain>(
         domainName: domain.name,
         protocolName: adapter.protocol.name,
         trace,
+        approvalArtifacts: adapter.protocol.approvalArtifacts,
       },
       async () => fn({ act: proxies.act, query: proxies.query, assert: proxies.assert, trace: () => [...trace] }),
     )

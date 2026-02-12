@@ -14,6 +14,11 @@ switch (command) {
     await runInit(args[0])
     break
   }
+  case 'approve': {
+    const { runApprove } = await import('./approve.js')
+    await runApprove(args)
+    break
+  }
   case '--help':
   case '-h':
   case undefined: {
@@ -23,6 +28,7 @@ aver - Domain-driven acceptance testing
 Commands:
   aver run     Run acceptance tests
   aver init    Scaffold a new domain
+  aver approve Update approvals
 
 Options:
   --help       Show this help message

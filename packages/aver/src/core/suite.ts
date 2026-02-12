@@ -5,6 +5,7 @@ import type { TraceEntry, TraceAttachment } from './trace'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { runWithApprovalContext } from '../approvals/context'
 
 export type ActProxy<D extends Domain> = {
   [K in keyof D['vocabulary']['actions']]:
@@ -266,7 +267,15 @@ async function runTestWithAdapter<D extends Domain>(
 
   try {
     await adapter.protocol.onTestStart?.(ctx, metadata)
-    await fn({ act: proxies.act, query: proxies.query, assert: proxies.assert, trace: () => [...trace] })
+    await runWithApprovalContext(
+      {
+        testName,
+        domainName: domain.name,
+        protocolName: adapter.protocol.name,
+        trace,
+      },
+      async () => fn({ act: proxies.act, query: proxies.query, assert: proxies.assert, trace: () => [...trace] }),
+    )
     await adapter.protocol.onTestEnd?.(ctx, { ...metadata, status: 'pass', trace: [...trace] })
   } catch (error) {
     let attachments: TraceAttachment[] | undefined

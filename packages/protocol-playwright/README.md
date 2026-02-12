@@ -17,7 +17,7 @@ import { playwright } from '@aver/protocol-playwright'
 import { cart } from './domains/cart'
 
 export const playwrightAdapter = implement(cart, {
-  protocol: playwright({ baseUrl: 'http://localhost:3000' }),
+  protocol: playwright(),
   actions: {
     addItem: async (page, { name }) => {
       await page.getByLabel('Item name').fill(name)
@@ -32,7 +32,23 @@ export const playwrightAdapter = implement(cart, {
 })
 ```
 
-The `playwright()` protocol launches a browser on first use, creates a fresh page per test, and navigates to the base URL.
+The `playwright()` protocol launches a browser on first use and creates a fresh page per test.
+
+On test failure, it captures:
+- a screenshot
+- the current page HTML
+- console logs (if any)
+
+Artifacts are written to `test-results/aver-artifacts` by default. Customize with:
+
+```typescript
+playwright({
+  artifactsDir: './test-results/aver-artifacts',
+  captureScreenshot: true,
+  captureHtml: true,
+  captureConsole: true,
+})
+```
 
 ## License
 

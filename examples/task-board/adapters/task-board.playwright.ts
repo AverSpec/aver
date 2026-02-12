@@ -3,8 +3,12 @@ import { taskBoard } from '../domains/task-board.js'
 import { createServer } from '../src/server/index.js'
 import type { Server } from 'node:http'
 import type { Browser, Page } from 'playwright'
+import { mkdirSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 
 let browser: Browser | undefined
+const consoleLogs = new WeakMap<Page, string[]>()
+const artifactsDir = join(process.cwd(), 'test-results', 'aver-artifacts')
 
 const playwrightProtocol = {
   name: 'playwright',
@@ -24,6 +28,11 @@ const playwrightProtocol = {
       browser = await pw.chromium.launch({ headless: true })
     }
     const page = await browser.newPage()
+    const logs: string[] = []
+    consoleLogs.set(page, logs)
+    page.on('console', msg => {
+      logs.push(`[${msg.type()}] ${msg.text()}`)
+    })
     // Stash server on page for teardown
     ;(page as any).__server = server
     await page.goto(baseUrl)
@@ -35,6 +44,30 @@ const playwrightProtocol = {
     if (server) {
       await new Promise<void>((resolve) => server.close(() => resolve()))
     }
+  },
+  async onTestFail(page: Page, meta: { testName: string }) {
+    mkdirSync(artifactsDir, { recursive: true })
+    const safeName = meta.testName.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 80) || 'test'
+    const baseName = `${safeName}-${Date.now()}`
+    const attachments = []
+
+    const screenshotPath = join(artifactsDir, `${baseName}.png`)
+    await page.screenshot({ path: screenshotPath, fullPage: true })
+    attachments.push({ name: 'screenshot', path: screenshotPath, mime: 'image/png' })
+
+    const htmlPath = join(artifactsDir, `${baseName}.html`)
+    const html = await page.content()
+    writeFileSync(htmlPath, html, 'utf-8')
+    attachments.push({ name: 'page-html', path: htmlPath, mime: 'text/html' })
+
+    const logs = consoleLogs.get(page) ?? []
+    if (logs.length > 0) {
+      const logPath = join(artifactsDir, `${baseName}.console.log`)
+      writeFileSync(logPath, logs.join('\n') + '\n', 'utf-8')
+      attachments.push({ name: 'console-log', path: logPath, mime: 'text/plain' })
+    }
+
+    return attachments
   },
 }
 

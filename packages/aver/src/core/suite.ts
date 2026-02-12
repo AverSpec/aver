@@ -1,18 +1,10 @@
 import type { Domain } from './domain'
 import type { Adapter } from './adapter'
 import { findAdapter, findAdapters, getAdapters } from './registry'
+import type { TraceEntry, TraceAttachment } from './trace'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
-
-export interface TraceEntry {
-  kind: 'action' | 'query' | 'assertion'
-  name: string
-  payload: unknown
-  status: 'pass' | 'fail'
-  result?: unknown
-  error?: unknown
-}
 
 export type ActProxy<D extends Domain> = {
   [K in keyof D['vocabulary']['actions']]:
@@ -75,7 +67,7 @@ function createProxies<D extends Domain>(
   for (const name of Object.keys(domain.vocabulary.actions)) {
     act[name] = async (payload?: any) => {
       const handler = (getAdapter().handlers.actions as any)[name]
-      const entry: TraceEntry = { kind: 'action', name, payload, status: 'pass' }
+      const entry: TraceEntry = { kind: 'action', name, payload, status: 'pass', startAt: Date.now() }
       try {
         await handler(getCtx(), payload)
       } catch (error) {
@@ -83,6 +75,8 @@ function createProxies<D extends Domain>(
         entry.error = error
         throw error
       } finally {
+        entry.endAt = Date.now()
+        if (entry.startAt !== undefined) entry.durationMs = entry.endAt - entry.startAt
         trace.push(entry)
       }
     }
@@ -91,7 +85,7 @@ function createProxies<D extends Domain>(
   for (const name of Object.keys(domain.vocabulary.queries)) {
     query[name] = async (payload?: any) => {
       const handler = (getAdapter().handlers.queries as any)[name]
-      const entry: TraceEntry = { kind: 'query', name, payload, status: 'pass' }
+      const entry: TraceEntry = { kind: 'query', name, payload, status: 'pass', startAt: Date.now() }
       try {
         const result = await handler(getCtx(), payload)
         entry.result = result
@@ -101,6 +95,8 @@ function createProxies<D extends Domain>(
         entry.error = error
         throw error
       } finally {
+        entry.endAt = Date.now()
+        if (entry.startAt !== undefined) entry.durationMs = entry.endAt - entry.startAt
         trace.push(entry)
       }
     }
@@ -109,7 +105,7 @@ function createProxies<D extends Domain>(
   for (const name of Object.keys(domain.vocabulary.assertions)) {
     assert[name] = async (payload?: any) => {
       const handler = (getAdapter().handlers.assertions as any)[name]
-      const entry: TraceEntry = { kind: 'assertion', name, payload, status: 'pass' }
+      const entry: TraceEntry = { kind: 'assertion', name, payload, status: 'pass', startAt: Date.now() }
       try {
         await handler(getCtx(), payload)
       } catch (error) {
@@ -117,6 +113,8 @@ function createProxies<D extends Domain>(
         entry.error = error
         throw error
       } finally {
+        entry.endAt = Date.now()
+        if (entry.startAt !== undefined) entry.durationMs = entry.endAt - entry.startAt
         trace.push(entry)
       }
     }
@@ -253,15 +251,46 @@ export function suite<D extends Domain>(domain: D, adapter?: Adapter): SuiteRetu
 async function runTestWithAdapter<D extends Domain>(
   adapter: Adapter,
   domain: D,
+  testName: string,
   fn: (ctx: TestContext<D>) => Promise<void>,
 ): Promise<void> {
   const trace: TraceEntry[] = []
   const ctx = await adapter.protocol.setup()
   const proxies = createProxies(domain, () => ctx, () => adapter, trace)
+  const metadata = {
+    testName,
+    domainName: domain.name,
+    adapterName: adapter.domain.name,
+    protocolName: adapter.protocol.name,
+  }
 
   try {
+    await adapter.protocol.onTestStart?.(ctx, metadata)
     await fn({ act: proxies.act, query: proxies.query, assert: proxies.assert, trace: () => [...trace] })
+    await adapter.protocol.onTestEnd?.(ctx, { ...metadata, status: 'pass', trace: [...trace] })
   } catch (error) {
+    let attachments: TraceAttachment[] | undefined
+    try {
+      const result = await adapter.protocol.onTestFail?.(ctx, { ...metadata, status: 'fail', error, trace: [...trace] })
+      if (Array.isArray(result)) attachments = result
+      else if (result && Array.isArray((result as any).attachments)) attachments = (result as any).attachments
+    } catch {
+      // Ignore hook failures to preserve original error.
+    }
+    if (attachments && attachments.length > 0) {
+      trace.push({
+        kind: 'test',
+        name: 'failure-artifacts',
+        payload: undefined,
+        status: 'fail',
+        attachments,
+      })
+    }
+    try {
+      await adapter.protocol.onTestEnd?.(ctx, { ...metadata, status: 'fail', error, trace: [...trace] })
+    } catch {
+      // Ignore hook failures to preserve original error.
+    }
     throw enhanceWithTrace(error, trace, domain)
   } finally {
     await adapter.protocol.teardown(ctx)
@@ -371,7 +400,7 @@ function makeTestFn<D extends Domain>(
         await maybeAutoloadConfig()
         const a = findAdapter(domain)
         if (!a) throw new Error(buildMissingAdapterError(domain))
-        await runTestWithAdapter(a, domain, fn)
+        await runTestWithAdapter(a, domain, name, fn)
       })
       return
     }
@@ -379,15 +408,16 @@ function makeTestFn<D extends Domain>(
     if (adapters.length === 1) {
       const a = adapters[0]
       testImpl(name, async () => {
-        await runTestWithAdapter(a, domain, fn)
+        await runTestWithAdapter(a, domain, name, fn)
       })
       return
     }
 
     // Multi-adapter: parameterized test names
     for (const a of adapters) {
-      testImpl(`${name} [${a.protocol.name}]`, async () => {
-        await runTestWithAdapter(a, domain, fn)
+      const adapterName = `${name} [${a.protocol.name}]`
+      testImpl(adapterName, async () => {
+        await runTestWithAdapter(a, domain, adapterName, fn)
       })
     }
   }

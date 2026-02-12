@@ -1,4 +1,5 @@
 import type { TraceEntry, TraceAttachment } from './trace'
+import type { SerializerName } from '../approvals/serializers'
 
 export interface TestMetadata {
   testName: string
@@ -15,6 +16,23 @@ export interface TestCompletion extends TestMetadata {
 
 export type TestFailureResult = void | TraceAttachment[] | { attachments?: TraceAttachment[] }
 
+export interface ApprovalArtifactProvider {
+  canHandle(args: { serializer: SerializerName; value: unknown }): boolean
+  render(args: {
+    serializer: SerializerName
+    value: unknown
+    approvedPath: string
+    receivedPath: string
+    imagePath: string
+    kind: 'approved' | 'received'
+  }): Promise<TraceAttachment[]> | TraceAttachment[]
+  diff?(args: {
+    approvedImagePath: string
+    receivedImagePath: string
+    diffImagePath: string
+  }): Promise<TraceAttachment[]> | TraceAttachment[]
+}
+
 /**
  * A protocol defines how to create and tear down a context
  * that adapter handlers receive as their first argument.
@@ -26,4 +44,5 @@ export interface Protocol<Context> {
   onTestStart?(ctx: Context, meta: TestMetadata): Promise<void> | void
   onTestFail?(ctx: Context, meta: TestCompletion): Promise<TestFailureResult> | TestFailureResult
   onTestEnd?(ctx: Context, meta: TestCompletion): Promise<void> | void
+  approvalArtifacts?: ApprovalArtifactProvider
 }

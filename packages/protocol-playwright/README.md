@@ -50,6 +50,11 @@ playwright({
 })
 ```
 
+### Approval visual diffs (HTML)
+
+When `approve()` is used with the `html` serializer, the Playwright protocol can render
+approved/received HTML into screenshots and generate a pixel diff image.
+
 ## License
 
 [MIT](../../LICENSE)

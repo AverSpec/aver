@@ -1,7 +1,9 @@
 import type { Protocol, TestCompletion, TraceAttachment } from 'aver'
 import type { Browser, Page } from 'playwright'
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { mkdirSync, writeFileSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { PNG } from 'pngjs'
+import pixelmatch from 'pixelmatch'
 
 export interface PlaywrightOptions {
   headless?: boolean
@@ -19,6 +21,7 @@ export function playwright(options?: PlaywrightOptions): Protocol<Page> {
   const captureScreenshot = options?.captureScreenshot ?? true
   const captureHtml = options?.captureHtml ?? true
   const captureConsole = options?.captureConsole ?? true
+  let approvalBrowser: Browser | undefined
 
   return {
     name: 'playwright',
@@ -74,6 +77,35 @@ export function playwright(options?: PlaywrightOptions): Protocol<Page> {
 
       return attachments
     },
+    approvalArtifacts: {
+      canHandle: ({ serializer }) => serializer === 'html',
+      render: async ({ value, imagePath, kind }) => {
+        if (kind !== 'approved' && kind !== 'received') return []
+        const html = String(value)
+        if (!approvalBrowser) {
+          const pw = await import('playwright')
+          approvalBrowser = await pw.chromium.launch({ headless: true })
+        }
+        const page = await approvalBrowser.newPage()
+        await page.setContent(html, { waitUntil: 'load' })
+        await page.setViewportSize({ width: 1280, height: 720 })
+        await page.screenshot({ path: imagePath, fullPage: true })
+        await page.close()
+        return [{ name: `approval-${kind}`, path: imagePath, mime: 'image/png' }]
+      },
+      diff: async ({ approvedImagePath, receivedImagePath, diffImagePath }) => {
+        const img1 = PNG.sync.read(readFileSync(approvedImagePath))
+        const img2 = PNG.sync.read(readFileSync(receivedImagePath))
+        const width = Math.max(img1.width, img2.width)
+        const height = Math.max(img1.height, img2.height)
+        const a = padImage(img1, width, height)
+        const b = padImage(img2, width, height)
+        const diff = new PNG({ width, height })
+        pixelmatch(a.data, b.data, diff.data, width, height, { threshold: 0.1 })
+        writeFileSync(diffImagePath, PNG.sync.write(diff))
+        return [{ name: 'approval-diff', path: diffImagePath, mime: 'image/png' }]
+      },
+    },
   }
 }
 
@@ -85,4 +117,11 @@ function toSafeFileName(input: string): string {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 80) || 'test'
+}
+
+function padImage(image: PNG, width: number, height: number): PNG {
+  if (image.width === width && image.height === height) return image
+  const padded = new PNG({ width, height })
+  PNG.bitblt(image, padded, 0, 0, image.width, image.height, 0, 0)
+  return padded
 }

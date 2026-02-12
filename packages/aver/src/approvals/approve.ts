@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { diffText } from './diff'
 import { resolveSerializer, type SerializerName } from './serializers'
-import { addApprovalAttachments } from './context'
+import { addApprovalAttachments, getApprovalContext } from './context'
 
 export interface ApproveOptions {
   name?: string
@@ -36,6 +36,9 @@ export async function approve(value: unknown, options: ApproveOptions = {}): Pro
   const approvedPath = join(approvalDir, `${approvalName}.approved.${extension}`)
   const receivedPath = join(approvalDir, `${approvalName}.received.${extension}`)
   const diffPath = join(approvalDir, `${approvalName}.diff.txt`)
+  const approvedImagePath = join(approvalDir, `${approvalName}.approved.png`)
+  const receivedImagePath = join(approvalDir, `${approvalName}.received.png`)
+  const diffImagePath = join(approvalDir, `${approvalName}.diff.png`)
 
   let received = serializer.serialize(value)
   if (options.normalize) received = options.normalize(received)
@@ -44,6 +47,45 @@ export async function approve(value: unknown, options: ApproveOptions = {}): Pro
 
   const approvedExists = existsSync(approvedPath)
   const approved = approvedExists ? readFileSync(approvedPath, 'utf-8') : ''
+
+  const context = getApprovalContext()
+  const provider = context?.approvalArtifacts
+  const pendingAttachments: { list: Array<{ name: string; path: string; mime?: string }> } = { list: [] }
+  const collect = (attachments?: Array<{ name: string; path: string; mime?: string }>) => {
+    if (!attachments || attachments.length === 0) return
+    pendingAttachments.list.push(...attachments)
+  }
+  if (provider && provider.canHandle({ serializer: serializerName, value })) {
+    if (approvedExists && !existsSync(approvedImagePath)) {
+      try {
+        const approvedSource = readFileSync(approvedPath, 'utf-8')
+        const approvedAttachments = await provider.render({
+          serializer: serializerName,
+          value: approvedSource,
+          approvedPath,
+          receivedPath,
+          imagePath: approvedImagePath,
+          kind: 'approved',
+        })
+        collect(approvedAttachments)
+      } catch {
+        // Ignore provider render failures.
+      }
+    }
+    try {
+      const attachments = await provider.render({
+        serializer: serializerName,
+        value,
+        approvedPath,
+        receivedPath,
+        imagePath: receivedImagePath,
+        kind: 'received',
+      })
+      collect(attachments)
+    } catch {
+      // Ignore provider render failures.
+    }
+  }
 
   const comparison = compareValues(approved, received, options.compare)
   const shouldApprove = process.env.AVER_APPROVE === '1' || process.env.AVER_APPROVE === 'true'
@@ -61,6 +103,7 @@ export async function approve(value: unknown, options: ApproveOptions = {}): Pro
       { name: 'received', path: receivedPath, mime: mimeForExtension(extension) },
       { name: 'diff', path: diffPath, mime: 'text/plain' },
     ])
+    if (pendingAttachments.list.length > 0) addApprovalAttachments(pendingAttachments.list)
     throw new Error(`Approval baseline missing: ${approvedPath}`)
   }
 
@@ -71,6 +114,19 @@ export async function approve(value: unknown, options: ApproveOptions = {}): Pro
   const diff = comparison.diff ?? diffText(approved, received)
   writeFileSync(diffPath, diff, 'utf-8')
 
+  if (provider?.diff && existsSync(approvedImagePath) && existsSync(receivedImagePath)) {
+    try {
+      const attachments = await provider.diff({
+        approvedImagePath,
+        receivedImagePath,
+        diffImagePath,
+      })
+      collect(attachments)
+    } catch {
+      // Ignore provider diff failures.
+    }
+  }
+
   if (shouldApprove) {
     writeFileSync(approvedPath, received, 'utf-8')
     addApprovalAttachments([
@@ -78,6 +134,7 @@ export async function approve(value: unknown, options: ApproveOptions = {}): Pro
       { name: 'received', path: receivedPath, mime: mimeForExtension(extension) },
       { name: 'diff', path: diffPath, mime: 'text/plain' },
     ])
+    if (pendingAttachments.list.length > 0) addApprovalAttachments(pendingAttachments.list)
     return
   }
 
@@ -86,6 +143,7 @@ export async function approve(value: unknown, options: ApproveOptions = {}): Pro
     { name: 'received', path: receivedPath, mime: mimeForExtension(extension) },
     { name: 'diff', path: diffPath, mime: 'text/plain' },
   ])
+  if (pendingAttachments.list.length > 0) addApprovalAttachments(pendingAttachments.list)
   throw new Error(`Approval mismatch: ${approvedPath}`)
 }
 

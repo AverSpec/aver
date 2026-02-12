@@ -45,30 +45,40 @@ const playwrightProtocol = {
       await new Promise<void>((resolve) => server.close(() => resolve()))
     }
   },
-  async onTestFail(page: Page, meta: { testName: string }) {
-    mkdirSync(artifactsDir, { recursive: true })
-    const safeName = meta.testName.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 80) || 'test'
-    const baseName = `${safeName}-${Date.now()}`
+  async onTestFail(page: Page, meta: { testName: string; domainName?: string; protocolName?: string }) {
+    const safeDomain = toSafeName(meta.domainName ?? 'domain')
+    const safeProtocol = toSafeName(meta.protocolName ?? 'protocol')
+    const safeTest = toSafeName(meta.testName)
+    const testDir = join(artifactsDir, safeDomain, safeProtocol, safeTest)
+    mkdirSync(testDir, { recursive: true })
     const attachments = []
 
-    const screenshotPath = join(artifactsDir, `${baseName}.png`)
+    const screenshotPath = join(testDir, 'screenshot.png')
     await page.screenshot({ path: screenshotPath, fullPage: true })
     attachments.push({ name: 'screenshot', path: screenshotPath, mime: 'image/png' })
 
-    const htmlPath = join(artifactsDir, `${baseName}.html`)
+    const htmlPath = join(testDir, 'page.html')
     const html = await page.content()
     writeFileSync(htmlPath, html, 'utf-8')
     attachments.push({ name: 'page-html', path: htmlPath, mime: 'text/html' })
 
     const logs = consoleLogs.get(page) ?? []
     if (logs.length > 0) {
-      const logPath = join(artifactsDir, `${baseName}.console.log`)
+      const logPath = join(testDir, 'console.log')
       writeFileSync(logPath, logs.join('\n') + '\n', 'utf-8')
       attachments.push({ name: 'console-log', path: logPath, mime: 'text/plain' })
     }
 
     return attachments
   },
+}
+
+function toSafeName(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80) || 'test'
 }
 
 export const playwrightAdapter = implement(taskBoard, {

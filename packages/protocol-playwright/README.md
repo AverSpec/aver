@@ -39,7 +39,7 @@ On test failure, it captures:
 - the current page HTML
 - console logs (if any)
 
-Artifacts are written to `test-results/aver-artifacts` by default. Customize with:
+Artifacts are written to `test-results/aver-artifacts/<domain>/<protocol>/<test>/` by default. Customize with:
 
 ```typescript
 playwright({

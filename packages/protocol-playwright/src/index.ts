@@ -42,20 +42,22 @@ export function playwright(options?: PlaywrightOptions): Protocol<Page> {
       await browser?.close()
       browser = undefined
     },
-    async onTestFail(ctx: Page, meta: TestCompletion): Promise<TraceAttachment[]> {
-      const attachments: TraceAttachment[] = []
-      const safeName = toSafeFileName(meta.testName)
-      const baseName = `${safeName}-${Date.now()}`
-      mkdirSync(artifactsDir, { recursive: true })
+  async onTestFail(ctx: Page, meta: TestCompletion): Promise<TraceAttachment[]> {
+    const attachments: TraceAttachment[] = []
+      const safeDomain = toSafeFileName(meta.domainName)
+      const safeProtocol = toSafeFileName(meta.protocolName)
+      const safeTest = toSafeFileName(meta.testName)
+      const testDir = join(artifactsDir, safeDomain, safeProtocol, safeTest)
+      mkdirSync(testDir, { recursive: true })
 
       if (captureScreenshot) {
-        const screenshotPath = join(artifactsDir, `${baseName}.png`)
+        const screenshotPath = join(testDir, 'screenshot.png')
         await ctx.screenshot({ path: screenshotPath, fullPage: true })
         attachments.push({ name: 'screenshot', path: screenshotPath, mime: 'image/png' })
       }
 
       if (captureHtml) {
-        const htmlPath = join(artifactsDir, `${baseName}.html`)
+        const htmlPath = join(testDir, 'page.html')
         const html = await ctx.content()
         writeFileSync(htmlPath, html, 'utf-8')
         attachments.push({ name: 'page-html', path: htmlPath, mime: 'text/html' })
@@ -64,7 +66,7 @@ export function playwright(options?: PlaywrightOptions): Protocol<Page> {
       if (captureConsole) {
         const logs = consoleLogs.get(ctx) ?? []
         if (logs.length > 0) {
-          const logPath = join(artifactsDir, `${baseName}.console.log`)
+          const logPath = join(testDir, 'console.log')
           writeFileSync(logPath, logs.join('\n') + '\n', 'utf-8')
           attachments.push({ name: 'console-log', path: logPath, mime: 'text/plain' })
         }

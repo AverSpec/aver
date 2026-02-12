@@ -5,6 +5,7 @@ export { suite } from './core/suite'
 export { defineConfig } from './core/config'
 export { getAdapters, registerAdapter, findAdapter, findAdapters, resetRegistry } from './core/registry'
 export { unit } from './protocols/unit'
+export { approve } from './approvals/approve'
 
 export type { ActionMarker, QueryMarker, AssertionMarker } from './core/types'
 export type { Domain } from './core/domain'

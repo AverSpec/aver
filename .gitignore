@@ -8,3 +8,4 @@ test-results/
 docs/_site/
 docs/.jekyll-cache/
 docs/Gemfile.lock
+.worktrees/

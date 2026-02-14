@@ -5,4 +5,5 @@ export default defineWorkspace([
   'packages/approvals',
   'packages/mcp-server',
   'packages/protocol-playwright',
+  'examples/task-board',
 ])

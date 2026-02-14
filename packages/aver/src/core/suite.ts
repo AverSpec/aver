@@ -5,7 +5,7 @@ import type { TraceEntry, TraceAttachment } from './trace'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { runWithApprovalContext } from '../approvals/context'
+import { runWithTestContext } from './test-context'
 
 export type ActProxy<D extends Domain> = {
   [K in keyof D['vocabulary']['actions']]:
@@ -267,13 +267,13 @@ async function runTestWithAdapter<D extends Domain>(
 
   try {
     await adapter.protocol.onTestStart?.(ctx, metadata)
-    await runWithApprovalContext(
+    await runWithTestContext(
       {
         testName,
         domainName: domain.name,
         protocolName: adapter.protocol.name,
         trace,
-        approvalArtifacts: adapter.protocol.approvalArtifacts,
+        extensions: adapter.protocol.extensions ?? {},
       },
       async () => fn({ act: proxies.act, query: proxies.query, assert: proxies.assert, trace: () => [...trace] }),
     )

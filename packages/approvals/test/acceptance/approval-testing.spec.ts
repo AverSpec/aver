@@ -1,10 +1,26 @@
-import { describe } from 'vitest'
+import { describe, beforeEach, afterEach } from 'vitest'
 import { suite } from 'aver'
 import { averApprovals } from './domains/aver-approvals'
 import { averApprovalsAdapter } from './adapters/aver-approvals.unit'
 
 describe('Approval testing', () => {
   const { test } = suite(averApprovals, averApprovalsAdapter)
+
+  // These tests exercise approve/reject scenarios and must control AVER_APPROVE
+  // per-scenario. Save and restore the original value so we don't leak into
+  // other test files in the same process.
+  let savedApprove: string | undefined
+  beforeEach(() => {
+    savedApprove = process.env.AVER_APPROVE
+    delete process.env.AVER_APPROVE
+  })
+  afterEach(() => {
+    if (savedApprove !== undefined) {
+      process.env.AVER_APPROVE = savedApprove
+    } else {
+      delete process.env.AVER_APPROVE
+    }
+  })
 
   describe('baseline management', () => {
     test('fails when baseline is missing', async ({ act, assert }) => {

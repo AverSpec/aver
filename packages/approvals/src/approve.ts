@@ -47,7 +47,8 @@ export async function approve(value: unknown, options: ApproveOptions = {}): Pro
   writeFileSync(receivedPath, received, 'utf-8')
 
   const approvedExists = existsSync(approvedPath)
-  const approved = approvedExists ? readFileSync(approvedPath, 'utf-8') : ''
+  let approved = approvedExists ? readFileSync(approvedPath, 'utf-8') : ''
+  if (options.normalize && approvedExists) approved = options.normalize(approved)
 
   const context = getTestContext()
   const renderer = context?.extensions['renderer:html'] as HtmlRenderer | undefined

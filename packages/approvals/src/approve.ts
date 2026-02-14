@@ -2,7 +2,8 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { diffText } from './diff'
 import { resolveSerializer, type SerializerName } from './serializers'
-import { addApprovalAttachments, getApprovalContext } from './context'
+import { getTestContext } from 'aver'
+import type { HtmlRenderer, TraceAttachment } from 'aver'
 
 export interface ApproveOptions {
   name?: string
@@ -48,42 +49,26 @@ export async function approve(value: unknown, options: ApproveOptions = {}): Pro
   const approvedExists = existsSync(approvedPath)
   const approved = approvedExists ? readFileSync(approvedPath, 'utf-8') : ''
 
-  const context = getApprovalContext()
-  const provider = context?.approvalArtifacts
-  const pendingAttachments: { list: Array<{ name: string; path: string; mime?: string }> } = { list: [] }
-  const collect = (attachments?: Array<{ name: string; path: string; mime?: string }>) => {
-    if (!attachments || attachments.length === 0) return
-    pendingAttachments.list.push(...attachments)
-  }
-  if (provider && provider.canHandle({ serializer: serializerName, value })) {
+  const context = getTestContext()
+  const renderer = context?.extensions['renderer:html'] as HtmlRenderer | undefined
+  const pendingAttachments: TraceAttachment[] = []
+
+  // Render HTML screenshots if renderer is available
+  if (renderer && serializerName === 'html') {
     if (approvedExists && !existsSync(approvedImagePath)) {
       try {
         const approvedSource = readFileSync(approvedPath, 'utf-8')
-        const approvedAttachments = await provider.render({
-          serializer: serializerName,
-          value: approvedSource,
-          approvedPath,
-          receivedPath,
-          imagePath: approvedImagePath,
-          kind: 'approved',
-        })
-        collect(approvedAttachments)
+        await renderer.render(approvedSource, approvedImagePath)
+        pendingAttachments.push({ name: 'approval-approved', path: approvedImagePath, mime: 'image/png' })
       } catch {
-        // Ignore provider render failures.
+        // Ignore render failures.
       }
     }
     try {
-      const attachments = await provider.render({
-        serializer: serializerName,
-        value,
-        approvedPath,
-        receivedPath,
-        imagePath: receivedImagePath,
-        kind: 'received',
-      })
-      collect(attachments)
+      await renderer.render(String(value), receivedImagePath)
+      pendingAttachments.push({ name: 'approval-received', path: receivedImagePath, mime: 'image/png' })
     } catch {
-      // Ignore provider render failures.
+      // Ignore render failures.
     }
   }
 
@@ -93,17 +78,17 @@ export async function approve(value: unknown, options: ApproveOptions = {}): Pro
   if (!approvedExists) {
     if (shouldApprove) {
       writeFileSync(approvedPath, received, 'utf-8')
-      addApprovalAttachments([
+      pushTraceAttachments(context?.trace, [
         { name: 'approved', path: approvedPath, mime: mimeForExtension(extension) },
-      ])
+      ], 'pass')
       return
     }
     writeFileSync(diffPath, 'Baseline missing. Run with AVER_APPROVE=1 to create it.\n', 'utf-8')
-    addApprovalAttachments([
+    pushTraceAttachments(context?.trace, [
       { name: 'received', path: receivedPath, mime: mimeForExtension(extension) },
       { name: 'diff', path: diffPath, mime: 'text/plain' },
-    ])
-    if (pendingAttachments.list.length > 0) addApprovalAttachments(pendingAttachments.list)
+      ...pendingAttachments,
+    ], 'fail')
     throw new Error(`Approval baseline missing: ${approvedPath}`)
   }
 
@@ -114,37 +99,80 @@ export async function approve(value: unknown, options: ApproveOptions = {}): Pro
   const diff = comparison.diff ?? diffText(approved, received)
   writeFileSync(diffPath, diff, 'utf-8')
 
-  if (provider?.diff && existsSync(approvedImagePath) && existsSync(receivedImagePath)) {
+  // Image diffing if both screenshots exist
+  if (renderer && existsSync(approvedImagePath) && existsSync(receivedImagePath)) {
     try {
-      const attachments = await provider.diff({
-        approvedImagePath,
-        receivedImagePath,
-        diffImagePath,
-      })
-      collect(attachments)
+      const diffAttachment = await diffImages(approvedImagePath, receivedImagePath, diffImagePath)
+      if (diffAttachment) pendingAttachments.push(diffAttachment)
     } catch {
-      // Ignore provider diff failures.
+      // Ignore image diff failures.
     }
   }
 
   if (shouldApprove) {
     writeFileSync(approvedPath, received, 'utf-8')
-    addApprovalAttachments([
+    pushTraceAttachments(context?.trace, [
       { name: 'approved', path: approvedPath, mime: mimeForExtension(extension) },
       { name: 'received', path: receivedPath, mime: mimeForExtension(extension) },
       { name: 'diff', path: diffPath, mime: 'text/plain' },
-    ])
-    if (pendingAttachments.list.length > 0) addApprovalAttachments(pendingAttachments.list)
+      ...pendingAttachments,
+    ], 'pass')
     return
   }
 
-  addApprovalAttachments([
+  pushTraceAttachments(context?.trace, [
     { name: 'approved', path: approvedPath, mime: mimeForExtension(extension) },
     { name: 'received', path: receivedPath, mime: mimeForExtension(extension) },
     { name: 'diff', path: diffPath, mime: 'text/plain' },
-  ])
-  if (pendingAttachments.list.length > 0) addApprovalAttachments(pendingAttachments.list)
+    ...pendingAttachments,
+  ], 'fail')
   throw new Error(`Approval mismatch: ${approvedPath}`)
+}
+
+function pushTraceAttachments(
+  trace: TraceAttachment[] | any[] | undefined,
+  attachments: TraceAttachment[],
+  status: 'pass' | 'fail',
+): void {
+  if (!trace || attachments.length === 0) return
+  trace.push({
+    kind: 'test',
+    name: 'approval-artifacts',
+    payload: undefined,
+    status,
+    attachments,
+  })
+}
+
+async function diffImages(
+  approvedPath: string,
+  receivedPath: string,
+  diffPath: string,
+): Promise<TraceAttachment | undefined> {
+  try {
+    const { PNG } = await import('pngjs')
+    const { default: pixelmatch } = await import('pixelmatch')
+
+    const img1 = PNG.sync.read(readFileSync(approvedPath))
+    const img2 = PNG.sync.read(readFileSync(receivedPath))
+    const width = Math.max(img1.width, img2.width)
+    const height = Math.max(img1.height, img2.height)
+    const a = padImage(PNG, img1, width, height)
+    const b = padImage(PNG, img2, width, height)
+    const diff = new PNG({ width, height })
+    pixelmatch(a.data, b.data, diff.data, width, height, { threshold: 0.1 })
+    writeFileSync(diffPath, PNG.sync.write(diff))
+    return { name: 'approval-diff', path: diffPath, mime: 'image/png' }
+  } catch {
+    return undefined
+  }
+}
+
+function padImage(PNG: any, image: any, width: number, height: number): any {
+  if (image.width === width && image.height === height) return image
+  const padded = new PNG({ width, height })
+  PNG.bitblt(image, padded, 0, 0, image.width, image.height, 0, 0)
+  return padded
 }
 
 function defaultSerializerFor(value: unknown): SerializerName {

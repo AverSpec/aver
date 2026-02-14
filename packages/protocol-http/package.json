@@ -27,12 +27,12 @@
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
-    "aver": "*"
+    "aver": "workspace:*"
   },
   "devDependencies": {
     "tsup": "^8.0.0",
     "typescript": "^5.7.0",
     "vitest": "^3.0.0",
-    "aver": "*"
+    "aver": "workspace:*"
   }
 }

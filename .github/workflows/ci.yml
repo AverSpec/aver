@@ -11,16 +11,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
+          cache: pnpm
 
-      - run: npm ci
+      - run: pnpm install --frozen-lockfile
 
       - name: Get Playwright version
         id: pw-version
-        run: echo "version=$(npx playwright --version)" >> $GITHUB_OUTPUT
+        run: echo "version=$(pnpm exec playwright --version)" >> $GITHUB_OUTPUT
 
       - name: Cache Playwright browsers
         id: playwright-cache
@@ -31,37 +33,37 @@ jobs:
           restore-keys: playwright-${{ runner.os }}-
 
       - name: Install Playwright
-        run: npx playwright install --with-deps chromium
+        run: pnpm exec playwright install --with-deps chromium
 
       - name: Build packages
         run: |
-          npm run build -w packages/aver
-          npm run build -w packages/protocol-http
-          npm run build -w packages/protocol-playwright
-          npm run build -w examples/task-board
+          pnpm --filter aver run build
+          pnpm --filter "@aver/protocol-http" run build
+          pnpm --filter "@aver/protocol-playwright" run build
+          pnpm --filter "@aver/example-task-board" run build
 
       - name: Test aver (core)
-        run: npx vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/aver.xml
+        run: pnpm exec vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/aver.xml
         working-directory: packages/aver
 
       - name: Test mcp-server
         if: ${{ !cancelled() }}
-        run: npx vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/mcp-server.xml
+        run: pnpm exec vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/mcp-server.xml
         working-directory: packages/mcp-server
 
       - name: Test protocol-http
         if: ${{ !cancelled() }}
-        run: npx vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/protocol-http.xml
+        run: pnpm exec vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/protocol-http.xml
         working-directory: packages/protocol-http
 
       - name: Test protocol-playwright
         if: ${{ !cancelled() }}
-        run: npx vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/protocol-playwright.xml
+        run: pnpm exec vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/protocol-playwright.xml
         working-directory: packages/protocol-playwright
 
       - name: Test example app
         if: ${{ !cancelled() }}
-        run: npx vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/task-board.xml
+        run: pnpm exec vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/task-board.xml
         working-directory: examples/task-board
 
       - name: Test summary

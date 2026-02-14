@@ -41,6 +41,10 @@ const playwrightProtocol = {
   async teardown(page: Page) {
     const server = (page as any).__server as Server | undefined
     await page.close()
+    if (browser && browser.contexts().every(c => c.pages().length === 0)) {
+      await browser.close()
+      browser = undefined
+    }
     if (server) {
       await new Promise<void>((resolve) => server.close(() => resolve()))
     }

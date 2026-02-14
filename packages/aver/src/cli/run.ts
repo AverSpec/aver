@@ -4,10 +4,11 @@ export interface RunArgs {
   adapter?: string
   domain?: string
   watch: boolean
+  positionals: string[]
 }
 
 export function parseRunArgs(argv: string[]): RunArgs {
-  const { values } = parseArgs({
+  const { values, positionals } = parseArgs({
     args: argv,
     options: {
       adapter: { type: 'string' },
@@ -15,12 +16,14 @@ export function parseRunArgs(argv: string[]): RunArgs {
       watch: { type: 'boolean', default: false },
     },
     strict: true,
+    allowPositionals: true,
   })
 
   return {
     adapter: values.adapter,
     domain: values.domain,
     watch: values.watch ?? false,
+    positionals,
   }
 }
 
@@ -29,6 +32,7 @@ export async function runCommand(argv: string[]): Promise<void> {
 
   const vitestArgs = ['run']
   if (args.watch) vitestArgs[0] = 'watch'
+  vitestArgs.push(...args.positionals)
 
   const env: Record<string, string> = {}
   if (args.adapter) env.AVER_ADAPTER = args.adapter

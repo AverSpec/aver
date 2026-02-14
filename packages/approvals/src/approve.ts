@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import { diffText } from './diff'
+import { compareValues, generateDiff } from './compare'
 import { resolveSerializer, type SerializerName } from './serializers'
 import { getTestContext } from 'aver'
 import type { HtmlRenderer, TraceAttachment } from 'aver'
@@ -97,7 +97,7 @@ export async function approve(value: unknown, options: ApproveOptions = {}): Pro
     return
   }
 
-  const diff = comparison.diff ?? diffText(approved, received)
+  const diff = comparison.diff ?? generateDiff(approved, received)
   writeFileSync(diffPath, diff, 'utf-8')
 
   // Image diffing if both screenshots exist
@@ -198,17 +198,6 @@ function getTestState(): { testPath?: string; testName?: string } | undefined {
     testPath: state?.testPath,
     testName: state?.currentTestName ?? state?.testName ?? state?.currentTestSuiteName,
   }
-}
-
-function compareValues(
-  approved: string,
-  received: string,
-  compare?: ApproveOptions['compare'],
-): { equal: boolean; diff?: string } {
-  if (!compare) return { equal: approved === received }
-  const result = compare(approved, received)
-  if (typeof result === 'boolean') return { equal: result }
-  return { equal: result.equal, diff: result.diff }
 }
 
 function mimeForExtension(ext: string): string {

@@ -1,6 +1,6 @@
 {
   "name": "aver",
-  "description": "Domain-driven acceptance testing — MCP server + workflow skill",
+  "description": "Domain-driven acceptance testing — MCP server + maturity pipeline workflow",
   "version": "0.1.0",
   "author": { "name": "Nate Jackson" },
   "homepage": "https://github.com/njackson/aver",

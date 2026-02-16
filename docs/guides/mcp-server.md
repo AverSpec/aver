@@ -11,15 +11,15 @@ The `@aver/mcp-server` package lets AI assistants (Claude Code, Cursor, etc.) ex
 
 ## Install
 
-### Claude Code Plugin (Recommended)
+### Agent Plugin (Recommended)
 
-The easiest way to get started is with the Claude Code plugin, which bundles the MCP server and a workflow skill:
+The easiest way to get started is with the agent plugin, which bundles the MCP server and a workflow skill:
 
 ```bash
-claude plugin add @aver/claude-code-plugin
+claude plugin add @aver/agent-plugin
 ```
 
-This gives you all ten MCP tools plus the `aver-workflow` skill — a step-by-step guide the AI follows when adding features or writing tests.
+This gives you all MCP tools plus the `aver-workflow` skill — a maturity pipeline workflow guiding behaviors from observation through formalized tests.
 
 ### Manual Setup
 

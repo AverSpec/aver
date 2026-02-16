@@ -1,92 +1,49 @@
 import { implement } from 'aver'
+import { playwright } from '@aver/protocol-playwright'
 import { taskBoard } from '../domains/task-board.js'
 import { createServer } from '../src/server/index.js'
 import type { Server } from 'node:http'
-import type { Browser, Page } from 'playwright'
-import { mkdirSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import type { Page } from 'playwright'
 
-let browser: Browser | undefined
-const consoleLogs = new WeakMap<Page, string[]>()
-const artifactsDir = join(process.cwd(), 'test-results', 'aver-artifacts')
+let server: Server | undefined
+let baseUrl: string | undefined
 
-const playwrightProtocol = {
-  name: 'playwright',
-  async setup(): Promise<Page> {
-    // Start Express server with fresh Board
-    const { app } = createServer()
-    const server = await new Promise<Server>(resolve => {
-      const s = app.listen(0, () => resolve(s))
-    })
-    const addr = server.address()
-    const port = typeof addr === 'object' && addr ? addr.port : 3000
-    const baseUrl = `http://localhost:${port}`
-
-    // Launch browser once, reuse across tests
-    if (!browser) {
-      const pw = await import('playwright')
-      browser = await pw.chromium.launch({ headless: true })
-    }
-    const page = await browser.newPage()
-    const logs: string[] = []
-    consoleLogs.set(page, logs)
-    page.on('console', msg => {
-      logs.push(`[${msg.type()}] ${msg.text()}`)
-    })
-    // Stash server on page for teardown
-    ;(page as any).__server = server
-    await page.goto(baseUrl)
-    return page
+const proto = playwright({
+  captureHtml: true,
+  regions: {
+    'board': '.board',
+    'backlog': '[data-testid="column-backlog"]',
   },
-  async teardown(page: Page) {
-    const server = (page as any).__server as Server | undefined
-    await page.close()
-    if (browser && browser.contexts().every(c => c.pages().length === 0)) {
-      await browser.close()
-      browser = undefined
-    }
-    if (server) {
-      await new Promise<void>((resolve) => server.close(() => resolve()))
-    }
-  },
-  async onTestFail(page: Page, meta: { testName: string; domainName?: string; protocolName?: string }) {
-    const safeDomain = toSafeName(meta.domainName ?? 'domain')
-    const safeProtocol = toSafeName(meta.protocolName ?? 'protocol')
-    const safeTest = toSafeName(meta.testName)
-    const testDir = join(artifactsDir, safeDomain, safeProtocol, safeTest)
-    mkdirSync(testDir, { recursive: true })
-    const attachments = []
+})
+const originalSetup = proto.setup.bind(proto)
+const originalTeardown = proto.teardown.bind(proto)
 
-    const screenshotPath = join(testDir, 'screenshot.png')
-    await page.screenshot({ path: screenshotPath, fullPage: true })
-    attachments.push({ name: 'screenshot', path: screenshotPath, mime: 'image/png' })
+proto.setup = async function (): Promise<Page> {
+  const { app } = createServer()
+  server = await new Promise<Server>(resolve => {
+    const s = app.listen(0, () => resolve(s))
+  })
+  const addr = server.address()
+  const port = typeof addr === 'object' && addr ? addr.port : 3000
+  baseUrl = `http://localhost:${port}`
 
-    const htmlPath = join(testDir, 'page.html')
-    const html = await page.content()
-    writeFileSync(htmlPath, html, 'utf-8')
-    attachments.push({ name: 'page-html', path: htmlPath, mime: 'text/html' })
-
-    const logs = consoleLogs.get(page) ?? []
-    if (logs.length > 0) {
-      const logPath = join(testDir, 'console.log')
-      writeFileSync(logPath, logs.join('\n') + '\n', 'utf-8')
-      attachments.push({ name: 'console-log', path: logPath, mime: 'text/plain' })
-    }
-
-    return attachments
-  },
+  const page = await originalSetup()
+  await page.goto(baseUrl)
+  await page.waitForLoadState('networkidle')
+  return page
 }
 
-function toSafeName(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 80) || 'test'
+proto.teardown = async function (page: Page): Promise<void> {
+  await originalTeardown(page)
+  if (server) {
+    await new Promise<void>((resolve) => server!.close(() => resolve()))
+    server = undefined
+    baseUrl = undefined
+  }
 }
 
 export const playwrightAdapter = implement(taskBoard, {
-  protocol: playwrightProtocol,
+  protocol: proto,
 
   actions: {
     deleteTask: async (page, { title }) => {
@@ -94,6 +51,7 @@ export const playwrightAdapter = implement(taskBoard, {
       await page.getByTestId(`task-${title}`).waitFor({ state: 'detached' })
     },
     createTask: async (page, { title, status }) => {
+      await page.waitForSelector('[data-testid="new-task-title"]')
       await page.getByTestId('new-task-title').fill(title)
       if (status && status !== 'backlog') {
         await page.getByTestId('new-task-status').selectOption(status)

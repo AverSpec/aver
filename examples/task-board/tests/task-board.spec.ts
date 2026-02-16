@@ -1,5 +1,6 @@
 import { expect } from 'vitest'
 import { suite } from 'aver'
+import { approve } from '@aver/approvals'
 import { taskBoard } from '../domains/task-board.js'
 
 const { test } = suite(taskBoard)
@@ -43,4 +44,10 @@ test('track full task lifecycle', async ({ act, query }) => {
 test('demo failure artifacts (set AVER_DEMO_FAIL=1)', async ({ assert }) => {
   if (process.env.AVER_DEMO_FAIL !== '1') return
   await assert.taskInStatus({ title: 'Nonexistent', status: 'done' })
+})
+
+test('visual approval of task board', async ({ act }) => {
+  if (process.env.AVER_DEMO_APPROVAL !== '1' && process.env.AVER_DEMO_DIFF !== '1') return
+  await act.createTask({ title: 'Review homepage' })
+  await approve.visual('board-with-task')
 })

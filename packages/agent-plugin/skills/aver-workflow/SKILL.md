@@ -110,7 +110,9 @@ Detailed technique guides live in `patterns/`:
 ## Walkthrough Examples
 
 Complete worked examples live in `examples/`:
-- `examples/task-board.md` -- Adding a feature to the task-board example app
+- `examples/legacy-walkthrough.md` -- Full pipeline: discovering a legacy REST API's behaviors and formalizing tests
+- `examples/new-feature-walkthrough.md` -- Full pipeline: adding task cancellation via Example Mapping and TDD
+- `examples/task-board.md` -- Adding a feature to the task-board example app (code-focused)
 
 ## Quick Reference: The Formalization Cycle
 

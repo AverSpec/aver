@@ -1,2 +1,3 @@
 // @aver/workspace — Scenario workspace for the Aver workflow
-export {}
+export { createItem, createExample } from './types.js'
+export type { WorkspaceItem, Workspace, Example, Question, Stage } from './types.js'

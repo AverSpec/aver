@@ -28,18 +28,18 @@ describe('RunningTestContext', () => {
   })
 
   it('exposes protocol extensions', async () => {
-    const mockRenderer = { render: async () => {} }
+    const mockScreenshotter = { capture: async () => {} }
     await runWithTestContext(
       {
         testName: 'test',
         domainName: 'D',
         protocolName: 'playwright',
         trace: [],
-        extensions: { 'renderer:html': mockRenderer },
+        extensions: { screenshotter: mockScreenshotter },
       },
       async () => {
         const ctx = getTestContext()
-        expect(ctx!.extensions['renderer:html']).toBe(mockRenderer)
+        expect(ctx!.extensions.screenshotter).toBe(mockScreenshotter)
       },
     )
   })

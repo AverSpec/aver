@@ -1,8 +1,9 @@
-export interface HtmlRenderer {
-  render(html: string, outputPath: string): Promise<void>
+export interface Screenshotter {
+  capture(outputPath: string, options?: { region?: string }): Promise<void>
+  regions?: Record<string, string>
 }
 
 export interface ProtocolExtensions {
-  'renderer:html'?: HtmlRenderer
+  screenshotter?: Screenshotter
   [key: string]: unknown
 }

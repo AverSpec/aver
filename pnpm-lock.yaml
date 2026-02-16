@@ -131,6 +131,9 @@ importers:
 
   packages/mcp-server:
     dependencies:
+      '@aver/workspace':
+        specifier: workspace:*
+        version: link:../workspace
       '@modelcontextprotocol/sdk':
         specifier: ^1.26.0
         version: 1.26.0(zod@3.25.76)

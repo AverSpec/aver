@@ -5,6 +5,7 @@ import { listDomainsHandler, getDomainVocabularyHandler, listAdaptersHandler } f
 import { runTestsHandler, getFailureDetailsHandler, getTestTraceHandler } from './execution.js'
 import { describeDomainStructureHandler, describeAdapterStructureHandler, getProjectContextHandler } from './scaffolding.js'
 import { getRunDiffHandler } from './reporting.js'
+import { registerWorkspaceTools } from './workspace.js'
 import { RunStore } from '../runs.js'
 import { reloadConfig } from '../config.js'
 
@@ -14,6 +15,7 @@ export function registerTools(server: McpServer): void {
   registerExecutionTools(server, store)
   registerScaffoldingTools(server)
   registerReportingTools(server, store)
+  registerWorkspaceTools(server)
 }
 
 function registerDomainTools(server: McpServer): void {

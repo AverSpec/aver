@@ -1,2 +1,2 @@
 export { approve } from './approve'
-export type { ApproveOptions, SerializerName } from './types'
+export type { ApproveOptions, VisualApproveOptions } from './types'

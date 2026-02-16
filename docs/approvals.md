@@ -67,7 +67,7 @@ cd examples/task-board
 ### 1) Create the initial baseline
 
 ```bash
-AVER_DEMO_APPROVAL=1 AVER_APPROVE=1 AVER_ADAPTER=playwright pnpm vitest run tests/task-board.spec.ts
+AVER_DEMO_APPROVAL=1 pnpm aver approve --adapter playwright tests/task-board.spec.ts
 ```
 
 This writes:
@@ -76,7 +76,7 @@ This writes:
 ### 2) Run again to verify it matches
 
 ```bash
-AVER_DEMO_APPROVAL=1 AVER_ADAPTER=playwright pnpm vitest run tests/task-board.spec.ts
+AVER_DEMO_APPROVAL=1 pnpm aver run --adapter playwright tests/task-board.spec.ts
 ```
 
 ### Files

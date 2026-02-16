@@ -4,3 +4,4 @@ export type { WorkspaceItem, Workspace, Example, Question, Stage } from './types
 export { WorkspaceStore } from './storage.js'
 export { WorkspaceOps } from './operations.js'
 export type { PromoteInput, DemoteInput, ItemFilter, WorkspaceSummary } from './operations.js'
+export { exportMarkdown, exportJson, importJson } from './export.js'

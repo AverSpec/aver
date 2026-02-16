@@ -185,5 +185,6 @@ npx aver run
 - [Example App](example-app) — full task board tested across unit, HTTP, and Playwright
 - [Architecture](architecture) — understand the three-layer model
 - [Multi-Adapter Testing](guides/multi-adapter) — same test against HTTP and Playwright
+- [Approval Testing](approvals) — snapshot testing for values and screenshots
 - [MCP Server](guides/mcp-server) — AI-assisted testing with Claude
 - [API Reference](api) — all exports documented

@@ -9,3 +9,7 @@ docs/_site/
 docs/.jekyll-cache/
 docs/Gemfile.lock
 .worktrees/
+
+# Approval testing transients (only .approved.* files are committed)
+**/__approvals__/**/*.received.*
+**/__approvals__/**/*.diff.*

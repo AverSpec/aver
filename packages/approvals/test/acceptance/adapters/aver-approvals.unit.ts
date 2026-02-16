@@ -1,9 +1,10 @@
 import { expect } from 'vitest'
-import { implement, unit } from 'aver'
-import type { TraceEntry } from 'aver'
-import { mkdtempSync, existsSync, readFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { implement, unit, runWithTestContext } from 'aver'
+import type { TraceEntry, Screenshotter } from 'aver'
+import { mkdtempSync, existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { join, dirname } from 'node:path'
 import { tmpdir } from 'node:os'
+import { PNG } from 'pngjs'
 import { approve } from '../../../src/approve'
 import { averApprovals } from '../domains/aver-approvals'
 
@@ -12,6 +13,57 @@ interface ApprovalSession {
   lastError?: Error
   lastApprovalName: string
   trace: TraceEntry[]
+  screenshotter?: Screenshotter
+  lastWarning?: string
+}
+
+function createMockPng(width: number, height: number, color: [number, number, number, number]): Buffer {
+  const png = new PNG({ width, height })
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const idx = (width * y + x) << 2
+      png.data[idx] = color[0]
+      png.data[idx + 1] = color[1]
+      png.data[idx + 2] = color[2]
+      png.data[idx + 3] = color[3]
+    }
+  }
+  return PNG.sync.write(png)
+}
+
+function createMockScreenshotter(behavior: 'match' | 'differ' | 'dimension-mismatch'): Screenshotter {
+  let callCount = 0
+  return {
+    regions: { 'header': '.header' },
+    async capture(outputPath) {
+      callCount++
+      let buf: Buffer
+      switch (behavior) {
+        case 'match':
+          buf = createMockPng(100, 100, [255, 0, 0, 255])
+          break
+        case 'differ':
+          buf = callCount <= 1
+            ? createMockPng(100, 100, [255, 0, 0, 255])
+            : createMockPng(100, 100, [0, 0, 255, 255])
+          break
+        case 'dimension-mismatch':
+          buf = callCount <= 1
+            ? createMockPng(100, 100, [255, 0, 0, 255])
+            : createMockPng(200, 200, [255, 0, 0, 255])
+          break
+      }
+      writeFileSync(outputPath, buf)
+    },
+  }
+}
+
+function getVisualApprovalDir(): string | undefined {
+  const state = (globalThis as any).expect?.getState?.()
+  const testPath = state?.testPath
+  if (!testPath) return undefined
+  const testName = state?.currentTestName ?? 'approval-test'
+  return join(dirname(testPath), '__approvals__', safeName(testName))
 }
 
 export const averApprovalsAdapter = implement(averApprovals, {
@@ -41,6 +93,46 @@ export const averApprovalsAdapter = implement(averApprovals, {
 
     clearApproveMode: async () => {
       delete process.env.AVER_APPROVE
+    },
+
+    approveVisual: async (session, { name, region }) => {
+      session.lastError = undefined
+      session.lastWarning = undefined
+      session.lastApprovalName = name
+
+      // Capture console.warn to detect skip warnings
+      const originalWarn = console.warn
+      let capturedWarning: string | undefined
+      console.warn = (...args: any[]) => { capturedWarning = args.join(' ') }
+
+      try {
+        const context = {
+          testName: 'approval-test',
+          domainName: 'AverApprovals',
+          protocolName: 'unit',
+          trace: session.trace,
+          extensions: {
+            screenshotter: session.screenshotter,
+          },
+        }
+
+        await runWithTestContext(context, async () => {
+          await approve.visual(region ? { name, region } : name)
+        })
+      } catch (e: any) {
+        session.lastError = e
+      } finally {
+        console.warn = originalWarn
+        session.lastWarning = capturedWarning
+      }
+    },
+
+    provideScreenshotter: async (session, { behavior }) => {
+      session.screenshotter = createMockScreenshotter(behavior)
+    },
+
+    removeScreenshotter: async (session) => {
+      session.screenshotter = undefined
     },
   },
 
@@ -82,6 +174,28 @@ export const averApprovalsAdapter = implement(averApprovals, {
 
     lastError: async (session) => {
       return session.lastError?.message
+    },
+
+    approvedImageExists: async (session) => {
+      const dir = getVisualApprovalDir()
+      if (!dir) return false
+      return existsSync(join(dir, `${safeName(session.lastApprovalName)}.approved.png`))
+    },
+
+    receivedImageExists: async (session) => {
+      const dir = getVisualApprovalDir()
+      if (!dir) return false
+      return existsSync(join(dir, `${safeName(session.lastApprovalName)}.received.png`))
+    },
+
+    diffImageExists: async (session) => {
+      const dir = getVisualApprovalDir()
+      if (!dir) return false
+      return existsSync(join(dir, `${safeName(session.lastApprovalName)}.diff.png`))
+    },
+
+    lastWarning: async (session) => {
+      return session.lastWarning
     },
   },
 
@@ -138,6 +252,36 @@ export const averApprovalsAdapter = implement(averApprovals, {
 
     noError: async (session) => {
       expect(session.lastError).toBeUndefined()
+    },
+
+    visualBaselineCreated: async (session) => {
+      const dir = getVisualApprovalDir()
+      if (!dir) throw new Error('No test path available')
+      expect(existsSync(join(dir, `${safeName(session.lastApprovalName)}.approved.png`))).toBe(true)
+    },
+
+    visualBaselineMissing: async (session) => {
+      expect(session.lastError?.message).toContain('Visual approval baseline missing')
+    },
+
+    visualMismatchDetected: async (session) => {
+      expect(session.lastError).toBeDefined()
+      expect(session.lastError?.message).toContain('Visual approval mismatch')
+    },
+
+    visualMatchPassed: async (session) => {
+      expect(session.lastError).toBeUndefined()
+    },
+
+    visualDiffGenerated: async (session) => {
+      const dir = getVisualApprovalDir()
+      if (!dir) throw new Error('No test path available')
+      expect(existsSync(join(dir, `${safeName(session.lastApprovalName)}.diff.png`))).toBe(true)
+    },
+
+    screenshotterSkipWarned: async (session) => {
+      expect(session.lastWarning).toBeDefined()
+      expect(session.lastWarning).toContain('approve.visual() skipped')
     },
   },
 })

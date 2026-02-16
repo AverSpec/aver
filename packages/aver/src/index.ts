@@ -5,7 +5,7 @@ export { suite } from './core/suite'
 export { defineConfig } from './core/config'
 export { getAdapters, registerAdapter, findAdapter, findAdapters, resetRegistry } from './core/registry'
 export { unit } from './protocols/unit'
-export { getTestContext } from './core/test-context'
+export { getTestContext, runWithTestContext } from './core/test-context'
 
 export type { ActionMarker, QueryMarker, AssertionMarker } from './core/types'
 export type { Domain } from './core/domain'

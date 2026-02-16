@@ -156,15 +156,24 @@ approve.visual = async function visual(
 }
 
 async function imagesMatch(paths: { approvedImagePath: string; receivedImagePath: string }): Promise<boolean> {
+  // Fast path: byte-identical files always match
+  const approved = readFileSync(paths.approvedImagePath)
+  const received = readFileSync(paths.receivedImagePath)
+  if (approved.equals(received)) return true
+
+  // Pixel-level comparison with tolerance for subpixel rendering jitter
   try {
     const { PNG } = await import('pngjs')
     const { default: pixelmatch } = await import('pixelmatch')
-    const img1 = PNG.sync.read(readFileSync(paths.approvedImagePath))
-    const img2 = PNG.sync.read(readFileSync(paths.receivedImagePath))
+    const img1 = PNG.sync.read(approved)
+    const img2 = PNG.sync.read(received)
     if (img1.width !== img2.width || img1.height !== img2.height) return false
+    const totalPixels = img1.width * img1.height
     const diffCount = pixelmatch(img1.data, img2.data, null, img1.width, img1.height, { threshold: 0.1 })
-    return diffCount === 0
+    // Allow up to 0.1% of pixels to differ (subpixel anti-aliasing)
+    return diffCount / totalPixels < 0.001
   } catch {
+    // pngjs/pixelmatch not available — files aren't byte-identical so report mismatch
     return false
   }
 }

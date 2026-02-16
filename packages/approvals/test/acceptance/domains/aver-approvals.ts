@@ -6,6 +6,9 @@ export const averApprovals = defineDomain({
     approveValue: action<{ value: unknown; name?: string }>(),
     setApproveMode: action(),
     clearApproveMode: action(),
+    approveVisual: action<{ name: string; region?: string }>(),
+    provideScreenshotter: action<{ behavior: 'match' | 'differ' | 'dimension-mismatch' }>(),
+    removeScreenshotter: action(),
   },
   queries: {
     approvedFileExists: query<boolean>(),
@@ -13,6 +16,10 @@ export const averApprovals = defineDomain({
     diffFileContents: query<string>(),
     traceAttachments: query<Array<{ name: string; path: string }>>(),
     lastError: query<string | undefined>(),
+    approvedImageExists: query<boolean>(),
+    receivedImageExists: query<boolean>(),
+    diffImageExists: query<boolean>(),
+    lastWarning: query<string | undefined>(),
   },
   assertions: {
     baselineCreated: assertion(),
@@ -23,5 +30,11 @@ export const averApprovals = defineDomain({
     attachmentsRecorded: assertion<{ minCount: number }>(),
     traceEntryHasStatus: assertion<{ name: string; status: 'pass' | 'fail' }>(),
     noError: assertion(),
+    visualBaselineCreated: assertion(),
+    visualBaselineMissing: assertion(),
+    visualMismatchDetected: assertion(),
+    visualMatchPassed: assertion(),
+    visualDiffGenerated: assertion(),
+    screenshotterSkipWarned: assertion(),
   },
 })

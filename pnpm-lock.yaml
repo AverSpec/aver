@@ -106,6 +106,9 @@ importers:
 
   packages/aver:
     dependencies:
+      '@aver/workspace':
+        specifier: workspace:*
+        version: link:../workspace
       '@clack/prompts':
         specifier: ^1.0.0
         version: 1.0.1

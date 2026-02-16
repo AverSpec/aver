@@ -19,6 +19,11 @@ switch (command) {
     await runApprove(args)
     break
   }
+  case 'workspace': {
+    const { runWorkspace } = await import('./workspace.js')
+    await runWorkspace(args)
+    break
+  }
   case '--help':
   case '-h':
   case undefined: {
@@ -26,14 +31,16 @@ switch (command) {
 aver - Domain-driven acceptance testing
 
 Commands:
-  aver run     Run acceptance tests
-  aver init    Scaffold a new domain
-  aver approve Update approvals
+  aver run       Run acceptance tests
+  aver init      Scaffold a new domain
+  aver approve   Update approvals
+  aver workspace Manage scenario workspaces
 
 Options:
-  --help       Show this help message
+  --help         Show this help message
 
 Run "aver run --help" for run options.
+Run "aver workspace --help" for workspace options.
 `)
     break
   }

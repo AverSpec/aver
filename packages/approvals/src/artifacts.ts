@@ -1,32 +1,19 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
-import type { HtmlRenderer, TraceAttachment } from 'aver'
+import type { Screenshotter, TraceAttachment } from 'aver'
 import type { ApprovalPaths } from './paths'
 
-export async function renderHtmlArtifacts(
-  renderer: HtmlRenderer | undefined,
+export async function captureVisual(
+  screenshotter: Screenshotter,
   paths: ApprovalPaths,
-  value: unknown,
-  approvedExists: boolean,
-  isHtml: boolean,
+  region?: string,
 ): Promise<TraceAttachment[]> {
   const attachments: TraceAttachment[] = []
-  if (!renderer || !isHtml) return attachments
-
-  if (approvedExists && !existsSync(paths.approvedImagePath)) {
-    try {
-      const approvedSource = readFileSync(paths.approvedPath, 'utf-8')
-      await renderer.render(approvedSource, paths.approvedImagePath)
-      attachments.push({ name: 'approval-approved', path: paths.approvedImagePath, mime: 'image/png' })
-    } catch {
-      // Ignore render failures.
-    }
-  }
 
   try {
-    await renderer.render(String(value), paths.receivedImagePath)
+    await screenshotter.capture(paths.receivedImagePath, region ? { region } : undefined)
     attachments.push({ name: 'approval-received', path: paths.receivedImagePath, mime: 'image/png' })
-  } catch {
-    // Ignore render failures.
+  } catch (e) {
+    throw new Error(`Screenshotter capture failed: ${e instanceof Error ? e.message : e}`)
   }
 
   return attachments

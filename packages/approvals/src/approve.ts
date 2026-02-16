@@ -2,10 +2,10 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { compareValues, generateDiff } from './compare'
 import { resolveSerializer, type SerializerName } from './serializers'
 import { resolveApprovalPaths } from './paths'
-import { renderHtmlArtifacts, diffImages } from './artifacts'
+import { captureVisual, diffImages } from './artifacts'
 import { getTestContext } from 'aver'
-import type { HtmlRenderer, TraceAttachment } from 'aver'
-import type { ApproveOptions } from './types'
+import type { Screenshotter, TraceAttachment } from 'aver'
+import type { ApproveOptions, VisualApproveOptions } from './types'
 
 export async function approve(value: unknown, options: ApproveOptions = {}): Promise<void> {
   const state = getTestState()
@@ -18,28 +18,21 @@ export async function approve(value: unknown, options: ApproveOptions = {}): Pro
     )
   }
 
-  const serializerName = options.serializer ?? defaultSerializerFor(value)
+  const serializerName = defaultSerializerFor(value)
   const serializer = resolveSerializer(serializerName)
   const extension = options.fileExtension ?? serializer.fileExtension
   const paths = resolveApprovalPaths(testPath, testName, options.name ?? 'approval', extension)
 
   mkdirSync(paths.approvalDir, { recursive: true })
 
-  let received = serializer.serialize(value)
-  if (options.normalize) received = options.normalize(received)
+  const received = serializer.serialize(value)
   writeFileSync(paths.receivedPath, received, 'utf-8')
 
   const approvedExists = existsSync(paths.approvedPath)
-  let approved = approvedExists ? readFileSync(paths.approvedPath, 'utf-8') : ''
-  if (options.normalize && approvedExists) approved = options.normalize(approved)
+  const approved = approvedExists ? readFileSync(paths.approvedPath, 'utf-8') : ''
 
   const context = getTestContext()
-  const renderer = context?.extensions['renderer:html'] as HtmlRenderer | undefined
-  const pendingAttachments = await renderHtmlArtifacts(
-    renderer, paths, value, approvedExists, serializerName === 'html',
-  )
-
-  const comparison = compareValues(approved, received, options.compare)
+  const comparison = compareValues(approved, received)
   const shouldApprove = process.env.AVER_APPROVE === '1' || process.env.AVER_APPROVE === 'true'
 
   if (!approvedExists) {
@@ -54,9 +47,12 @@ export async function approve(value: unknown, options: ApproveOptions = {}): Pro
     pushTrace(context?.trace, [
       { name: 'received', path: paths.receivedPath, mime: mimeFor(extension) },
       { name: 'diff', path: paths.diffPath, mime: 'text/plain' },
-      ...pendingAttachments,
     ], 'fail')
-    throw new Error(`Approval baseline missing: ${paths.approvedPath}`)
+    throw new Error(
+      `Approval baseline missing: ${paths.approvedPath}\n\n` +
+      `Run with AVER_APPROVE=1 to create the baseline:\n` +
+      `  AVER_APPROVE=1 npx vitest run <test-file>`,
+    )
   }
 
   if (comparison.equal) return
@@ -64,14 +60,10 @@ export async function approve(value: unknown, options: ApproveOptions = {}): Pro
   const diff = comparison.diff ?? generateDiff(approved, received)
   writeFileSync(paths.diffPath, diff, 'utf-8')
 
-  const imageDiff = await diffImages(paths)
-  if (imageDiff) pendingAttachments.push(imageDiff)
-
   const allAttachments: TraceAttachment[] = [
     { name: 'approved', path: paths.approvedPath, mime: mimeFor(extension) },
     { name: 'received', path: paths.receivedPath, mime: mimeFor(extension) },
     { name: 'diff', path: paths.diffPath, mime: 'text/plain' },
-    ...pendingAttachments,
   ]
 
   if (shouldApprove) {
@@ -82,6 +74,103 @@ export async function approve(value: unknown, options: ApproveOptions = {}): Pro
 
   pushTrace(context?.trace, allAttachments, 'fail')
   throw new Error(`Approval mismatch: ${paths.approvedPath}`)
+}
+
+approve.visual = async function visual(
+  nameOrOptions: string | VisualApproveOptions,
+): Promise<void> {
+  const opts = typeof nameOrOptions === 'string'
+    ? { name: nameOrOptions }
+    : nameOrOptions
+
+  const context = getTestContext()
+  const screenshotter = context?.extensions.screenshotter as Screenshotter | undefined
+
+  if (!screenshotter) {
+    console.warn(
+      `[aver] approve.visual() skipped: no screenshotter extension available. ` +
+      `Use a visual protocol (e.g., playwright) for visual approvals.`,
+    )
+    return
+  }
+
+  const state = getTestState()
+  const testPath = state?.testPath
+  const testName = state?.testName
+
+  if (!testPath || !testName) {
+    throw new Error(
+      'approve.visual() requires a test runner with expect.getState().',
+    )
+  }
+
+  const paths = resolveApprovalPaths(testPath, testName, opts.name, 'png')
+
+  mkdirSync(paths.approvalDir, { recursive: true })
+
+  const pendingAttachments = await captureVisual(screenshotter, paths, opts.region)
+
+  const approvedExists = existsSync(paths.approvedImagePath)
+  const shouldApprove = process.env.AVER_APPROVE === '1' || process.env.AVER_APPROVE === 'true'
+
+  if (!approvedExists) {
+    if (shouldApprove) {
+      copyFileSync(paths.receivedImagePath, paths.approvedImagePath)
+      pushTrace(context?.trace, [
+        { name: 'approved', path: paths.approvedImagePath, mime: 'image/png' },
+      ], 'pass')
+      return
+    }
+    pushTrace(context?.trace, [
+      ...pendingAttachments,
+    ], 'fail')
+    throw new Error(
+      `Visual approval baseline missing: ${paths.approvedImagePath}\n\n` +
+      `Run with AVER_APPROVE=1 to create the baseline:\n` +
+      `  AVER_APPROVE=1 npx vitest run <test-file>`,
+    )
+  }
+
+  // Both images exist — diff them
+  const imageDiff = await diffImages(paths)
+  const allAttachments = [...pendingAttachments]
+  if (imageDiff) allAttachments.push(imageDiff)
+
+  // Check if images match (0 diff pixels)
+  const match = await imagesMatch(paths)
+
+  if (match) return
+
+  allAttachments.unshift(
+    { name: 'approved', path: paths.approvedImagePath, mime: 'image/png' },
+  )
+
+  if (shouldApprove) {
+    copyFileSync(paths.receivedImagePath, paths.approvedImagePath)
+    pushTrace(context?.trace, allAttachments, 'pass')
+    return
+  }
+
+  pushTrace(context?.trace, allAttachments, 'fail')
+  throw new Error(`Visual approval mismatch: ${paths.approvedImagePath}`)
+}
+
+async function imagesMatch(paths: { approvedImagePath: string; receivedImagePath: string }): Promise<boolean> {
+  try {
+    const { PNG } = await import('pngjs')
+    const { default: pixelmatch } = await import('pixelmatch')
+    const img1 = PNG.sync.read(readFileSync(paths.approvedImagePath))
+    const img2 = PNG.sync.read(readFileSync(paths.receivedImagePath))
+    if (img1.width !== img2.width || img1.height !== img2.height) return false
+    const diffCount = pixelmatch(img1.data, img2.data, null, img1.width, img1.height, { threshold: 0.1 })
+    return diffCount === 0
+  } catch {
+    return false
+  }
+}
+
+function copyFileSync(src: string, dest: string): void {
+  writeFileSync(dest, readFileSync(src))
 }
 
 function pushTrace(
@@ -118,7 +207,6 @@ function getTestState(): { testPath?: string; testName?: string } | undefined {
 function mimeFor(ext: string): string {
   switch (ext) {
     case 'json': return 'application/json'
-    case 'html': return 'text/html'
     default: return 'text/plain'
   }
 }

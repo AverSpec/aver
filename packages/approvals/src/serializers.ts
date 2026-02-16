@@ -1,4 +1,4 @@
-export type SerializerName = 'json' | 'text' | 'html'
+export type SerializerName = 'json' | 'text'
 
 export interface Serializer {
   name: SerializerName
@@ -23,20 +23,10 @@ export function textSerializer(): Serializer {
   }
 }
 
-export function htmlSerializer(): Serializer {
-  return {
-    name: 'html',
-    fileExtension: 'html',
-    serialize: (value: unknown) => String(value),
-  }
-}
-
 export function resolveSerializer(name: SerializerName): Serializer {
   switch (name) {
     case 'json':
       return jsonSerializer()
-    case 'html':
-      return htmlSerializer()
     case 'text':
     default:
       return textSerializer()

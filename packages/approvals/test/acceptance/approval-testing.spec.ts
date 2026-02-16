@@ -108,4 +108,66 @@ describe('Approval testing', () => {
       await assert.baselineCreated()
     })
   })
+
+  describe('visual approvals', () => {
+    test('fails when visual baseline is missing', async ({ act, assert }) => {
+      await act.provideScreenshotter({ behavior: 'match' })
+      await act.approveVisual({ name: 'screenshot' })
+      await assert.visualBaselineMissing()
+      await assert.mismatchDetected()
+    })
+
+    test('creates visual baseline when approve mode is on', async ({ act, assert }) => {
+      await act.provideScreenshotter({ behavior: 'match' })
+      await act.setApproveMode()
+      await act.approveVisual({ name: 'screenshot' })
+      await assert.noError()
+      await assert.visualBaselineCreated()
+    })
+
+    test('passes when visual baseline matches', async ({ act, assert }) => {
+      await act.provideScreenshotter({ behavior: 'match' })
+      await act.setApproveMode()
+      await act.approveVisual({ name: 'screenshot' })
+      await act.clearApproveMode()
+      await act.approveVisual({ name: 'screenshot' })
+      await assert.visualMatchPassed()
+      await assert.noError()
+    })
+
+    test('detects visual mismatch and generates diff', async ({ act, assert }) => {
+      await act.provideScreenshotter({ behavior: 'differ' })
+      await act.setApproveMode()
+      await act.approveVisual({ name: 'screenshot' })
+      await act.clearApproveMode()
+      await act.approveVisual({ name: 'screenshot' })
+      await assert.visualMismatchDetected()
+      await assert.visualDiffGenerated()
+    })
+
+    test('handles different image dimensions', async ({ act, assert }) => {
+      await act.provideScreenshotter({ behavior: 'dimension-mismatch' })
+      await act.setApproveMode()
+      await act.approveVisual({ name: 'screenshot' })
+      await act.clearApproveMode()
+      await act.approveVisual({ name: 'screenshot' })
+      await assert.visualMismatchDetected()
+      await assert.visualDiffGenerated()
+    })
+
+    test('skips with warning when no screenshotter available', async ({ act, assert }) => {
+      await act.removeScreenshotter()
+      await act.approveVisual({ name: 'screenshot' })
+      await assert.screenshotterSkipWarned()
+      await assert.noError()
+    })
+
+    test('supports region-based visual approval', async ({ act, assert }) => {
+      await act.provideScreenshotter({ behavior: 'match' })
+      await act.setApproveMode()
+      await act.approveVisual({ name: 'header-region', region: 'header' })
+      await assert.noError()
+      await assert.visualBaselineCreated()
+    })
+  })
 })

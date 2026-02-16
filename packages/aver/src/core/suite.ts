@@ -405,7 +405,6 @@ function makeTestFn<D extends Domain>(
     const adapters = getEffectiveAdapters()
 
     if (adapters.length === 0) {
-      // Deferred: register a test that resolves adapter at runtime
       testImpl(name, async () => {
         await maybeAutoloadConfig()
         const a = findAdapter(domain)

@@ -9,24 +9,28 @@ Aver is a domain-driven acceptance testing framework. This skill orchestrates th
 
 ## First Step: Determine the Workflow Phase
 
-On session start, call `get_workflow_phase` to determine where the project stands. The response tells you which phase is active and what to do next. Then load the corresponding phase guide from `phases/`.
+On session start, call `get_workflow_phase` to determine where the project stands. The response tells you which phase is active and what to do next. Then load the corresponding phase guide from `phases/`. The six phases are: **kickoff**, **discovery**, **mapping**, **formalization**, **implementation**, and **verification**.
 
 ## The Maturity Pipeline
 
-Behaviors progress through four phases of increasing confidence:
+The workflow progresses through six phases. Items within the workspace move through four maturity stages (observed, explored, intended, formalized), and the six phases represent what you should be doing at each point.
 
-| Phase | State | Key Activity | Output |
-|-------|-------|-------------|--------|
-| **Observed** | Raw notes, hunches, things noticed | Record observations | Workspace items |
-| **Explored** | Investigated, understood, with context | Ask questions, investigate code | Questions + answers |
-| **Intended** | Confirmed as desired behavior | State intent, get human confirmation | Intent statements |
-| **Formalized** | Executable acceptance test | Define domain, write test, implement adapter | Passing tests |
+| Phase | When Active | Key Activity | Output |
+|-------|-------------|-------------|--------|
+| **Kickoff** | Empty workspace, first session | Identify target system, record initial items | 3+ observations or intents |
+| **Discovery** | Observed items exist | Investigate code, trace paths, find seams | Explored items with rationale |
+| **Mapping** | Explored items exist | Business confirms intent, resolves questions | Intended items (human-confirmed) |
+| **Formalization** | Intended items exist | Example Mapping: rules, examples, questions | Formalized items with examples |
+| **Implementation** | Formalized items without domain links | TDD inner loop: domain, tests, adapters | Passing tests, domain links |
+| **Verification** | All formalized items linked | Full suite run, coverage review, export | Clean test run, exported workspace |
 
 Each phase has a dedicated guide:
-- `phases/observed.md` -- Recording and triaging observations
-- `phases/explored.md` -- Investigating and asking questions
-- `phases/intended.md` -- Confirming intent with stakeholders
-- `phases/formalized.md` -- Writing domains, tests, and adapters (the TDD inner loop)
+- `phases/kickoff.md` -- Starting a new workflow
+- `phases/discovery.md` -- Recording and triaging observations
+- `phases/mapping.md` -- Investigating and asking questions
+- `phases/formalization.md` -- Confirming intent and running Example Mapping
+- `phases/implementation.md` -- Writing domains, tests, and adapters (the TDD inner loop)
+- `phases/verification.md` -- Running full suites and reviewing coverage
 
 ## Three Amigos Perspectives
 

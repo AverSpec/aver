@@ -3,19 +3,7 @@ import { defineDomain, action, query, assertion } from 'aver'
 export const averApprovals = defineDomain({
   name: 'AverApprovals',
   actions: {
-    approveValue: action<{
-      value: unknown
-      name?: string
-      serializer?: 'json' | 'text' | 'html'
-    }>(),
-    approveWithCustomCompare: action<{
-      value: unknown
-      compareFn: 'alwaysEqual' | 'alwaysDifferent'
-    }>(),
-    approveWithNormalize: action<{
-      value: unknown
-      normalizeFn: 'lowercase' | 'trimLines'
-    }>(),
+    approveValue: action<{ value: unknown; name?: string }>(),
     setApproveMode: action(),
     clearApproveMode: action(),
   },

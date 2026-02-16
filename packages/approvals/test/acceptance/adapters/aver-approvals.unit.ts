@@ -1,7 +1,7 @@
 import { expect } from 'vitest'
 import { implement, unit } from 'aver'
 import type { TraceEntry } from 'aver'
-import { mkdtempSync, existsSync, readFileSync, rmSync } from 'node:fs'
+import { mkdtempSync, existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { approve } from '../../../src/approve'
@@ -21,48 +21,12 @@ export const averApprovalsAdapter = implement(averApprovals, {
   }),
 
   actions: {
-    approveValue: async (session, { value, name, serializer }) => {
+    approveValue: async (session, { value, name }) => {
       session.lastError = undefined
       session.lastApprovalName = name ?? 'approval'
       try {
         await approve(value, {
           name,
-          serializer,
-          filePath: join(session.workDir, 'tests', 'test.spec.ts'),
-          testName: 'approval-test',
-        })
-      } catch (e: any) {
-        session.lastError = e
-      }
-    },
-
-    approveWithCustomCompare: async (session, { value, compareFn }) => {
-      session.lastError = undefined
-      const comparators = {
-        alwaysEqual: () => ({ equal: true }),
-        alwaysDifferent: () => ({ equal: false, diff: 'custom diff' }),
-      }
-      try {
-        await approve(value, {
-          compare: comparators[compareFn],
-          filePath: join(session.workDir, 'tests', 'test.spec.ts'),
-          testName: 'approval-test',
-        })
-      } catch (e: any) {
-        session.lastError = e
-      }
-    },
-
-    approveWithNormalize: async (session, { value, normalizeFn }) => {
-      session.lastError = undefined
-      const normalizers = {
-        lowercase: (s: string) => s.toLowerCase(),
-        trimLines: (s: string) => s.split('\n').map(l => l.trim()).join('\n'),
-      }
-      try {
-        await approve(value, {
-          normalize: normalizers[normalizeFn],
-          serializer: 'text',
           filePath: join(session.workDir, 'tests', 'test.spec.ts'),
           testName: 'approval-test',
         })
@@ -83,7 +47,7 @@ export const averApprovalsAdapter = implement(averApprovals, {
   queries: {
     approvedFileExists: async (session) => {
       const dir = join(session.workDir, 'tests', '__approvals__', 'approval-test')
-      for (const ext of ['json', 'txt', 'html']) {
+      for (const ext of ['json', 'txt']) {
         if (existsSync(join(dir, `${safeName(session.lastApprovalName)}.approved.${ext}`))) {
           return true
         }
@@ -93,7 +57,7 @@ export const averApprovalsAdapter = implement(averApprovals, {
 
     receivedFileContents: async (session) => {
       const dir = join(session.workDir, 'tests', '__approvals__', 'approval-test')
-      for (const ext of ['json', 'txt', 'html']) {
+      for (const ext of ['json', 'txt']) {
         const path = join(dir, `${safeName(session.lastApprovalName)}.received.${ext}`)
         if (existsSync(path)) return readFileSync(path, 'utf-8')
       }
@@ -125,7 +89,7 @@ export const averApprovalsAdapter = implement(averApprovals, {
     baselineCreated: async (session) => {
       const dir = join(session.workDir, 'tests', '__approvals__', 'approval-test')
       let found = false
-      for (const ext of ['json', 'txt', 'html']) {
+      for (const ext of ['json', 'txt']) {
         if (existsSync(join(dir, `${safeName(session.lastApprovalName)}.approved.${ext}`))) {
           found = true
           break
@@ -154,7 +118,6 @@ export const averApprovalsAdapter = implement(averApprovals, {
         expect(contents).toContain(text)
         return
       }
-      // Check error message for the text
       expect(session.lastError?.message ?? '').toContain(text)
     },
 

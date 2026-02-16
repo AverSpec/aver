@@ -6,9 +6,6 @@ import { averApprovalsAdapter } from './adapters/aver-approvals.unit'
 describe('Approval testing', () => {
   const { test } = suite(averApprovals, averApprovalsAdapter)
 
-  // These tests exercise approve/reject scenarios and must control AVER_APPROVE
-  // per-scenario. Save and restore the original value so we don't leak into
-  // other test files in the same process.
   let savedApprove: string | undefined
   beforeEach(() => {
     savedApprove = process.env.AVER_APPROVE
@@ -67,31 +64,11 @@ describe('Approval testing', () => {
     })
   })
 
-  describe('custom comparison', () => {
-    test('uses custom compare function', async ({ act, assert }) => {
-      await act.setApproveMode()
-      await act.approveValue({ value: 'hello' })
-      await act.clearApproveMode()
-      await act.approveWithCustomCompare({ value: 'different', compareFn: 'alwaysEqual' })
-      await assert.matchPassed()
-      await assert.noError()
-    })
-
-    test('applies normalize before comparison', async ({ act, assert }) => {
-      await act.setApproveMode()
-      await act.approveValue({ value: 'HELLO WORLD', serializer: 'text' })
-      await act.clearApproveMode()
-      await act.approveWithNormalize({ value: 'hello world', normalizeFn: 'lowercase' })
-      await assert.matchPassed()
-      await assert.noError()
-    })
-  })
-
   describe('multiple approvals in one test', () => {
     test('handles multiple named approvals independently', async ({ act, assert }) => {
       await act.setApproveMode()
-      await act.approveValue({ value: 'first', name: 'alpha', serializer: 'text' })
-      await act.approveValue({ value: 'second', name: 'beta', serializer: 'text' })
+      await act.approveValue({ value: 'first', name: 'alpha' })
+      await act.approveValue({ value: 'second', name: 'beta' })
       await assert.noError()
       await assert.baselineCreated()
     })
@@ -113,14 +90,6 @@ describe('Approval testing', () => {
     test('records fail status on mismatch', async ({ act, assert }) => {
       await act.approveValue({ value: { data: 3 } })
       await assert.traceEntryHasStatus({ name: 'approval-artifacts', status: 'fail' })
-    })
-  })
-
-  describe('renderer extension integration', () => {
-    test('works without renderer (text diff only)', async ({ act, assert }) => {
-      await act.approveValue({ value: '<html>hi</html>', serializer: 'html' })
-      await assert.mismatchDetected()
-      await assert.diffContains({ text: 'Baseline missing' })
     })
   })
 

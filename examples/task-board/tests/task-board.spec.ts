@@ -49,5 +49,8 @@ test('demo failure artifacts (set AVER_DEMO_FAIL=1)', async ({ assert }) => {
 test('visual approval of task board', async ({ act }) => {
   if (process.env.AVER_DEMO_APPROVAL !== '1' && process.env.AVER_DEMO_DIFF !== '1') return
   await act.createTask({ title: 'Review homepage' })
+  if (process.env.AVER_DEMO_DIFF === '1') {
+    await act.moveTask({ title: 'Review homepage', status: 'in-progress' })
+  }
   await approve.visual('board-with-task')
 })

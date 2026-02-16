@@ -1,7 +1,7 @@
 {
-  "name": "@aver/claude-code-plugin",
+  "name": "@aver/agent-plugin",
   "version": "0.1.0",
-  "description": "Claude Code plugin for Aver — MCP server + domain-first BDD skill",
+  "description": "Agent plugin for Aver — MCP server + maturity pipeline workflow skill",
   "license": "MIT",
   "files": [".claude-plugin", "skills", ".mcp.json"],
   "peerDependencies": {

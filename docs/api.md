@@ -281,6 +281,70 @@ interface Protocol<Context> {
 
 ---
 
+## Approval Testing <small>from `@aver/approvals`</small>
+
+### `approve(value, options?)`
+
+Approves a value against a stored baseline. Auto-detects serializer: objects use JSON, strings use text.
+
+```typescript
+import { approve } from '@aver/approvals'
+
+await approve({ count: 42 })                    // default name "approval"
+await approve(reportText, { name: 'report' })   // named approval
+```
+
+First run fails with "Baseline missing". Run `aver approve` to create it.
+
+**Options:**
+
+| Property | Type | Default | Description |
+|:---------|:-----|:--------|:------------|
+| `name` | `string` | `'approval'` | Name for the approval file |
+| `fileExtension` | `string` | auto | Override file extension |
+| `filePath` | `string` | auto | Override test file path (for programmatic use) |
+| `testName` | `string` | auto | Override test name (for programmatic use) |
+
+### `approve.visual(nameOrOptions)`
+
+Approves a screenshot against a stored baseline image. Requires a protocol with `screenshotter` extension (e.g., Playwright). Skips with warning on protocols without one.
+
+```typescript
+await approve.visual('board-state')                          // full page
+await approve.visual({ name: 'backlog', region: 'backlog' }) // scoped region
+```
+
+**Options (when passing object):**
+
+| Property | Type | Required | Description |
+|:---------|:-----|:---------|:------------|
+| `name` | `string` | yes | Name for the approval image file |
+| `region` | `string` | no | Named region (maps to CSS selector in adapter) |
+
+### `Screenshotter` <small>from `aver`</small>
+
+Extension interface for visual approval support. Protocols implement this.
+
+```typescript
+interface Screenshotter {
+  capture(outputPath: string, options?: { region?: string }): Promise<void>
+  regions?: Record<string, string>
+}
+```
+
+Playwright configures regions at adapter creation:
+
+```typescript
+const proto = playwright({
+  regions: {
+    'board': '.board',
+    'backlog': '[data-testid="column-backlog"]',
+  },
+})
+```
+
+---
+
 ## CLI
 
 ### `aver run`
@@ -307,3 +371,13 @@ Generates:
 - `adapters/shopping-cart.unit.ts`
 - `tests/shopping-cart.spec.ts`
 - `aver.config.ts` (if it doesn't exist)
+
+### `aver approve`
+
+Updates approval baselines by running tests with `AVER_APPROVE=1`.
+
+```bash
+npx aver approve                               # approve all
+npx aver approve tests/my-test.spec.ts         # approve specific file
+npx aver approve --adapter playwright          # approve for specific adapter
+```

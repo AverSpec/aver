@@ -1,4 +1,4 @@
-import type { Protocol, TestCompletion, TraceAttachment, HtmlRenderer } from 'aver'
+import type { Protocol, TestCompletion, TraceAttachment, Screenshotter } from 'aver'
 import type { Browser, Page } from 'playwright'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -10,6 +10,7 @@ export interface PlaywrightOptions {
   captureScreenshot?: boolean
   captureHtml?: boolean
   captureConsole?: boolean
+  regions?: Record<string, string>
 }
 
 export function playwright(options?: PlaywrightOptions): Protocol<Page> {
@@ -19,7 +20,6 @@ export function playwright(options?: PlaywrightOptions): Protocol<Page> {
   const captureScreenshot = options?.captureScreenshot ?? true
   const captureHtml = options?.captureHtml ?? true
   const captureConsole = options?.captureConsole ?? true
-  let approvalBrowser: Browser | undefined
 
   return {
     name: 'playwright',
@@ -42,8 +42,6 @@ export function playwright(options?: PlaywrightOptions): Protocol<Page> {
     async teardown(_ctx: Page): Promise<void> {
       await browser?.close()
       browser = undefined
-      await approvalBrowser?.close()
-      approvalBrowser = undefined
     },
   async onTestFail(ctx: Page, meta: TestCompletion): Promise<TraceAttachment[]> {
     const attachments: TraceAttachment[] = []
@@ -78,19 +76,20 @@ export function playwright(options?: PlaywrightOptions): Protocol<Page> {
       return attachments
     },
     extensions: {
-      'renderer:html': {
-        async render(html, outputPath) {
-          if (!approvalBrowser) {
-            const pw = await import('playwright')
-            approvalBrowser = await pw.chromium.launch({ headless: true })
+      screenshotter: {
+        regions: options?.regions ?? {},
+        async capture(outputPath, opts) {
+          const page = browser!.contexts()[0]?.pages()[0]
+          if (!page) throw new Error('No active page for screenshotter')
+          if (opts?.region) {
+            const selector = this.regions?.[opts.region]
+            if (!selector) throw new Error(`Unknown region "${opts.region}". Available: ${Object.keys(this.regions ?? {}).join(', ')}`)
+            await page.locator(selector).screenshot({ path: outputPath })
+          } else {
+            await page.screenshot({ path: outputPath, fullPage: true })
           }
-          const page = await approvalBrowser.newPage()
-          await page.setContent(html, { waitUntil: 'load' })
-          await page.setViewportSize({ width: 1280, height: 720 })
-          await page.screenshot({ path: outputPath, fullPage: true })
-          await page.close()
         },
-      } satisfies HtmlRenderer,
+      } satisfies Screenshotter,
     },
   }
 }

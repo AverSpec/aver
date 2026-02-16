@@ -136,12 +136,12 @@ test('track full task lifecycle', async ({ act, query }) => {
 
 ```bash
 # All adapters
-npx vitest run
+npx aver run
 
 # Single adapter
-AVER_ADAPTER=unit npx vitest run
-AVER_ADAPTER=http npx vitest run
-AVER_ADAPTER=playwright npx vitest run
+npx aver run --adapter unit
+npx aver run --adapter http
+npx aver run --adapter playwright
 ```
 
 Output (all adapters):

@@ -167,7 +167,7 @@ test('create and move a task', async ({ act, assert }) => {
 ## Run
 
 ```bash
-npx vitest run
+npx aver run
 ```
 
 ```

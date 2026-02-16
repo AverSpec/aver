@@ -171,7 +171,7 @@ The `{ act, query, assert }` callback provides typed proxies for each vocabulary
 ## 6. Run Tests
 
 ```bash
-npx vitest run
+npx aver run
 ```
 
 ```

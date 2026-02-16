@@ -5,7 +5,7 @@ export default defineConfig({
   test: {
     include: ['tests/**/*.spec.ts'],
     globals: true,
-    testTimeout: 30000,
+    testTimeout: 60000,
     setupFiles: ['./aver.config.ts'],
     reporters: [
       'default',

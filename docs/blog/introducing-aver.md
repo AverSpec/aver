@@ -182,7 +182,7 @@ export default defineConfig({
 Run the tests:
 
 ```
-$ npx vitest run
+$ npx aver run
 
  ✓ create a task in backlog [unit]            1ms
  ✓ create a task in backlog [http]           55ms
@@ -373,7 +373,7 @@ The name "aver" means "to declare with confidence." Your tests aver that the sys
 ```bash
 npm install aver
 npx aver init --domain TaskBoard --protocol unit
-npx vitest run
+npx aver run
 ```
 
 Or explore the [task board example](https://github.com/njackson/aver/tree/main/examples/task-board) — a React + Express app tested across all three adapters.

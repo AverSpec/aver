@@ -29,7 +29,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx vitest run
+      - run: npx aver run
 ```
 
 ## JUnit Reporting
@@ -37,7 +37,7 @@ jobs:
 Use Vitest's built-in JUnit reporter for CI-friendly test output:
 
 ```yaml
-      - run: npx vitest run --reporter=junit --reporter=default --outputFile.junit=test-results.xml
+      - run: npx aver run --reporter=junit --reporter=default --outputFile.junit=test-results.xml
 ```
 
 The `--reporter=default` keeps console output alongside the XML report.
@@ -74,7 +74,7 @@ Add the `github-actions` reporter for inline failure annotations on PRs:
 
 ```yaml
       - run: >
-          npx vitest run
+          npx aver run
           --reporter=junit
           --reporter=github-actions
           --reporter=default
@@ -90,7 +90,7 @@ If your adapters import from built packages (common in monorepos), build first:
         run: npm run build -w packages/aver
 
       - name: Test
-        run: npx vitest run
+        run: npx aver run
 ```
 
 ## Running Multiple Packages
@@ -99,17 +99,17 @@ For monorepos, run each package separately with `if: !cancelled()` so all suites
 
 ```yaml
       - name: Test core
-        run: npx vitest run
+        run: npx aver run
         working-directory: packages/aver
 
       - name: Test API adapter
         if: ${{ !cancelled() }}
-        run: npx vitest run
+        run: npx aver run
         working-directory: packages/my-api
 
       - name: Test browser adapter
         if: ${{ !cancelled() }}
-        run: npx vitest run
+        run: npx aver run
         working-directory: packages/my-browser
 ```
 
@@ -154,7 +154,7 @@ jobs:
 
       - name: Test
         run: >
-          npx vitest run
+          npx aver run
           --reporter=junit
           --reporter=github-actions
           --reporter=default

@@ -1,3 +1,9 @@
+---
+layout: default
+title: Approval Testing
+nav_order: 5
+---
+
 # Approval Testing
 
 ## Overview

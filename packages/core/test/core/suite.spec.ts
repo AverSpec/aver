@@ -173,6 +173,39 @@ describe('suite() — programmatic API', () => {
 
     await s.teardown()
   })
+
+  it('tracks vocabulary coverage', async () => {
+    const s = suite(cart, cartAdapter)
+    await s.setup()
+
+    await s.act.addItem({ name: 'A' })
+    await s.query.total()
+    // Intentionally don't call assert.isEmpty
+
+    const coverage = s.getCoverage()
+    expect(coverage.domain).toBe('Cart')
+    expect(coverage.actions.called).toEqual(['addItem'])
+    expect(coverage.queries.called).toEqual(['total'])
+    expect(coverage.assertions.called).toEqual([])
+    expect(coverage.percentage).toBe(67) // 2 of 3 operations
+
+    await s.teardown()
+  })
+
+  it('tracks coverage across multiple calls without duplicates', async () => {
+    const s = suite(cart, cartAdapter)
+    await s.setup()
+
+    await s.act.addItem({ name: 'A' })
+    await s.act.addItem({ name: 'B' })
+    await s.query.total()
+
+    const coverage = s.getCoverage()
+    expect(coverage.actions.called).toEqual(['addItem'])
+    expect(coverage.percentage).toBe(67) // still 2 of 3
+
+    await s.teardown()
+  })
 })
 
 describe('suite().test() — callback API', () => {
@@ -337,6 +370,47 @@ describe('suite() — failure artifacts', () => {
     await pending!.catch(e => { caught = e })
     expect(caught).toBeDefined()
     expect(caught.message).toContain('Action trace (test):')
+  })
+})
+
+describe('suite() — vocabulary coverage in callback API', () => {
+  const originalTest = (globalThis as any).test
+  const originalIt = (globalThis as any).it
+
+  afterEach(() => {
+    if (originalTest) (globalThis as any).test = originalTest
+    if (originalIt) (globalThis as any).it = originalIt
+  })
+
+  it('accumulates coverage across callback tests', async () => {
+    let pending1: Promise<void> | undefined
+    let pending2: Promise<void> | undefined
+    let callIdx = 0
+
+    const fakeTest = (name: string, fn: () => Promise<void>) => {
+      if (callIdx === 0) pending1 = fn()
+      else pending2 = fn()
+      callIdx++
+    }
+    fakeTest.skip = () => {}
+    ;(globalThis as any).test = fakeTest
+
+    const s = suite(cart, cartAdapter)
+    s.test('test 1', async ({ act }) => {
+      await act.addItem({ name: 'A' })
+    })
+    s.test('test 2', async ({ query }) => {
+      await query.total()
+    })
+
+    await pending1
+    await pending2
+
+    const coverage = s.getCoverage()
+    expect(coverage.actions.called).toEqual(['addItem'])
+    expect(coverage.queries.called).toEqual(['total'])
+    expect(coverage.assertions.called).toEqual([])
+    expect(coverage.percentage).toBe(67)
   })
 })
 

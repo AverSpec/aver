@@ -9,6 +9,12 @@ import { runWithTestContext } from './test-context'
 import { computeCoverage } from './coverage'
 import type { VocabularyCoverage } from './coverage'
 
+interface CalledOps {
+  actions: Set<string>
+  queries: Set<string>
+  assertions: Set<string>
+}
+
 export type ActProxy<D extends Domain> = {
   [K in keyof D['vocabulary']['actions']]:
     D['vocabulary']['actions'][K] extends { __payload?: infer P }
@@ -63,7 +69,7 @@ function createProxies<D extends Domain>(
   getCtx: () => any,
   getAdapter: () => Adapter,
   trace: TraceEntry[],
-  calledOps?: { actions: Set<string>; queries: Set<string>; assertions: Set<string> },
+  calledOps?: CalledOps,
 ): Proxies<D> {
   const act: any = {}
   const query: any = {}
@@ -226,7 +232,9 @@ export function suite<D extends Domain>(domain: D, adapter?: Adapter): SuiteRetu
   const globalTest = getGlobalTest()
   const globalTestSkip = globalTest?.skip
 
-  const calledOps = { actions: new Set<string>(), queries: new Set<string>(), assertions: new Set<string>() }
+  // Shared across all tests in this suite. Safe because JS Set.add is atomic
+  // within the event loop — concurrent tests interleave promises, not threads.
+  const calledOps: CalledOps = { actions: new Set(), queries: new Set(), assertions: new Set() }
 
   const programmaticProxies = createProxies(
     domain,
@@ -274,7 +282,7 @@ async function runTestWithAdapter<D extends Domain>(
   domain: D,
   testName: string,
   fn: (ctx: TestContext<D>) => Promise<void>,
-  calledOps?: { actions: Set<string>; queries: Set<string>; assertions: Set<string> },
+  calledOps?: CalledOps,
 ): Promise<void> {
   const trace: TraceEntry[] = []
   const ctx = await adapter.protocol.setup()
@@ -347,7 +355,7 @@ function buildTestApi<D extends Domain>(
   domain: D,
   getEffectiveAdapters: () => Adapter[],
   globalSkipImpl?: any,
-  calledOps?: { actions: Set<string>; queries: Set<string>; assertions: Set<string> },
+  calledOps?: CalledOps,
 ): any {
   const api: any = makeTestFn(testImpl, domain, getEffectiveAdapters, globalSkipImpl, calledOps)
 
@@ -411,7 +419,7 @@ function makeTestFn<D extends Domain>(
   domain: D,
   getEffectiveAdapters: () => Adapter[],
   globalSkipImpl?: any,
-  calledOps?: { actions: Set<string>; queries: Set<string>; assertions: Set<string> },
+  calledOps?: CalledOps,
 ): (name: string, fn: (ctx: TestContext<D>) => Promise<void>) => void {
   return (name, fn) => {
     if (!testImpl) {

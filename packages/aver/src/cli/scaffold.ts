@@ -53,39 +53,19 @@ export function initDomainFiles(dir: string, name: string, protocol: string): vo
 export const ${name} = defineDomain({
   name: '${kebab}',
   actions: {
-    // Actions change system state. Define the payload type.
-    // myAction: action<{ name: string }>(),
+    create: action<{ name: string }>(),
   },
   queries: {
-    // Queries read data. Define <Payload, Return> types.
-    // myQuery: query<{ id: string }, MyType>(),
+    list: query<void, string[]>(),
   },
   assertions: {
-    // Assertions verify expected state. They throw on failure.
-    // myAssertion: assertion<{ expected: string }>(),
+    exists: assertion<{ name: string }>(),
   },
 })
 `)
 
   const adapterPath = join(dir, 'adapters', `${kebab}.${protocol}.ts`)
-  writeFileSync(adapterPath, `import { implement, ${protocol} } from 'aver'
-import { ${name} } from '../domains/${kebab}.js'
-
-export const ${protocol}Adapter = implement(${name}, {
-  protocol: ${protocol}(() => {
-    // Return your app context here.
-  }),
-  actions: {
-    // Add a handler for each action in your domain.
-  },
-  queries: {
-    // Add a handler for each query in your domain.
-  },
-  assertions: {
-    // Add a handler for each assertion in your domain.
-  },
-})
-`)
+  writeFileSync(adapterPath, buildAdapterTemplate(name, kebab, protocol))
 
   const testPath = join(dir, 'tests', `${kebab}.spec.ts`)
   writeFileSync(testPath, `import { suite } from 'aver'
@@ -93,13 +73,80 @@ import { ${name} } from '../domains/${kebab}.js'
 
 const { test } = suite(${name})
 
-test('example test', async ({ act, query, assert }) => {
-  // await act.myAction({ name: 'example' })
-  // await assert.myAssertion({ expected: 'example' })
+test('create and verify', async ({ act, query, assert }) => {
+  await act.create({ name: 'example' })
+  const items = await query.list()
+  await assert.exists({ name: 'example' })
 })
 `)
 
   updateConfig(dir, name, kebab, protocol)
+}
+
+function buildAdapterTemplate(name: string, kebab: string, protocol: string): string {
+  const protocolImport = protocol === 'unit'
+    ? `import { implement, unit } from 'aver'`
+    : protocol === 'http'
+      ? `import { implement } from 'aver'\nimport { http } from '@aver/protocol-http'`
+      : protocol === 'playwright'
+        ? `import { implement } from 'aver'\nimport { playwright } from '@aver/protocol-playwright'`
+        : `import { implement, ${protocol} } from 'aver'`
+
+  if (protocol === 'unit') {
+    return `${protocolImport}
+import { ${name} } from '../domains/${kebab}.js'
+
+export const unitAdapter = implement(${name}, {
+  protocol: unit(() => {
+    const items: string[] = []
+    return { items }
+  }),
+  actions: {
+    create: async (ctx, { name }) => {
+      ctx.items.push(name)
+    },
+  },
+  queries: {
+    list: async (ctx) => {
+      return [...ctx.items]
+    },
+  },
+  assertions: {
+    exists: async (ctx, { name }) => {
+      if (!ctx.items.includes(name)) {
+        throw new Error(\`Expected "\${name}" to exist\`)
+      }
+    },
+  },
+})
+`
+  }
+
+  return `${protocolImport}
+import { ${name} } from '../domains/${kebab}.js'
+
+export const ${protocol}Adapter = implement(${name}, {
+  protocol: ${protocol}({
+    // TODO: configure your ${protocol} protocol options (e.g., baseUrl)
+  }),
+  actions: {
+    create: async (ctx, { name }) => {
+      // TODO: implement create via ${protocol}
+    },
+  },
+  queries: {
+    list: async (ctx) => {
+      // TODO: implement list via ${protocol}
+      return []
+    },
+  },
+  assertions: {
+    exists: async (ctx, { name }) => {
+      // TODO: implement exists via ${protocol}
+    },
+  },
+})
+`
 }
 
 function updateConfig(dir: string, name: string, kebab: string, protocol: string): void {

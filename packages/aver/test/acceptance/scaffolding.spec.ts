@@ -47,6 +47,10 @@ describe('Scaffolding', () => {
         path: join(dir, 'domains', 'task-board.ts'),
         content: "name: 'task-board'",
       })
+      await assert.fileContains({
+        path: join(dir, 'domains', 'task-board.ts'),
+        content: 'create: action',
+      })
     })
 
     test('generates adapter file for chosen protocol', async ({ act, assert, query }) => {
@@ -62,6 +66,10 @@ describe('Scaffolding', () => {
       await assert.fileContains({
         path: join(dir, 'adapters', 'task-board.unit.ts'),
         content: 'unit(',
+      })
+      await assert.fileContains({
+        path: join(dir, 'adapters', 'task-board.unit.ts'),
+        content: 'create: async',
       })
     })
 
@@ -83,6 +91,10 @@ describe('Scaffolding', () => {
         path: join(dir, 'tests', 'task-board.spec.ts'),
         content: "import '../aver.config'",
         shouldContain: false,
+      })
+      await assert.fileContains({
+        path: join(dir, 'tests', 'task-board.spec.ts'),
+        content: 'act.create',
       })
     })
 

@@ -48,7 +48,9 @@ The [Task Board Example](example-app) is a complete React + Express app tested a
 
 | Package | Description |
 |:--------|:------------|
-| `aver` | Core framework — domains, adapters, suite, CLI |
+| [`@aver/core`](https://github.com/njackson/aver/tree/main/packages/core) | Core framework — domains, adapters, suite, CLI |
+| `@aver/approvals` | Approval testing — structural diffs and visual screenshot comparison |
+| `@aver/workspace` | Scenario workspace — maturity pipeline state management |
 | `@aver/protocol-http` | HTTP protocol adapter (fetch-based) |
 | `@aver/protocol-playwright` | Playwright browser protocol adapter |
 | `@aver/mcp-server` | MCP server for AI-assisted testing |

@@ -99,7 +99,7 @@ import { playwright } from '@aver/protocol-playwright'
 import { taskBoard } from '../domains/task-board'
 
 export const playwrightAdapter = implement(taskBoard, {
-  protocol: playwright({ baseUrl: 'http://localhost:3000' }),
+  protocol: playwright(),
   actions: {
     createTask: async (page, { title }) => {
       await page.getByPlaceholder('Task title').fill(title)

@@ -38,18 +38,20 @@ Create the domain file with operations from the formalization phase:
 // domains/task-board.ts
 import { defineDomain, action, query, assertion } from '@aver/core'
 
-export const taskBoard = defineDomain('task-board', {
-  // Actions
-  createTask: action<{ title: string; status?: string }>(),
-  deleteTask: action<{ id: string }>(),
-
-  // Queries
-  getTaskCount: query<number>(),
-  getTask: query<{ id: string }, { title: string; status: string } | null>(),
-
-  // Assertions
-  taskExists: assertion<{ id: string }>(),
-  hasValidationError: assertion<{ field: string; message: string }>(),
+export const taskBoard = defineDomain({
+  name: 'task-board',
+  actions: {
+    createTask: action<{ title: string; status?: string }>(),
+    deleteTask: action<{ id: string }>(),
+  },
+  queries: {
+    getTaskCount: query<void, number>(),
+    getTask: query<{ id: string }, { title: string; status: string } | null>(),
+  },
+  assertions: {
+    taskExists: assertion<{ id: string }>(),
+    hasValidationError: assertion<{ field: string; message: string }>(),
+  },
 })
 ```
 

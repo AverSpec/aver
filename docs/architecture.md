@@ -116,7 +116,7 @@ Aver ships three protocols:
 |:---------|:--------|:---------|
 | `unit(factory)` | Your object | In-memory / unit-speed testing |
 | `http({ baseUrl })` | HTTP client | API-level testing |
-| `playwright({ baseUrl })` | Playwright `Page` | Browser UI testing |
+| `playwright()` | Playwright `Page` | Browser UI testing |
 
 The `unit()` protocol is built into core (zero dependencies). The `http()` and `playwright()` protocols are separate packages.
 
@@ -181,7 +181,7 @@ The trace is recorded automatically by `suite()` as it proxies domain calls thro
 
 ## Design Principles
 
-- **Zero runtime dependencies** in core — `aver` has no deps. Protocols are separate packages.
+- **Zero runtime dependencies** in core — `@aver/core` has no deps. Protocols are separate packages.
 - **TypeScript-first** — phantom types enforce that adapters implement every domain item. Queries and assertions are typed end-to-end.
 - **Adapter authors receive ready-to-use context** — protocols handle lifecycle (launching browsers, creating HTTP clients). Adapter code focuses on domain logic.
 - **Tests are protocol-agnostic** — they import domains, never adapters. The same test runs everywhere.

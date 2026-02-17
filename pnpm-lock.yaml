@@ -73,7 +73,7 @@ importers:
   packages/agent-plugin:
     dependencies:
       '@aver/mcp-server':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../mcp-server
 
   packages/approvals:
@@ -113,7 +113,7 @@ importers:
   packages/core:
     dependencies:
       '@aver/workspace':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../workspace
       '@clack/prompts':
         specifier: ^1.0.0
@@ -135,7 +135,7 @@ importers:
   packages/mcp-server:
     dependencies:
       '@aver/workspace':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../workspace
       '@modelcontextprotocol/sdk':
         specifier: ^1.26.0
@@ -145,7 +145,7 @@ importers:
         version: 3.25.76
     devDependencies:
       '@aver/core':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../core
       '@types/node':
         specifier: ^22.0.0

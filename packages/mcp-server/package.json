@@ -18,6 +18,14 @@
   "bin": { "aver-mcp": "./dist/index.js" },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    }
+  },
   "files": ["dist"],
   "scripts": {
     "build": "tsup",
@@ -26,18 +34,18 @@
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
-    "@aver/workspace": "workspace:*",
+    "@aver/workspace": "workspace:^",
     "@modelcontextprotocol/sdk": "^1.26.0",
     "zod": "^3.24.0"
   },
   "peerDependencies": {
-    "@aver/core": "workspace:*"
+    "@aver/core": "workspace:^"
   },
   "devDependencies": {
     "tsup": "^8.0.0",
     "typescript": "^5.7.0",
     "vitest": "^3.0.0",
     "@types/node": "^22.0.0",
-    "@aver/core": "workspace:*"
+    "@aver/core": "workspace:^"
   }
 }

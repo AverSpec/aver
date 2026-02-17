@@ -16,7 +16,7 @@ This tutorial walks you through creating a domain, implementing an adapter, and 
 ## Install
 
 ```bash
-npm install aver
+npm install @aver/core
 ```
 
 ## 1. Scaffold a Domain

@@ -50,10 +50,16 @@ playwright({
 })
 ```
 
-### Approval visual diffs (HTML)
+### Visual Approval Testing
 
-When `approve()` is used with the `html` serializer, the Playwright protocol can render
-approved/received HTML into screenshots and generate a pixel diff image.
+The Playwright protocol provides a `screenshotter` extension for visual approval testing via `@aver/approvals`. Use `approve.visual()` in your tests to capture and compare screenshots:
+
+```typescript
+import { approve } from '@aver/approvals'
+
+await approve.visual('board-state')                          // full page
+await approve.visual({ name: 'backlog', region: 'backlog' }) // scoped region
+```
 
 ## License
 

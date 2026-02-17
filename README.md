@@ -1,5 +1,9 @@
 # Aver
 
+[![CI](https://github.com/njackson/aver/actions/workflows/ci.yml/badge.svg)](https://github.com/njackson/aver/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/@aver/core)](https://www.npmjs.com/package/@aver/core)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 Domain-driven acceptance testing for TypeScript.
 
 Define **what** to test in domain language. Swap **how** via adapters. Same test runs against in-memory objects, HTTP APIs, and browser UI — zero code duplication.
@@ -75,7 +79,7 @@ export const directAdapter = implement(taskBoard, {
 ## Quick Start
 
 ```bash
-npm install aver
+npm install @aver/core
 npx aver init --domain ShoppingCart --protocol unit
 npx vitest run
 ```
@@ -84,7 +88,9 @@ npx vitest run
 
 | Package | Description |
 |---------|-------------|
-| [`aver`](packages/aver) | Core framework — domains, adapters, suite, CLI |
+| [`@aver/core`](packages/core) | Core framework — domains, adapters, suite, CLI |
+| [`@aver/approvals`](packages/approvals) | Approval testing — structural diffs and visual screenshot comparison |
+| [`@aver/workspace`](packages/workspace) | Scenario workspace — maturity pipeline state management |
 | [`@aver/protocol-http`](packages/protocol-http) | HTTP protocol adapter (fetch-based) |
 | [`@aver/protocol-playwright`](packages/protocol-playwright) | Playwright browser protocol adapter |
 | [`@aver/mcp-server`](packages/mcp-server) | MCP server for AI-assisted testing |

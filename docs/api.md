@@ -6,7 +6,7 @@ nav_order: 4
 
 # API Reference
 
-All public exports from the `aver` package.
+All public exports from the `@aver/core` package.
 
 ## Domain Definition
 
@@ -139,7 +139,7 @@ Playwright protocol providing a browser page.
 ```typescript
 import { playwright } from '@aver/protocol-playwright'
 
-protocol: playwright({ baseUrl: 'http://localhost:3000' })
+protocol: playwright()
 ```
 
 Context is a Playwright `Page`. Browser is launched once and reused; a fresh page is created per test.

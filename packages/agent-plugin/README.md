@@ -9,7 +9,10 @@ Agent plugin for [Aver](https://github.com/njackson/aver) — domain-driven acce
 
 ## Installation
 
+Install the MCP server (peer dependency) and the plugin:
+
 ```bash
+npm install @aver/mcp-server
 claude plugin add @aver/agent-plugin
 ```
 

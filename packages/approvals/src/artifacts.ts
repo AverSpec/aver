@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
-import type { Screenshotter, TraceAttachment } from 'aver'
+import type { Screenshotter, TraceAttachment } from '@aver/core'
 import type { ApprovalPaths } from './paths'
 
 export async function captureVisual(

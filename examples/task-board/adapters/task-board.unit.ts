@@ -1,4 +1,4 @@
-import { implement, unit } from 'aver'
+import { implement, unit } from '@aver/core'
 import { Board } from '../src/server/board.js'
 import { taskBoard } from '../domains/task-board.js'
 

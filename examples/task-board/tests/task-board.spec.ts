@@ -1,5 +1,5 @@
 import { expect } from 'vitest'
-import { suite } from 'aver'
+import { suite } from '@aver/core'
 import { approve } from '@aver/approvals'
 import { taskBoard } from '../domains/task-board.js'
 

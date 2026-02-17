@@ -1,4 +1,4 @@
-import { defineDomain, action, query, assertion } from 'aver'
+import { defineDomain, action, query, assertion } from '@aver/core'
 
 /**
  * Acceptance domain for the Aver MCP server.

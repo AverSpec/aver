@@ -43,7 +43,7 @@ Cucumber got the big things right: tests should speak domain language, and the v
 This is where Aver starts. A domain definition in Aver is simultaneously a specification and a test contract:
 
 ```typescript
-import { defineDomain, action, query, assertion } from 'aver'
+import { defineDomain, action, query, assertion } from '@aver/core'
 
 export const taskBoard = defineDomain({
   name: 'task-board',

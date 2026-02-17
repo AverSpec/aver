@@ -11,8 +11,8 @@ import {
   unit,
   registerAdapter,
   resetRegistry,
-} from 'aver'
-import type { Protocol } from 'aver'
+} from '@aver/core'
+import type { Protocol } from '@aver/core'
 import { averMcp } from '../domains/aver-mcp'
 import {
   listDomainsHandler,

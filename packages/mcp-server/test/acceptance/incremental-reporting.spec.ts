@@ -1,5 +1,5 @@
 import { describe, beforeEach } from 'vitest'
-import { suite, resetRegistry } from 'aver'
+import { suite, resetRegistry } from '@aver/core'
 import { averMcp } from './domains/aver-mcp'
 import { averMcpAdapter } from './adapters/aver-mcp.unit'
 

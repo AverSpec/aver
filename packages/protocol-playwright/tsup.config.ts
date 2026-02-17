@@ -6,5 +6,5 @@ export default defineConfig({
   dts: true,
   sourcemap: true,
   clean: true,
-  external: ['playwright', 'aver'],
+  external: ['playwright', '@aver/core'],
 })

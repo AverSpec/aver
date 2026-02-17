@@ -15,7 +15,7 @@ All public exports from the `aver` package.
 Creates a domain with a named vocabulary.
 
 ```typescript
-import { defineDomain, action, query, assertion } from 'aver'
+import { defineDomain, action, query, assertion } from '@aver/core'
 
 const cart = defineDomain({
   name: 'shopping-cart',
@@ -82,7 +82,7 @@ const cartUI = cart.extend({
 Creates an adapter binding a domain to a protocol with handler implementations.
 
 ```typescript
-import { implement, unit } from 'aver'
+import { implement, unit } from '@aver/core'
 
 const adapter = implement(cart, {
   protocol: unit(() => []),
@@ -111,7 +111,7 @@ TypeScript enforces that every action, query, and assertion declared in the doma
 Built-in protocol for in-memory testing. Zero dependencies.
 
 ```typescript
-import { unit } from 'aver'
+import { unit } from '@aver/core'
 
 protocol: unit(() => new Cart())         // object context
 protocol: unit(() => ({ db: new DB() })) // compound context
@@ -153,7 +153,7 @@ Context is a Playwright `Page`. Browser is launched once and reused; a fresh pag
 Creates a test suite for a domain.
 
 ```typescript
-import { suite } from 'aver'
+import { suite } from '@aver/core'
 
 // Multi-adapter: resolves from registry
 const { test } = suite(cart)
@@ -204,7 +204,7 @@ The callback receives:
 Creates an Aver configuration and auto-registers adapters.
 
 ```typescript
-import { defineConfig } from 'aver'
+import { defineConfig } from '@aver/core'
 import { unitAdapter } from './adapters/cart.unit'
 import { httpAdapter } from './adapters/cart.http'
 
@@ -253,7 +253,7 @@ import type {
   ActionMarker,
   QueryMarker,
   AssertionMarker,
-} from 'aver'
+} from '@aver/core'
 ```
 
 ### `TraceEntry`

@@ -8,7 +8,7 @@ import {
   defineDomain, action, query, assertion,
   implement, unit,
   resetRegistry, registerAdapter,
-} from 'aver'
+} from '@aver/core'
 
 const cart = defineDomain({
   name: 'Cart',

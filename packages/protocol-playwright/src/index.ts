@@ -1,4 +1,4 @@
-import type { Protocol, TestCompletion, TraceAttachment, Screenshotter } from 'aver'
+import type { Protocol, TestCompletion, TraceAttachment, Screenshotter } from '@aver/core'
 import type { Browser, Page } from 'playwright'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'

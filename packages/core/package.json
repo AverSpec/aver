@@ -1,5 +1,5 @@
 {
-  "name": "aver",
+  "name": "@aver/core",
   "version": "0.1.0",
   "description": "Domain-driven acceptance testing framework",
   "type": "module",

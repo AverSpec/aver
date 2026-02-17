@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { parseArgs } from 'node:util'
-import { resetRegistry } from 'aver'
+import { resetRegistry } from '@aver/core'
 
 const CONFIG_FILENAMES = ['aver.config.ts', 'aver.config.js', 'aver.config.mjs']
 

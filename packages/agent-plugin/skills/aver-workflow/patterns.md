@@ -7,7 +7,7 @@ Complete code examples for every Aver pattern.
 A domain declares the vocabulary of your system — what can be done (actions), what can be observed (queries), and what must be true (assertions).
 
 ```typescript
-import { defineDomain, action, query, assertion } from 'aver'
+import { defineDomain, action, query, assertion } from '@aver/core'
 
 // Type parameter = payload shape. These are phantom types (erased at runtime).
 // action<Payload>() — Payload is what the test passes in
@@ -45,7 +45,7 @@ export const taskBoard = defineDomain({
 The unit adapter tests business logic directly, with no I/O. The `unit()` protocol takes a factory function that creates fresh state for each test.
 
 ```typescript
-import { implement, unit } from 'aver'
+import { implement, unit } from '@aver/core'
 import { Board } from '../src/server/board.js'
 import { taskBoard } from '../domains/task-board.js'
 
@@ -106,7 +106,7 @@ export const unitAdapter = implement(taskBoard, {
 The HTTP adapter tests through your API. Each handler makes HTTP requests and checks responses.
 
 ```typescript
-import { implement } from 'aver'
+import { implement } from '@aver/core'
 import { http } from '@aver/protocol-http'
 import { taskBoard } from '../domains/task-board.js'
 import { createServer } from '../src/server/index.js'
@@ -179,7 +179,7 @@ export const httpAdapter = implement(taskBoard, {
 The Playwright adapter tests through the browser UI.
 
 ```typescript
-import { implement } from 'aver'
+import { implement } from '@aver/core'
 import { taskBoard } from '../domains/task-board.js'
 import type { Page } from 'playwright'
 
@@ -235,7 +235,7 @@ Tests use `suite()` which returns `test`, `act`, `query`, `assert`. The `test` c
 
 ```typescript
 import { expect } from 'vitest'
-import { suite } from 'aver'
+import { suite } from '@aver/core'
 import { taskBoard } from '../domains/task-board.js'
 
 // Config import auto-registers adapters
@@ -264,7 +264,7 @@ test('track full task lifecycle', async ({ act, query }) => {
 ## Config File
 
 ```typescript
-import { defineConfig } from 'aver'
+import { defineConfig } from '@aver/core'
 import { unitAdapter } from './adapters/task-board.unit.js'
 import { httpAdapter } from './adapters/task-board.http.js'
 import { playwrightAdapter } from './adapters/task-board.playwright.js'

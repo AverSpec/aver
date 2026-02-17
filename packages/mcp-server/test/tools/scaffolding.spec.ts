@@ -11,7 +11,7 @@ import {
   defineDomain, action, query, assertion,
   implement, unit,
   resetRegistry, registerAdapter,
-} from 'aver'
+} from '@aver/core'
 
 vi.mock('../../src/config.js', () => {
   let configPath: string | undefined

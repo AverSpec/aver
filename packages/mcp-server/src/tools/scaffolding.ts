@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs'
 import { dirname, relative, resolve } from 'node:path'
-import { getAdapters } from 'aver'
+import { getAdapters } from '@aver/core'
 import { getConfigPath } from '../config.js'
 
 export interface DomainStructure {

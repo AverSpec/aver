@@ -11,7 +11,7 @@ npm install @aver/protocol-http
 ## Usage
 
 ```typescript
-import { implement } from 'aver'
+import { implement } from '@aver/core'
 import { http } from '@aver/protocol-http'
 import { cart } from './domains/cart'
 

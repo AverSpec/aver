@@ -12,7 +12,7 @@ npx playwright install chromium
 ## Usage
 
 ```typescript
-import { implement } from 'aver'
+import { implement } from '@aver/core'
 import { playwright } from '@aver/protocol-playwright'
 import { cart } from './domains/cart'
 

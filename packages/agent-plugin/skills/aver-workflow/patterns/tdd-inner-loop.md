@@ -32,7 +32,7 @@ Start from the Example Mapping output. Each proposed operation becomes an `actio
 
 ```typescript
 // domains/task-board.ts
-import { defineDomain, action, query, assertion } from 'aver'
+import { defineDomain, action, query, assertion } from '@aver/core'
 
 export const taskBoard = defineDomain({
   name: 'task-board',
@@ -59,7 +59,7 @@ Each example from Example Mapping becomes a test case. The test uses only domain
 
 ```typescript
 // tests/task-board.spec.ts
-import { suite } from 'aver'
+import { suite } from '@aver/core'
 import { taskBoard } from '../domains/task-board.js'
 
 const { test } = suite(taskBoard)

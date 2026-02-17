@@ -1,4 +1,4 @@
-import { defineDomain, action, query, assertion } from 'aver'
+import { defineDomain, action, query, assertion } from '@aver/core'
 
 export const averApprovals = defineDomain({
   name: 'AverApprovals',

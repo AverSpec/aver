@@ -8,9 +8,9 @@ nav_order: 10
 
 *February 2026 — Nate Jackson*
 
-## 1. The Testing Infrastructure Everyone Rebuilds
+## The Testing Infrastructure Everyone Rebuilds
 
-Every project of sufficient complexity eventually builds a domain language for its tests. You've seen it happen. The Playwright suite grows to forty tests and someone says, "We should extract a page object." The API tests start sharing setup functions and someone builds a test data factory. The integration suite gets its own little DSL for describing workflows: `createUser`, `loginAs`, `submitOrder`, `verifyOrderStatus`.
+Every project of sufficient complexity eventually builds a domain language for its tests. You've seen it happen — probably more than once. The Playwright suite grows to forty tests and someone says, "We should extract a page object." The API tests start sharing setup functions and someone builds a test data factory. The integration suite gets its own little DSL for describing workflows: `createUser`, `loginAs`, `submitOrder`, `verifyOrderStatus`.
 
 These are all partial solutions to the same underlying problem: tests should describe *what* the system does, not *how* the test interacts with the system. Page Object pattern, service layer abstractions, test data builders, custom assertion helpers — every team arrives at some subset of this infrastructure. They build it from scratch, because it's "just test code," not worth extracting into a library. They maintain it alongside the production code, and when the team moves on, the next team inherits either a sophisticated-but-undocumented test DSL, or brittle tests that nobody dares refactor.
 
@@ -18,45 +18,27 @@ The pattern repeats on every project I've worked on or consulted with over the p
 
 This is the problem Aver exists to solve. Not the tests themselves, but the infrastructure underneath them: the domain vocabulary, the adapter layer, the mechanism for running the same intent at different abstraction levels. The stuff every serious test suite needs and every team rebuilds.
 
-## 2. The Testing Pyramid's Dirty Secret
+## The Pyramid's Missing Spine
 
-The testing pyramid — lots of unit tests at the base, fewer integration tests in the middle, a handful of end-to-end tests at the top — is one of those ideas that sounds right in a conference talk and falls apart in practice. Not because it's wrong in principle, but because it assumes something that's rarely true: that tests at different levels are testing *different things*.
+The testing pyramid — lots of unit tests at the base, fewer integration tests in the middle, a handful of end-to-end tests at the top — is sound advice. Unit tests catch logic bugs fast. Integration tests catch wiring issues. End-to-end tests verify the deployment actually works. These are genuinely different failure modes, and the pyramid is right to recommend coverage at each level.
 
-In reality, you're usually testing the *same behavior* at every level. "Creating a task puts it in backlog" is the same requirement whether you're verifying it against a `Board` class, an Express API, or a React UI. The pyramid tells you to write a unit test for the class, an integration test for the API, and an end-to-end test for the browser. Three tests, one requirement, three places to update when the requirement changes. That's not a pyramid. That's tripled maintenance with a nice diagram.
+What breaks down is how teams implement it. "Creating a task puts it in backlog" is the same requirement whether you're verifying it against a `Board` class, an Express API, or a React UI. The pyramid tells you to write a unit test for the class, an integration test for the API, and an end-to-end test for the browser. Three tests, one requirement, three places to update when the requirement changes. The levels are valuable. Duplicating the behavioral specification across them isn't.
 
 **Legacy projects** have it worst. The pyramid is inverted: most of the test coverage is end-to-end, because the code wasn't designed for unit testing. Services are tightly coupled to databases. Business logic lives inside controllers. Adding unit tests means refactoring the production code, which breaks the end-to-end tests that are the only safety net you have. So you don't refactor, and the inverted pyramid calcifies.
 
 **Greenfield projects** fare better initially, then converge on the same mess from the opposite direction. You start with fast, isolated unit tests. Then you discover that the integration between your services has bugs that unit tests can't catch, so you add integration tests. Then a QA engineer points out that the button doesn't actually work in the browser, so you add end-to-end tests. Now you have three test suites with overlapping intent, different languages for expressing that intent, and no mechanism for keeping them in sync.
 
-The pyramid's real failure is treating the *level of abstraction* as the organizing principle for tests. It should be the *behavior under test*. One behavior, described once, verified at whatever levels matter. The duplication isn't a feature of thorough testing — it's an engineering failure we've learned to accept.
+What the pyramid needs is a spine: a single behavioral specification that runs at every level, with level-specific tests handling concerns unique to each layer. You still write unit tests for edge cases and TDD design feedback. You still write integration tests for protocol-specific behaviors. But the core behavioral contract — the spec — gets described once and verified everywhere.
 
-## 3. BDD: The Right Idea, Wrong Execution
+## BDD: The Right Idea, Wrong Execution
 
-Behavior-Driven Development recognized this problem fifteen years ago. Cucumber, SpecFlow, Behave — the Gherkin family — introduced domain language as the primary interface for tests. Write a feature file in natural language, bind step definitions to code, execute. The insight was genuine and important: tests should be readable as behavioral specifications, not as scripts for driving a browser.
+The idea of describing behavior once and verifying it everywhere isn't new. Behavior-Driven Development recognized this problem twenty years ago. Dan North, Aslak Hellesøy, Matt Wynne, and the BDD community introduced domain language as the primary interface for tests. Write a feature file in natural language, bind step definitions to code, execute. The insight was genuine and important: tests should be readable as behavioral specifications, not as scripts for driving a browser. And the practices that surrounded the tooling — discovery workshops, Example Mapping, Three Amigos sessions — remain some of the most valuable in software development. Collaborative discovery is where domain vocabulary comes from. That hasn't changed.
 
-But the execution was wrong.
+The tooling has struggled. Early Cucumber relied on fragile regex-based step matching; Cucumber Expressions improved this (`Given a task {string} exists` is type-safe and unambiguous), but the deeper structural issue remains: a directory of `.feature` files, a directory of step definitions, and a mapping layer between them that breaks when either side changes. Stakeholders were meant to *read* the feature files and give feedback — not write them — but in practice the people reading and writing were almost always developers, and for developer-to-developer communication, the Gherkin layer becomes ceremonial overhead between intent and code.
 
-Regex-based step matching is inherently fragile. `Given a task "Fix login bug" exists` and `Given there is a task called "Fix login bug"` are the same intent expressed differently, and the step runner can't match both without either a clever regex or two separate step definitions. The Gherkin-to-code gap becomes a maintenance burden in its own right: a directory of `.feature` files, a directory of step definitions, and a mapping layer between them that breaks when either side changes.
+Cucumber got the big things right: tests should speak domain language, and the vocabulary should emerge from collaborative discovery. Where Aver diverges is in the mechanism and the audience. The vocabulary is defined in code, enforced by a type system, and composed through function calls — optimized for the development team rather than for cross-functional readability. The discovery still happens in conversations and workshops. Aver gives the discovered vocabulary a home in the type system.
 
-The promise that "non-technical stakeholders will write Gherkin specs" almost never materializes. In practice, developers write the feature files, developers write the step definitions, and the Gherkin layer is ceremonial overhead between the person writing the test and the code that executes it. The few teams where product owners genuinely contributed to Gherkin had product owners who were effectively writing pseudocode — which is what a well-designed test DSL gives you anyway, without the parsing layer.
-
-Cucumber got the big thing right: tests should speak domain language. But natural language parsing is a terrible programming interface. The vocabulary should be defined in code, enforced by a type system, and composed through function calls — not matched through regexes against prose.
-
-## 4. LLM Spec-Driven Frameworks: Solving the Wrong Problem
-
-The newest wave takes the spec-driven idea further: write your specifications in markdown, and let an LLM generate tests or code from them. Tools like GitHub Spec Kit and AWS Kiro represent this approach — the spec is the input, generated code is the output.
-
-This gets something right: specifications *should* be the source of truth. A markdown document describing "users can create tasks and move them between columns" is a genuine artifact of product intent, and it's appealing to imagine that artifact driving the test suite automatically.
-
-But the generated tests have the same problems as hand-written ones. An LLM generating Playwright tests writes Playwright selectors — `page.getByTestId('task-card')` — just like a human would. The tests are still implementation-coupled. They still break when the UI changes. The LLM just writes them faster, which means you accumulate fragile tests faster.
-
-Worse, specs drift from reality. Without an execution link between the markdown document and the running system, the spec becomes stale documentation. The team updates the code, forgets to update the spec, and the next person who reads the spec gets a description of a system that no longer exists. This is the same failure mode as Javadoc comments that describe the previous version of the method.
-
-And verification is still manual. The LLM generates tests, a human reviews them, decides they look right, merges them. If the spec was wrong, the generated tests encode that wrongness faithfully.
-
-The right intuition: specs should be the source of truth. The wrong conclusion: the spec should *generate* the test. What if the spec *was* the test?
-
-## 5. What If the Spec Was the Test?
+## The Spec Is the Test
 
 This is where Aver starts. A domain definition in Aver is simultaneously a specification and a test contract:
 
@@ -80,7 +62,7 @@ export const taskBoard = defineDomain({
 })
 ```
 
-This is a spec: the system has tasks, you can create them, move them, delete them, query their details, and verify their status. It's also a TypeScript type: every adapter must implement every action, query, and assertion, or the compiler rejects it. Phantom types make this ironclad — `action<{ title: string }>()` carries the payload type at compile time while producing just `{ kind: 'action' }` at runtime.
+This is a spec — not in the sense of a product document a stakeholder would read, but in the engineering sense: a contract that defines the system's observable behaviors and enforces them at compile time. Every adapter must implement every action, query, and assertion, or the compiler rejects it. Phantom types make this ironclad — `action<{ title: string }>()` carries the payload type at compile time while producing just `{ kind: 'action' }` at runtime.
 
 A typical Playwright test couples intent to implementation:
 
@@ -108,15 +90,75 @@ test('move task to in-progress', async ({ act, assert }) => {
 })
 ```
 
-The test doesn't know if it's talking to a class, an API, or a browser. *Adapters* handle that mapping. You write one adapter per protocol — `unit`, `http`, `playwright` — and each adapter translates domain operations into protocol-specific calls. The test stays pure. The implementation knowledge lives in exactly one place per protocol.
+The test doesn't know if it's talking to a class, an API, or a browser. It names the observable behaviors of the system — `createTask`, `moveTask`, `taskInStatus` — and those names are arbitrary handles. They don't describe an implementation. They describe what the system does from the outside.
+
+*Adapters* provide the handles into the application. Here's the Playwright adapter for the operations in that test:
+
+```typescript
+export const playwrightAdapter = implement(taskBoard, {
+  protocol: playwright(),
+
+  actions: {
+    createTask: async (page, { title }) => {
+      await page.getByTestId('new-task-title').fill(title)
+      await page.getByTestId('create-task-btn').click()
+      await page.getByTestId(`task-${title}`).waitFor()
+    },
+    moveTask: async (page, { title, status }) => {
+      await page.getByTestId(`task-${title}`)
+        .getByTestId(`move-${status}`).click()
+      await page.getByTestId(`column-${status}`)
+        .getByTestId(`task-${title}`).waitFor()
+    },
+    // ...
+  },
+
+  assertions: {
+    taskInStatus: async (page, { title, status }) => {
+      const card = page.getByTestId(`column-${status}`)
+        .getByTestId(`task-${title}`)
+      if ((await card.count()) === 0)
+        throw new Error(`Expected "${title}" in "${status}"`)
+    },
+    // ...
+  },
+})
+```
+
+That's where the selectors live. All of them. In one place. The full adapter — including server lifecycle, teardown, and every handler — is about 80 lines. The same operations in the unit adapter are three lines each:
+
+```typescript
+export const unitAdapter = implement(taskBoard, {
+  protocol: unit(() => new Board()),
+
+  actions: {
+    createTask: async (board, { title, status }) => board.create(title, status),
+    moveTask:   async (board, { title, status }) => board.move(title, status),
+    // ...
+  },
+
+  assertions: {
+    taskInStatus: async (board, { title, status }) => {
+      const task = board.details(title)
+      if (task?.status !== status)
+        throw new Error(`Expected "${title}" in "${status}"`)
+    },
+    // ...
+  },
+})
+```
+
+The adapters aren't hiding complexity — they're *factoring* it. Every Playwright test suite eventually extracts page objects, helper functions, setup utilities. That extraction happens anyway. Aver gives it a standard shape: one handler per domain operation, typed by the domain definition, isolated from the tests entirely. The complexity of driving a browser doesn't disappear. It lives in the adapter, in exactly one place, instead of being smeared across every test file.
+
+The economics come down to what grows with what. An adapter grows with the *domain vocabulary* — add a new operation, add a handler. But the test suite grows with *scenarios*, and scenarios grow much faster than vocabulary. Five domain operations can support fifty tests that compose them in different ways. In standalone Playwright, all fifty tests contain selectors. In Aver, the selectors live in five adapter handlers — and when one changes, you fix it in one place.
 
 This is the synthesis: Cucumber's vocabulary insight, implemented with types instead of regexes, composed through a real programming language instead of parsed from natural language, and executed at every level through adapters instead of locked to a single runner.
 
-## 6. Approval Testing: The Other Infrastructure Everyone Rebuilds
+## Approval Testing: Locking In What Exists
 
-There's a companion pattern that teams rebuild just as frequently: approval testing. The idea is simple — compare output against an approved baseline, fail on differences, make approval an explicit human decision. It appears everywhere: visual regression tools, snapshot testing libraries, golden-file scripts, custom diff reporters. Each project reinvents baseline management, diff display, the approve/reject workflow, and the storage conventions for approved artifacts.
+There's a companion pattern that teams rebuild just as frequently: approval testing. Compare output against an approved baseline, fail on differences, make approval an explicit human decision. You've seen the variations — visual regression tools that screenshot every page, snapshot testing libraries that serialize component trees, golden-file scripts that diff CLI output, custom diff reporters bolted onto CI. Each project reinvents baseline management, the diff display, the approve/reject workflow, and the storage conventions for approved artifacts.
 
-Aver's `@aver/approvals` package provides `approve()` for structural comparison (text, JSON) and `approve.visual()` for screenshot comparison. The interesting part is how visual approval integrates with the domain layer.
+Aver's `@aver/approvals` package provides `approve()` for structural comparison (text, JSON) and `approve.visual()` for screenshot comparison. The interesting part is how approval integrates with the domain layer.
 
 A visual approval test in Aver looks like this:
 
@@ -126,9 +168,11 @@ await approve.visual('board-with-task')
 
 One line. No `page` object, no selectors, no screenshot API calls. The protocol's screenshotter extension — declared by the Playwright adapter, invisible to the test — captures the screenshot and manages the baseline. The test doesn't know *how* the screenshot is taken, only that it wants to verify the visual state called `board-with-task`.
 
-This is the same separation at work: the domain says *what* to verify, the adapter knows *how*. When you switch from Playwright to a different browser automation tool, the visual tests don't change. When you add region-based comparisons (verify just the sidebar, just the header), the adapter maps region names to selectors. The test stays in domain language.
+When approval fails, you get a diff — a unified text diff for structural comparisons, a pixel-highlighted diff image for visual ones — alongside the received output so you can inspect exactly what changed. If the change is intentional, `aver approve` updates the baseline. If not, you have a regression.
 
-## 7. Same Test, Every Level
+This is the same separation at work: the domain says *what* to verify, the adapter knows *how*. But approval testing also plays a deeper role in how teams adopt domain-driven testing, particularly on legacy systems. More on that shortly.
+
+## Same Test, Every Level
 
 The payoff is concrete. The task board example has five tests and three adapters — unit, HTTP, Playwright:
 
@@ -153,39 +197,81 @@ $ npx aver run
 
 Five tests. Three adapters. Fifteen runs. Zero code duplication. The unit adapter validates business logic in under 5ms. The HTTP adapter verifies API contracts. The Playwright adapter confirms the UI works end-to-end. And the test code is identical for all three — because the test code doesn't know about any of them.
 
-This is the testing pyramid done right: not three separate suites with duplicated intent, but one suite that executes at every level the team cares about.
+This is the spine. The shared domain tests verify the behavioral contract at every level. You still write unit tests to drive your implementation design through TDD. You still write level-specific tests for concerns that only exist at one layer — drag-and-drop interactions, concurrent writes, CSS rendering. The pyramid doesn't disappear. It gets a backbone.
 
-## 8. The AI Angle
+If you've worked with Cucumber and RSpec, this is the same two-loop workflow. The domain suite is the outer loop — the acceptance test that stays red while you build. TDD is the inner loop — red, green, refactor on the classes and functions underneath until the outer loop goes green. Aver doesn't replace the inner loop. It gives the outer loop real infrastructure.
 
-AI coding agents are rewriting how code gets built, but they're amplifying an existing problem with tests. An agent refactors a component and Playwright tests break — not because the feature is broken, but because the tests were coupled to selectors and DOM structure that the agent changed. You spend more time fixing tests than shipping features. The faster the agent works, the faster the test suite rots.
+## The Domain You Already Have
 
-Domain vocabulary gives AI agents what they actually need: a stable interface. An agent can read `act.createTask`, `assert.taskInStatus` and understand the behavioral contract without parsing Playwright selectors or Express route handlers. When the agent refactors the implementation, the tests don't break because the tests never mentioned the implementation. The domain vocabulary is the contract between what humans intend and what the system does — and it's the right abstraction level for AI to operate at.
+Every system has a domain model whether you name it or not. The behaviors exist — they're implicit in the code, scattered across documentation, living in the heads of the developers who built it. "Users can create tasks." "Tasks move between columns." "Deleting a task removes it from the board." These are facts about the system regardless of whether anyone has written them down, and regardless of whether the codebase has a clean `Board` class or a tangled mess of controllers and database calls.
 
-Aver includes an MCP server that exposes domain vocabulary, test results, and project structure as tool calls. An AI agent can explore what the system does, run tests, read failure traces, and scaffold new domain operations — all through the same stable contract the tests use. The domain definition becomes the API between human intent and AI execution. And when something fails, the action trace — in domain language, not Playwright logs — gives the agent enough context to diagnose the problem without reading implementation code.
+The question isn't whether to have a domain vocabulary. It's whether to make it explicit — and when.
 
-## 9. Standing on Shoulders
+On a greenfield project, you define the vocabulary up front. `createTask`, `moveTask`, `taskInStatus`. These are declarations of intent: the system *should* exhibit these behaviors. You write the domain, wire the adapters, TDD the implementation underneath. The vocabulary drives the design.
 
-Aver didn't emerge from nothing. It's a synthesis of ideas I've admired — and borrowed from — for years.
+On a legacy project, you discover the vocabulary as you go. You inherit a system with no tests and tightly coupled internals — the inverted pyramid from earlier. The standard advice is to add unit tests, but that requires refactoring the production code, which requires tests you don't have yet. It's circular.
+
+The domain-level approach breaks the cycle. You start from the outside: what does this system observably do? You don't need to understand the internals to answer that. You name the behaviors — `createTask`, `moveTask` — and write an E2E adapter, because that's the only handle you have into a tightly coupled system. Now you have a behavioral contract. The acceptance tests go green. You can refactor underneath with confidence, because the contract holds from the outside.
+
+Aver is a new tool, and this legacy workflow is the one we've designed it to support. We'd love to see how teams adopt it in practice — whether the pyramid-grows-inward pattern holds on real legacy codebases the way we believe it will.
+
+This isn't always clean. Legacy systems have surprising behaviors — you write `createTask` and discover that creating a task also sends an email, updates a counter, and logs to an audit table. Your first vocabulary will be imperfect, shaped by incomplete understanding. That's fine. The vocabulary is code; you refactor it as understanding deepens, the same way you'd refactor any other code. The point isn't to get the domain right on the first try. It's to make the behavioral contract explicit so you have something to refactor *against*.
+
+As the internals improve — as you extract services, decouple from the database, create clean APIs — you add adapters. An HTTP adapter when the API layer emerges. A unit adapter when the domain classes are testable in isolation. The pyramid grows *inward*, from E2E toward unit, instead of the usual advice of building from unit outward. And through the whole process, the domain vocabulary is the constant. The tests don't change. Only the adapters do.
+
+This is the same impulse as characterization testing, at a different stage. Approval tests capture what the system currently does — observe the output, lock it in as a baseline, refactor, verify nothing changed. That's behavior locking from the *right* side: observation after the fact. Domain vocabulary is behavior locking from the *left* side: declaring the intent up front. For legacy systems, you often start on the right — `approve(output)` locks in what exists — and move left as understanding deepens, replacing opaque baselines with named operations: `assert.taskInStatus(...)`. First you lock in what the system does. Then you name what it *should* do. The tools are different; the impulse is the same.
+
+And once the vocabulary is explicit, it becomes infrastructure. It's the specification that drives your tests, the contract that survives refactoring, and the shared language your team uses to talk about what the system does.
+
+## Standing on Shoulders
+
+Aver is a synthesis of ideas I've admired — and borrowed from — for years.
 
 **Dave Farley's acceptance test architecture.** In *Continuous Delivery* (2010) and his later talks, Farley describes a four-layer model that separates test intent from implementation through a "domain-specific language" layer and a "protocol driver" layer. Aver's three-layer model — domain, adapter, test — is a direct simplification, with TypeScript's type system replacing the ceremony of Java-era patterns.
 
-**Cucumber and Gherkin.** Aslak Hellesøy, Matt Wynne, and the BDD community demonstrated that tests should speak domain language. The vocabulary insight is foundational. Where Aver diverges is in the mechanism: typed functions and phantom types instead of regex step matching and natural language parsing.
+**Cucumber and Gherkin.** Aslak Hellesøy, Matt Wynne, and the BDD community demonstrated that tests should speak domain language. The vocabulary insight is foundational. So is the workflow: Cucumber was always the outer acceptance loop, with RSpec or minitest driving the implementation underneath. Nobody argued that Cucumber replaced unit tests — they served different purposes at different granularities. Aver sits in that same outer-loop position, with the same complement to TDD. Where it diverges is in the mechanism: typed functions and phantom types instead of regex step matching and natural language parsing.
 
-**The Screenplay pattern and Serenity.js.** Antony Marcano, Andy Palmer, and Jan Molak decomposed test automation into actors, tasks, questions, and abilities — separating *what* from *how* at the test level. Serenity.js brought this to JavaScript with strong reporting. Aver takes the same conceptual split but optimizes for TypeScript ergonomics: no class hierarchies, no decorator chains, just typed functions.
+**Michael Feathers and legacy code.** *Working Effectively with Legacy Code* (2004) introduced characterization tests and the concept of *seams* — points where you can alter behavior without editing production code. Legacy systems often can't be unit-tested because internal seams don't exist yet. Aver's adapters create *external* seams — at the UI, at the API — that don't require internal refactoring to get that first test in place. As you refactor and create better internal structure, you add adapters at the new seams that emerge.
 
-**ApprovalTests.** Llewellyn Falco's ApprovalTests framework (approvals.com) established the pattern of comparing output against approved baselines with explicit approval workflows. Aver's `@aver/approvals` package carries this pattern into the domain-driven model, so approval tests benefit from the same adapter separation as behavioral tests.
+Aver also draws on Antony Marcano and Jan Molak's [Screenplay pattern](https://serenity-js.org/) (separating *what* from *how* at the test level, without class hierarchies) and Llewellyn Falco's [ApprovalTests](https://approvaltests.com/) (baseline comparison with explicit approval workflows).
 
-**Spec-driven development.** The ThoughtWorks Technology Radar tracks specification-driven development as a technique worth watching. Tools like GitHub Spec Kit and AWS Kiro focus on generating code from specs. Aver comes at it from the other side: the specification *is* the test, expressed in domain language, enforced by types, executed at every level.
+## When Aver Is Overkill
 
-## 10. Try It
+Not every project needs a domain vocabulary. A small CRUD app with one developer and one test suite doesn't benefit from the adapter layer — the overhead of defining a domain outweighs the cost of a few direct Playwright tests. Prototypes where the domain isn't stable yet are better served by throwaway tests than by infrastructure you'll redesign next week.
+
+Aver earns its keep when the test suite is large enough to feel the pain of duplication, when multiple protocols matter, or when the system is complex enough that a shared behavioral vocabulary helps the team reason about what it does. If you're leading a team through a difficult system — legacy or greenfield — and you've found yourself rebuilding test infrastructure for the third time, that's the signal.
+
+## Try It
 
 ```bash
 npm install aver
 npx aver init --domain TaskBoard --protocol unit
+```
+
+This creates three files:
+
+```
+domains/task-board.ts        # Your domain vocabulary
+adapters/task-board.unit.ts  # The unit adapter
+tests/task-board.test.ts     # Your first test
+```
+
+The domain defines what your system does. The adapter maps those operations to a unit protocol. The test composes them into scenarios. Run it:
+
+```bash
 npx aver run
 ```
 
-Or explore the [task board example](https://github.com/njackson/aver/tree/main/examples/task-board) — a React + Express app tested across unit, HTTP, and Playwright adapters with a single test suite.
+When you're ready for a second level — say, an HTTP adapter for your Express API — add one adapter file. The tests don't change:
+
+```bash
+npx aver init --adapter http --domain TaskBoard
+npx aver run
+```
+
+Now every test runs at both levels. Add a Playwright adapter when the UI exists. The test suite grows in depth without growing in duplication.
+
+For a complete example, explore the [task board](https://github.com/njackson/aver/tree/main/examples/task-board) — a React + Express app tested across unit, HTTP, and Playwright adapters with a single test suite.
 
 - [Documentation](/)
 - [Getting Started](/getting-started)

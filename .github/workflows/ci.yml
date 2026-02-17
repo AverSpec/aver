@@ -23,6 +23,8 @@ jobs:
       - name: Build packages
         run: |
           pnpm --filter aver run build
+          pnpm --filter "@aver/workspace" run build
+          pnpm --filter "@aver/approvals" run build
           pnpm --filter "@aver/protocol-http" run build
           pnpm --filter "@aver/protocol-playwright" run build
           pnpm --filter "@aver/example-task-board" run build
@@ -45,6 +47,16 @@ jobs:
       - name: Test aver (core)
         run: pnpm exec vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/aver.xml
         working-directory: packages/aver
+
+      - name: Test workspace
+        if: ${{ !cancelled() }}
+        run: pnpm exec vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/workspace.xml
+        working-directory: packages/workspace
+
+      - name: Test approvals
+        if: ${{ !cancelled() }}
+        run: pnpm exec vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/approvals.xml
+        working-directory: packages/approvals
 
       - name: Test mcp-server
         if: ${{ !cancelled() }}

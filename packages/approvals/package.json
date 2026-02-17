@@ -4,6 +4,16 @@
   "description": "Approval testing for Aver",
   "type": "module",
   "license": "MIT",
+  "author": "Nate Jackson",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/njackson/aver.git",
+    "directory": "packages/approvals"
+  },
+  "homepage": "https://github.com/njackson/aver",
+  "bugs": "https://github.com/njackson/aver/issues",
+  "keywords": ["testing", "approval-testing", "snapshot-testing", "visual-regression", "aver"],
+  "publishConfig": { "access": "public" },
   "engines": {
     "node": ">=18.0.0"
   },
@@ -27,6 +37,7 @@
   ],
   "scripts": {
     "build": "tsup",
+    "prepublishOnly": "pnpm run build",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },

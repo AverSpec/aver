@@ -6,6 +6,8 @@ import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { runWithTestContext } from './test-context'
+import { computeCoverage } from './coverage'
+import type { VocabularyCoverage } from './coverage'
 
 export type ActProxy<D extends Domain> = {
   [K in keyof D['vocabulary']['actions']]:
@@ -47,6 +49,7 @@ export interface SuiteReturn<D extends Domain> {
   setup(): Promise<void>
   teardown(): Promise<void>
   getTrace(): TraceEntry[]
+  getCoverage(): VocabularyCoverage
 }
 
 interface Proxies<D extends Domain> {
@@ -60,6 +63,7 @@ function createProxies<D extends Domain>(
   getCtx: () => any,
   getAdapter: () => Adapter,
   trace: TraceEntry[],
+  calledOps?: { actions: Set<string>; queries: Set<string>; assertions: Set<string> },
 ): Proxies<D> {
   const act: any = {}
   const query: any = {}
@@ -67,6 +71,7 @@ function createProxies<D extends Domain>(
 
   for (const name of Object.keys(domain.vocabulary.actions)) {
     act[name] = async (payload?: any) => {
+      calledOps?.actions.add(name)
       const handler = (getAdapter().handlers.actions as any)[name]
       const entry: TraceEntry = { kind: 'action', name, payload, status: 'pass', startAt: Date.now() }
       try {
@@ -85,6 +90,7 @@ function createProxies<D extends Domain>(
 
   for (const name of Object.keys(domain.vocabulary.queries)) {
     query[name] = async (payload?: any) => {
+      calledOps?.queries.add(name)
       const handler = (getAdapter().handlers.queries as any)[name]
       const entry: TraceEntry = { kind: 'query', name, payload, status: 'pass', startAt: Date.now() }
       try {
@@ -105,6 +111,7 @@ function createProxies<D extends Domain>(
 
   for (const name of Object.keys(domain.vocabulary.assertions)) {
     assert[name] = async (payload?: any) => {
+      calledOps?.assertions.add(name)
       const handler = (getAdapter().handlers.assertions as any)[name]
       const entry: TraceEntry = { kind: 'assertion', name, payload, status: 'pass', startAt: Date.now() }
       try {
@@ -219,14 +226,17 @@ export function suite<D extends Domain>(domain: D, adapter?: Adapter): SuiteRetu
   const globalTest = getGlobalTest()
   const globalTestSkip = globalTest?.skip
 
+  const calledOps = { actions: new Set<string>(), queries: new Set<string>(), assertions: new Set<string>() }
+
   const programmaticProxies = createProxies(
     domain,
     () => programmaticCtx,
     getProgrammaticAdapter,
     programmaticTrace,
+    calledOps,
   )
 
-  const testApi = buildTestApi(globalTest, domain, getEffectiveAdapters, globalTestSkip)
+  const testApi = buildTestApi(globalTest, domain, getEffectiveAdapters, globalTestSkip, calledOps)
 
   return {
     test: testApi,
@@ -247,6 +257,15 @@ export function suite<D extends Domain>(domain: D, adapter?: Adapter): SuiteRetu
       programmaticCtx = undefined
     },
     getTrace: () => [...programmaticTrace],
+    getCoverage: () => computeCoverage(
+      domain.name,
+      Object.keys(domain.vocabulary.actions),
+      Object.keys(domain.vocabulary.queries),
+      Object.keys(domain.vocabulary.assertions),
+      calledOps.actions,
+      calledOps.queries,
+      calledOps.assertions,
+    ),
   }
 }
 
@@ -255,10 +274,11 @@ async function runTestWithAdapter<D extends Domain>(
   domain: D,
   testName: string,
   fn: (ctx: TestContext<D>) => Promise<void>,
+  calledOps?: { actions: Set<string>; queries: Set<string>; assertions: Set<string> },
 ): Promise<void> {
   const trace: TraceEntry[] = []
   const ctx = await adapter.protocol.setup()
-  const proxies = createProxies(domain, () => ctx, () => adapter, trace)
+  const proxies = createProxies(domain, () => ctx, () => adapter, trace, calledOps)
   const metadata = {
     testName,
     domainName: domain.name,
@@ -327,16 +347,17 @@ function buildTestApi<D extends Domain>(
   domain: D,
   getEffectiveAdapters: () => Adapter[],
   globalSkipImpl?: any,
+  calledOps?: { actions: Set<string>; queries: Set<string>; assertions: Set<string> },
 ): any {
-  const api: any = makeTestFn(testImpl, domain, getEffectiveAdapters, globalSkipImpl)
+  const api: any = makeTestFn(testImpl, domain, getEffectiveAdapters, globalSkipImpl, calledOps)
 
   if (!testImpl) return api
 
   if (typeof testImpl.only === 'function') {
-    api.only = makeTestFn(testImpl.only, domain, getEffectiveAdapters, globalSkipImpl)
+    api.only = makeTestFn(testImpl.only, domain, getEffectiveAdapters, globalSkipImpl, calledOps)
   }
   if (typeof testImpl.skip === 'function') {
-    api.skip = makeTestFn(testImpl.skip, domain, getEffectiveAdapters, globalSkipImpl)
+    api.skip = makeTestFn(testImpl.skip, domain, getEffectiveAdapters, globalSkipImpl, calledOps)
   }
 
   if (typeof testImpl.todo === 'function') {
@@ -346,12 +367,12 @@ function buildTestApi<D extends Domain>(
   }
 
   if (typeof testImpl.concurrent === 'function') {
-    const concurrentApi: any = makeTestFn(testImpl.concurrent, domain, getEffectiveAdapters, globalSkipImpl)
+    const concurrentApi: any = makeTestFn(testImpl.concurrent, domain, getEffectiveAdapters, globalSkipImpl, calledOps)
     if (typeof testImpl.concurrent.only === 'function') {
-      concurrentApi.only = makeTestFn(testImpl.concurrent.only, domain, getEffectiveAdapters, globalSkipImpl)
+      concurrentApi.only = makeTestFn(testImpl.concurrent.only, domain, getEffectiveAdapters, globalSkipImpl, calledOps)
     }
     if (typeof testImpl.concurrent.skip === 'function') {
-      concurrentApi.skip = makeTestFn(testImpl.concurrent.skip, domain, getEffectiveAdapters, globalSkipImpl)
+      concurrentApi.skip = makeTestFn(testImpl.concurrent.skip, domain, getEffectiveAdapters, globalSkipImpl, calledOps)
     }
     api.concurrent = concurrentApi
   }
@@ -359,25 +380,25 @@ function buildTestApi<D extends Domain>(
   if (typeof testImpl.each === 'function') {
     api.each = (...args: any[]) => {
       const eachImpl = testImpl.each(...args)
-      const eachApi: any = makeTestFn(eachImpl, domain, getEffectiveAdapters, globalSkipImpl)
+      const eachApi: any = makeTestFn(eachImpl, domain, getEffectiveAdapters, globalSkipImpl, calledOps)
       if (typeof eachImpl.only === 'function') {
-        eachApi.only = makeTestFn(eachImpl.only, domain, getEffectiveAdapters, globalSkipImpl)
+        eachApi.only = makeTestFn(eachImpl.only, domain, getEffectiveAdapters, globalSkipImpl, calledOps)
       }
       if (typeof eachImpl.skip === 'function') {
-        eachApi.skip = makeTestFn(eachImpl.skip, domain, getEffectiveAdapters, globalSkipImpl)
+        eachApi.skip = makeTestFn(eachImpl.skip, domain, getEffectiveAdapters, globalSkipImpl, calledOps)
       }
       return eachApi
     }
     if (typeof testImpl.each.only === 'function') {
       api.each.only = (...args: any[]) => {
         const eachImpl = testImpl.each.only(...args)
-        return makeTestFn(eachImpl, domain, getEffectiveAdapters, globalSkipImpl)
+        return makeTestFn(eachImpl, domain, getEffectiveAdapters, globalSkipImpl, calledOps)
       }
     }
     if (typeof testImpl.each.skip === 'function') {
       api.each.skip = (...args: any[]) => {
         const eachImpl = testImpl.each.skip(...args)
-        return makeTestFn(eachImpl, domain, getEffectiveAdapters, globalSkipImpl)
+        return makeTestFn(eachImpl, domain, getEffectiveAdapters, globalSkipImpl, calledOps)
       }
     }
   }
@@ -390,6 +411,7 @@ function makeTestFn<D extends Domain>(
   domain: D,
   getEffectiveAdapters: () => Adapter[],
   globalSkipImpl?: any,
+  calledOps?: { actions: Set<string>; queries: Set<string>; assertions: Set<string> },
 ): (name: string, fn: (ctx: TestContext<D>) => Promise<void>) => void {
   return (name, fn) => {
     if (!testImpl) {
@@ -410,7 +432,7 @@ function makeTestFn<D extends Domain>(
         await maybeAutoloadConfig()
         const a = findAdapter(domain)
         if (!a) throw new Error(buildMissingAdapterError(domain))
-        await runTestWithAdapter(a, domain, name, fn)
+        await runTestWithAdapter(a, domain, name, fn, calledOps)
       })
       return
     }
@@ -418,7 +440,7 @@ function makeTestFn<D extends Domain>(
     if (adapters.length === 1) {
       const a = adapters[0]
       testImpl(name, async () => {
-        await runTestWithAdapter(a, domain, name, fn)
+        await runTestWithAdapter(a, domain, name, fn, calledOps)
       })
       return
     }
@@ -427,7 +449,7 @@ function makeTestFn<D extends Domain>(
     for (const a of adapters) {
       const adapterName = `${name} [${a.protocol.name}]`
       testImpl(adapterName, async () => {
-        await runTestWithAdapter(a, domain, adapterName, fn)
+        await runTestWithAdapter(a, domain, adapterName, fn, calledOps)
       })
     }
   }

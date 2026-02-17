@@ -1,4 +1,4 @@
-import { expect } from 'vitest'
+import { isDeepStrictEqual } from 'node:util'
 import {
   implement,
   defineDomain as realDefineDomain,
@@ -11,7 +11,7 @@ import {
 import type { Domain, Adapter, Protocol } from '../../../src/index'
 import type { SuiteReturn } from '../../../src/core/suite'
 import type { TraceEntry } from '../../../src/core/trace'
-import { registerAdapter, resetRegistry } from '../../../src/core/registry'
+import { registerAdapter } from '../../../src/core/registry'
 import { averCore } from '../domains/aver-core'
 
 interface AverTestSession {
@@ -184,14 +184,20 @@ export const averCoreAdapter = implement(averCore, {
     hasVocabulary: async (session, { actions, queries, assertions }) => {
       const dom = session.extendedDomain ?? session.domain
       if (!dom) throw new Error('No domain defined')
-      expect(Object.keys(dom.vocabulary.actions).sort()).toEqual(actions.sort())
-      expect(Object.keys(dom.vocabulary.queries).sort()).toEqual(queries.sort())
-      expect(Object.keys(dom.vocabulary.assertions).sort()).toEqual(assertions.sort())
+      const actualActions = Object.keys(dom.vocabulary.actions).sort()
+      const actualQueries = Object.keys(dom.vocabulary.queries).sort()
+      const actualAssertions = Object.keys(dom.vocabulary.assertions).sort()
+      if (!isDeepStrictEqual(actualActions, [...actions].sort()))
+        throw new Error(`Expected actions ${JSON.stringify(actions.sort())} but got ${JSON.stringify(actualActions)}`)
+      if (!isDeepStrictEqual(actualQueries, [...queries].sort()))
+        throw new Error(`Expected queries ${JSON.stringify(queries.sort())} but got ${JSON.stringify(actualQueries)}`)
+      if (!isDeepStrictEqual(actualAssertions, [...assertions].sort()))
+        throw new Error(`Expected assertions ${JSON.stringify(assertions.sort())} but got ${JSON.stringify(actualAssertions)}`)
     },
 
     adapterResolved: async (session) => {
-      expect(session.adapter).toBeDefined()
-      expect(session.suiteInstance).toBeDefined()
+      if (!session.adapter) throw new Error('Expected adapter to be defined')
+      if (!session.suiteInstance) throw new Error('Expected suiteInstance to be defined')
     },
 
     traceContains: async (session, { kind, name, status }) => {
@@ -200,23 +206,29 @@ export const averCoreAdapter = implement(averCore, {
       const match = trace.find(
         (e: TraceEntry) => e.kind === kind && e.name === name && e.status === status,
       )
-      expect(match).toBeDefined()
+      if (!match)
+        throw new Error(`Expected trace to contain {kind: "${kind}", name: "${name}", status: "${status}"}`)
     },
 
     traceHasLength: async (session, { length }) => {
       if (!session.suiteInstance) throw new Error('No suite created')
-      expect(session.suiteInstance.getTrace()).toHaveLength(length)
+      const actual = session.suiteInstance.getTrace().length
+      if (actual !== length)
+        throw new Error(`Expected trace length ${length} but got ${actual}`)
     },
 
     hasParent: async (session, { name }) => {
       const dom = session.extendedDomain ?? session.domain
-      expect(dom?.parent).toBeDefined()
-      expect(dom?.parent?.name).toBe(name)
+      if (!dom?.parent) throw new Error('Expected domain to have a parent')
+      if (dom.parent.name !== name)
+        throw new Error(`Expected parent name "${name}" but got "${dom.parent.name}"`)
     },
 
     queryReturned: async (session, { name, value }) => {
-      expect(session.lastQueryName).toBe(name)
-      expect(session.lastQueryResult).toEqual(value)
+      if (session.lastQueryName !== name)
+        throw new Error(`Expected last query "${name}" but got "${session.lastQueryName}"`)
+      if (!isDeepStrictEqual(session.lastQueryResult, value))
+        throw new Error(`Expected query result ${JSON.stringify(value)} but got ${JSON.stringify(session.lastQueryResult)}`)
     },
   },
 })

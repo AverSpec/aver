@@ -1,4 +1,3 @@
-import { expect } from 'vitest'
 import { implement, unit, runWithTestContext } from '@aver/core'
 import type { TraceEntry, Screenshotter } from '@aver/core'
 import { mkdtempSync, existsSync, readFileSync, writeFileSync } from 'node:fs'
@@ -209,19 +208,21 @@ export const averApprovalsAdapter = implement(averApprovals, {
           break
         }
       }
-      expect(found).toBe(true)
+      if (!found) throw new Error('Expected approval baseline to be created')
     },
 
     baselineMissing: async (session) => {
-      expect(session.lastError?.message).toContain('Approval baseline missing')
+      if (!session.lastError?.message?.includes('Approval baseline missing'))
+        throw new Error(`Expected "Approval baseline missing" error but got: ${session.lastError?.message ?? 'no error'}`)
     },
 
     mismatchDetected: async (session) => {
-      expect(session.lastError).toBeDefined()
+      if (!session.lastError) throw new Error('Expected a mismatch error')
     },
 
     matchPassed: async (session) => {
-      expect(session.lastError).toBeUndefined()
+      if (session.lastError)
+        throw new Error(`Expected no error but got: ${session.lastError.message}`)
     },
 
     diffContains: async (session, { text }) => {
@@ -229,59 +230,71 @@ export const averApprovalsAdapter = implement(averApprovals, {
       const path = join(dir, `${safeName(session.lastApprovalName)}.diff.txt`)
       if (existsSync(path)) {
         const contents = readFileSync(path, 'utf-8')
-        expect(contents).toContain(text)
+        if (!contents.includes(text))
+          throw new Error(`Expected diff to contain "${text}"`)
         return
       }
-      expect(session.lastError?.message ?? '').toContain(text)
+      if (!(session.lastError?.message ?? '').includes(text))
+        throw new Error(`Expected error message to contain "${text}"`)
     },
 
     attachmentsRecorded: async (session, { minCount }) => {
       const dir = join(session.workDir, 'tests', '__approvals__', 'approval-test')
       const received = existsSync(join(dir, `${safeName(session.lastApprovalName)}.received.json`))
       const diff = existsSync(join(dir, `${safeName(session.lastApprovalName)}.diff.txt`))
-      expect(received || diff).toBe(true)
+      if (!received && !diff)
+        throw new Error('Expected at least one attachment (received or diff) to exist')
     },
 
     traceEntryHasStatus: async (session, { name, status }) => {
       if (status === 'fail') {
-        expect(session.lastError).toBeDefined()
+        if (!session.lastError) throw new Error('Expected an error for fail status')
       } else {
-        expect(session.lastError).toBeUndefined()
+        if (session.lastError)
+          throw new Error(`Expected no error but got: ${session.lastError.message}`)
       }
     },
 
     noError: async (session) => {
-      expect(session.lastError).toBeUndefined()
+      if (session.lastError)
+        throw new Error(`Expected no error but got: ${session.lastError.message}`)
     },
 
     visualBaselineCreated: async (session) => {
       const dir = getVisualApprovalDir()
       if (!dir) throw new Error('No test path available')
-      expect(existsSync(join(dir, `${safeName(session.lastApprovalName)}.approved.png`))).toBe(true)
+      if (!existsSync(join(dir, `${safeName(session.lastApprovalName)}.approved.png`)))
+        throw new Error('Expected visual approval baseline to be created')
     },
 
     visualBaselineMissing: async (session) => {
-      expect(session.lastError?.message).toContain('Visual approval baseline missing')
+      if (!session.lastError?.message?.includes('Visual approval baseline missing'))
+        throw new Error(`Expected "Visual approval baseline missing" error but got: ${session.lastError?.message ?? 'no error'}`)
     },
 
     visualMismatchDetected: async (session) => {
-      expect(session.lastError).toBeDefined()
-      expect(session.lastError?.message).toContain('Visual approval mismatch')
+      if (!session.lastError) throw new Error('Expected a visual mismatch error')
+      if (!session.lastError.message.includes('Visual approval mismatch'))
+        throw new Error(`Expected "Visual approval mismatch" error but got: ${session.lastError.message}`)
     },
 
     visualMatchPassed: async (session) => {
-      expect(session.lastError).toBeUndefined()
+      if (session.lastError)
+        throw new Error(`Expected no error but got: ${session.lastError.message}`)
     },
 
     visualDiffGenerated: async (session) => {
       const dir = getVisualApprovalDir()
       if (!dir) throw new Error('No test path available')
-      expect(existsSync(join(dir, `${safeName(session.lastApprovalName)}.diff.png`))).toBe(true)
+      if (!existsSync(join(dir, `${safeName(session.lastApprovalName)}.diff.png`)))
+        throw new Error('Expected visual diff image to be generated')
     },
 
     screenshotterSkipWarned: async (session) => {
-      expect(session.lastWarning).toBeDefined()
-      expect(session.lastWarning).toContain('approve.visual() skipped')
+      if (!session.lastWarning)
+        throw new Error('Expected a warning to be captured')
+      if (!session.lastWarning.includes('approve.visual() skipped'))
+        throw new Error(`Expected warning to contain "approve.visual() skipped" but got: ${session.lastWarning}`)
     },
   },
 })

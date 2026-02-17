@@ -49,7 +49,8 @@ function registerDomainTools(server: McpServer): void {
     { description: 'List all registered adapters with their domain and protocol names' },
     async () => {
       await reloadConfig()
-      return { content: [{ type: 'text' as const, text: JSON.stringify(listAdaptersHandler(), null, 2) }] }
+      const result = await listAdaptersHandler()
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] }
     },
   )
 }
@@ -111,9 +112,9 @@ function registerScaffoldingTools(server: McpServer): void {
     },
     async () => {
       await reloadConfig()
-      const result = getProjectContextHandler()
+      const result = await getProjectContextHandler()
       if (!result) {
-        return { content: [{ type: 'text' as const, text: 'No aver config found. Run aver init or create an aver.config.ts file.' }] }
+        return { content: [{ type: 'text' as const, text: 'No aver project found. Run aver init or create an aver.config.ts file.' }] }
       }
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] }
     },

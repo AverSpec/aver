@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import {
   listDomainsHandler,
   getDomainVocabularyHandler,
@@ -7,8 +7,18 @@ import {
 import {
   defineDomain, action, query, assertion,
   implement, unit,
-  resetRegistry, registerAdapter,
+  resetRegistry, registerAdapter, registerDomain,
 } from '@aver/core'
+
+vi.mock('../../src/config.js', () => ({
+  getProjectRoot: () => undefined,
+  reloadConfig: async () => {},
+}))
+
+vi.mock('../../src/discovery.js', async (importOriginal) => {
+  const actual = await importOriginal() as any
+  return { ...actual }
+})
 
 const cart = defineDomain({
   name: 'Cart',
@@ -39,6 +49,22 @@ describe('list_domains handler', () => {
 
   it('returns domain summaries from registered adapters', () => {
     registerAdapter(cartAdapter)
+    const result = listDomainsHandler()
+    expect(result).toEqual([
+      {
+        name: 'Cart',
+        actions: ['addItem', 'checkout'],
+        queries: ['total'],
+        assertions: ['isEmpty'],
+        actionCount: 2,
+        queryCount: 1,
+        assertionCount: 1,
+      },
+    ])
+  })
+
+  it('returns domain summaries from domain registry alone', () => {
+    registerDomain(cart)
     const result = listDomainsHandler()
     expect(result).toEqual([
       {
@@ -94,14 +120,14 @@ describe('list_adapters handler', () => {
     resetRegistry()
   })
 
-  it('returns empty array when no adapters registered', () => {
-    const result = listAdaptersHandler()
+  it('returns empty array when no adapters registered', async () => {
+    const result = await listAdaptersHandler()
     expect(result).toEqual([])
   })
 
-  it('returns adapter summaries', () => {
+  it('returns adapter summaries', async () => {
     registerAdapter(cartAdapter)
-    const result = listAdaptersHandler()
+    const result = await listAdaptersHandler()
     expect(result).toEqual([
       { domainName: 'Cart', protocolName: 'unit' },
     ])

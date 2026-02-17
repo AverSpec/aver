@@ -1,4 +1,4 @@
-import { expect } from 'vitest'
+import { isDeepStrictEqual } from 'node:util'
 import { mkdtempSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -87,7 +87,7 @@ export const averMcpAdapter = implement(averMcp, {
           session.lastToolResult = getDomainVocabularyHandler(input?.domain as string)
           break
         case 'list_adapters':
-          session.lastToolResult = listAdaptersHandler()
+          session.lastToolResult = await listAdaptersHandler()
           break
         case 'get_failure_details': {
           const result = getFailureDetailsHandler(session.runStore!, {
@@ -168,11 +168,14 @@ export const averMcpAdapter = implement(averMcp, {
         }
         current = Array.isArray(current) ? current[Number(part)] : current[part]
       }
-      expect(current).toEqual(expected)
+      if (!isDeepStrictEqual(current, expected))
+        throw new Error(`Expected ${JSON.stringify(expected)} at path "${path}" but got ${JSON.stringify(current)}`)
     },
 
     toolResultHasLength: async (session, { length }) => {
-      expect(session.lastToolResult).toHaveLength(length)
+      const result = session.lastToolResult as any
+      if (!result || result.length !== length)
+        throw new Error(`Expected result length ${length} but got ${result?.length ?? 'undefined'}`)
     },
 
     toolResultIsError: async (session, { substring }) => {
@@ -182,7 +185,8 @@ export const averMcpAdapter = implement(averMcp, {
         return
       }
       if (typeof result === 'string') {
-        expect(result).toContain(substring)
+        if (!result.includes(substring))
+          throw new Error(`Expected error to contain "${substring}" but got: ${result}`)
         return
       }
       throw new Error(`Expected error result but got: ${JSON.stringify(result)}`)

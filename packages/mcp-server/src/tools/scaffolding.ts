@@ -1,7 +1,8 @@
 import { existsSync } from 'node:fs'
 import { dirname, relative, resolve } from 'node:path'
-import { getAdapters } from '@aver/core'
-import { getConfigPath } from '../config.js'
+import { getAdapters, getDomains, getDomain } from '@aver/core'
+import { getConfigPath, getProjectRoot } from '../config.js'
+import { scanAdapterFiles, matchDomainByKebab, getDomainFilePaths, toKebabCase as discoveryToKebab } from '../discovery.js'
 
 export interface DomainStructure {
   suggestedName: string
@@ -24,6 +25,13 @@ function toCamelCase(str: string): string {
   return str
     .toLowerCase()
     .replace(/[^a-z0-9]+(.)/g, (_, chr) => chr.toUpperCase())
+}
+
+function toKebabCase(str: string): string {
+  return str
+    .replace(/([a-z])([A-Z])/g, '$1-$2')
+    .replace(/([A-Z])([A-Z][a-z])/g, '$1-$2')
+    .toLowerCase()
 }
 
 export function describeDomainStructureHandler(description: string): DomainStructure {
@@ -51,25 +59,42 @@ export function describeAdapterStructureHandler(
   domainName: string,
   protocolName: string,
 ): AdapterStructure | null {
+  // Try adapter registry first
   const adapters = getAdapters()
   const adapter = adapters.find(
     (a) => a.domain.name === domainName && a.protocol.name === protocolName,
   )
-  if (!adapter) return null
-
-  return {
-    domain: domainName,
-    protocol: protocolName,
-    handlers: {
-      actions: Object.keys(adapter.domain.vocabulary.actions),
-      queries: Object.keys(adapter.domain.vocabulary.queries),
-      assertions: Object.keys(adapter.domain.vocabulary.assertions),
-    },
+  if (adapter) {
+    return {
+      domain: domainName,
+      protocol: protocolName,
+      handlers: {
+        actions: Object.keys(adapter.domain.vocabulary.actions),
+        queries: Object.keys(adapter.domain.vocabulary.queries),
+        assertions: Object.keys(adapter.domain.vocabulary.assertions),
+      },
+    }
   }
+
+  // Fall back to domain registry (vocabulary is on the domain)
+  const domain = getDomain(domainName)
+  if (domain) {
+    return {
+      domain: domainName,
+      protocol: protocolName,
+      handlers: {
+        actions: Object.keys(domain.vocabulary.actions),
+        queries: Object.keys(domain.vocabulary.queries),
+        assertions: Object.keys(domain.vocabulary.assertions),
+      },
+    }
+  }
+
+  return null
 }
 
 export interface ProjectContext {
-  configPath: string
+  configPath: string | null
   projectRoot: string
   domains: Array<{
     name: string
@@ -87,13 +112,6 @@ export interface ProjectContext {
   }
 }
 
-function toKebabCase(str: string): string {
-  return str
-    .replace(/([a-z])([A-Z])/g, '$1-$2')
-    .replace(/([A-Z])([A-Z][a-z])/g, '$1-$2')
-    .toLowerCase()
-}
-
 function findFile(projectRoot: string, ...candidates: string[]): string | null {
   for (const candidate of candidates) {
     if (existsSync(resolve(projectRoot, candidate))) return candidate
@@ -101,50 +119,83 @@ function findFile(projectRoot: string, ...candidates: string[]): string | null {
   return null
 }
 
-export function getProjectContextHandler(): ProjectContext | null {
+export async function getProjectContextHandler(): Promise<ProjectContext | null> {
+  const root = getProjectRoot()
+  if (!root) return null
+
   const configPath = getConfigPath()
-  if (!configPath) return null
+  const relativeConfig = configPath ? relative(root, configPath) : null
 
-  const projectRoot = dirname(configPath)
-  const relativeConfig = relative(projectRoot, configPath)
-
+  // Build domain list from registry + adapter info
+  const registeredDomains = getDomains()
   const adapters = getAdapters()
 
-  // Group adapters by domain
-  const domainMap = new Map<string, string[]>()
-  for (const adapter of adapters) {
-    const name = adapter.domain.name
-    if (!domainMap.has(name)) domainMap.set(name, [])
-    domainMap.get(name)!.push(adapter.protocol.name)
+  // Get discovery caches
+  const domainPaths = getDomainFilePaths()
+  const adapterFiles = await scanAdapterFiles(root)
+
+  // Index adapter files by domain kebab name
+  const adapterFilesByDomain = new Map<string, typeof adapterFiles>()
+  for (const f of adapterFiles) {
+    if (!adapterFilesByDomain.has(f.domainKebab)) adapterFilesByDomain.set(f.domainKebab, [])
+    adapterFilesByDomain.get(f.domainKebab)!.push(f)
   }
 
-  const domains = Array.from(domainMap.entries()).map(([name, protocols]) => {
+  // Group registered adapters by domain
+  const adaptersByDomain = new Map<string, string[]>()
+  for (const adapter of adapters) {
+    const name = adapter.domain.name
+    if (!adaptersByDomain.has(name)) adaptersByDomain.set(name, [])
+    adaptersByDomain.get(name)!.push(adapter.protocol.name)
+  }
+
+  // Merge domain info from both sources
+  const allDomainNames = new Set<string>()
+  for (const d of registeredDomains) allDomainNames.add(d.name)
+  for (const [name] of adaptersByDomain) allDomainNames.add(name)
+
+  const domains = Array.from(allDomainNames).map((name) => {
     const kebab = toKebabCase(name)
 
-    const domainFile = findFile(projectRoot, `domains/${kebab}.ts`, `domains/${kebab}.js`)
+    // Use discovery cache for domain file, fall back to convention guess
+    const discoveredDomainPath = domainPaths.get(name)
+    const domainFile = discoveredDomainPath
+      ? relative(root, discoveredDomainPath)
+      : findFile(root, `domains/${kebab}.ts`, `domains/${kebab}.js`)
+
     const testFile = findFile(
-      projectRoot,
+      root,
       `tests/${kebab}.spec.ts`,
       `tests/${kebab}.spec.js`,
       `tests/${kebab}.test.ts`,
       `tests/${kebab}.test.js`,
     )
 
-    const adapterEntries = protocols.map((protocol) => ({
-      protocol,
-      file: findFile(
-        projectRoot,
-        `adapters/${kebab}.${protocol}.ts`,
-        `adapters/${kebab}.${protocol}.js`,
-      ),
-    }))
+    // Protocols from adapter registry
+    const registeredProtocols = adaptersByDomain.get(name) ?? []
+
+    // Protocols from filesystem scan
+    const scannedAdapters = adapterFilesByDomain.get(kebab) ?? []
+    const fileProtocols = scannedAdapters.map(f => f.protocol)
+
+    // Merge and deduplicate
+    const allProtocols = [...new Set([...registeredProtocols, ...fileProtocols])]
+
+    const adapterEntries = allProtocols.map((protocol) => {
+      // Use actual discovered file path first
+      const scanned = scannedAdapters.find(f => f.protocol === protocol)
+      const file = scanned
+        ? relative(root, scanned.filePath)
+        : findFile(root, `adapters/${kebab}.${protocol}.ts`, `adapters/${kebab}.${protocol}.js`)
+      return { protocol, file }
+    })
 
     return { name, domainFile, testFile, adapters: adapterEntries }
   })
 
   return {
     configPath: relativeConfig,
-    projectRoot,
+    projectRoot: root,
     domains,
     conventions: {
       domainDir: 'domains',

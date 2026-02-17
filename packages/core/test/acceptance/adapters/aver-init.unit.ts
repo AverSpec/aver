@@ -1,7 +1,6 @@
 import { existsSync, readFileSync, readdirSync, mkdtempSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { expect } from 'vitest'
 import { implement, unit } from '../../../src/index'
 import { averInit } from '../domains/aver-init'
 import { initProjectFiles, initDomainFiles } from '../../../src/cli/scaffold'
@@ -55,24 +54,30 @@ export const averInitAdapter = implement(averInit, {
 
   assertions: {
     fileExists: async (_session, { path }) => {
-      expect(existsSync(path)).toBe(true)
+      if (!existsSync(path))
+        throw new Error(`Expected file to exist: ${path}`)
     },
     fileContains: async (_session, { path, content, shouldContain }) => {
       const actual = readFileSync(path, 'utf-8')
       if (shouldContain === false) {
-        expect(actual).not.toContain(content)
+        if (actual.includes(content))
+          throw new Error(`Expected file not to contain "${content}"`)
       } else {
-        expect(actual).toContain(content)
+        if (!actual.includes(content))
+          throw new Error(`Expected file to contain "${content}"`)
       }
     },
     configRegistersAdapter: async (_session, { dir, adapterImport }) => {
       const configPath = join(dir, 'aver.config.ts')
       const config = readFileSync(configPath, 'utf-8')
-      expect(config).toContain(adapterImport)
+      if (!config.includes(adapterImport))
+        throw new Error(`Expected config to contain "${adapterImport}"`)
     },
     throwsError: async (session, { message }) => {
-      expect(session.lastError).toBeDefined()
-      expect(session.lastError!.message).toContain(message)
+      if (!session.lastError)
+        throw new Error('Expected an error to have been thrown')
+      if (!session.lastError.message.includes(message))
+        throw new Error(`Expected error message to contain "${message}" but got "${session.lastError.message}"`)
     },
   },
 })

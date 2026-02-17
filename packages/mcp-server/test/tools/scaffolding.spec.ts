@@ -10,20 +10,30 @@ import {
 import {
   defineDomain, action, query, assertion,
   implement, unit,
-  resetRegistry, registerAdapter,
+  resetRegistry, registerAdapter, registerDomain,
 } from '@aver/core'
 
 vi.mock('../../src/config.js', () => {
   let configPath: string | undefined
+  let projectRoot: string | undefined
   return {
     getConfigPath: () => configPath,
+    getProjectRoot: () => projectRoot,
     setConfigPathForTest: (path: string | undefined) => { configPath = path },
+    setProjectRootForTest: (root: string | undefined) => { projectRoot = root },
     reloadConfig: async () => {},
   }
 })
 
-// Import the mock setter
-const { setConfigPathForTest } = await import('../../src/config.js') as any
+vi.mock('../../src/discovery.js', async (importOriginal) => {
+  const actual = await importOriginal() as any
+  return {
+    ...actual,
+  }
+})
+
+// Import the mock setters
+const { setConfigPathForTest, setProjectRootForTest } = await import('../../src/config.js') as any
 
 const cart = defineDomain({
   name: 'Cart',
@@ -74,9 +84,39 @@ describe('describe_adapter_structure handler', () => {
     expect(result).toBeNull()
   })
 
-  it('returns null when adapter for protocol not found', () => {
+  it('falls back to domain registry when adapter not found for protocol', () => {
+    // registerAdapter already registers the domain, so getDomain('Cart') works
     const result = describeAdapterStructureHandler('Cart', 'playwright')
+    expect(result).toEqual({
+      domain: 'Cart',
+      protocol: 'playwright',
+      handlers: {
+        actions: ['addItem', 'removeItem'],
+        queries: ['total'],
+        assertions: ['isEmpty', 'hasTotal'],
+      },
+    })
+  })
+
+  it('returns null when neither adapter nor domain found', () => {
+    resetRegistry()
+    const result = describeAdapterStructureHandler('Unknown', 'unit')
     expect(result).toBeNull()
+  })
+
+  it('returns structure from domain registry alone', () => {
+    resetRegistry()
+    registerDomain(cart)
+    const result = describeAdapterStructureHandler('Cart', 'http')
+    expect(result).toEqual({
+      domain: 'Cart',
+      protocol: 'http',
+      handlers: {
+        actions: ['addItem', 'removeItem'],
+        queries: ['total'],
+        assertions: ['isEmpty', 'hasTotal'],
+      },
+    })
   })
 })
 
@@ -91,16 +131,17 @@ describe('get_project_context handler', () => {
 
   afterEach(() => {
     setConfigPathForTest(undefined)
+    setProjectRootForTest(undefined)
     rmSync(tmpDir, { recursive: true, force: true })
   })
 
-  it('returns null when no config path is set', () => {
-    setConfigPathForTest(undefined)
-    const result = getProjectContextHandler()
+  it('returns null when no project root is set', async () => {
+    setProjectRootForTest(undefined)
+    const result = await getProjectContextHandler()
     expect(result).toBeNull()
   })
 
-  it('returns project context with discovered files', () => {
+  it('returns project context with discovered files', async () => {
     // Create convention files
     mkdirSync(join(tmpDir, 'domains'))
     mkdirSync(join(tmpDir, 'adapters'))
@@ -110,8 +151,9 @@ describe('get_project_context handler', () => {
     writeFileSync(join(tmpDir, 'tests', 'cart.spec.ts'), '')
 
     setConfigPathForTest(join(tmpDir, 'aver.config.ts'))
+    setProjectRootForTest(tmpDir)
 
-    const result = getProjectContextHandler()
+    const result = await getProjectContextHandler()
     expect(result).not.toBeNull()
     expect(result!.configPath).toBe('aver.config.ts')
     expect(result!.projectRoot).toBe(tmpDir)
@@ -124,21 +166,30 @@ describe('get_project_context handler', () => {
     ])
   })
 
-  it('returns null for files that do not exist', () => {
-    // No files created — just the config path set
-    setConfigPathForTest(join(tmpDir, 'aver.config.ts'))
+  it('works without a config path (discovery only)', async () => {
+    setProjectRootForTest(tmpDir)
 
-    const result = getProjectContextHandler()
+    const result = await getProjectContextHandler()
+    expect(result).not.toBeNull()
+    expect(result!.configPath).toBeNull()
+    expect(result!.projectRoot).toBe(tmpDir)
+  })
+
+  it('returns null for files that do not exist', async () => {
+    setConfigPathForTest(join(tmpDir, 'aver.config.ts'))
+    setProjectRootForTest(tmpDir)
+
+    const result = await getProjectContextHandler()
     expect(result).not.toBeNull()
     expect(result!.domains[0].domainFile).toBeNull()
     expect(result!.domains[0].testFile).toBeNull()
     expect(result!.domains[0].adapters[0].file).toBeNull()
   })
 
-  it('includes conventions in the response', () => {
-    setConfigPathForTest(join(tmpDir, 'aver.config.ts'))
+  it('includes conventions in the response', async () => {
+    setProjectRootForTest(tmpDir)
 
-    const result = getProjectContextHandler()
+    const result = await getProjectContextHandler()
     expect(result!.conventions).toEqual({
       domainDir: 'domains',
       adapterDir: 'adapters',

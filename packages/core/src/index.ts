@@ -3,7 +3,7 @@ export { defineDomain } from './core/domain'
 export { implement } from './core/adapter'
 export { suite } from './core/suite'
 export { defineConfig } from './core/config'
-export { getAdapters, registerAdapter, findAdapter, findAdapters, resetRegistry } from './core/registry'
+export { getAdapters, registerAdapter, findAdapter, findAdapters, resetRegistry, registerDomain, getDomains, getDomain } from './core/registry'
 export { unit } from './protocols/unit'
 export { getTestContext, runWithTestContext } from './core/test-context'
 

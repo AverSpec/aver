@@ -11,6 +11,13 @@ export interface TestResult {
 export interface RunData {
   timestamp: string
   results: TestResult[]
+  vocabularyCoverage?: Array<{
+    domain: string
+    actions: { total: string[]; called: string[] }
+    queries: { total: string[]; called: string[] }
+    assertions: { total: string[]; called: string[] }
+    percentage: number
+  }>
 }
 
 const MAX_RUNS = 10

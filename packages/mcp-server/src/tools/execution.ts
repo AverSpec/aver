@@ -8,6 +8,7 @@ export interface RunSummary {
   failed: number
   skipped: number
   failures: Array<{ testName: string; domain: string }>
+  vocabularyCoverage?: RunData['vocabularyCoverage']
 }
 
 export function buildRunSummary(run: RunData): RunSummary {
@@ -23,6 +24,7 @@ export function buildRunSummary(run: RunData): RunSummary {
     failures: run.results
       .filter((r) => r.status === 'fail')
       .map((r) => ({ testName: r.testName, domain: r.domain })),
+    vocabularyCoverage: run.vocabularyCoverage,
   }
 }
 

@@ -29,6 +29,31 @@ describe('buildRunSummary()', () => {
       { testName: 'test2', domain: 'Cart' },
     ])
   })
+
+  it('includes vocabulary coverage in run summary when available', () => {
+    const run = {
+      timestamp: '2026-01-01T00:00:00.000Z',
+      results: [],
+      vocabularyCoverage: [{
+        domain: 'Cart',
+        actions: { total: ['addItem'], called: ['addItem'] },
+        queries: { total: ['total'], called: [] },
+        assertions: { total: ['isEmpty'], called: [] },
+        percentage: 33,
+      }],
+    }
+    const summary = buildRunSummary(run)
+    expect(summary.vocabularyCoverage).toEqual(run.vocabularyCoverage)
+  })
+
+  it('omits vocabulary coverage when not present', () => {
+    const run = {
+      timestamp: '2026-01-01T00:00:00.000Z',
+      results: [],
+    }
+    const summary = buildRunSummary(run)
+    expect(summary.vocabularyCoverage).toBeUndefined()
+  })
 })
 
 describe('getFailureDetailsHandler()', () => {

@@ -1,4 +1,4 @@
-# aver
+# @aver/core
 
 Domain-driven acceptance testing for TypeScript.
 
@@ -7,7 +7,7 @@ Define **what** to test in domain language. Swap **how** via adapters. Same test
 ## Install
 
 ```bash
-npm install aver
+npm install @aver/core
 ```
 
 ## Usage

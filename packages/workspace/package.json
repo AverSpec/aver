@@ -18,12 +18,23 @@
   "files": ["dist"],
   "scripts": {
     "build": "tsup",
+    "prepublishOnly": "pnpm run build",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"
   },
   "license": "MIT",
+  "author": "Nate Jackson",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/njackson/aver.git",
+    "directory": "packages/workspace"
+  },
+  "homepage": "https://github.com/njackson/aver",
+  "bugs": "https://github.com/njackson/aver/issues",
+  "keywords": ["testing", "bdd", "aver", "workspace", "scenario-management"],
+  "publishConfig": { "access": "public" },
   "devDependencies": {
     "@types/node": "^22.0.0",
     "tsup": "^8.0.0",

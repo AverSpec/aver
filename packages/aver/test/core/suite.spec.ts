@@ -304,6 +304,40 @@ describe('suite() — failure artifacts', () => {
     expect(artifactEntry).toBeDefined()
     expect(artifactEntry.attachments[0]).toMatchObject({ name: 'log', path: '/tmp/failure.log' })
   })
+
+  it('includes protocol name in trace header on failure', async () => {
+    let pending: Promise<void> | undefined
+
+    const fakeTest = (name: string, fn: () => Promise<void>) => {
+      pending = fn()
+      return pending
+    }
+    fakeTest.skip = () => {}
+    ;(globalThis as any).test = fakeTest
+
+    const failDomain = defineDomain({
+      name: 'Proto',
+      actions: { go: action() },
+      queries: {},
+      assertions: {},
+    })
+    const adapter = implement(failDomain, {
+      protocol: testProtocol,
+      actions: { go: async () => { throw new Error('boom') } },
+      queries: {},
+      assertions: {},
+    })
+
+    const { test: suiteTest } = suite(failDomain, adapter)
+    suiteTest('proto trace', async ({ act }) => {
+      await act.go()
+    })
+
+    let caught: any
+    await pending!.catch(e => { caught = e })
+    expect(caught).toBeDefined()
+    expect(caught.message).toContain('Action trace (test):')
+  })
 })
 
 describe('getAdapters()', () => {

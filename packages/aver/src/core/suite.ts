@@ -145,13 +145,14 @@ function formatTrace(trace: TraceEntry[], domainName: string): string {
     .join('\n')
 }
 
-function enhanceWithTrace(error: unknown, trace: TraceEntry[], domain: Domain): Error {
+function enhanceWithTrace(error: unknown, trace: TraceEntry[], domain: Domain, protocolName?: string): Error {
   if (trace.length === 0) {
     return error instanceof Error ? error : new Error(String(error))
   }
   const traceStr = formatTrace(trace, domain.name)
+  const header = protocolName ? `Action trace (${protocolName}):` : 'Action trace:'
   const enhanced = new Error(
-    `${(error as Error).message}\n\nAction trace:\n${traceStr}`
+    `${(error as Error).message}\n\n${header}\n${traceStr}`
   )
   enhanced.cause = error
   return enhanced
@@ -301,7 +302,7 @@ async function runTestWithAdapter<D extends Domain>(
     } catch {
       // Ignore hook failures to preserve original error.
     }
-    throw enhanceWithTrace(error, trace, domain)
+    throw enhanceWithTrace(error, trace, domain, adapter.protocol.name)
   } finally {
     await adapter.protocol.teardown(ctx)
   }

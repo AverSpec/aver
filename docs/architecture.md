@@ -168,7 +168,7 @@ On failure, Aver shows the action trace — every domain operation leading to th
 ```
 FAIL  shopping-cart.spec.ts > full checkout flow [unit]
 
-Action trace:
+Action trace (unit):
   [PASS] ShoppingCart.addItem({"name":"Widget","qty":2})
   [PASS] ShoppingCart.hasItems({"count":1})
   [PASS] ShoppingCart.cartTotal()

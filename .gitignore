@@ -4,8 +4,10 @@ dist/
 .DS_Store
 .aver/
 .mcp.json
+.claude/settings.local.json
 test-results/
 docs/_site/
+docs/plans/
 docs/.jekyll-cache/
 docs/Gemfile.lock
 .worktrees/

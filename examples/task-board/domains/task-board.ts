@@ -1,4 +1,4 @@
-import { defineDomain, action, query, assertion } from 'aver'
+import { defineDomain, action, query, assertion } from '@aver/core'
 import type { Task } from '../src/server/board.js'
 
 export type { Task }

@@ -1,5 +1,5 @@
 import { describe, beforeEach, afterEach } from 'vitest'
-import { suite } from 'aver'
+import { suite } from '@aver/core'
 import { averApprovals } from './domains/aver-approvals'
 import { averApprovalsAdapter } from './adapters/aver-approvals.unit'
 

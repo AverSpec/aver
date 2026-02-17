@@ -1,5 +1,5 @@
-import { getAdapters } from 'aver'
-import type { Domain } from 'aver'
+import { getAdapters } from '@aver/core'
+import type { Domain } from '@aver/core'
 
 export interface DomainSummary {
   name: string

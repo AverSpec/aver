@@ -1,4 +1,4 @@
-import { implement } from 'aver'
+import { implement } from '@aver/core'
 import { playwright } from '@aver/protocol-playwright'
 import { taskBoard } from '../domains/task-board.js'
 import { createServer } from '../src/server/index.js'

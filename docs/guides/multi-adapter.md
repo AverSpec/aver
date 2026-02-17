@@ -17,7 +17,7 @@ You need a domain and at least two adapters. This guide uses a task board exampl
 
 ```typescript
 // domains/task-board.ts
-import { defineDomain, action, query, assertion } from 'aver'
+import { defineDomain, action, query, assertion } from '@aver/core'
 
 export const taskBoard = defineDomain({
   name: 'task-board',
@@ -37,7 +37,7 @@ Tests against in-memory objects. Runs in ~1ms.
 
 ```typescript
 // adapters/task-board.unit.ts
-import { implement, unit } from 'aver'
+import { implement, unit } from '@aver/core'
 import { Board } from '../src/board'
 import { taskBoard } from '../domains/task-board'
 
@@ -63,7 +63,7 @@ Tests against a REST API. Runs in ~10ms.
 
 ```typescript
 // adapters/task-board.http.ts
-import { implement } from 'aver'
+import { implement } from '@aver/core'
 import { http } from '@aver/protocol-http'
 import { taskBoard } from '../domains/task-board'
 
@@ -94,7 +94,7 @@ Tests against a browser UI. Runs in ~300ms.
 
 ```typescript
 // adapters/task-board.playwright.ts
-import { implement } from 'aver'
+import { implement } from '@aver/core'
 import { playwright } from '@aver/protocol-playwright'
 import { taskBoard } from '../domains/task-board'
 
@@ -124,7 +124,7 @@ export const playwrightAdapter = implement(taskBoard, {
 
 ```typescript
 // aver.config.ts
-import { defineConfig } from 'aver'
+import { defineConfig } from '@aver/core'
 import { unitAdapter } from './adapters/task-board.unit'
 import { httpAdapter } from './adapters/task-board.http'
 import { playwrightAdapter } from './adapters/task-board.playwright'
@@ -151,7 +151,7 @@ export default defineConfig({
 
 ```typescript
 // tests/task-board.spec.ts
-import { suite } from 'aver'
+import { suite } from '@aver/core'
 import { taskBoard } from '../domains/task-board'
 
 const { test } = suite(taskBoard)

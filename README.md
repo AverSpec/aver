@@ -17,7 +17,7 @@ Domain (what)  →  Adapter (how)  →  Test (verify)
 **1. Define a domain** — your testing vocabulary:
 
 ```typescript
-import { defineDomain, action, query, assertion } from 'aver'
+import { defineDomain, action, query, assertion } from '@aver/core'
 
 export const taskBoard = defineDomain({
   name: 'task-board',
@@ -37,7 +37,7 @@ export const taskBoard = defineDomain({
 **2. Write tests** — in domain language, no implementation details:
 
 ```typescript
-import { suite } from 'aver'
+import { suite } from '@aver/core'
 import { taskBoard } from '../domains/task-board'
 
 const { test } = suite(taskBoard)
@@ -52,7 +52,7 @@ test('move task through workflow', async ({ act, assert }) => {
 **3. Implement adapters** — bind domain vocabulary to real systems:
 
 ```typescript
-import { implement, unit } from 'aver'
+import { implement, unit } from '@aver/core'
 
 export const directAdapter = implement(taskBoard, {
   protocol: unit(() => new Board()),

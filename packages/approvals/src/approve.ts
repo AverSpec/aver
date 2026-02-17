@@ -3,8 +3,8 @@ import { compareValues, generateDiff } from './compare'
 import { resolveSerializer, type SerializerName } from './serializers'
 import { resolveApprovalPaths } from './paths'
 import { captureVisual, diffImages } from './artifacts'
-import { getTestContext } from 'aver'
-import type { Screenshotter, TraceAttachment } from 'aver'
+import { getTestContext } from '@aver/core'
+import type { Screenshotter, TraceAttachment } from '@aver/core'
 import type { ApproveOptions, VisualApproveOptions } from './types'
 
 export async function approve(value: unknown, options: ApproveOptions = {}): Promise<void> {

@@ -1,6 +1,6 @@
 import { expect } from 'vitest'
-import { implement, unit, runWithTestContext } from 'aver'
-import type { TraceEntry, Screenshotter } from 'aver'
+import { implement, unit, runWithTestContext } from '@aver/core'
+import type { TraceEntry, Screenshotter } from '@aver/core'
 import { mkdtempSync, existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { tmpdir } from 'node:os'

@@ -1,4 +1,4 @@
-import { implement } from 'aver'
+import { implement } from '@aver/core'
 import { http } from '@aver/protocol-http'
 import { taskBoard } from '../domains/task-board.js'
 import { createServer } from '../src/server/index.js'

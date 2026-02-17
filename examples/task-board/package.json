@@ -22,7 +22,7 @@
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
     "@vitejs/plugin-react": "^4.5.2",
-    "aver": "workspace:*",
+    "@aver/core": "workspace:*",
     "@aver/protocol-http": "workspace:*",
     "@aver/approvals": "workspace:*",
     "@aver/protocol-playwright": "workspace:*",

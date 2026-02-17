@@ -42,7 +42,7 @@ A domain declares the vocabulary for a bounded context — what your system does
 
 ```typescript
 // domains/shopping-cart.ts
-import { defineDomain, action, query, assertion } from 'aver'
+import { defineDomain, action, query, assertion } from '@aver/core'
 
 export const shoppingCart = defineDomain({
   name: 'shopping-cart',
@@ -74,7 +74,7 @@ An adapter binds domain vocabulary to a real implementation. Start with a `unit`
 
 ```typescript
 // adapters/shopping-cart.unit.ts
-import { implement, unit } from 'aver'
+import { implement, unit } from '@aver/core'
 import { shoppingCart } from '../domains/shopping-cart'
 
 interface CartItem { name: string; qty: number }
@@ -123,7 +123,7 @@ Key points:
 
 ```typescript
 // aver.config.ts
-import { defineConfig } from 'aver'
+import { defineConfig } from '@aver/core'
 import { unitAdapter } from './adapters/shopping-cart.unit'
 
 export default defineConfig({
@@ -149,7 +149,7 @@ export default defineConfig({
 ```typescript
 // tests/shopping-cart.spec.ts
 import { expect } from 'vitest'
-import { suite } from 'aver'
+import { suite } from '@aver/core'
 import { shoppingCart } from '../domains/shopping-cart'
 
 const { test } = suite(shoppingCart)

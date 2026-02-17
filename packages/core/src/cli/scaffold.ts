@@ -13,7 +13,7 @@ export function initProjectFiles(dir: string): void {
   mkdirSync(join(dir, 'adapters'), { recursive: true })
   mkdirSync(join(dir, 'tests'), { recursive: true })
 
-  const configContent = `import { defineConfig } from 'aver'
+  const configContent = `import { defineConfig } from '@aver/core'
 
 export default defineConfig({
   adapters: [],
@@ -48,7 +48,7 @@ export function initDomainFiles(dir: string, name: string, protocol: string): vo
     throw new Error(`Domain file already exists: domains/${kebab}.ts`)
   }
 
-  writeFileSync(domainPath, `import { defineDomain, action, query, assertion } from 'aver'
+  writeFileSync(domainPath, `import { defineDomain, action, query, assertion } from '@aver/core'
 
 export const ${name} = defineDomain({
   name: '${kebab}',
@@ -68,7 +68,7 @@ export const ${name} = defineDomain({
   writeFileSync(adapterPath, buildAdapterTemplate(name, kebab, protocol))
 
   const testPath = join(dir, 'tests', `${kebab}.spec.ts`)
-  writeFileSync(testPath, `import { suite } from 'aver'
+  writeFileSync(testPath, `import { suite } from '@aver/core'
 import { ${name} } from '../domains/${kebab}.js'
 
 const { test } = suite(${name})
@@ -85,12 +85,12 @@ test('create and verify', async ({ act, query, assert }) => {
 
 function buildAdapterTemplate(name: string, kebab: string, protocol: string): string {
   const protocolImport = protocol === 'unit'
-    ? `import { implement, unit } from 'aver'`
+    ? `import { implement, unit } from '@aver/core'`
     : protocol === 'http'
-      ? `import { implement } from 'aver'\nimport { http } from '@aver/protocol-http'`
+      ? `import { implement } from '@aver/core'\nimport { http } from '@aver/protocol-http'`
       : protocol === 'playwright'
-        ? `import { implement } from 'aver'\nimport { playwright } from '@aver/protocol-playwright'`
-        : `import { implement, ${protocol} } from 'aver'`
+        ? `import { implement } from '@aver/core'\nimport { playwright } from '@aver/protocol-playwright'`
+        : `import { implement, ${protocol} } from '@aver/core'`
 
   if (protocol === 'unit') {
     return `${protocolImport}

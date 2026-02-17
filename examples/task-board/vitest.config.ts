@@ -1,5 +1,5 @@
 import { defineConfig } from 'vitest/config'
-import { averReporter } from 'aver/reporter'
+import { averReporter } from '@aver/core/reporter'
 
 export default defineConfig({
   test: {

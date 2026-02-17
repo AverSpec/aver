@@ -36,7 +36,7 @@ Create the domain file with operations from the formalization phase:
 
 ```typescript
 // domains/task-board.ts
-import { defineDomain, action, query, assertion } from 'aver'
+import { defineDomain, action, query, assertion } from '@aver/core'
 
 export const taskBoard = defineDomain('task-board', {
   // Actions
@@ -65,7 +65,7 @@ Create a test file using the domain vocabulary. Each example from Example Mappin
 
 ```typescript
 // tests/task-board.spec.ts
-import { suite } from 'aver'
+import { suite } from '@aver/core'
 import { taskBoard } from '../domains/task-board.js'
 
 const { test, act, query, assert } = suite(taskBoard)

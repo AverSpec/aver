@@ -13,7 +13,7 @@ npm install aver
 ## Usage
 
 ```typescript
-import { defineDomain, action, assertion, implement, unit, suite } from 'aver'
+import { defineDomain, action, assertion, implement, unit, suite } from '@aver/core'
 
 const cart = defineDomain({
   name: 'cart',

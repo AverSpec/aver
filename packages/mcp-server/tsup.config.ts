@@ -6,6 +6,6 @@ export default defineConfig({
   dts: true,
   sourcemap: true,
   clean: true,
-  external: ['aver'],
+  external: ['@aver/core'],
   banner: { js: '#!/usr/bin/env node' },
 })

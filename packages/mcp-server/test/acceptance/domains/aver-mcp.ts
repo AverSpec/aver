@@ -1,22 +1,15 @@
 import { defineDomain, action, query, assertion } from '@aver/core'
 
-/**
- * Acceptance domain for the Aver MCP server.
- * Models: setting up test domains, calling MCP tool handlers, verifying results.
- */
 export const averMcp = defineDomain({
   name: 'AverMcp',
   actions: {
-    /** Register a test domain with the given vocabulary into the registry. */
+    // --- Fixtures (test setup) ---
     registerTestDomain: action<{
       name: string
       actions: string[]
       queries: string[]
       assertions: string[]
     }>(),
-    /** Call an MCP tool handler by name with optional input. */
-    callTool: action<{ tool: string; input?: Record<string, unknown> }>(),
-    /** Save a test run to the run store. */
     saveTestRun: action<{
       results: Array<{
         testName: string
@@ -25,33 +18,88 @@ export const averMcp = defineDomain({
         trace: Array<{ kind: string; name: string; status: string; error?: string }>
       }>
     }>(),
-    /** Save N test runs to the run store (for retention testing). */
     saveMultipleRuns: action<{ count: number }>(),
-    /** Reload config using an injected loader function. */
-    reloadWithLoader: action<{ domainNames: string[] }>(),
-    /** Discover and register domains from a temp directory. */
-    discoverFromDirectory: action<{ domainNames: string[] }>(),
-    /** Clear the registry and run store for test isolation. */
     resetState: action(),
+    reloadConfig: action<{ domainNames: string[] }>(),
+    discoverDomains: action<{ domainNames: string[] }>(),
+
+    // --- System actions (MCP tools that mutate) ---
+    captureScenario: action<{
+      behavior: string
+      context?: string
+      story?: string
+      mode?: 'observed' | 'intended'
+    }>(),
+    advanceScenario: action<{ id: string; rationale: string; promotedBy: string }>(),
+    regressScenario: action<{ id: string; targetStage: string; rationale: string }>(),
+    deleteScenario: action<{ id: string }>(),
+    addQuestion: action<{ scenarioId: string; text: string }>(),
+    resolveQuestion: action<{ scenarioId: string; questionId: string; answer: string }>(),
+    linkToDomain: action<{
+      scenarioId: string
+      domainOperation?: string
+      testNames?: string[]
+      approvalBaseline?: string
+    }>(),
+    importScenarios: action<{ json: string }>(),
   },
   queries: {
-    /** Get the result from the last tool call (parsed JSON). */
-    lastToolResult: query<unknown>(),
-    /** Get the number of run files in the store. */
+    // --- System queries (MCP tools that read) ---
+    domainList: query<void, Array<{ name: string; actionCount: number; queryCount: number; assertionCount: number }>>(),
+    domainVocabulary: query<
+      { name: string },
+      { name: string; actions: string[]; queries: string[]; assertions: string[] } | null
+    >(),
+    adapterList: query<void, Array<{ domainName: string; protocolName: string }>>(),
+    failureDetails: query<
+      { domain?: string; testName?: string } | void,
+      { failures: Array<{ testName: string; domain: string; error?: string; trace: unknown[] }> }
+    >(),
+    testTrace: query<
+      { testName: string },
+      { testName: string; status: string; trace: unknown[] } | null
+    >(),
+    runDiff: query<
+      void,
+      { newlyPassing: string[]; newlyFailing: string[]; stillFailing: string[] } | null
+    >(),
+    domainStructure: query<
+      { description: string },
+      { suggestedName: string; actions: unknown[]; queries: unknown[]; assertions: unknown[] }
+    >(),
+    adapterStructure: query<
+      { domain: string; protocol: string },
+      { domain: string; handlers: { actions: string[]; queries: string[]; assertions: string[] } } | null
+    >(),
+    projectContext: query<void, object | null>(),
+    scenarioSummary: query<
+      void,
+      { captured: number; characterized: number; mapped: number; specified: number; implemented: number; total: number; openQuestions: number }
+    >(),
+    scenarios: query<
+      { stage?: string; story?: string; keyword?: string } | void,
+      Array<{ id: string; stage: string; behavior: string; domainOperation?: string }>
+    >(),
+    advanceCandidates: query<void, Array<{ id: string; stage: string }>>(),
+    workflowPhase: query<void, { name: string; description: string; recommendedActions: string[] }>(),
+    exportedScenarios: query<{ format: string }, string>(),
+
+    // --- Test-support queries ---
     runCount: query<void, number>(),
-    /** Get the number of registered domains. */
     registeredDomainCount: query<void, number>(),
+    lastCapturedScenario: query<void, { id: string; stage: string; behavior: string }>(),
+    lastAddedQuestion: query<void, { id: string; text: string }>(),
+    importResult: query<void, { added: number; skipped: number }>(),
   },
   assertions: {
-    /** Assert the last tool result contains the expected data. */
-    toolResultContains: assertion<{ path: string; expected: unknown }>(),
-    /** Assert the last tool result is an array of a specific length. */
-    toolResultHasLength: assertion<{ length: number }>(),
-    /** Assert the last tool call returned an error/not-found message. */
-    toolResultIsError: assertion<{ substring: string }>(),
-    /** Assert the run store contains exactly N runs. */
-    runCountIs: assertion<{ count: number }>(),
-    /** Assert a domain with the given name is registered. */
     domainIsRegistered: assertion<{ name: string }>(),
+    runCountIs: assertion<{ count: number }>(),
+    scenarioHasStage: assertion<{ id: string; stage: string }>(),
+    scenarioHasRegressionRationale: assertion<{ id: string; rationale: string }>(),
+    questionIsResolved: assertion<{ scenarioId: string; questionId: string }>(),
+    scenarioHasDomainOperation: assertion<{ id: string; operation: string }>(),
+    importResultIs: assertion<{ added: number; skipped: number }>(),
+    workflowPhaseIs: assertion<{ phase: string }>(),
+    scenarioCountIs: assertion<{ count: number }>(),
   },
 })

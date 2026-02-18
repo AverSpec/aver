@@ -11,5 +11,6 @@ export default defineConfig({
       'packages/workspace',
       'examples/task-board',
     ],
+    exclude: ['.worktrees/**'],
   },
 })

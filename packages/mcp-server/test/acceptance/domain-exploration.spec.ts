@@ -59,4 +59,12 @@ describe('MCP Domain Exploration (acceptance)', () => {
 
     await assert.toolResultContains({ path: '0.domainName', expected: 'Cart' })
   })
+
+  test('returns null for project context when no config loaded', async ({ act, assert }) => {
+    await act.callTool({ tool: 'get_project_context' })
+
+    // getProjectContextHandler returns null when getProjectRoot() has no root
+    // (no aver.config loaded in the test environment)
+    await assert.toolResultIsError({ substring: 'not found' })
+  })
 })

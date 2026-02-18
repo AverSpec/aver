@@ -27,12 +27,29 @@ import {
 import {
   describeDomainStructureHandler,
   describeAdapterStructureHandler,
+  getProjectContextHandler,
 } from '../../../src/tools/scaffolding'
 import { getRunDiffHandler } from '../../../src/tools/reporting'
+import {
+  captureScenarioHandler,
+  getScenarioSummaryHandler,
+  getScenariosHandler,
+  advanceScenarioHandler,
+  regressScenarioHandler,
+  addQuestionHandler,
+  resolveQuestionHandler,
+  linkToDomainHandler,
+  getWorkflowPhaseHandler,
+  getAdvanceCandidatesHandler,
+  exportScenariosHandler,
+  importScenariosHandler,
+} from '../../../src/tools/workspace'
 
 interface McpTestSession {
   lastToolResult?: unknown
   runStore?: RunStore
+  workspaceBasePath: string
+  workspaceProjectId: string
 }
 
 export const averMcpAdapter = implement(averMcp, {
@@ -41,7 +58,12 @@ export const averMcpAdapter = implement(averMcp, {
     // the outer adapter registration needed by the outer suite.
     // Registry isolation is handled by beforeEach in the test files.
     const runStoreDir = mkdtempSync(join(tmpdir(), 'aver-mcp-test-'))
-    return { runStore: new RunStore(runStoreDir) }
+    const workspaceDir = mkdtempSync(join(tmpdir(), 'aver-mcp-workspace-'))
+    return {
+      runStore: new RunStore(runStoreDir),
+      workspaceBasePath: workspaceDir,
+      workspaceProjectId: 'test',
+    }
   }),
 
   actions: {
@@ -129,6 +151,105 @@ export const averMcpAdapter = implement(averMcp, {
           } else {
             session.lastToolResult = diff
           }
+          break
+        }
+        case 'get_project_context': {
+          session.lastToolResult = await getProjectContextHandler()
+          break
+        }
+        case 'capture_scenario': {
+          session.lastToolResult = captureScenarioHandler(
+            input as any,
+            session.workspaceBasePath,
+            session.workspaceProjectId,
+          )
+          break
+        }
+        case 'get_scenario_summary': {
+          session.lastToolResult = getScenarioSummaryHandler(
+            session.workspaceBasePath,
+            session.workspaceProjectId,
+          )
+          break
+        }
+        case 'get_scenarios': {
+          session.lastToolResult = getScenariosHandler(
+            input as any ?? {},
+            session.workspaceBasePath,
+            session.workspaceProjectId,
+          )
+          break
+        }
+        case 'advance_scenario': {
+          session.lastToolResult = advanceScenarioHandler(
+            input as any,
+            session.workspaceBasePath,
+            session.workspaceProjectId,
+          )
+          break
+        }
+        case 'regress_scenario': {
+          session.lastToolResult = regressScenarioHandler(
+            input as any,
+            session.workspaceBasePath,
+            session.workspaceProjectId,
+          )
+          break
+        }
+        case 'add_question': {
+          session.lastToolResult = addQuestionHandler(
+            input as any,
+            session.workspaceBasePath,
+            session.workspaceProjectId,
+          )
+          break
+        }
+        case 'resolve_question': {
+          resolveQuestionHandler(
+            input as any,
+            session.workspaceBasePath,
+            session.workspaceProjectId,
+          )
+          session.lastToolResult = { success: true }
+          break
+        }
+        case 'link_to_domain': {
+          linkToDomainHandler(
+            input as any,
+            session.workspaceBasePath,
+            session.workspaceProjectId,
+          )
+          session.lastToolResult = { success: true }
+          break
+        }
+        case 'get_workflow_phase': {
+          session.lastToolResult = getWorkflowPhaseHandler(
+            session.workspaceBasePath,
+            session.workspaceProjectId,
+          )
+          break
+        }
+        case 'get_advance_candidates': {
+          session.lastToolResult = getAdvanceCandidatesHandler(
+            session.workspaceBasePath,
+            session.workspaceProjectId,
+          )
+          break
+        }
+        case 'export_scenarios': {
+          session.lastToolResult = exportScenariosHandler(
+            input as any,
+            session.workspaceBasePath,
+            session.workspaceProjectId,
+          )
+          break
+        }
+        case 'import_scenarios': {
+          session.lastToolResult = importScenariosHandler(
+            input as any,
+            session.workspaceBasePath,
+            session.workspaceProjectId,
+          )
           break
         }
         default:

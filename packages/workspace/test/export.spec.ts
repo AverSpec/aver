@@ -27,7 +27,7 @@ describe('export', () => {
       ops.captureScenario({ behavior: 'Users can cancel orders', story: 'Cancel Order', mode: 'intended' })
 
       const md = exportMarkdown(store.load())
-      expect(md).toContain('# Workspace Summary')
+      expect(md).toContain('# Scenario Summary')
       expect(md).toContain('## Captured (2)')
       expect(md).toContain('API returns 200 for errors')
       expect(md).toContain('Cancel Order')

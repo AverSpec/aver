@@ -226,7 +226,7 @@ describe('workspace tool handlers', () => {
       captureScenarioHandler({ behavior: 'test item' }, dir, projectId)
       const result = exportScenariosHandler({ format: 'markdown' }, dir, projectId)
       expect(result).toContain('test item')
-      expect(result).toContain('# Workspace Summary')
+      expect(result).toContain('# Scenario Summary')
     })
 
     it('exports as json', () => {

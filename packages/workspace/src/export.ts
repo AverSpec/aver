@@ -4,7 +4,7 @@ import type { WorkspaceStore } from './storage.js'
 const STAGES: Stage[] = ['captured', 'characterized', 'mapped', 'specified', 'implemented']
 
 export function exportMarkdown(workspace: Workspace): string {
-  const lines: string[] = ['# Workspace Summary', '']
+  const lines: string[] = ['# Scenario Summary', '']
 
   const total = workspace.scenarios.length
   const byStage = Object.fromEntries(STAGES.map(s => [s, workspace.scenarios.filter(sc => sc.stage === s)]))

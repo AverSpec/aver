@@ -26,6 +26,9 @@ export const averCore = defineDomain({
     vocabularyKeys: query<{ actions: string[]; queries: string[]; assertions: string[] }>(),
     actionTrace: query<Array<{ kind: string; name: string; status: string }>>(),
     parentDomainName: query<string | undefined>(),
+    coveragePercentage: query<number>(),
+    coveredOperations: query<{ actions: string[]; queries: string[]; assertions: string[] }>(),
+    uncoveredOperations: query<{ actions: string[]; queries: string[]; assertions: string[] }>(),
   },
   assertions: {
     hasVocabulary: assertion<{ actions: string[]; queries: string[]; assertions: string[] }>(),
@@ -34,5 +37,8 @@ export const averCore = defineDomain({
     traceHasLength: assertion<{ length: number }>(),
     hasParent: assertion<{ name: string }>(),
     queryReturned: assertion<{ name: string; value: unknown }>(),
+    coverageIsPercent: assertion<{ percentage: number }>(),
+    operationIsCovered: assertion<{ kind: string; name: string }>(),
+    operationIsUncovered: assertion<{ kind: string; name: string }>(),
   },
 })

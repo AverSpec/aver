@@ -178,6 +178,31 @@ export const averCoreAdapter = implement(averCore, {
       const dom = session.extendedDomain ?? session.domain
       return dom?.parent?.name
     },
+
+    coveragePercentage: async (session) => {
+      if (!session.suiteInstance) throw new Error('No suite created')
+      return session.suiteInstance.getCoverage().percentage
+    },
+
+    coveredOperations: async (session) => {
+      if (!session.suiteInstance) throw new Error('No suite created')
+      const cov = session.suiteInstance.getCoverage()
+      return {
+        actions: cov.actions.called,
+        queries: cov.queries.called,
+        assertions: cov.assertions.called,
+      }
+    },
+
+    uncoveredOperations: async (session) => {
+      if (!session.suiteInstance) throw new Error('No suite created')
+      const cov = session.suiteInstance.getCoverage()
+      return {
+        actions: cov.actions.total.filter(a => !cov.actions.called.includes(a)),
+        queries: cov.queries.total.filter(q => !cov.queries.called.includes(q)),
+        assertions: cov.assertions.total.filter(a => !cov.assertions.called.includes(a)),
+      }
+    },
   },
 
   assertions: {
@@ -229,6 +254,29 @@ export const averCoreAdapter = implement(averCore, {
         throw new Error(`Expected last query "${name}" but got "${session.lastQueryName}"`)
       if (!isDeepStrictEqual(session.lastQueryResult, value))
         throw new Error(`Expected query result ${JSON.stringify(value)} but got ${JSON.stringify(session.lastQueryResult)}`)
+    },
+
+    coverageIsPercent: async (session, { percentage }) => {
+      if (!session.suiteInstance) throw new Error('No suite created')
+      const actual = session.suiteInstance.getCoverage().percentage
+      if (actual !== percentage)
+        throw new Error(`Expected coverage ${percentage}% but got ${actual}%`)
+    },
+
+    operationIsCovered: async (session, { kind, name }) => {
+      if (!session.suiteInstance) throw new Error('No suite created')
+      const cov = session.suiteInstance.getCoverage()
+      const called = (cov as any)[kind + 's']?.called as string[]
+      if (!called || !called.includes(name))
+        throw new Error(`Expected ${kind} "${name}" to be covered`)
+    },
+
+    operationIsUncovered: async (session, { kind, name }) => {
+      if (!session.suiteInstance) throw new Error('No suite created')
+      const cov = session.suiteInstance.getCoverage()
+      const called = (cov as any)[kind + 's']?.called as string[]
+      if (called && called.includes(name))
+        throw new Error(`Expected ${kind} "${name}" to be uncovered`)
     },
   },
 })

@@ -37,7 +37,8 @@ describe('full lifecycle: captured -> characterized -> mapped -> specified -> im
     // Dev characterizes -- add question, advance to characterized
     ops.addQuestion(obs1.id, 'Why 200 instead of 400?')
     ops.advanceScenario(obs1.id, { rationale: 'API predates REST conventions', promotedBy: 'dev' })
-    expect(detectPhase(store.load()).name).toBe('mapping')
+    // obs2 is still captured, so earliest-unfinished-stage drives the phase
+    expect(detectPhase(store.load()).name).toBe('investigation')
 
     // Resolve question, business confirms via mapping
     const question = ops.getScenario(obs1.id)!.questions[0]

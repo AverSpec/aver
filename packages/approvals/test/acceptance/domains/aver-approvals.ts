@@ -5,6 +5,7 @@ export const averApprovals = defineDomain({
   actions: {
     approveValue: action<{ value: unknown; name?: string }>(),
     setApproveMode: action(),
+    setApproveModeTrue: action(),
     clearApproveMode: action(),
     approveVisual: action<{ name: string; region?: string }>(),
     provideScreenshotter: action<{ behavior: 'match' | 'differ' | 'dimension-mismatch' }>(),

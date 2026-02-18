@@ -81,6 +81,34 @@ describe('Scenario Pipeline', () => {
       await act.advanceScenario({ id: 'nonexist', rationale: 'r', promotedBy: 'p' })
       await assert.throwsError({ message: 'Scenario not found' })
     })
+
+    test('deletes a scenario by id', async ({ act, assert, query }) => {
+      await act.captureScenario({ behavior: 'to be deleted' })
+      const id = await query.lastCapturedId()
+      await assert.scenarioHasStage({ id, stage: 'captured' })
+      await act.deleteScenario({ id })
+      await assert.scenarioDoesNotExist({ id })
+    })
+
+    test('throws on delete with unknown id', async ({ act, assert }) => {
+      await act.deleteScenario({ id: 'nonexist' })
+      await assert.throwsError({ message: 'Scenario not found' })
+    })
+
+    test('throws on regress with unknown id', async ({ act, assert }) => {
+      await act.regressScenario({ id: 'nonexist', targetStage: 'captured', rationale: 'r' })
+      await assert.throwsError({ message: 'Scenario not found' })
+    })
+
+    test('throws on addQuestion with unknown scenario id', async ({ act, assert }) => {
+      await act.addQuestion({ scenarioId: 'nonexist', text: 'question' })
+      await assert.throwsError({ message: 'Scenario not found' })
+    })
+
+    test('throws on resolveQuestion with unknown scenario id', async ({ act, assert }) => {
+      await act.resolveQuestion({ scenarioId: 'nonexist', questionId: 'qid', answer: 'answer' })
+      await assert.throwsError({ message: 'Scenario not found' })
+    })
   })
 
   // --- Questions ---
@@ -179,6 +207,20 @@ describe('Scenario Pipeline', () => {
       await act.advanceScenario({ id, rationale: 'r', promotedBy: 'p' })
       await act.advanceScenario({ id, rationale: 'r', promotedBy: 'p' })
       await assert.workflowPhaseIs({ phase: 'implementation' })
+    })
+
+    test('mixed captured and implemented stays in implementation phase', async ({ act, assert, query }) => {
+      await act.captureScenario({ behavior: 'fully done' })
+      const id1 = await query.lastCapturedId()
+      await act.advanceScenario({ id: id1, rationale: 'r', promotedBy: 'p' })
+      await act.advanceScenario({ id: id1, rationale: 'r', promotedBy: 'p' })
+      await act.advanceScenario({ id: id1, rationale: 'r', promotedBy: 'p' })
+      await act.advanceScenario({ id: id1, rationale: 'r', promotedBy: 'p' })
+      await act.linkToDomain({ scenarioId: id1, domainOperation: 'Test.action' })
+
+      await act.captureScenario({ behavior: 'still captured' })
+      // One implemented with link + one captured → should be investigation (captured takes priority)
+      await assert.workflowPhaseIs({ phase: 'investigation' })
     })
   })
 
@@ -319,6 +361,45 @@ describe('Scenario Pipeline', () => {
       await act.advanceScenario({ id, rationale: 'r', promotedBy: 'p' })
       await assert.scenarioHasStage({ id, stage: 'implemented' })
       await assert.advanceCandidateCountIs({ count: 0 })
+    })
+
+    test('keyword filter matches context field', async ({ act, query }) => {
+      await act.captureScenario({ behavior: 'user clicks button', context: 'checkout page' })
+      await act.captureScenario({ behavior: 'user logs in' })
+
+      const results = await query.scenarios({ keyword: 'checkout' })
+      if (results.length !== 1) throw new Error(`Expected 1 result, got ${results.length}`)
+      if (results[0].behavior !== 'user clicks button')
+        throw new Error(`Expected "user clicks button" but got "${results[0].behavior}"`)
+    })
+
+    test('story filter matches exact story', async ({ act, query }) => {
+      await act.captureScenario({ behavior: 'behavior one', story: 'Auth' })
+      await act.captureScenario({ behavior: 'behavior two', story: 'Cart' })
+
+      const results = await query.scenarios({ story: 'Auth' })
+      if (results.length !== 1) throw new Error(`Expected 1 result, got ${results.length}`)
+      if (results[0].behavior !== 'behavior one')
+        throw new Error(`Expected "behavior one" but got "${results[0].behavior}"`)
+    })
+
+    test('mapped scenario without questions is an advance candidate', async ({ act, assert, query }) => {
+      await act.captureScenario({ behavior: 'at mapped' })
+      const id = await query.lastCapturedId()
+      await act.advanceScenario({ id, rationale: 'r', promotedBy: 'p' })
+      await act.advanceScenario({ id, rationale: 'r', promotedBy: 'p' })
+      await assert.scenarioHasStage({ id, stage: 'mapped' })
+      await assert.advanceCandidateCountIs({ count: 1 })
+    })
+
+    test('specified scenario without questions is an advance candidate', async ({ act, assert, query }) => {
+      await act.captureScenario({ behavior: 'at specified' })
+      const id = await query.lastCapturedId()
+      await act.advanceScenario({ id, rationale: 'r', promotedBy: 'p' })
+      await act.advanceScenario({ id, rationale: 'r', promotedBy: 'p' })
+      await act.advanceScenario({ id, rationale: 'r', promotedBy: 'p' })
+      await assert.scenarioHasStage({ id, stage: 'specified' })
+      await assert.advanceCandidateCountIs({ count: 1 })
     })
   })
 })

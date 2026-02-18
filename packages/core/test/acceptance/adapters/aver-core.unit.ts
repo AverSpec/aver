@@ -21,6 +21,7 @@ interface AverTestSession {
   suiteInstance?: SuiteReturn<any>
   lastQueryResult?: unknown
   lastQueryName?: string
+  lastSetupError?: string
 }
 
 export const averCoreAdapter = implement(averCore, {
@@ -174,6 +175,30 @@ export const averCoreAdapter = implement(averCore, {
       delete process.env.AVER_DOMAIN
     },
 
+    createSuiteForChild: async (session) => {
+      // Create suite for the EXTENDED (child) domain, but DON'T pass an adapter
+      // This forces registry lookup, which should walk the parent chain
+      if (!session.extendedDomain) throw new Error('No extended domain')
+      session.suiteInstance = realSuite(session.extendedDomain)
+      await session.suiteInstance.setup()
+    },
+
+    createSuiteWithoutAdapter: async (session) => {
+      // Create suite for a domain that has NO adapter registered
+      if (!session.domain) throw new Error('No domain defined')
+      session.suiteInstance = realSuite(session.domain)
+    },
+
+    setupSuiteExpectingError: async (session) => {
+      if (!session.suiteInstance) throw new Error('No suite created')
+      try {
+        await session.suiteInstance.setup()
+        session.lastSetupError = undefined
+      } catch (e: any) {
+        session.lastSetupError = e.message
+      }
+    },
+
     executeFailingAssertion: async (session, { name, payload }) => {
       if (!session.suiteInstance) throw new Error('No suite created')
       const adapter = session.adapter!
@@ -247,6 +272,10 @@ export const averCoreAdapter = implement(averCore, {
         queries: cov.queries.total.filter(q => !cov.queries.called.includes(q)),
         assertions: cov.assertions.total.filter(a => !cov.assertions.called.includes(a)),
       }
+    },
+
+    lastSetupError: async (session) => {
+      return session.lastSetupError
     },
   },
 
@@ -340,6 +369,20 @@ export const averCoreAdapter = implement(averCore, {
       const planned = session.suiteInstance.getPlannedTests(testName)
       if (planned.length !== 1 || planned[0].status !== 'skip')
         throw new Error(`Expected test "${testName}" to be skipped but got ${JSON.stringify(planned)}`)
+    },
+
+    setupErrorContains: async (session, { substring }) => {
+      if (!session.lastSetupError)
+        throw new Error('Expected a setup error but none occurred')
+      if (!session.lastSetupError.includes(substring))
+        throw new Error(`Expected error to contain "${substring}" but got: ${session.lastSetupError}`)
+    },
+
+    errorHasNoTrace: async (session) => {
+      if (!session.lastSetupError)
+        throw new Error('Expected a setup error but none occurred')
+      if (session.lastSetupError.includes('Action trace'))
+        throw new Error('Expected error to NOT contain action trace but it does')
     },
   },
 })

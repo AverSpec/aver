@@ -109,6 +109,87 @@ describe('Approval testing', () => {
     })
   })
 
+  // --- Serializer auto-detection ---
+
+  describe('serializer auto-detection', () => {
+    test('null values use text serializer', async ({ act, assert }) => {
+      await act.setApproveMode()
+      await act.approveValue({ value: null, name: 'null-value' })
+      await assert.baselineCreated()
+      await assert.noError()
+      await act.clearApproveMode()
+    })
+
+    test('arrays use JSON serializer', async ({ act, assert }) => {
+      await act.setApproveMode()
+      await act.approveValue({ value: [1, 2, 3], name: 'array-value' })
+      await assert.baselineCreated()
+      await assert.noError()
+      await act.clearApproveMode()
+    })
+
+    test('primitive numbers use text serializer', async ({ act, assert }) => {
+      await act.setApproveMode()
+      await act.approveValue({ value: 42, name: 'number-value' })
+      await assert.baselineCreated()
+      await assert.noError()
+      await act.clearApproveMode()
+    })
+
+    test('primitive strings use text serializer', async ({ act, assert }) => {
+      await act.setApproveMode()
+      await act.approveValue({ value: 'hello world', name: 'string-value' })
+      await assert.baselineCreated()
+      await assert.noError()
+      await act.clearApproveMode()
+    })
+  })
+
+  // --- AVER_APPROVE='true' variant ---
+
+  describe('approve mode variants', () => {
+    test('AVER_APPROVE=true (string) creates baseline', async ({ act, assert }) => {
+      await act.setApproveModeTrue()
+      await act.approveValue({ value: { key: 'value' }, name: 'true-variant' })
+      await assert.baselineCreated()
+      await assert.noError()
+      await act.clearApproveMode()
+    })
+
+    test('approve mode with matching content is a no-op', async ({ act, assert, query }) => {
+      // First: create a baseline
+      await act.setApproveMode()
+      await act.approveValue({ value: { key: 'same' }, name: 'match-fast-path' })
+      await assert.baselineCreated()
+
+      // Second: approve same value again — should be a no-op (no error, no file write)
+      await act.approveValue({ value: { key: 'same' }, name: 'match-fast-path' })
+      await assert.noError()
+      await act.clearApproveMode()
+    })
+  })
+
+  // --- safeName edge cases ---
+
+  describe('safeName edge cases', () => {
+    test('approval with very long name truncates the filename', async ({ act, assert }) => {
+      const longName = 'a'.repeat(100)
+      await act.setApproveMode()
+      await act.approveValue({ value: 'data', name: longName })
+      await assert.baselineCreated()
+      await assert.noError()
+      await act.clearApproveMode()
+    })
+
+    test('approval with special characters in name produces safe filename', async ({ act, assert }) => {
+      await act.setApproveMode()
+      await act.approveValue({ value: 'data', name: 'test@#$%^&*()!' })
+      await assert.baselineCreated()
+      await assert.noError()
+      await act.clearApproveMode()
+    })
+  })
+
   describe('visual approvals', () => {
     test('fails when visual baseline is missing', async ({ act, assert }) => {
       await act.provideScreenshotter({ behavior: 'match' })

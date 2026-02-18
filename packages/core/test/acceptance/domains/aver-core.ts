@@ -24,6 +24,9 @@ export const averCore = defineDomain({
     registerSecondAdapter: action<{ protocolName: string }>(),
     setDomainFilter: action<{ domainName: string }>(),
     clearDomainFilter: action(),
+    createSuiteForChild: action(),
+    createSuiteWithoutAdapter: action(),
+    setupSuiteExpectingError: action(),
   },
   queries: {
     vocabularyKeys: query<{ actions: string[]; queries: string[]; assertions: string[] }>(),
@@ -33,6 +36,7 @@ export const averCore = defineDomain({
     coveredOperations: query<{ actions: string[]; queries: string[]; assertions: string[] }>(),
     uncoveredOperations: query<{ actions: string[]; queries: string[]; assertions: string[] }>(),
     plannedTestNames: query<{ testName: string }, Array<{ name: string; status: string }>>(),
+    lastSetupError: query<string | undefined>(),
   },
   assertions: {
     hasVocabulary: assertion<{ actions: string[]; queries: string[]; assertions: string[] }>(),
@@ -46,5 +50,7 @@ export const averCore = defineDomain({
     operationIsUncovered: assertion<{ kind: string; name: string }>(),
     testIsParameterized: assertion<{ testName: string; protocols: string[] }>(),
     testIsSkipped: assertion<{ testName: string }>(),
+    setupErrorContains: assertion<{ substring: string }>(),
+    errorHasNoTrace: assertion(),
   },
 })

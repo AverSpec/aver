@@ -31,42 +31,15 @@ export function detectPhase(workspace: Workspace): Phase {
   const implementedWithoutLinks = implemented.filter(s => !s.domainOperation)
   const openQuestions = scenarios.flatMap(s => s.questions.filter(q => !q.answer))
 
-  // Work backward from most mature state
-  if (implemented.length > 0 && implementedWithoutLinks.length === 0) {
+  // Prioritize earliest unfinished stage — that's where attention is needed
+  if (captured.length > 0) {
     return {
-      name: 'verification',
-      description: 'All implemented scenarios have domain links. Run full test suite and review coverage.',
+      name: 'investigation',
+      description: `${captured.length} captured scenario(s) recorded. Continue exploring the system.`,
       recommendedActions: [
-        'Run full test suite across all protocols',
-        'Review approval baselines',
-        'Check for coverage gaps',
-        'Export workspace summary'
-      ]
-    }
-  }
-
-  if (implemented.length > 0 || specified.length > 0) {
-    const needingLinks = implementedWithoutLinks.length + specified.length
-    return {
-      name: 'implementation',
-      description: `${needingLinks} scenario(s) need domain vocabulary and adapter implementation.`,
-      recommendedActions: [
-        'Generate domain definitions from specified scenarios',
-        'Write failing tests for each specified behavior',
-        'Implement adapter handlers to make tests pass',
-        'Run TDD inner loop per protocol'
-      ]
-    }
-  }
-
-  if (mapped.length > 0) {
-    return {
-      name: 'specification',
-      description: `${mapped.length} mapped scenario(s) ready for domain vocabulary naming and adapter interface design.`,
-      recommendedActions: [
-        'Name domain vocabulary (actions, queries, assertions) for each mapped scenario',
-        'Define adapter interface signatures',
-        'Get human confirmation on vocabulary names before advancing',
+        'Explore more system behaviors and capture scenarios',
+        'Investigate captured scenarios: trace code paths, find seams',
+        'Advance characterized scenarios with context and rationale',
         ...(openQuestions.length > 0 ? [`Resolve ${openQuestions.length} open question(s)`] : [])
       ]
     }
@@ -85,14 +58,41 @@ export function detectPhase(workspace: Workspace): Phase {
     }
   }
 
+  if (mapped.length > 0) {
+    return {
+      name: 'specification',
+      description: `${mapped.length} mapped scenario(s) ready for domain vocabulary naming and adapter interface design.`,
+      recommendedActions: [
+        'Name domain vocabulary (actions, queries, assertions) for each mapped scenario',
+        'Define adapter interface signatures',
+        'Get human confirmation on vocabulary names before advancing',
+        ...(openQuestions.length > 0 ? [`Resolve ${openQuestions.length} open question(s)`] : [])
+      ]
+    }
+  }
+
+  if (specified.length > 0 || implementedWithoutLinks.length > 0) {
+    const needingLinks = implementedWithoutLinks.length + specified.length
+    return {
+      name: 'implementation',
+      description: `${needingLinks} scenario(s) need domain vocabulary and adapter implementation.`,
+      recommendedActions: [
+        'Generate domain definitions from specified scenarios',
+        'Write failing tests for each specified behavior',
+        'Implement adapter handlers to make tests pass',
+        'Run TDD inner loop per protocol'
+      ]
+    }
+  }
+
   return {
-    name: 'investigation',
-    description: `${captured.length} captured scenario(s) recorded. Continue exploring the system.`,
+    name: 'verification',
+    description: 'All implemented scenarios have domain links. Run full test suite and review coverage.',
     recommendedActions: [
-      'Explore more system behaviors and capture scenarios',
-      'Investigate captured scenarios: trace code paths, find seams',
-      'Advance characterized scenarios with context and rationale',
-      ...(openQuestions.length > 0 ? [`Resolve ${openQuestions.length} open question(s)`] : [])
+      'Run full test suite across all protocols',
+      'Review approval baselines',
+      'Check for coverage gaps',
+      'Export workspace summary'
     ]
   }
 }

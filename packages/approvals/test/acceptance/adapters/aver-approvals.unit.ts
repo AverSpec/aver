@@ -90,6 +90,10 @@ export const averApprovalsAdapter = implement(averApprovals, {
       process.env.AVER_APPROVE = '1'
     },
 
+    setApproveModeTrue: async () => {
+      process.env.AVER_APPROVE = 'true'
+    },
+
     clearApproveMode: async () => {
       delete process.env.AVER_APPROVE
     },

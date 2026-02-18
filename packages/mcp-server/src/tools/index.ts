@@ -8,14 +8,17 @@ import { getRunDiffHandler } from './reporting.js'
 import { registerWorkspaceTools } from './workspace.js'
 import { RunStore } from '../runs.js'
 import { reloadConfig } from '../config.js'
+import type { ToolsConfig } from './types.js'
 
-export function registerTools(server: McpServer): void {
+export type { ToolsConfig } from './types.js'
+
+export function registerTools(server: McpServer, config?: ToolsConfig): void {
   registerDomainTools(server)
-  const store = new RunStore(join(process.cwd(), '.aver', 'runs'))
+  const store = config?.runStore ?? new RunStore(join(process.cwd(), '.aver', 'runs'))
   registerExecutionTools(server, store)
   registerScaffoldingTools(server)
   registerReportingTools(server, store)
-  registerWorkspaceTools(server)
+  registerWorkspaceTools(server, config)
 }
 
 function registerDomainTools(server: McpServer): void {

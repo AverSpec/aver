@@ -16,15 +16,18 @@ import {
   type Question,
   type Phase,
 } from '@aver/workspace'
+import type { ToolsConfig } from './types.js'
 
 // --- Path resolution ---
 
+let _config: ToolsConfig | undefined
+
 function resolveBasePath(): string {
-  return process.env.AVER_WORKSPACE_PATH ?? join(homedir(), '.aver', 'workspaces')
+  return _config?.workspaceBasePath ?? process.env.AVER_WORKSPACE_PATH ?? join(homedir(), '.aver', 'workspaces')
 }
 
 function resolveProjectId(): string {
-  return process.env.AVER_PROJECT_ID ?? basename(process.cwd())
+  return _config?.workspaceProjectId ?? process.env.AVER_PROJECT_ID ?? basename(process.cwd())
 }
 
 // --- Helpers ---
@@ -156,7 +159,8 @@ export function importScenariosHandler(
 
 const stageEnum = z.enum(['captured', 'characterized', 'mapped', 'specified', 'implemented'])
 
-export function registerWorkspaceTools(server: McpServer): void {
+export function registerWorkspaceTools(server: McpServer, config?: ToolsConfig): void {
+  _config = config
   server.registerTool(
     'get_scenario_summary',
     {

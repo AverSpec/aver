@@ -1,0 +1,13 @@
+{
+  "extraKnownMarketplaces": {
+    "aver-plugins": {
+      "source": {
+        "source": "directory",
+        "path": "./"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "aver@aver-plugins": true
+  }
+}

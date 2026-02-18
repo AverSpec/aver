@@ -62,11 +62,11 @@ export function detectPhase(workspace: Workspace): Phase {
   if (mapped.length > 0) {
     return {
       name: 'specification',
-      description: `${mapped.length} mapped scenario(s) ready for Example Mapping and test generation.`,
+      description: `${mapped.length} mapped scenario(s) ready for domain vocabulary naming and adapter interface design.`,
       recommendedActions: [
-        'Run Example Mapping for each mapped scenario',
-        'Generate concrete examples from rules',
-        'Advance to specified when examples are complete',
+        'Name domain vocabulary (actions, queries, assertions) for each mapped scenario',
+        'Define adapter interface signatures',
+        'Get human confirmation on vocabulary names before advancing',
         ...(openQuestions.length > 0 ? [`Resolve ${openQuestions.length} open question(s)`] : [])
       ]
     }

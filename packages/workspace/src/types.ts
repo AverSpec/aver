@@ -40,7 +40,7 @@ export interface Scenario {
   createdAt: string
   updatedAt: string
 
-  // Links to formalized artifacts
+  // Links to domain artifacts
   domainOperation?: string
   testNames?: string[]
   approvalBaseline?: string

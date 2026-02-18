@@ -5,7 +5,7 @@ Agent plugin for [Aver](https://github.com/njackson/aver) — domain-driven acce
 ## What's Included
 
 - **MCP Server** — pre-configured `aver-mcp` with tools for exploring domains, managing scenarios, running tests, and scaffolding code
-- **Skill** — `aver-workflow` teaching the outer-loop scenario mapping workflow (captured → characterized → mapped → specified → implemented)
+- **Skill** — `aver-workflow` facilitates scenario mapping and domain design, delegates implementation to other skills (5-stage pipeline: captured → characterized → mapped → specified → implemented)
 
 ## Installation
 

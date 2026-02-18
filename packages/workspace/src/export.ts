@@ -1,55 +1,55 @@
 import type { Workspace, Stage } from './types.js'
 import type { WorkspaceStore } from './storage.js'
 
-const STAGES: Stage[] = ['observed', 'explored', 'intended', 'formalized']
+const STAGES: Stage[] = ['captured', 'characterized', 'mapped', 'specified', 'implemented']
 
 export function exportMarkdown(workspace: Workspace): string {
   const lines: string[] = ['# Workspace Summary', '']
 
-  const total = workspace.items.length
-  const byStage = Object.fromEntries(STAGES.map(s => [s, workspace.items.filter(i => i.stage === s)]))
-  const openQuestions = workspace.items.flatMap(i => i.questions.filter(q => !q.answer))
+  const total = workspace.scenarios.length
+  const byStage = Object.fromEntries(STAGES.map(s => [s, workspace.scenarios.filter(sc => sc.stage === s)]))
+  const openQuestions = workspace.scenarios.flatMap(s => s.questions.filter(q => !q.answer))
 
-  lines.push(`**Total items:** ${total}`)
+  lines.push(`**Total scenarios:** ${total}`)
   lines.push(`**Open questions:** ${openQuestions.length}`)
   lines.push('')
 
   for (const stage of STAGES) {
-    const items = byStage[stage]
-    if (items.length === 0) continue
+    const scenarios = byStage[stage]
+    if (scenarios.length === 0) continue
 
-    lines.push(`## ${stage.charAt(0).toUpperCase() + stage.slice(1)} (${items.length})`)
+    lines.push(`## ${stage.charAt(0).toUpperCase() + stage.slice(1)} (${scenarios.length})`)
     lines.push('')
 
-    for (const item of items) {
-      lines.push(`### ${item.story ?? item.behavior}`)
-      if (item.story) lines.push(`> ${item.behavior}`)
-      if (item.context) lines.push(`*Context:* ${item.context}`)
+    for (const scenario of scenarios) {
+      lines.push(`### ${scenario.story ?? scenario.behavior}`)
+      if (scenario.story) lines.push(`> ${scenario.behavior}`)
+      if (scenario.context) lines.push(`*Context:* ${scenario.context}`)
       lines.push('')
 
-      if (item.rules.length > 0) {
+      if (scenario.rules.length > 0) {
         lines.push('**Rules:**')
-        for (const rule of item.rules) lines.push(`- ${rule}`)
+        for (const rule of scenario.rules) lines.push(`- ${rule}`)
         lines.push('')
       }
 
-      if (item.examples.length > 0) {
+      if (scenario.examples.length > 0) {
         lines.push('**Examples:**')
-        for (const ex of item.examples) {
+        for (const ex of scenario.examples) {
           lines.push(`- ${ex.description} → ${ex.expectedOutcome}`)
         }
         lines.push('')
       }
 
-      const itemQuestions = item.questions.filter(q => !q.answer)
-      if (itemQuestions.length > 0) {
+      const scenarioQuestions = scenario.questions.filter(q => !q.answer)
+      if (scenarioQuestions.length > 0) {
         lines.push('**Open questions:**')
-        for (const q of itemQuestions) lines.push(`- ❓ ${q.text}`)
+        for (const q of scenarioQuestions) lines.push(`- [Q] ${q.text}`)
         lines.push('')
       }
 
-      if (item.domainOperation) {
-        lines.push(`**Domain:** \`${item.domainOperation}\``)
+      if (scenario.domainOperation) {
+        lines.push(`**Domain:** \`${scenario.domainOperation}\``)
         lines.push('')
       }
     }
@@ -68,16 +68,16 @@ export function importJson(
 ): { added: number; skipped: number } {
   const source: Workspace = JSON.parse(json)
   const target = store.load()
-  const existingIds = new Set(target.items.map(i => i.id))
+  const existingIds = new Set(target.scenarios.map(s => s.id))
 
   let added = 0
   let skipped = 0
 
-  for (const item of source.items) {
-    if (existingIds.has(item.id)) {
+  for (const scenario of source.scenarios) {
+    if (existingIds.has(scenario.id)) {
       skipped++
     } else {
-      target.items.push(item)
+      target.scenarios.push(scenario)
       added++
     }
   }

@@ -23,34 +23,36 @@ describe('export', () => {
 
   describe('exportMarkdown', () => {
     it('produces readable markdown grouped by stage', () => {
-      ops.recordObservation({ behavior: 'API returns 200 for errors' })
-      ops.recordIntent({ behavior: 'Users can cancel orders', story: 'Cancel Order' })
+      ops.captureScenario({ behavior: 'API returns 200 for errors' })
+      ops.captureScenario({ behavior: 'Users can cancel orders', story: 'Cancel Order', mode: 'intended' })
 
       const md = exportMarkdown(store.load())
       expect(md).toContain('# Workspace Summary')
-      expect(md).toContain('## Observed (1)')
+      expect(md).toContain('## Captured (2)')
       expect(md).toContain('API returns 200 for errors')
-      expect(md).toContain('## Intended (1)')
       expect(md).toContain('Cancel Order')
     })
 
-    it('includes open questions', () => {
-      const item = ops.recordObservation({ behavior: 'test' })
-      ops.addQuestion(item.id, 'Why does this happen?')
+    it('includes open questions without emoji', () => {
+      const scenario = ops.captureScenario({ behavior: 'test' })
+      ops.addQuestion(scenario.id, 'Why does this happen?')
 
       const md = exportMarkdown(store.load())
       expect(md).toContain('Why does this happen?')
+      // No emoji in output (project convention)
+      expect(md).not.toContain('\u2753') // no red question mark emoji
+      expect(md).toContain('[Q]')
     })
   })
 
   describe('exportJson / importJson', () => {
-    it('round-trips workspace items through JSON', () => {
-      ops.recordObservation({ behavior: 'a' })
-      ops.recordIntent({ behavior: 'b', story: 'Story B' })
+    it('round-trips workspace scenarios through JSON', () => {
+      ops.captureScenario({ behavior: 'a' })
+      ops.captureScenario({ behavior: 'b', story: 'Story B', mode: 'intended' })
 
       const json = exportJson(store.load())
       const parsed = JSON.parse(json)
-      expect(parsed.items).toHaveLength(2)
+      expect(parsed.scenarios).toHaveLength(2)
 
       // Import into a fresh store
       const dir2 = mkdtempSync(join(tmpdir(), 'aver-workspace-'))
@@ -59,19 +61,19 @@ describe('export', () => {
 
       const imported = importJson(store2, json)
       expect(imported.added).toBe(2)
-      expect(ops2.getItems()).toHaveLength(2)
+      expect(ops2.getScenarios()).toHaveLength(2)
 
       rmSync(dir2, { recursive: true, force: true })
     })
 
-    it('skips duplicate items on import', () => {
-      const item = ops.recordObservation({ behavior: 'a' })
+    it('skips duplicate scenarios on import', () => {
+      ops.captureScenario({ behavior: 'a' })
       const json = exportJson(store.load())
 
       const imported = importJson(store, json)
       expect(imported.added).toBe(0)
       expect(imported.skipped).toBe(1)
-      expect(ops.getItems()).toHaveLength(1)
+      expect(ops.getScenarios()).toHaveLength(1)
     })
   })
 })

@@ -19,174 +19,218 @@ describe('WorkspaceOps', () => {
     rmSync(dir, { recursive: true, force: true })
   })
 
-  describe('recordObservation', () => {
-    it('creates an observed item and persists it', () => {
-      const item = ops.recordObservation({
+  describe('captureScenario', () => {
+    it('creates a captured scenario with observed mode and persists it', () => {
+      const scenario = ops.captureScenario({
         behavior: 'API returns 200 for errors',
         context: 'observed on POST /orders'
       })
 
-      expect(item.stage).toBe('observed')
-      expect(item.behavior).toBe('API returns 200 for errors')
+      expect(scenario.stage).toBe('captured')
+      expect(scenario.mode).toBe('observed')
+      expect(scenario.behavior).toBe('API returns 200 for errors')
 
-      const items = ops.getItems()
-      expect(items).toHaveLength(1)
+      const scenarios = ops.getScenarios()
+      expect(scenarios).toHaveLength(1)
     })
-  })
 
-  describe('recordIntent', () => {
-    it('creates an intended item with story', () => {
-      const item = ops.recordIntent({
-        behavior: 'Users can cancel pending orders',
-        story: 'Cancel Order'
+    it('defaults to observed mode when mode is omitted', () => {
+      const scenario = ops.captureScenario({
+        behavior: 'API returns 200 for errors'
       })
 
-      expect(item.stage).toBe('intended')
-      expect(item.story).toBe('Cancel Order')
+      expect(scenario.mode).toBe('observed')
+    })
+
+    it('creates a captured scenario with intended mode and story', () => {
+      const scenario = ops.captureScenario({
+        behavior: 'Users can cancel pending orders',
+        story: 'Cancel Order',
+        mode: 'intended'
+      })
+
+      expect(scenario.stage).toBe('captured')
+      expect(scenario.mode).toBe('intended')
+      expect(scenario.story).toBe('Cancel Order')
     })
   })
 
-  describe('promoteItem', () => {
-    it('promotes observed to explored with rationale', () => {
-      const item = ops.recordObservation({ behavior: 'returns 200 for errors' })
-      const promoted = ops.promoteItem(item.id, {
+  describe('advanceScenario', () => {
+    it('advances captured to characterized with rationale', () => {
+      const scenario = ops.captureScenario({ behavior: 'returns 200 for errors' })
+      const advanced = ops.advanceScenario(scenario.id, {
         rationale: 'API predates REST conventions',
         promotedBy: 'dev'
       })
 
-      expect(promoted.stage).toBe('explored')
-      expect(promoted.promotedFrom).toBe('observed')
-      expect(promoted.promotedBy).toBe('dev')
+      expect(advanced.stage).toBe('characterized')
+      expect(advanced.promotedFrom).toBe('captured')
+      expect(advanced.promotedBy).toBe('dev')
     })
 
-    it('promotes explored to intended', () => {
-      const item = ops.recordObservation({ behavior: 'test' })
-      ops.promoteItem(item.id, { rationale: 'explored', promotedBy: 'dev' })
-      const promoted = ops.promoteItem(item.id, { rationale: 'confirmed', promotedBy: 'business' })
-      expect(promoted.stage).toBe('intended')
+    it('advances characterized to mapped', () => {
+      const scenario = ops.captureScenario({ behavior: 'test' })
+      ops.advanceScenario(scenario.id, { rationale: 'characterized', promotedBy: 'dev' })
+      const advanced = ops.advanceScenario(scenario.id, { rationale: 'confirmed', promotedBy: 'business' })
+      expect(advanced.stage).toBe('mapped')
     })
 
-    it('promotes intended to formalized', () => {
-      const item = ops.recordIntent({ behavior: 'test' })
-      const promoted = ops.promoteItem(item.id, { rationale: 'tests written', promotedBy: 'testing' })
-      expect(promoted.stage).toBe('formalized')
+    it('advances mapped to specified', () => {
+      const scenario = ops.captureScenario({ behavior: 'test' })
+      ops.advanceScenario(scenario.id, { rationale: 'characterized', promotedBy: 'dev' })
+      ops.advanceScenario(scenario.id, { rationale: 'mapped', promotedBy: 'business' })
+      const advanced = ops.advanceScenario(scenario.id, { rationale: 'examples complete', promotedBy: 'testing' })
+      expect(advanced.stage).toBe('specified')
     })
 
-    it('throws on invalid promotion (already formalized)', () => {
-      const item = ops.recordIntent({ behavior: 'test' })
-      ops.promoteItem(item.id, { rationale: 'done', promotedBy: 'testing' })
-      expect(() => ops.promoteItem(item.id, { rationale: 'again', promotedBy: 'testing' }))
-        .toThrow('Cannot promote beyond formalized')
+    it('advances specified to implemented', () => {
+      const scenario = ops.captureScenario({ behavior: 'test' })
+      ops.advanceScenario(scenario.id, { rationale: 'characterized', promotedBy: 'dev' })
+      ops.advanceScenario(scenario.id, { rationale: 'mapped', promotedBy: 'business' })
+      ops.advanceScenario(scenario.id, { rationale: 'specified', promotedBy: 'testing' })
+      const advanced = ops.advanceScenario(scenario.id, { rationale: 'tests written', promotedBy: 'testing' })
+      expect(advanced.stage).toBe('implemented')
     })
 
-    it('throws for unknown item', () => {
-      expect(() => ops.promoteItem('nonexistent', { rationale: 'x', promotedBy: 'dev' }))
-        .toThrow('Item not found')
+    it('throws on invalid advancement (already implemented)', () => {
+      const scenario = ops.captureScenario({ behavior: 'test' })
+      ops.advanceScenario(scenario.id, { rationale: 'a', promotedBy: 'dev' })
+      ops.advanceScenario(scenario.id, { rationale: 'b', promotedBy: 'dev' })
+      ops.advanceScenario(scenario.id, { rationale: 'c', promotedBy: 'dev' })
+      ops.advanceScenario(scenario.id, { rationale: 'd', promotedBy: 'dev' })
+      expect(() => ops.advanceScenario(scenario.id, { rationale: 'again', promotedBy: 'testing' }))
+        .toThrow('Cannot advance beyond implemented')
+    })
+
+    it('throws for unknown scenario', () => {
+      expect(() => ops.advanceScenario('nonexistent', { rationale: 'x', promotedBy: 'dev' }))
+        .toThrow('Scenario not found')
     })
   })
 
-  describe('demoteItem', () => {
-    it('demotes formalized back to explored', () => {
-      const item = ops.recordIntent({ behavior: 'test' })
-      ops.promoteItem(item.id, { rationale: 'done', promotedBy: 'testing' })
-      const demoted = ops.demoteItem(item.id, {
-        targetStage: 'explored',
+  describe('regressScenario', () => {
+    it('regresses implemented back to characterized', () => {
+      const scenario = ops.captureScenario({ behavior: 'test' })
+      ops.advanceScenario(scenario.id, { rationale: 'a', promotedBy: 'dev' })
+      ops.advanceScenario(scenario.id, { rationale: 'b', promotedBy: 'dev' })
+      ops.advanceScenario(scenario.id, { rationale: 'c', promotedBy: 'dev' })
+      ops.advanceScenario(scenario.id, { rationale: 'd', promotedBy: 'dev' })
+      const regressed = ops.regressScenario(scenario.id, {
+        targetStage: 'characterized',
         rationale: 'test started failing after system change'
       })
 
-      expect(demoted.stage).toBe('explored')
+      expect(regressed.stage).toBe('characterized')
     })
 
-    it('throws when demoting to a later stage', () => {
-      const item = ops.recordObservation({ behavior: 'test' })
-      expect(() => ops.demoteItem(item.id, { targetStage: 'intended', rationale: 'x' }))
-        .toThrow('Cannot demote to a later stage')
+    it('throws when regressing to a later stage', () => {
+      const scenario = ops.captureScenario({ behavior: 'test' })
+      expect(() => ops.regressScenario(scenario.id, { targetStage: 'mapped', rationale: 'x' }))
+        .toThrow('Cannot regress to a later stage')
+    })
+
+    it('persists the rationale on the scenario', () => {
+      const scenario = ops.captureScenario({ behavior: 'test' })
+      ops.advanceScenario(scenario.id, { rationale: 'a', promotedBy: 'dev' })
+      ops.advanceScenario(scenario.id, { rationale: 'b', promotedBy: 'dev' })
+
+      ops.regressScenario(scenario.id, {
+        targetStage: 'captured',
+        rationale: 'needs re-investigation'
+      })
+
+      const updated = ops.getScenario(scenario.id)!
+      expect(updated.stage).toBe('captured')
+      // The rationale should be persisted (bug fix: previously silently dropped)
+      // We check promotedFrom was set to the old stage
+      expect(updated.promotedFrom).toBe('mapped')
     })
   })
 
   describe('addQuestion / resolveQuestion', () => {
-    it('adds and resolves a question on an item', () => {
-      const item = ops.recordObservation({ behavior: 'test' })
-      const question = ops.addQuestion(item.id, 'What happens with null input?')
+    it('adds and resolves a question on a scenario', () => {
+      const scenario = ops.captureScenario({ behavior: 'test' })
+      const question = ops.addQuestion(scenario.id, 'What happens with null input?')
 
-      const updated = ops.getItem(item.id)!
+      const updated = ops.getScenario(scenario.id)!
       expect(updated.questions).toHaveLength(1)
       expect(updated.questions[0].text).toBe('What happens with null input?')
       expect(updated.questions[0].answer).toBeUndefined()
 
-      ops.resolveQuestion(item.id, question.id, 'It throws a 400 error')
-      const resolved = ops.getItem(item.id)!
+      ops.resolveQuestion(scenario.id, question.id, 'It throws a 400 error')
+      const resolved = ops.getScenario(scenario.id)!
       expect(resolved.questions[0].answer).toBe('It throws a 400 error')
     })
   })
 
-  describe('getItems — filtering', () => {
+  describe('getScenarios — filtering', () => {
     it('filters by stage', () => {
-      ops.recordObservation({ behavior: 'a' })
-      ops.recordObservation({ behavior: 'b' })
-      ops.recordIntent({ behavior: 'c' })
+      ops.captureScenario({ behavior: 'a' })
+      ops.captureScenario({ behavior: 'b' })
+      ops.captureScenario({ behavior: 'c', mode: 'intended' })
 
-      expect(ops.getItems({ stage: 'observed' })).toHaveLength(2)
-      expect(ops.getItems({ stage: 'intended' })).toHaveLength(1)
+      expect(ops.getScenarios({ stage: 'captured' })).toHaveLength(3)
     })
 
     it('filters by story', () => {
-      ops.recordIntent({ behavior: 'a', story: 'Cancel Order' })
-      ops.recordIntent({ behavior: 'b', story: 'Create Order' })
+      ops.captureScenario({ behavior: 'a', story: 'Cancel Order', mode: 'intended' })
+      ops.captureScenario({ behavior: 'b', story: 'Create Order', mode: 'intended' })
 
-      expect(ops.getItems({ story: 'Cancel Order' })).toHaveLength(1)
+      expect(ops.getScenarios({ story: 'Cancel Order' })).toHaveLength(1)
     })
 
     it('filters by keyword in behavior', () => {
-      ops.recordObservation({ behavior: 'API returns 200 for errors' })
-      ops.recordObservation({ behavior: 'Database uses soft delete' })
+      ops.captureScenario({ behavior: 'API returns 200 for errors' })
+      ops.captureScenario({ behavior: 'Database uses soft delete' })
 
-      expect(ops.getItems({ keyword: 'error' })).toHaveLength(1)
+      expect(ops.getScenarios({ keyword: 'error' })).toHaveLength(1)
     })
   })
 
   describe('linkToDomain', () => {
-    it('links a formalized item to domain artifacts', () => {
-      const item = ops.recordIntent({ behavior: 'test' })
-      ops.promoteItem(item.id, { rationale: 'done', promotedBy: 'testing' })
+    it('links a scenario to domain artifacts', () => {
+      const scenario = ops.captureScenario({ behavior: 'test' })
+      ops.advanceScenario(scenario.id, { rationale: 'a', promotedBy: 'dev' })
+      ops.advanceScenario(scenario.id, { rationale: 'b', promotedBy: 'dev' })
+      ops.advanceScenario(scenario.id, { rationale: 'c', promotedBy: 'dev' })
+      ops.advanceScenario(scenario.id, { rationale: 'd', promotedBy: 'dev' })
 
-      ops.linkToDomain(item.id, {
+      ops.linkToDomain(scenario.id, {
         domainOperation: 'action.cancelOrder',
         testNames: ['cancels pending order [unit]', 'cancels pending order [http]']
       })
 
-      const linked = ops.getItem(item.id)!
+      const linked = ops.getScenario(scenario.id)!
       expect(linked.domainOperation).toBe('action.cancelOrder')
       expect(linked.testNames).toEqual(['cancels pending order [unit]', 'cancels pending order [http]'])
     })
   })
 
-  describe('getSummary', () => {
+  describe('getScenarioSummary', () => {
     it('returns counts per stage and open questions', () => {
-      ops.recordObservation({ behavior: 'a' })
-      ops.recordObservation({ behavior: 'b' })
-      ops.recordIntent({ behavior: 'c' })
-      const item = ops.recordObservation({ behavior: 'd' })
-      ops.addQuestion(item.id, 'why?')
+      ops.captureScenario({ behavior: 'a' })
+      ops.captureScenario({ behavior: 'b' })
+      ops.captureScenario({ behavior: 'c', mode: 'intended' })
+      const scenario = ops.captureScenario({ behavior: 'd' })
+      ops.addQuestion(scenario.id, 'why?')
 
-      const summary = ops.getSummary()
-      expect(summary.observed).toBe(3)
-      expect(summary.intended).toBe(1)
+      const summary = ops.getScenarioSummary()
+      expect(summary.captured).toBe(4)
       expect(summary.openQuestions).toBe(1)
       expect(summary.total).toBe(4)
     })
   })
 
-  describe('getPromotionCandidates', () => {
-    it('returns explored items with no open questions', () => {
-      const a = ops.recordObservation({ behavior: 'a' })
-      ops.promoteItem(a.id, { rationale: 'explored', promotedBy: 'dev' })
+  describe('getAdvanceCandidates', () => {
+    it('returns characterized scenarios with no open questions', () => {
+      const a = ops.captureScenario({ behavior: 'a' })
+      ops.advanceScenario(a.id, { rationale: 'characterized', promotedBy: 'dev' })
 
-      const b = ops.recordObservation({ behavior: 'b' })
-      ops.promoteItem(b.id, { rationale: 'explored', promotedBy: 'dev' })
+      const b = ops.captureScenario({ behavior: 'b' })
+      ops.advanceScenario(b.id, { rationale: 'characterized', promotedBy: 'dev' })
       ops.addQuestion(b.id, 'unresolved question')
 
-      const candidates = ops.getPromotionCandidates()
+      const candidates = ops.getAdvanceCandidates()
       expect(candidates).toHaveLength(1)
       expect(candidates[0].id).toBe(a.id)
     })

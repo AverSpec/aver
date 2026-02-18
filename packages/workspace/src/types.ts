@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 
-export type Stage = 'observed' | 'explored' | 'intended' | 'formalized'
+export type Stage = 'captured' | 'characterized' | 'mapped' | 'specified' | 'implemented'
 
 export interface Example {
   description: string
@@ -15,11 +15,12 @@ export interface Question {
   resolvedAt?: string
 }
 
-export interface WorkspaceItem {
+export interface Scenario {
   id: string
   stage: Stage
   behavior: string
   context?: string
+  mode?: 'observed' | 'intended'
 
   // Example Mapping
   story?: string
@@ -46,7 +47,7 @@ export interface WorkspaceItem {
 
 export interface Workspace {
   projectId: string
-  items: WorkspaceItem[]
+  scenarios: Scenario[]
   createdAt: string
   updatedAt: string
 }
@@ -55,18 +56,20 @@ function shortId(): string {
   return randomUUID().replace(/-/g, '').slice(0, 8)
 }
 
-export function createItem(input: {
+export function createScenario(input: {
   stage: Stage
   behavior: string
   context?: string
   story?: string
-}): WorkspaceItem {
+  mode?: 'observed' | 'intended'
+}): Scenario {
   const now = new Date().toISOString()
   return {
     id: shortId(),
     stage: input.stage,
     behavior: input.behavior,
     context: input.context,
+    mode: input.mode,
     story: input.story,
     rules: [],
     examples: [],

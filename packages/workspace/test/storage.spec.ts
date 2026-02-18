@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { WorkspaceStore } from '../src/storage'
-import { createItem } from '../src/types'
+import { createScenario } from '../src/types'
 
 describe('WorkspaceStore', () => {
   let dir: string
@@ -21,18 +21,18 @@ describe('WorkspaceStore', () => {
   it('creates workspace on first access', () => {
     const ws = store.load()
     expect(ws.projectId).toBe('test-project')
-    expect(ws.items).toEqual([])
+    expect(ws.scenarios).toEqual([])
   })
 
-  it('persists items across load/save cycles', () => {
+  it('persists scenarios across load/save cycles', () => {
     const ws = store.load()
-    const item = createItem({ stage: 'observed', behavior: 'test behavior' })
-    ws.items.push(item)
+    const scenario = createScenario({ stage: 'captured', behavior: 'test behavior' })
+    ws.scenarios.push(scenario)
     store.save(ws)
 
     const reloaded = store.load()
-    expect(reloaded.items).toHaveLength(1)
-    expect(reloaded.items[0].behavior).toBe('test behavior')
+    expect(reloaded.scenarios).toHaveLength(1)
+    expect(reloaded.scenarios[0].behavior).toBe('test behavior')
   })
 
   it('uses project-specific subdirectory', () => {
@@ -46,5 +46,25 @@ describe('WorkspaceStore', () => {
     expect(defaultStore.filePath).toContain('.aver')
     expect(defaultStore.filePath).toContain('workspaces')
     expect(defaultStore.filePath).toContain('my-project')
+  })
+
+  it('migrates legacy items field to scenarios on load', () => {
+    // Simulate a legacy workspace file with "items" instead of "scenarios"
+    const ws = store.load()
+    const scenario = createScenario({ stage: 'captured', behavior: 'legacy behavior' })
+    // Write with the old "items" key
+    const legacyData = {
+      projectId: ws.projectId,
+      items: [scenario],
+      createdAt: ws.createdAt,
+      updatedAt: ws.updatedAt
+    }
+    const { writeFileSync } = require('node:fs')
+    writeFileSync(store.filePath, JSON.stringify(legacyData, null, 2))
+
+    const reloaded = store.load()
+    expect(reloaded.scenarios).toHaveLength(1)
+    expect(reloaded.scenarios[0].behavior).toBe('legacy behavior')
+    expect((reloaded as any).items).toBeUndefined()
   })
 })

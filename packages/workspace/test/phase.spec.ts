@@ -27,50 +27,77 @@ describe('detectPhase', () => {
     expect(phase.description).toContain('new workflow')
   })
 
-  it('returns discovery when mostly observed', () => {
-    ops.recordObservation({ behavior: 'a' })
-    ops.recordObservation({ behavior: 'b' })
-    ops.recordObservation({ behavior: 'c' })
+  it('returns investigation when scenarios are captured', () => {
+    ops.captureScenario({ behavior: 'a' })
+    ops.captureScenario({ behavior: 'b' })
+    ops.captureScenario({ behavior: 'c' })
 
     const phase = detectPhase(store.load())
-    expect(phase.name).toBe('discovery')
+    expect(phase.name).toBe('investigation')
   })
 
-  it('returns mapping when items are explored', () => {
-    const item = ops.recordObservation({ behavior: 'a' })
-    ops.promoteItem(item.id, { rationale: 'explored', promotedBy: 'dev' })
+  it('returns mapping when scenarios are characterized', () => {
+    const scenario = ops.captureScenario({ behavior: 'a' })
+    ops.advanceScenario(scenario.id, { rationale: 'characterized', promotedBy: 'dev' })
 
     const phase = detectPhase(store.load())
     expect(phase.name).toBe('mapping')
   })
 
-  it('returns formalization when items are intended', () => {
-    const item = ops.recordIntent({ behavior: 'a' })
+  it('returns specification when scenarios are mapped', () => {
+    const scenario = ops.captureScenario({ behavior: 'a' })
+    ops.advanceScenario(scenario.id, { rationale: 'characterized', promotedBy: 'dev' })
+    ops.advanceScenario(scenario.id, { rationale: 'mapped', promotedBy: 'business' })
 
     const phase = detectPhase(store.load())
-    expect(phase.name).toBe('formalization')
+    expect(phase.name).toBe('specification')
   })
 
-  it('returns implementation when formalized items exist without domain links', () => {
-    const item = ops.recordIntent({ behavior: 'a' })
-    ops.promoteItem(item.id, { rationale: 'done', promotedBy: 'testing' })
+  it('returns implementation when specified scenarios exist without domain links', () => {
+    const scenario = ops.captureScenario({ behavior: 'a' })
+    ops.advanceScenario(scenario.id, { rationale: 'a', promotedBy: 'dev' })
+    ops.advanceScenario(scenario.id, { rationale: 'b', promotedBy: 'dev' })
+    ops.advanceScenario(scenario.id, { rationale: 'c', promotedBy: 'dev' })
 
     const phase = detectPhase(store.load())
     expect(phase.name).toBe('implementation')
   })
 
-  it('returns verification when all formalized items have domain links', () => {
-    const item = ops.recordIntent({ behavior: 'a' })
-    ops.promoteItem(item.id, { rationale: 'done', promotedBy: 'testing' })
-    ops.linkToDomain(item.id, { domainOperation: 'action.doA', testNames: ['test a'] })
+  it('returns implementation when implemented scenarios exist without domain links', () => {
+    const scenario = ops.captureScenario({ behavior: 'a' })
+    ops.advanceScenario(scenario.id, { rationale: 'a', promotedBy: 'dev' })
+    ops.advanceScenario(scenario.id, { rationale: 'b', promotedBy: 'dev' })
+    ops.advanceScenario(scenario.id, { rationale: 'c', promotedBy: 'dev' })
+    ops.advanceScenario(scenario.id, { rationale: 'd', promotedBy: 'dev' })
+
+    const phase = detectPhase(store.load())
+    expect(phase.name).toBe('implementation')
+  })
+
+  it('returns verification when all implemented scenarios have domain links', () => {
+    const scenario = ops.captureScenario({ behavior: 'a' })
+    ops.advanceScenario(scenario.id, { rationale: 'a', promotedBy: 'dev' })
+    ops.advanceScenario(scenario.id, { rationale: 'b', promotedBy: 'dev' })
+    ops.advanceScenario(scenario.id, { rationale: 'c', promotedBy: 'dev' })
+    ops.advanceScenario(scenario.id, { rationale: 'd', promotedBy: 'dev' })
+    ops.linkToDomain(scenario.id, { domainOperation: 'action.doA', testNames: ['test a'] })
 
     const phase = detectPhase(store.load())
     expect(phase.name).toBe('verification')
   })
 
   it('includes recommended actions', () => {
-    ops.recordObservation({ behavior: 'a' })
+    ops.captureScenario({ behavior: 'a' })
     const phase = detectPhase(store.load())
     expect(phase.recommendedActions.length).toBeGreaterThan(0)
+  })
+
+  it('uses scenario terminology in recommended actions', () => {
+    ops.captureScenario({ behavior: 'a' })
+    const phase = detectPhase(store.load())
+    // Should not contain "item" in recommended actions
+    for (const action of phase.recommendedActions) {
+      expect(action.toLowerCase()).not.toContain('item')
+    }
   })
 })

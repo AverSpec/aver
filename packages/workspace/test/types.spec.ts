@@ -1,39 +1,60 @@
 import { describe, it, expect } from 'vitest'
-import { createItem, createExample, type WorkspaceItem } from '../src/types'
+import { createScenario, createExample, type Scenario } from '../src/types'
 
-describe('WorkspaceItem', () => {
-  it('creates an observation with generated id', () => {
-    const item = createItem({
-      stage: 'observed',
+describe('Scenario', () => {
+  it('creates a captured scenario with generated id', () => {
+    const scenario = createScenario({
+      stage: 'captured',
       behavior: 'POST /orders with empty cart returns 200 with error field'
     })
 
-    expect(item.id).toMatch(/^[a-f0-9]{8}$/)
-    expect(item.stage).toBe('observed')
-    expect(item.behavior).toBe('POST /orders with empty cart returns 200 with error field')
-    expect(item.createdAt).toBeTypeOf('string')
-    expect(item.questions).toEqual([])
-    expect(item.rules).toEqual([])
-    expect(item.examples).toEqual([])
-    expect(item.constraints).toEqual([])
-    expect(item.seams).toEqual([])
+    expect(scenario.id).toMatch(/^[a-f0-9]{8}$/)
+    expect(scenario.stage).toBe('captured')
+    expect(scenario.behavior).toBe('POST /orders with empty cart returns 200 with error field')
+    expect(scenario.createdAt).toBeTypeOf('string')
+    expect(scenario.questions).toEqual([])
+    expect(scenario.rules).toEqual([])
+    expect(scenario.examples).toEqual([])
+    expect(scenario.constraints).toEqual([])
+    expect(scenario.seams).toEqual([])
   })
 
-  it('creates an intent with story', () => {
-    const item = createItem({
-      stage: 'intended',
+  it('creates a captured scenario with intended mode and story', () => {
+    const scenario = createScenario({
+      stage: 'captured',
       behavior: 'Users can cancel pending orders',
-      story: 'Cancel Order'
+      story: 'Cancel Order',
+      mode: 'intended'
     })
 
-    expect(item.stage).toBe('intended')
-    expect(item.story).toBe('Cancel Order')
+    expect(scenario.stage).toBe('captured')
+    expect(scenario.story).toBe('Cancel Order')
+    expect(scenario.mode).toBe('intended')
   })
 
-  it('creates unique ids across items', () => {
-    const a = createItem({ stage: 'observed', behavior: 'a' })
-    const b = createItem({ stage: 'observed', behavior: 'b' })
+  it('creates a captured scenario with observed mode', () => {
+    const scenario = createScenario({
+      stage: 'captured',
+      behavior: 'API returns 200 for errors',
+      mode: 'observed'
+    })
+
+    expect(scenario.stage).toBe('captured')
+    expect(scenario.mode).toBe('observed')
+  })
+
+  it('creates unique ids across scenarios', () => {
+    const a = createScenario({ stage: 'captured', behavior: 'a' })
+    const b = createScenario({ stage: 'captured', behavior: 'b' })
     expect(a.id).not.toBe(b.id)
+  })
+
+  it('supports all five stages', () => {
+    const stages = ['captured', 'characterized', 'mapped', 'specified', 'implemented'] as const
+    for (const stage of stages) {
+      const scenario = createScenario({ stage, behavior: `behavior at ${stage}` })
+      expect(scenario.stage).toBe(stage)
+    }
   })
 })
 

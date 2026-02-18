@@ -1,6 +1,6 @@
 import type { Workspace } from './types.js'
 
-export type PhaseName = 'kickoff' | 'discovery' | 'mapping' | 'formalization' | 'implementation' | 'verification'
+export type PhaseName = 'kickoff' | 'investigation' | 'mapping' | 'specification' | 'implementation' | 'verification'
 
 export interface Phase {
   name: PhaseName
@@ -9,32 +9,33 @@ export interface Phase {
 }
 
 export function detectPhase(workspace: Workspace): Phase {
-  const items = workspace.items
-  if (items.length === 0) {
+  const scenarios = workspace.scenarios
+  if (scenarios.length === 0) {
     return {
       name: 'kickoff',
       description: 'Starting a new workflow. Identify the target system and scenario.',
       recommendedActions: [
         'Determine scenario: legacy characterization or new development',
         'Identify the target system',
-        'Begin recording observations or intents'
+        'Begin capturing scenarios'
       ]
     }
   }
 
-  const observed = items.filter(i => i.stage === 'observed')
-  const explored = items.filter(i => i.stage === 'explored')
-  const intended = items.filter(i => i.stage === 'intended')
-  const formalized = items.filter(i => i.stage === 'formalized')
+  const captured = scenarios.filter(s => s.stage === 'captured')
+  const characterized = scenarios.filter(s => s.stage === 'characterized')
+  const mapped = scenarios.filter(s => s.stage === 'mapped')
+  const specified = scenarios.filter(s => s.stage === 'specified')
+  const implemented = scenarios.filter(s => s.stage === 'implemented')
 
-  const formalizedWithoutLinks = formalized.filter(i => !i.domainOperation)
-  const openQuestions = items.flatMap(i => i.questions.filter(q => !q.answer))
+  const implementedWithoutLinks = implemented.filter(s => !s.domainOperation)
+  const openQuestions = scenarios.flatMap(s => s.questions.filter(q => !q.answer))
 
   // Work backward from most mature state
-  if (formalized.length > 0 && formalizedWithoutLinks.length === 0) {
+  if (implemented.length > 0 && implementedWithoutLinks.length === 0) {
     return {
       name: 'verification',
-      description: 'All formalized items have domain links. Run full test suite and review coverage.',
+      description: 'All implemented scenarios have domain links. Run full test suite and review coverage.',
       recommendedActions: [
         'Run full test suite across all protocols',
         'Review approval baselines',
@@ -44,53 +45,54 @@ export function detectPhase(workspace: Workspace): Phase {
     }
   }
 
-  if (formalized.length > 0 || (intended.length > 0 && intended.some(i => i.examples.length > 0))) {
+  if (implemented.length > 0 || specified.length > 0) {
+    const needingLinks = implementedWithoutLinks.length + specified.length
     return {
       name: 'implementation',
-      description: `${formalizedWithoutLinks.length} formalized items need domain vocabulary and adapter implementation.`,
+      description: `${needingLinks} scenario(s) need domain vocabulary and adapter implementation.`,
       recommendedActions: [
-        'Generate domain definitions from formalized items',
-        'Write failing tests for each formalized behavior',
+        'Generate domain definitions from specified scenarios',
+        'Write failing tests for each specified behavior',
         'Implement adapter handlers to make tests pass',
         'Run TDD inner loop per protocol'
       ]
     }
   }
 
-  if (intended.length > 0) {
+  if (mapped.length > 0) {
     return {
-      name: 'formalization',
-      description: `${intended.length} intended items ready for Example Mapping and test generation.`,
+      name: 'specification',
+      description: `${mapped.length} mapped scenario(s) ready for Example Mapping and test generation.`,
       recommendedActions: [
-        'Run Example Mapping for each intended item',
+        'Run Example Mapping for each mapped scenario',
         'Generate concrete examples from rules',
-        'Promote to formalized when examples are complete',
-        ...(openQuestions.length > 0 ? [`Resolve ${openQuestions.length} open questions`] : [])
+        'Advance to specified when examples are complete',
+        ...(openQuestions.length > 0 ? [`Resolve ${openQuestions.length} open question(s)`] : [])
       ]
     }
   }
 
-  if (explored.length > 0) {
+  if (characterized.length > 0) {
     return {
       name: 'mapping',
-      description: `${explored.length} explored items need business confirmation.`,
+      description: `${characterized.length} characterized scenario(s) need business confirmation.`,
       recommendedActions: [
-        'Review explored items with business perspective',
+        'Review characterized scenarios with business perspective',
         'Confirm: is each behavior intentional or accidental?',
-        'Promote confirmed behaviors to intended',
-        ...(openQuestions.length > 0 ? [`Resolve ${openQuestions.length} open questions`] : [])
+        'Advance confirmed behaviors to mapped',
+        ...(openQuestions.length > 0 ? [`Resolve ${openQuestions.length} open question(s)`] : [])
       ]
     }
   }
 
   return {
-    name: 'discovery',
-    description: `${observed.length} observations recorded. Continue exploring the system.`,
+    name: 'investigation',
+    description: `${captured.length} captured scenario(s) recorded. Continue exploring the system.`,
     recommendedActions: [
-      'Explore more system behaviors and record observations',
-      'Investigate observed items: trace code paths, find seams',
-      'Promote explored items with context and rationale',
-      ...(openQuestions.length > 0 ? [`Resolve ${openQuestions.length} open questions`] : [])
+      'Explore more system behaviors and capture scenarios',
+      'Investigate captured scenarios: trace code paths, find seams',
+      'Advance characterized scenarios with context and rationale',
+      ...(openQuestions.length > 0 ? [`Resolve ${openQuestions.length} open question(s)`] : [])
     ]
   }
 }

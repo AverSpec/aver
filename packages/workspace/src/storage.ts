@@ -22,12 +22,20 @@ export class WorkspaceStore {
       const now = new Date().toISOString()
       return {
         projectId: this.filePath.split('/').at(-2)!,
-        items: [],
+        scenarios: [],
         createdAt: now,
         updatedAt: now
       }
     }
-    return JSON.parse(readFileSync(this.filePath, 'utf-8'))
+    const data = JSON.parse(readFileSync(this.filePath, 'utf-8'))
+
+    // Migration: rename legacy "items" field to "scenarios"
+    if (data.items && !data.scenarios) {
+      data.scenarios = data.items
+      delete data.items
+    }
+
+    return data
   }
 
   save(workspace: Workspace): void {

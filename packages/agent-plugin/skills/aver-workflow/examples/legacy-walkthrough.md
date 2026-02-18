@@ -28,7 +28,7 @@ The agent reads source code, calls the API, and captures scenarios.
 // -> { "id": "sc_002", "stage": "captured" }
 
 // Tool: add_question
-{ "itemId": "sc_002", "text": "Is the 200-for-errors pattern intentional or a bug?" }
+{ "scenarioId": "sc_002", "text": "Is the 200-for-errors pattern intentional or a bug?" }
 ```
 
 ## 2. Characterization: Build Evidence
@@ -53,7 +53,7 @@ The agent traces code paths, identifies seams, captures approval baselines, then
 
 ```json
 // Tool: resolve_question
-{ "itemId": "sc_002", "questionId": "q_001",
+{ "scenarioId": "sc_002", "questionId": "q_001",
   "answer": "Intentional for client compatibility. Mobile client checks error field." }
 ```
 
@@ -70,10 +70,10 @@ The agent traces code paths, identifies seams, captures approval baselines, then
 
 ```json
 // Tool: add_question
-{ "itemId": "sc_002", "text": "Verify exact error message or just that error field exists?" }
+{ "scenarioId": "sc_002", "text": "Verify exact error message or just that error field exists?" }
 // Human: "Verify exact string. Mobile client pattern-matches on it."
 // Tool: resolve_question
-{ "itemId": "sc_002", "questionId": "q_002",
+{ "scenarioId": "sc_002", "questionId": "q_002",
   "answer": "Verify exact error message. Mobile client pattern-matches on it." }
 ```
 
@@ -122,7 +122,7 @@ test('empty cart returns 200 with error message', async ({ act, assert }) => {
 // Tool: run_tests { "domain": "orders-api" } -> { "passed": 3, "failed": 0 }
 // Tool: get_run_diff -> { "newlyPassing": [...], "newlyFailing": [], "stillFailing": [] }
 // Tool: link_to_domain
-{ "itemId": "sc_002", "domainOperation": "ordersApi.placeOrder",
+{ "scenarioId": "sc_002", "domainOperation": "ordersApi.placeOrder",
   "testNames": ["empty cart returns 200 with error message",
                  "null items returns 200 with error message"] }
 ```

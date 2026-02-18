@@ -68,7 +68,7 @@ The outer loop stays thin. It reads scenario state, decides what work to dispatc
 
 **Dispatch pattern:**
 1. Read scenario state via `get_scenarios` and `get_advance_candidates`
-2. Identify independent work items (scenarios in the same stage that don't depend on each other)
+2. Identify independent scenarios (same stage, no dependencies on each other)
 3. Dispatch background subagents for investigation or implementation
 4. Post checkpoint questions for anything requiring human judgment
 5. When subagents complete, review results and advance scenarios

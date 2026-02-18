@@ -149,14 +149,14 @@ describe('workspace tool handlers', () => {
   describe('add_question', () => {
     it('adds a question to a scenario', () => {
       const scenario = captureScenarioHandler({ behavior: 'a' }, dir, projectId)
-      const question = addQuestionHandler({ itemId: scenario.id, text: 'What triggers this?' }, dir, projectId)
+      const question = addQuestionHandler({ scenarioId: scenario.id, text: 'What triggers this?' }, dir, projectId)
       expect(question.id).toBeDefined()
       expect(question.text).toBe('What triggers this?')
     })
 
     it('question appears in summary as open', () => {
       const scenario = captureScenarioHandler({ behavior: 'a' }, dir, projectId)
-      addQuestionHandler({ itemId: scenario.id, text: 'Why?' }, dir, projectId)
+      addQuestionHandler({ scenarioId: scenario.id, text: 'Why?' }, dir, projectId)
       const summary = getScenarioSummaryHandler(dir, projectId)
       expect(summary.openQuestions).toBe(1)
     })
@@ -165,8 +165,8 @@ describe('workspace tool handlers', () => {
   describe('resolve_question', () => {
     it('resolves an open question', () => {
       const scenario = captureScenarioHandler({ behavior: 'a' }, dir, projectId)
-      const question = addQuestionHandler({ itemId: scenario.id, text: 'Why?' }, dir, projectId)
-      resolveQuestionHandler({ itemId: scenario.id, questionId: question.id, answer: 'Because reasons' }, dir, projectId)
+      const question = addQuestionHandler({ scenarioId: scenario.id, text: 'Why?' }, dir, projectId)
+      resolveQuestionHandler({ scenarioId: scenario.id, questionId: question.id, answer: 'Because reasons' }, dir, projectId)
 
       const summary = getScenarioSummaryHandler(dir, projectId)
       expect(summary.openQuestions).toBe(0)
@@ -177,7 +177,7 @@ describe('workspace tool handlers', () => {
     it('links a scenario to domain artifacts', () => {
       const scenario = captureScenarioHandler({ behavior: 'a' }, dir, projectId)
       linkToDomainHandler(
-        { itemId: scenario.id, domainOperation: 'Cart.addItem', testNames: ['adds item to cart'] },
+        { scenarioId: scenario.id, domainOperation: 'Cart.addItem', testNames: ['adds item to cart'] },
         dir,
         projectId,
       )
@@ -212,7 +212,7 @@ describe('workspace tool handlers', () => {
 
     it('excludes scenarios with open questions', () => {
       const scenario = captureScenarioHandler({ behavior: 'a' }, dir, projectId)
-      addQuestionHandler({ itemId: scenario.id, text: 'unclear' }, dir, projectId)
+      addQuestionHandler({ scenarioId: scenario.id, text: 'unclear' }, dir, projectId)
       captureScenarioHandler({ behavior: 'b' }, dir, projectId)
 
       const candidates = getAdvanceCandidatesHandler(dir, projectId)

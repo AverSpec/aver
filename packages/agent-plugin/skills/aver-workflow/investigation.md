@@ -66,7 +66,7 @@ Update the scenario with investigation evidence (code paths traced, seams found,
 **Ask targeted questions:**
 ```
 Call add_question with:
-  itemId: "<scenario ID>"
+  scenarioId: "<scenario ID>"
   text: "TaskService silently truncates titles over 200 chars. Is this intended, or a bug?"
 ```
 

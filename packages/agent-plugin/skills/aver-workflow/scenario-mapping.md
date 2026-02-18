@@ -62,7 +62,7 @@ Any time there is ambiguity, record a question rather than guessing.
 
 ```
 Call add_question with:
-  itemId: "<scenario ID>"
+  scenarioId: "<scenario ID>"
   text: "Should whitespace-only titles be treated as empty?"
 ```
 

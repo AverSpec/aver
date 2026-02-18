@@ -85,28 +85,28 @@ export function regressScenarioHandler(
 }
 
 export function addQuestionHandler(
-  input: { itemId: string; text: string },
+  input: { scenarioId: string; text: string },
   basePath: string,
   projectId: string,
 ): Question {
-  return createOps(basePath, projectId).addQuestion(input.itemId, input.text)
+  return createOps(basePath, projectId).addQuestion(input.scenarioId, input.text)
 }
 
 export function resolveQuestionHandler(
-  input: { itemId: string; questionId: string; answer: string },
+  input: { scenarioId: string; questionId: string; answer: string },
   basePath: string,
   projectId: string,
 ): void {
-  createOps(basePath, projectId).resolveQuestion(input.itemId, input.questionId, input.answer)
+  createOps(basePath, projectId).resolveQuestion(input.scenarioId, input.questionId, input.answer)
 }
 
 export function linkToDomainHandler(
-  input: { itemId: string; domainOperation?: string; testNames?: string[]; approvalBaseline?: string },
+  input: { scenarioId: string; domainOperation?: string; testNames?: string[]; approvalBaseline?: string },
   basePath: string,
   projectId: string,
 ): void {
-  const { itemId, ...links } = input
-  createOps(basePath, projectId).linkToDomain(itemId, links)
+  const { scenarioId, ...links } = input
+  createOps(basePath, projectId).linkToDomain(scenarioId, links)
 }
 
 export function getWorkflowPhaseHandler(
@@ -230,7 +230,7 @@ export function registerWorkspaceTools(server: McpServer): void {
     {
       description: 'Add an open question to a scenario',
       inputSchema: {
-        itemId: z.string().describe('The ID of the scenario to add a question to'),
+        scenarioId: z.string().describe('The ID of the scenario to add a question to'),
         text: z.string().describe('The question text'),
       },
     },
@@ -245,7 +245,7 @@ export function registerWorkspaceTools(server: McpServer): void {
     {
       description: 'Resolve an open question on a scenario with an answer',
       inputSchema: {
-        itemId: z.string().describe('The ID of the scenario'),
+        scenarioId: z.string().describe('The ID of the scenario'),
         questionId: z.string().describe('The ID of the question to resolve'),
         answer: z.string().describe('The answer to the question'),
       },
@@ -261,7 +261,7 @@ export function registerWorkspaceTools(server: McpServer): void {
     {
       description: 'Link a scenario to domain artifacts (domain operation, test names, approval baseline)',
       inputSchema: {
-        itemId: z.string().describe('The ID of the scenario to link'),
+        scenarioId: z.string().describe('The ID of the scenario to link'),
         domainOperation: z.string().optional().describe('Domain operation name (e.g., "Cart.addItem")'),
         testNames: z.array(z.string()).optional().describe('Associated test names'),
         approvalBaseline: z.string().optional().describe('Approval baseline path'),

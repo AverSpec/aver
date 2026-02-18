@@ -33,11 +33,11 @@ New features skip investigation/characterization: `captured` -> `mapped` -> `spe
 
 ```json
 // Tool: add_question
-{ "itemId": "sc_001",
+{ "scenarioId": "sc_001",
   "text": "Un-cancel: restore original status or always reset to 'todo'?" }
 // Human: "Always reset to 'todo'."
 // Tool: resolve_question
-{ "itemId": "sc_001", "questionId": "q_001",
+{ "scenarioId": "sc_001", "questionId": "q_001",
   "answer": "Always resets to 'todo', regardless of previous status." }
 ```
 
@@ -79,7 +79,7 @@ Dispatch to TDD skill. Subagent writes domain additions, tests, and adapters.
 ```json
 // Tool: run_tests { "domain": "task-board" } -> { "passed": 11, "failed": 0 }
 // Tool: link_to_domain
-{ "itemId": "sc_001", "domainOperation": "taskBoard.cancelTask",
+{ "scenarioId": "sc_001", "domainOperation": "taskBoard.cancelTask",
   "testNames": ["cancel a task", "cancelled task cannot be moved",
     "cancelled task cannot be reassigned", "cancelling already cancelled is idempotent",
     "un-cancel restores task to todo", "cancelled task appears in cancelled count"] }

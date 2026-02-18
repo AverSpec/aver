@@ -1,4 +1,3 @@
-import { isDeepStrictEqual } from 'node:util'
 import { mkdtempSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -37,6 +36,7 @@ import {
   getScenariosHandler,
   advanceScenarioHandler,
   regressScenarioHandler,
+  deleteScenarioHandler,
   addQuestionHandler,
   resolveQuestionHandler,
   linkToDomainHandler,
@@ -46,18 +46,17 @@ import {
   importScenariosHandler,
 } from '../../../src/tools/workspace'
 
-interface McpTestSession {
-  lastToolResult?: unknown
-  runStore?: RunStore
+interface McpUnitSession {
+  runStore: RunStore
   workspaceBasePath: string
   workspaceProjectId: string
+  lastCapturedScenario?: { id: string; stage: string; behavior: string }
+  lastAddedQuestion?: { id: string; text: string }
+  lastImportResult?: { added: number; skipped: number }
 }
 
 export const averMcpAdapter = implement(averMcp, {
-  protocol: unit<McpTestSession>(() => {
-    // Do NOT call resetRegistry() here -- that would wipe
-    // the outer adapter registration needed by the outer suite.
-    // Registry isolation is handled by beforeEach in the test files.
+  protocol: unit<McpUnitSession>(() => {
     const runStoreDir = mkdtempSync(join(tmpdir(), 'aver-mcp-test-'))
     const workspaceDir = mkdtempSync(join(tmpdir(), 'aver-mcp-workspace-'))
     return {
@@ -68,6 +67,7 @@ export const averMcpAdapter = implement(averMcp, {
   }),
 
   actions: {
+    // --- Fixtures ---
     registerTestDomain: async (_session, { name, actions, queries, assertions }) => {
       const actionMarkers: Record<string, any> = {}
       for (const a of actions) actionMarkers[a] = realAction()
@@ -101,165 +101,8 @@ export const averMcpAdapter = implement(averMcp, {
       registerAdapter(adapter)
     },
 
-    callTool: async (session, { tool, input }) => {
-      switch (tool) {
-        case 'list_domains':
-          session.lastToolResult = listDomainsHandler()
-          break
-        case 'get_domain_vocabulary':
-          session.lastToolResult = getDomainVocabularyHandler(input?.domain as string)
-          break
-        case 'list_adapters':
-          session.lastToolResult = await listAdaptersHandler()
-          break
-        case 'get_failure_details': {
-          const result = getFailureDetailsHandler(session.runStore!, {
-            domain: input?.domain as string | undefined,
-            testName: input?.testName as string | undefined,
-          })
-          session.lastToolResult = result
-          break
-        }
-        case 'get_test_trace': {
-          const result = getTestTraceHandler(session.runStore!, input?.testName as string)
-          if (!result) {
-            session.lastToolResult = `Test "${input?.testName}" not found in latest run`
-          } else {
-            session.lastToolResult = result
-          }
-          break
-        }
-        case 'describe_domain_structure': {
-          session.lastToolResult = describeDomainStructureHandler(input?.description as string)
-          break
-        }
-        case 'describe_adapter_structure': {
-          const result = describeAdapterStructureHandler(
-            input?.domain as string,
-            input?.protocol as string,
-          )
-          if (!result) {
-            session.lastToolResult = `Adapter for domain "${input?.domain}" with protocol "${input?.protocol}" not found`
-          } else {
-            session.lastToolResult = result
-          }
-          break
-        }
-        case 'get_run_diff': {
-          const diff = getRunDiffHandler(session.runStore!)
-          if (!diff) {
-            session.lastToolResult = 'Need at least 2 test runs to compare.'
-          } else {
-            session.lastToolResult = diff
-          }
-          break
-        }
-        case 'get_project_context': {
-          session.lastToolResult = await getProjectContextHandler()
-          break
-        }
-        case 'capture_scenario': {
-          session.lastToolResult = captureScenarioHandler(
-            input as any,
-            session.workspaceBasePath,
-            session.workspaceProjectId,
-          )
-          break
-        }
-        case 'get_scenario_summary': {
-          session.lastToolResult = getScenarioSummaryHandler(
-            session.workspaceBasePath,
-            session.workspaceProjectId,
-          )
-          break
-        }
-        case 'get_scenarios': {
-          session.lastToolResult = getScenariosHandler(
-            input as any ?? {},
-            session.workspaceBasePath,
-            session.workspaceProjectId,
-          )
-          break
-        }
-        case 'advance_scenario': {
-          session.lastToolResult = advanceScenarioHandler(
-            input as any,
-            session.workspaceBasePath,
-            session.workspaceProjectId,
-          )
-          break
-        }
-        case 'regress_scenario': {
-          session.lastToolResult = regressScenarioHandler(
-            input as any,
-            session.workspaceBasePath,
-            session.workspaceProjectId,
-          )
-          break
-        }
-        case 'add_question': {
-          session.lastToolResult = addQuestionHandler(
-            input as any,
-            session.workspaceBasePath,
-            session.workspaceProjectId,
-          )
-          break
-        }
-        case 'resolve_question': {
-          resolveQuestionHandler(
-            input as any,
-            session.workspaceBasePath,
-            session.workspaceProjectId,
-          )
-          session.lastToolResult = { success: true }
-          break
-        }
-        case 'link_to_domain': {
-          linkToDomainHandler(
-            input as any,
-            session.workspaceBasePath,
-            session.workspaceProjectId,
-          )
-          session.lastToolResult = { success: true }
-          break
-        }
-        case 'get_workflow_phase': {
-          session.lastToolResult = getWorkflowPhaseHandler(
-            session.workspaceBasePath,
-            session.workspaceProjectId,
-          )
-          break
-        }
-        case 'get_advance_candidates': {
-          session.lastToolResult = getAdvanceCandidatesHandler(
-            session.workspaceBasePath,
-            session.workspaceProjectId,
-          )
-          break
-        }
-        case 'export_scenarios': {
-          session.lastToolResult = exportScenariosHandler(
-            input as any,
-            session.workspaceBasePath,
-            session.workspaceProjectId,
-          )
-          break
-        }
-        case 'import_scenarios': {
-          session.lastToolResult = importScenariosHandler(
-            input as any,
-            session.workspaceBasePath,
-            session.workspaceProjectId,
-          )
-          break
-        }
-        default:
-          throw new Error(`Unknown tool: ${tool}`)
-      }
-    },
-
     saveTestRun: async (session, { results }) => {
-      session.runStore!.save({
+      session.runStore.save({
         timestamp: new Date().toISOString(),
         results,
       })
@@ -267,14 +110,14 @@ export const averMcpAdapter = implement(averMcp, {
 
     saveMultipleRuns: async (session, { count }) => {
       for (let i = 0; i < count; i++) {
-        session.runStore!.save({
+        session.runStore.save({
           timestamp: new Date(Date.now() + i * 1000).toISOString(),
           results: [{ testName: `test-${i}`, domain: 'Test', status: 'pass', trace: [] }],
         })
       }
     },
 
-    reloadWithLoader: async (_session, { domainNames }) => {
+    reloadConfig: async (_session, { domainNames }) => {
       await reloadConfig(async () => {
         for (const name of domainNames) {
           const domain = realDefineDomain({
@@ -293,9 +136,7 @@ export const averMcpAdapter = implement(averMcp, {
       })
     },
 
-    discoverFromDirectory: async (_session, { domainNames }) => {
-      // Simulate discovery by registering domains directly
-      // The real discoverAndRegister reads from disk; here we test the registration path
+    discoverDomains: async (_session, { domainNames }) => {
       resetRegistry()
       for (const name of domainNames) {
         const domain = realDefineDomain({
@@ -311,60 +152,147 @@ export const averMcpAdapter = implement(averMcp, {
           assertions: {},
         }))
       }
-      // Re-register the outer adapter so the test framework keeps working
       registerAdapter(averMcpAdapter)
     },
 
     resetState: async (session) => {
       resetRegistry()
       registerAdapter(averMcpAdapter)
-      session.lastToolResult = undefined
+      session.lastCapturedScenario = undefined
+      session.lastAddedQuestion = undefined
+      session.lastImportResult = undefined
+    },
+
+    // --- System actions ---
+    captureScenario: async (session, input) => {
+      const result = captureScenarioHandler(input, session.workspaceBasePath, session.workspaceProjectId)
+      session.lastCapturedScenario = { id: result.id, stage: result.stage, behavior: result.behavior }
+    },
+
+    advanceScenario: async (session, input) => {
+      advanceScenarioHandler(input, session.workspaceBasePath, session.workspaceProjectId)
+    },
+
+    regressScenario: async (session, input) => {
+      regressScenarioHandler(
+        { id: input.id, targetStage: input.targetStage as any, rationale: input.rationale },
+        session.workspaceBasePath,
+        session.workspaceProjectId,
+      )
+    },
+
+    deleteScenario: async (session, input) => {
+      deleteScenarioHandler(input, session.workspaceBasePath, session.workspaceProjectId)
+    },
+
+    addQuestion: async (session, input) => {
+      const result = addQuestionHandler(input, session.workspaceBasePath, session.workspaceProjectId)
+      session.lastAddedQuestion = { id: result.id, text: result.text }
+    },
+
+    resolveQuestion: async (session, input) => {
+      resolveQuestionHandler(input, session.workspaceBasePath, session.workspaceProjectId)
+    },
+
+    linkToDomain: async (session, input) => {
+      linkToDomainHandler(input, session.workspaceBasePath, session.workspaceProjectId)
+    },
+
+    importScenarios: async (session, input) => {
+      const result = importScenariosHandler(input, session.workspaceBasePath, session.workspaceProjectId)
+      session.lastImportResult = result
     },
   },
 
   queries: {
-    lastToolResult: async (session) => {
-      return session.lastToolResult
+    // --- System queries ---
+    domainList: async () => listDomainsHandler(),
+
+    domainVocabulary: async (_, { name }) => getDomainVocabularyHandler(name) ?? null,
+
+    adapterList: async () => await listAdaptersHandler(),
+
+    failureDetails: async (session, input) => {
+      return getFailureDetailsHandler(session.runStore, input ?? {})
     },
 
+    testTrace: async (session, { testName }) => {
+      return getTestTraceHandler(session.runStore, testName) ?? null
+    },
+
+    runDiff: async (session) => {
+      return getRunDiffHandler(session.runStore) ?? null
+    },
+
+    domainStructure: async (_, { description }) => {
+      return describeDomainStructureHandler(description)
+    },
+
+    adapterStructure: async (_, { domain, protocol }) => {
+      return describeAdapterStructureHandler(domain, protocol) ?? null
+    },
+
+    projectContext: async () => {
+      return await getProjectContextHandler() ?? null
+    },
+
+    scenarioSummary: async (session) => {
+      return getScenarioSummaryHandler(session.workspaceBasePath, session.workspaceProjectId)
+    },
+
+    scenarios: async (session, input) => {
+      const results = getScenariosHandler(input ?? {}, session.workspaceBasePath, session.workspaceProjectId)
+      return results.map(s => ({
+        id: s.id,
+        stage: s.stage,
+        behavior: s.behavior,
+        domainOperation: s.domainOperation,
+      }))
+    },
+
+    advanceCandidates: async (session) => {
+      const results = getAdvanceCandidatesHandler(session.workspaceBasePath, session.workspaceProjectId)
+      return results.map(s => ({ id: s.id, stage: s.stage }))
+    },
+
+    workflowPhase: async (session) => {
+      return getWorkflowPhaseHandler(session.workspaceBasePath, session.workspaceProjectId)
+    },
+
+    exportedScenarios: async (session, { format }) => {
+      return exportScenariosHandler(
+        { format: format as 'markdown' | 'json' },
+        session.workspaceBasePath,
+        session.workspaceProjectId,
+      )
+    },
+
+    // --- Test-support queries ---
     runCount: async (session) => {
-      return session.runStore!.listRuns().length
+      return session.runStore.listRuns().length
     },
 
     registeredDomainCount: async () => {
-      const result = listDomainsHandler()
-      return result.length
+      return listDomainsHandler().length
+    },
+
+    lastCapturedScenario: async (session) => {
+      if (!session.lastCapturedScenario) throw new Error('No scenario has been captured yet')
+      return session.lastCapturedScenario
+    },
+
+    lastAddedQuestion: async (session) => {
+      if (!session.lastAddedQuestion) throw new Error('No question has been added yet')
+      return session.lastAddedQuestion
+    },
+
+    importResult: async (session) => {
+      if (!session.lastImportResult) throw new Error('No import has been performed yet')
+      return session.lastImportResult
     },
   },
 
   assertions: {
-    toolResultContains: async (session, { path, expected }) => {
-      const result = session.lastToolResult
-      // Navigate the path (e.g. "0.name" -> result[0].name)
-      const parts = path.split('.')
-      let current: any = result
-      for (const part of parts) {
-        if (current == null) {
-          throw new Error(`Path "${path}" not found in result: ${JSON.stringify(result)}`)
-        }
-        current = Array.isArray(current) ? current[Number(part)] : current[part]
-      }
-      if (!isDeepStrictEqual(current, expected))
-        throw new Error(`Expected ${JSON.stringify(expected)} at path "${path}" but got ${JSON.stringify(current)}`)
-    },
-
-    toolResultHasLength: async (session, { length }) => {
-      const result = session.lastToolResult as any
-      if (!result || result.length !== length)
-        throw new Error(`Expected result length ${length} but got ${result?.length ?? 'undefined'}`)
-    },
-
-    runCountIs: async (session, { count }) => {
-      const actual = session.runStore!.listRuns().length
-      if (actual !== count)
-        throw new Error(`Expected ${count} runs but got ${actual}`)
-    },
-
     domainIsRegistered: async (_session, { name }) => {
       const domains = listDomainsHandler()
       const found = domains.find((d: any) => d.name === name)
@@ -372,18 +300,62 @@ export const averMcpAdapter = implement(averMcp, {
         throw new Error(`Expected domain "${name}" to be registered but found: ${domains.map((d: any) => d.name).join(', ')}`)
     },
 
-    toolResultIsError: async (session, { substring }) => {
-      const result = session.lastToolResult
-      if (result === null || result === undefined) {
-        // null result means "not found" -- this is expected for missing domains
-        return
-      }
-      if (typeof result === 'string') {
-        if (!result.includes(substring))
-          throw new Error(`Expected error to contain "${substring}" but got: ${result}`)
-        return
-      }
-      throw new Error(`Expected error result but got: ${JSON.stringify(result)}`)
+    runCountIs: async (session, { count }) => {
+      const actual = session.runStore.listRuns().length
+      if (actual !== count)
+        throw new Error(`Expected ${count} runs but got ${actual}`)
+    },
+
+    scenarioHasStage: async (session, { id, stage }) => {
+      const scenarios = getScenariosHandler({}, session.workspaceBasePath, session.workspaceProjectId)
+      const scenario = scenarios.find(s => s.id === id)
+      if (!scenario) throw new Error(`Scenario "${id}" not found`)
+      if (scenario.stage !== stage)
+        throw new Error(`Expected scenario "${id}" to have stage "${stage}" but got "${scenario.stage}"`)
+    },
+
+    scenarioHasRegressionRationale: async (session, { id, rationale }) => {
+      const scenarios = getScenariosHandler({}, session.workspaceBasePath, session.workspaceProjectId)
+      const scenario = scenarios.find(s => s.id === id)
+      if (!scenario) throw new Error(`Scenario "${id}" not found`)
+      if (scenario.regressionRationale !== rationale)
+        throw new Error(`Expected regression rationale "${rationale}" but got "${scenario.regressionRationale}"`)
+    },
+
+    questionIsResolved: async (session, { scenarioId, questionId }) => {
+      const scenarios = getScenariosHandler({}, session.workspaceBasePath, session.workspaceProjectId)
+      const scenario = scenarios.find(s => s.id === scenarioId)
+      if (!scenario) throw new Error(`Scenario "${scenarioId}" not found`)
+      const question = scenario.questions?.find(q => q.id === questionId)
+      if (!question) throw new Error(`Question "${questionId}" not found on scenario "${scenarioId}"`)
+      if (!question.resolvedAt)
+        throw new Error(`Question "${questionId}" is not resolved`)
+    },
+
+    scenarioHasDomainOperation: async (session, { id, operation }) => {
+      const scenarios = getScenariosHandler({}, session.workspaceBasePath, session.workspaceProjectId)
+      const scenario = scenarios.find(s => s.id === id)
+      if (!scenario) throw new Error(`Scenario "${id}" not found`)
+      if (scenario.domainOperation !== operation)
+        throw new Error(`Expected domain operation "${operation}" but got "${scenario.domainOperation}"`)
+    },
+
+    importResultIs: async (session, { added, skipped }) => {
+      if (!session.lastImportResult) throw new Error('No import has been performed yet')
+      if (session.lastImportResult.added !== added || session.lastImportResult.skipped !== skipped)
+        throw new Error(`Expected import result { added: ${added}, skipped: ${skipped} } but got ${JSON.stringify(session.lastImportResult)}`)
+    },
+
+    workflowPhaseIs: async (session, { phase }) => {
+      const result = getWorkflowPhaseHandler(session.workspaceBasePath, session.workspaceProjectId)
+      if (result.name !== phase)
+        throw new Error(`Expected workflow phase "${phase}" but got "${result.name}"`)
+    },
+
+    scenarioCountIs: async (session, { count }) => {
+      const scenarios = getScenariosHandler({}, session.workspaceBasePath, session.workspaceProjectId)
+      if (scenarios.length !== count)
+        throw new Error(`Expected ${count} scenarios but got ${scenarios.length}`)
     },
   },
 })

@@ -31,7 +31,7 @@ switch (command) {
 aver - Domain-driven acceptance testing
 
 Commands:
-  aver run       Run acceptance tests
+  aver run       Run acceptance tests (flags forwarded to vitest)
   aver init      Scaffold a new domain
   aver approve   Update approvals
   aver workspace Manage scenario workspaces

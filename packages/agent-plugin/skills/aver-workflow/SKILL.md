@@ -1,129 +1,142 @@
 ---
 name: aver-workflow
-description: Maturity pipeline workflow for domain-driven acceptance testing. Guides behaviors from observation through formalized tests.
+description: Scenario-driven acceptance testing — facilitates Example Mapping, domain design, and adapter-first implementation
 ---
 
 # Aver Workflow
 
-Aver is a domain-driven acceptance testing framework. This skill orchestrates the **maturity pipeline** -- a progression that turns observed system behaviors into formalized, executable acceptance tests.
+Aver is a domain-driven acceptance testing framework. This skill owns the **outer loop** -- scenario tracking, dispatching work, and human checkpoints. It does NOT own implementation details like TDD, debugging, or code writing.
 
-## First Step: Determine the Workflow Phase
+## On Session Start
 
-On session start, call `get_workflow_phase` to determine where the project stands. The response tells you which phase is active and what to do next. Then load the corresponding phase guide from `phases/`. The six phases are: **kickoff**, **discovery**, **mapping**, **formalization**, **implementation**, and **verification**.
+1. Call `get_workflow_phase` to determine the current phase.
+2. Load the corresponding guide from this directory based on the phase.
+3. Call `get_scenario_summary` to see scenario counts by stage.
 
-## The Maturity Pipeline
+## Scenario Pipeline
 
-The workflow progresses through six phases. Items within the workspace move through four maturity stages (observed, explored, intended, formalized), and the six phases represent what you should be doing at each point.
+Scenarios are behavioral examples that move through five maturity stages. Each stage has a clear owner and advancement trigger.
 
-| Phase | When Active | Key Activity | Output |
-|-------|-------------|-------------|--------|
-| **Kickoff** | Empty workspace, first session | Identify target system, record initial items | 3+ observations or intents |
-| **Discovery** | Observed items exist | Investigate code, trace paths, find seams | Explored items with rationale |
-| **Mapping** | Explored items exist | Business confirms intent, resolves questions | Intended items (human-confirmed) |
-| **Formalization** | Intended items exist | Example Mapping: rules, examples, questions | Formalized items with examples |
-| **Implementation** | Formalized items without domain links | TDD inner loop: domain, tests, adapters | Passing tests, domain links |
-| **Verification** | All formalized items linked | Full suite run, coverage review, export | Clean test run, exported workspace |
+| Stage | Owner | Activity | Advances When |
+|-------|-------|----------|---------------|
+| **captured** | Agent | Record observed or intended behavior | Agent has enough context to investigate or map |
+| **characterized** | Agent | Investigate code, find seams, capture approvals | Evidence attached, findings posted for human review |
+| **mapped** | Human + Agent | Example Mapping session: rules, examples, questions | All questions resolved, human confirms intent |
+| **specified** | Human + Agent | Name domain vocabulary, define adapter interfaces | Human approves vocabulary names |
+| **implemented** | Agent (subagent) | TDD inner loop, adapter handlers, passing tests | All tests pass, domain linked |
 
-Each phase has a dedicated guide:
-- `phases/kickoff.md` -- Starting a new workflow
-- `phases/discovery.md` -- Recording and triaging observations
-- `phases/mapping.md` -- Investigating and asking questions
-- `phases/formalization.md` -- Confirming intent and running Example Mapping
-- `phases/implementation.md` -- Writing domains, tests, and adapters (the TDD inner loop)
-- `phases/verification.md` -- Running full suites and reviewing coverage
+## Two Entry Paths
 
-## Three Amigos Perspectives
+**Legacy path** (existing system, behavior unknown):
+`captured` -> `characterized` -> `mapped` -> `specified` -> `implemented`
 
-Adopt different perspectives depending on what the work requires. Each perspective has a dedicated guide in `perspectives/`.
+The agent investigates autonomously, characterizes behavior with approval tests, then facilitates mapping with the human. See `investigation.md`.
 
-**Business** -- What should the system do?
-- Confirms behaviors as intentional
-- Owns promotions from observed to explored to intended
-- Speaks in domain language, not implementation details
-- Guide: `perspectives/business.md`
+**Greenfield path** (new feature, intent known):
+`captured` -> `mapped` -> `specified` -> `implemented`
 
-**Development** -- How does the system work?
-- Investigates seams, constraints, and architecture
-- Explores code to understand what exists
-- Identifies where new behavior fits
-- Guide: `perspectives/development.md`
+The human states intent directly. Skip characterization -- go straight to Example Mapping. See `scenario-mapping.md`.
 
-**Testing** -- How do we verify it?
-- Writes examples and maps them to domain operations
-- Creates tests using the Aver framework
-- Owns promotions from intended to formalized
-- Guide: `perspectives/testing.md`
+## Human Checkpoints
 
-## MCP Tools
+Stop and ask the human before proceeding when:
 
-### Workspace Tools (maturity pipeline)
+1. **Naming vocabulary** -- Action, query, and assertion names become shared language. ALWAYS get human agreement before writing domain code.
+2. **Confirming intent** -- Never assume a captured behavior is desired. The human must confirm before advancing to `mapped`.
+3. **Ambiguous scope** -- When a scenario could map to multiple domains or the boundary is unclear.
+4. **Conflicting scenarios** -- When two scenarios suggest contradictory behaviors.
+5. **Stage regression** -- When a test starts failing due to changed requirements, confirm before regressing.
+
+Checkpoints are **non-blocking** when possible. Post the question via `add_question`, continue working on independent scenarios, and return when the human responds.
+
+## Delegation Rules
+
+This skill orchestrates. It does NOT own:
+
+| Concern | Delegate To |
+|---------|-------------|
+| TDD inner loop (red/green/refactor) | `superpowers:test-driven-development` |
+| Debugging failing tests | `superpowers:systematic-debugging` |
+| Parallel investigation/implementation | `superpowers:dispatching-parallel-agents` |
+| Code review and refactoring | Standard agent capabilities |
+
+When a scenario reaches `specified`, dispatch implementation to the TDD skill. When investigation needs parallel exploration of multiple seams, dispatch to the parallel agents skill.
+
+## Subagent Dispatch Model
+
+The outer loop stays thin. It reads scenario state, decides what work to dispatch, and posts checkpoint questions. It does not block on subagent completion.
+
+**Dispatch pattern:**
+1. Read scenario state via `get_scenarios` and `get_advance_candidates`
+2. Identify independent work items (scenarios in the same stage that don't depend on each other)
+3. Dispatch background subagents for investigation or implementation
+4. Post checkpoint questions for anything requiring human judgment
+5. When subagents complete, review results and advance scenarios
+
+**What the outer loop does:**
+- Calls MCP tools to read/write scenario state
+- Facilitates Example Mapping conversations
+- Posts questions and processes answers
+- Advances/regresses scenarios between stages
+- Dispatches subagents for heavy work
+
+**What the outer loop does NOT do:**
+- Write application code
+- Write test code
+- Debug failures
+- Run the TDD cycle
+
+## MCP Tool Reference
+
+### Scenario Tools
 
 | Tool | Purpose |
 |------|---------|
-| `get_workflow_phase` | Determine current phase and next steps |
-| `get_workspace_summary` | Overview of all workspace items by phase |
-| `get_workspace_items` | List items, optionally filtered by phase |
-| `record_observation` | Record something noticed about the system |
-| `record_intent` | Record a confirmed behavioral intent |
-| `promote_item` | Move an item to the next maturity phase |
-| `demote_item` | Move an item back to a previous phase |
-| `add_question` | Attach a question to a workspace item |
+| `capture_scenario` | Record an observed or intended behavior |
+| `get_scenarios` | List scenarios, filter by stage/story/keyword |
+| `get_scenario_summary` | Counts per stage, open questions |
+| `advance_scenario` | Move a scenario to the next stage |
+| `regress_scenario` | Move a scenario back to an earlier stage |
+| `get_advance_candidates` | Scenarios eligible for advancement |
+| `add_question` | Attach an open question to a scenario |
 | `resolve_question` | Mark a question as answered |
-| `link_to_domain` | Connect a workspace item to an Aver domain |
-| `get_promotion_candidates` | Find items ready to advance |
-| `export_workspace` | Export workspace as portable JSON |
-| `import_workspace` | Import workspace from JSON |
+| `link_to_domain` | Connect a scenario to domain operations and tests |
+| `export_scenarios` | Export as markdown or JSON |
+| `import_scenarios` | Import from JSON |
 
-### Domain & Testing Tools (formalized phase)
+### Domain Tools
 
 | Tool | Purpose |
 |------|---------|
-| `list_domains` | See all registered Aver domains |
-| `get_domain_vocabulary` | See actions, queries, assertions for a domain |
-| `list_adapters` | See which protocols are implemented |
+| `list_domains` | All registered domains |
+| `get_domain_vocabulary` | Actions, queries, assertions for a domain |
+| `list_adapters` | Which protocols are implemented |
 | `describe_domain_structure` | Generate a CRUD domain template |
-| `describe_adapter_structure` | Show handler structure for a domain + protocol |
-| `get_project_context` | Discover file paths and naming conventions |
+| `describe_adapter_structure` | Handler signatures for a domain + protocol |
+| `get_project_context` | File paths and naming conventions |
+
+### Testing Tools
+
+| Tool | Purpose |
+|------|---------|
 | `run_tests` | Run the test suite (filter by domain or adapter) |
 | `get_failure_details` | Inspect failures with error messages and traces |
-| `get_test_trace` | Get the execution trace for a specific test |
-| `get_run_diff` | Compare last two runs -- newly passing, newly failing |
+| `get_test_trace` | Execution trace for a specific test |
+| `get_run_diff` | Compare last two runs |
 
-## Human Feedback Triggers
+### Phase
 
-Pause and ask the human before proceeding when:
+| Tool | Purpose |
+|------|---------|
+| `get_workflow_phase` | Detect current phase from scenario state |
 
-1. **Promoting to intended** -- The human must confirm that an explored behavior is actually desired. Never assume intent.
-2. **Naming domain vocabulary** -- Action, query, and assertion names become the shared language. Get human agreement on names.
-3. **Ambiguous scope** -- When an observation could map to multiple domains or the boundary is unclear.
-4. **Conflicting observations** -- When two observations suggest contradictory behaviors.
-5. **Phase regression** -- When a formalized test starts failing due to changed requirements, confirm before demoting.
+## File References
 
-## Pattern References
-
-Detailed technique guides live in `patterns/`:
-- `patterns/legacy-characterization.md` -- Wrapping existing systems with observation-first tests
-- `patterns/example-mapping.md` -- Structured discovery of rules, examples, and questions
-- `patterns/tdd-inner-loop.md` -- The define-test-implement cycle within the formalized phase
-- `patterns/agent-coordination.md` -- Multi-agent team workflows with shared workspaces
-
-## Walkthrough Examples
-
-Complete worked examples live in `examples/`:
-- `examples/legacy-walkthrough.md` -- Full pipeline: discovering a legacy REST API's behaviors and formalizing tests
-- `examples/new-feature-walkthrough.md` -- Full pipeline: adding task cancellation via Example Mapping and TDD
-- `examples/task-board.md` -- Adding a feature to the task-board example app (code-focused)
-
-## Quick Reference: The Formalization Cycle
-
-When you reach the formalized phase, follow this inner loop:
-
-1. **Define** -- Add `action()`, `query()`, or `assertion()` markers to the domain
-2. **Test** -- Write the test using domain vocabulary (never adapter details)
-3. **Implement** -- Add handlers to each adapter (TypeScript flags missing ones)
-4. **Verify** -- Run tests with `run_tests`, check results with `get_run_diff`
-
-See `patterns/tdd-inner-loop.md` and `patterns.md` for complete code examples.
+| Guide | When to Use |
+|-------|-------------|
+| `scenario-mapping.md` | Facilitating an Example Mapping session (mapped stage) |
+| `investigation.md` | Legacy characterization path (characterized stage) |
+| `specification.md` | Domain vocabulary and adapter interface design (specified stage) |
 
 ## Conventions
 

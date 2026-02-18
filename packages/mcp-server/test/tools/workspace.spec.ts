@@ -3,19 +3,18 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import {
-  getWorkspaceSummaryHandler,
-  getWorkspaceItemsHandler,
-  recordObservationHandler,
-  recordIntentHandler,
-  promoteItemHandler,
-  demoteItemHandler,
+  getScenarioSummaryHandler,
+  getScenariosHandler,
+  captureScenarioHandler,
+  advanceScenarioHandler,
+  regressScenarioHandler,
   addQuestionHandler,
   resolveQuestionHandler,
   linkToDomainHandler,
   getWorkflowPhaseHandler,
-  getPromotionCandidatesHandler,
-  exportWorkspaceHandler,
-  importWorkspaceHandler,
+  getAdvanceCandidatesHandler,
+  exportScenariosHandler,
+  importScenariosHandler,
 } from '../../src/tools/workspace'
 
 describe('workspace tool handlers', () => {
@@ -30,161 +29,162 @@ describe('workspace tool handlers', () => {
     rmSync(dir, { recursive: true, force: true })
   })
 
-  describe('record_observation', () => {
-    it('creates an observed item', () => {
-      const result = recordObservationHandler({ behavior: 'API returns 200', context: 'POST /orders' }, dir, projectId)
-      expect(result.stage).toBe('observed')
+  describe('capture_scenario', () => {
+    it('creates a captured scenario with observed mode', () => {
+      const result = captureScenarioHandler({ behavior: 'API returns 200', context: 'POST /orders', mode: 'observed' }, dir, projectId)
+      expect(result.stage).toBe('captured')
       expect(result.behavior).toBe('API returns 200')
       expect(result.context).toBe('POST /orders')
+      expect(result.mode).toBe('observed')
       expect(result.id).toBeDefined()
     })
 
-    it('creates an observed item without context', () => {
-      const result = recordObservationHandler({ behavior: 'items display in list' }, dir, projectId)
-      expect(result.stage).toBe('observed')
+    it('creates a captured scenario without context', () => {
+      const result = captureScenarioHandler({ behavior: 'items display in list' }, dir, projectId)
+      expect(result.stage).toBe('captured')
       expect(result.behavior).toBe('items display in list')
     })
-  })
 
-  describe('record_intent', () => {
-    it('creates an intended item', () => {
-      const result = recordIntentHandler({ behavior: 'user can add to cart', story: 'checkout flow' }, dir, projectId)
-      expect(result.stage).toBe('intended')
+    it('creates a captured scenario with intended mode', () => {
+      const result = captureScenarioHandler({ behavior: 'user can add to cart', story: 'checkout flow', mode: 'intended' }, dir, projectId)
+      expect(result.stage).toBe('captured')
       expect(result.behavior).toBe('user can add to cart')
       expect(result.story).toBe('checkout flow')
+      expect(result.mode).toBe('intended')
     })
 
-    it('creates an intended item without story', () => {
-      const result = recordIntentHandler({ behavior: 'validation rejects empty name' }, dir, projectId)
-      expect(result.stage).toBe('intended')
+    it('creates a captured scenario with intended mode without story', () => {
+      const result = captureScenarioHandler({ behavior: 'validation rejects empty name', mode: 'intended' }, dir, projectId)
+      expect(result.stage).toBe('captured')
       expect(result.behavior).toBe('validation rejects empty name')
+      expect(result.mode).toBe('intended')
     })
   })
 
-  describe('get_workspace_summary', () => {
+  describe('get_scenario_summary', () => {
     it('returns counts per stage', () => {
-      recordObservationHandler({ behavior: 'a' }, dir, projectId)
-      recordObservationHandler({ behavior: 'b' }, dir, projectId)
-      recordIntentHandler({ behavior: 'c' }, dir, projectId)
+      captureScenarioHandler({ behavior: 'a' }, dir, projectId)
+      captureScenarioHandler({ behavior: 'b' }, dir, projectId)
+      captureScenarioHandler({ behavior: 'c', mode: 'intended' }, dir, projectId)
 
-      const summary = getWorkspaceSummaryHandler(dir, projectId)
-      expect(summary.observed).toBe(2)
-      expect(summary.intended).toBe(1)
-      expect(summary.explored).toBe(0)
-      expect(summary.formalized).toBe(0)
+      const summary = getScenarioSummaryHandler(dir, projectId)
+      expect(summary.captured).toBe(3)
+      expect(summary.characterized).toBe(0)
+      expect(summary.mapped).toBe(0)
+      expect(summary.specified).toBe(0)
+      expect(summary.implemented).toBe(0)
       expect(summary.total).toBe(3)
       expect(summary.openQuestions).toBe(0)
     })
 
     it('returns zeros for empty workspace', () => {
-      const summary = getWorkspaceSummaryHandler(dir, projectId)
+      const summary = getScenarioSummaryHandler(dir, projectId)
       expect(summary.total).toBe(0)
     })
   })
 
-  describe('get_workspace_items', () => {
-    it('returns all items when no filter', () => {
-      recordObservationHandler({ behavior: 'a' }, dir, projectId)
-      recordIntentHandler({ behavior: 'b' }, dir, projectId)
+  describe('get_scenarios', () => {
+    it('returns all scenarios when no filter', () => {
+      captureScenarioHandler({ behavior: 'a' }, dir, projectId)
+      captureScenarioHandler({ behavior: 'b', mode: 'intended' }, dir, projectId)
 
-      const items = getWorkspaceItemsHandler({}, dir, projectId)
-      expect(items).toHaveLength(2)
+      const scenarios = getScenariosHandler({}, dir, projectId)
+      expect(scenarios).toHaveLength(2)
     })
 
     it('filters by stage', () => {
-      recordObservationHandler({ behavior: 'a' }, dir, projectId)
-      recordIntentHandler({ behavior: 'b' }, dir, projectId)
+      captureScenarioHandler({ behavior: 'a' }, dir, projectId)
+      captureScenarioHandler({ behavior: 'b' }, dir, projectId)
 
-      const items = getWorkspaceItemsHandler({ stage: 'observed' }, dir, projectId)
-      expect(items).toHaveLength(1)
-      expect(items[0].behavior).toBe('a')
+      const scenarios = getScenariosHandler({ stage: 'captured' }, dir, projectId)
+      expect(scenarios).toHaveLength(2)
     })
 
     it('filters by keyword', () => {
-      recordObservationHandler({ behavior: 'API returns 200' }, dir, projectId)
-      recordObservationHandler({ behavior: 'page loads' }, dir, projectId)
+      captureScenarioHandler({ behavior: 'API returns 200' }, dir, projectId)
+      captureScenarioHandler({ behavior: 'page loads' }, dir, projectId)
 
-      const items = getWorkspaceItemsHandler({ keyword: 'API' }, dir, projectId)
-      expect(items).toHaveLength(1)
-      expect(items[0].behavior).toBe('API returns 200')
+      const scenarios = getScenariosHandler({ keyword: 'API' }, dir, projectId)
+      expect(scenarios).toHaveLength(1)
+      expect(scenarios[0].behavior).toBe('API returns 200')
     })
   })
 
-  describe('promote_item', () => {
-    it('promotes observed to explored', () => {
-      const item = recordObservationHandler({ behavior: 'a' }, dir, projectId)
-      const promoted = promoteItemHandler({ id: item.id, rationale: 'investigated', promotedBy: 'dev' }, dir, projectId)
-      expect(promoted.stage).toBe('explored')
+  describe('advance_scenario', () => {
+    it('advances captured to characterized', () => {
+      const scenario = captureScenarioHandler({ behavior: 'a' }, dir, projectId)
+      const advanced = advanceScenarioHandler({ id: scenario.id, rationale: 'investigated', promotedBy: 'dev' }, dir, projectId)
+      expect(advanced.stage).toBe('characterized')
     })
 
-    it('promotes explored to intended', () => {
-      const item = recordObservationHandler({ behavior: 'a' }, dir, projectId)
-      promoteItemHandler({ id: item.id, rationale: 'step 1', promotedBy: 'dev' }, dir, projectId)
-      const promoted = promoteItemHandler({ id: item.id, rationale: 'step 2', promotedBy: 'dev' }, dir, projectId)
-      expect(promoted.stage).toBe('intended')
+    it('advances characterized to mapped', () => {
+      const scenario = captureScenarioHandler({ behavior: 'a' }, dir, projectId)
+      advanceScenarioHandler({ id: scenario.id, rationale: 'step 1', promotedBy: 'dev' }, dir, projectId)
+      const advanced = advanceScenarioHandler({ id: scenario.id, rationale: 'step 2', promotedBy: 'dev' }, dir, projectId)
+      expect(advanced.stage).toBe('mapped')
     })
 
-    it('throws for unknown item', () => {
+    it('throws for unknown scenario', () => {
       expect(() => {
-        promoteItemHandler({ id: 'nonexistent', rationale: 'test', promotedBy: 'dev' }, dir, projectId)
-      }).toThrow('Item not found')
+        advanceScenarioHandler({ id: 'nonexistent', rationale: 'test', promotedBy: 'dev' }, dir, projectId)
+      }).toThrow('Scenario not found')
     })
   })
 
-  describe('demote_item', () => {
-    it('demotes explored back to observed', () => {
-      const item = recordObservationHandler({ behavior: 'a' }, dir, projectId)
-      promoteItemHandler({ id: item.id, rationale: 'promote', promotedBy: 'dev' }, dir, projectId)
-      const demoted = demoteItemHandler({ id: item.id, targetStage: 'observed', rationale: 'rethinking' }, dir, projectId)
-      expect(demoted.stage).toBe('observed')
+  describe('regress_scenario', () => {
+    it('regresses characterized back to captured', () => {
+      const scenario = captureScenarioHandler({ behavior: 'a' }, dir, projectId)
+      advanceScenarioHandler({ id: scenario.id, rationale: 'advance', promotedBy: 'dev' }, dir, projectId)
+      const regressed = regressScenarioHandler({ id: scenario.id, targetStage: 'captured', rationale: 'rethinking' }, dir, projectId)
+      expect(regressed.stage).toBe('captured')
     })
 
-    it('throws for unknown item', () => {
+    it('throws for unknown scenario', () => {
       expect(() => {
-        demoteItemHandler({ id: 'nonexistent', targetStage: 'observed', rationale: 'test' }, dir, projectId)
-      }).toThrow('Item not found')
+        regressScenarioHandler({ id: 'nonexistent', targetStage: 'captured', rationale: 'test' }, dir, projectId)
+      }).toThrow('Scenario not found')
     })
   })
 
   describe('add_question', () => {
-    it('adds a question to an item', () => {
-      const item = recordObservationHandler({ behavior: 'a' }, dir, projectId)
-      const question = addQuestionHandler({ itemId: item.id, text: 'What triggers this?' }, dir, projectId)
+    it('adds a question to a scenario', () => {
+      const scenario = captureScenarioHandler({ behavior: 'a' }, dir, projectId)
+      const question = addQuestionHandler({ itemId: scenario.id, text: 'What triggers this?' }, dir, projectId)
       expect(question.id).toBeDefined()
       expect(question.text).toBe('What triggers this?')
     })
 
     it('question appears in summary as open', () => {
-      const item = recordObservationHandler({ behavior: 'a' }, dir, projectId)
-      addQuestionHandler({ itemId: item.id, text: 'Why?' }, dir, projectId)
-      const summary = getWorkspaceSummaryHandler(dir, projectId)
+      const scenario = captureScenarioHandler({ behavior: 'a' }, dir, projectId)
+      addQuestionHandler({ itemId: scenario.id, text: 'Why?' }, dir, projectId)
+      const summary = getScenarioSummaryHandler(dir, projectId)
       expect(summary.openQuestions).toBe(1)
     })
   })
 
   describe('resolve_question', () => {
     it('resolves an open question', () => {
-      const item = recordObservationHandler({ behavior: 'a' }, dir, projectId)
-      const question = addQuestionHandler({ itemId: item.id, text: 'Why?' }, dir, projectId)
-      resolveQuestionHandler({ itemId: item.id, questionId: question.id, answer: 'Because reasons' }, dir, projectId)
+      const scenario = captureScenarioHandler({ behavior: 'a' }, dir, projectId)
+      const question = addQuestionHandler({ itemId: scenario.id, text: 'Why?' }, dir, projectId)
+      resolveQuestionHandler({ itemId: scenario.id, questionId: question.id, answer: 'Because reasons' }, dir, projectId)
 
-      const summary = getWorkspaceSummaryHandler(dir, projectId)
+      const summary = getScenarioSummaryHandler(dir, projectId)
       expect(summary.openQuestions).toBe(0)
     })
   })
 
   describe('link_to_domain', () => {
-    it('links an item to domain artifacts', () => {
-      const item = recordObservationHandler({ behavior: 'a' }, dir, projectId)
+    it('links a scenario to domain artifacts', () => {
+      const scenario = captureScenarioHandler({ behavior: 'a' }, dir, projectId)
       linkToDomainHandler(
-        { itemId: item.id, domainOperation: 'Cart.addItem', testNames: ['adds item to cart'] },
+        { itemId: scenario.id, domainOperation: 'Cart.addItem', testNames: ['adds item to cart'] },
         dir,
         projectId,
       )
 
-      const items = getWorkspaceItemsHandler({}, dir, projectId)
-      expect(items[0].domainOperation).toBe('Cart.addItem')
-      expect(items[0].testNames).toEqual(['adds item to cart'])
+      const scenarios = getScenariosHandler({}, dir, projectId)
+      expect(scenarios[0].domainOperation).toBe('Cart.addItem')
+      expect(scenarios[0].testNames).toEqual(['adds item to cart'])
     })
   })
 
@@ -194,84 +194,78 @@ describe('workspace tool handlers', () => {
       expect(phase.name).toBe('kickoff')
     })
 
-    it('returns discovery after observations', () => {
-      recordObservationHandler({ behavior: 'a' }, dir, projectId)
+    it('returns investigation after captured scenarios', () => {
+      captureScenarioHandler({ behavior: 'a' }, dir, projectId)
       const phase = getWorkflowPhaseHandler(dir, projectId)
-      expect(phase.name).toBe('discovery')
-    })
-
-    it('returns formalization after intents', () => {
-      recordIntentHandler({ behavior: 'a' }, dir, projectId)
-      const phase = getWorkflowPhaseHandler(dir, projectId)
-      expect(phase.name).toBe('formalization')
+      expect(phase.name).toBe('investigation')
     })
   })
 
-  describe('get_promotion_candidates', () => {
-    it('returns items eligible for promotion', () => {
-      recordObservationHandler({ behavior: 'a' }, dir, projectId)
-      recordObservationHandler({ behavior: 'b' }, dir, projectId)
+  describe('get_advance_candidates', () => {
+    it('returns scenarios eligible for advancement', () => {
+      captureScenarioHandler({ behavior: 'a' }, dir, projectId)
+      captureScenarioHandler({ behavior: 'b' }, dir, projectId)
 
-      const candidates = getPromotionCandidatesHandler(dir, projectId)
+      const candidates = getAdvanceCandidatesHandler(dir, projectId)
       expect(candidates).toHaveLength(2)
     })
 
-    it('excludes items with open questions', () => {
-      const item = recordObservationHandler({ behavior: 'a' }, dir, projectId)
-      addQuestionHandler({ itemId: item.id, text: 'unclear' }, dir, projectId)
-      recordObservationHandler({ behavior: 'b' }, dir, projectId)
+    it('excludes scenarios with open questions', () => {
+      const scenario = captureScenarioHandler({ behavior: 'a' }, dir, projectId)
+      addQuestionHandler({ itemId: scenario.id, text: 'unclear' }, dir, projectId)
+      captureScenarioHandler({ behavior: 'b' }, dir, projectId)
 
-      const candidates = getPromotionCandidatesHandler(dir, projectId)
+      const candidates = getAdvanceCandidatesHandler(dir, projectId)
       expect(candidates).toHaveLength(1)
       expect(candidates[0].behavior).toBe('b')
     })
   })
 
-  describe('export_workspace', () => {
+  describe('export_scenarios', () => {
     it('exports as markdown', () => {
-      recordObservationHandler({ behavior: 'test item' }, dir, projectId)
-      const result = exportWorkspaceHandler({ format: 'markdown' }, dir, projectId)
+      captureScenarioHandler({ behavior: 'test item' }, dir, projectId)
+      const result = exportScenariosHandler({ format: 'markdown' }, dir, projectId)
       expect(result).toContain('test item')
       expect(result).toContain('# Workspace Summary')
     })
 
     it('exports as json', () => {
-      recordObservationHandler({ behavior: 'test item' }, dir, projectId)
-      const result = exportWorkspaceHandler({ format: 'json' }, dir, projectId)
+      captureScenarioHandler({ behavior: 'test item' }, dir, projectId)
+      const result = exportScenariosHandler({ format: 'json' }, dir, projectId)
       const parsed = JSON.parse(result)
-      expect(parsed.items).toHaveLength(1)
-      expect(parsed.items[0].behavior).toBe('test item')
+      expect(parsed.scenarios).toHaveLength(1)
+      expect(parsed.scenarios[0].behavior).toBe('test item')
     })
   })
 
-  describe('import_workspace', () => {
-    it('imports items from json', () => {
-      // Create a source workspace with items
-      const sourceItem = recordObservationHandler({ behavior: 'from source' }, dir, projectId)
-      const exported = exportWorkspaceHandler({ format: 'json' }, dir, projectId)
+  describe('import_scenarios', () => {
+    it('imports scenarios from json', () => {
+      // Create a source workspace with scenarios
+      const sourceScenario = captureScenarioHandler({ behavior: 'from source' }, dir, projectId)
+      const exported = exportScenariosHandler({ format: 'json' }, dir, projectId)
 
       // Create a different target workspace
       const targetDir = mkdtempSync(join(tmpdir(), 'aver-mcp-workspace-target-'))
       try {
-        const result = importWorkspaceHandler({ json: exported }, targetDir, projectId)
+        const result = importScenariosHandler({ json: exported }, targetDir, projectId)
         expect(result.added).toBe(1)
         expect(result.skipped).toBe(0)
 
-        // Verify the imported items
-        const items = getWorkspaceItemsHandler({}, targetDir, projectId)
-        expect(items).toHaveLength(1)
-        expect(items[0].behavior).toBe('from source')
+        // Verify the imported scenarios
+        const scenarios = getScenariosHandler({}, targetDir, projectId)
+        expect(scenarios).toHaveLength(1)
+        expect(scenarios[0].behavior).toBe('from source')
       } finally {
         rmSync(targetDir, { recursive: true, force: true })
       }
     })
 
-    it('skips duplicate items on import', () => {
-      recordObservationHandler({ behavior: 'existing' }, dir, projectId)
-      const exported = exportWorkspaceHandler({ format: 'json' }, dir, projectId)
+    it('skips duplicate scenarios on import', () => {
+      captureScenarioHandler({ behavior: 'existing' }, dir, projectId)
+      const exported = exportScenariosHandler({ format: 'json' }, dir, projectId)
 
       // Import back into same workspace (duplicate IDs)
-      const result = importWorkspaceHandler({ json: exported }, dir, projectId)
+      const result = importScenariosHandler({ json: exported }, dir, projectId)
       expect(result.added).toBe(0)
       expect(result.skipped).toBe(1)
     })

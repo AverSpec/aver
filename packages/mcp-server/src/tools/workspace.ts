@@ -11,8 +11,8 @@ import {
   exportJson,
   importJson,
   type Stage,
-  type WorkspaceItem,
-  type WorkspaceSummary,
+  type Scenario,
+  type ScenarioSummary,
   type Question,
   type Phase,
 } from '@aver/workspace'
@@ -39,54 +39,46 @@ function createStore(basePath: string, projectId: string): WorkspaceStore {
 
 // --- Handler functions (pure, no MCP dependency) ---
 
-export function recordObservationHandler(
-  input: { behavior: string; context?: string },
+export function captureScenarioHandler(
+  input: { behavior: string; context?: string; story?: string; mode?: 'observed' | 'intended' },
   basePath: string,
   projectId: string,
-): WorkspaceItem {
-  return createOps(basePath, projectId).recordObservation(input)
+): Scenario {
+  return createOps(basePath, projectId).captureScenario(input)
 }
 
-export function recordIntentHandler(
-  input: { behavior: string; story?: string; context?: string },
+export function getScenarioSummaryHandler(
   basePath: string,
   projectId: string,
-): WorkspaceItem {
-  return createOps(basePath, projectId).recordIntent(input)
+): ScenarioSummary {
+  return createOps(basePath, projectId).getScenarioSummary()
 }
 
-export function getWorkspaceSummaryHandler(
-  basePath: string,
-  projectId: string,
-): WorkspaceSummary {
-  return createOps(basePath, projectId).getSummary()
-}
-
-export function getWorkspaceItemsHandler(
+export function getScenariosHandler(
   input: { stage?: Stage; story?: string; keyword?: string },
   basePath: string,
   projectId: string,
-): WorkspaceItem[] {
-  return createOps(basePath, projectId).getItems(input)
+): Scenario[] {
+  return createOps(basePath, projectId).getScenarios(input)
 }
 
-export function promoteItemHandler(
+export function advanceScenarioHandler(
   input: { id: string; rationale: string; promotedBy: string },
   basePath: string,
   projectId: string,
-): WorkspaceItem {
-  return createOps(basePath, projectId).promoteItem(input.id, {
+): Scenario {
+  return createOps(basePath, projectId).advanceScenario(input.id, {
     rationale: input.rationale,
     promotedBy: input.promotedBy,
   })
 }
 
-export function demoteItemHandler(
+export function regressScenarioHandler(
   input: { id: string; targetStage: Stage; rationale: string },
   basePath: string,
   projectId: string,
-): WorkspaceItem {
-  return createOps(basePath, projectId).demoteItem(input.id, {
+): Scenario {
+  return createOps(basePath, projectId).regressScenario(input.id, {
     targetStage: input.targetStage,
     rationale: input.rationale,
   })
@@ -126,14 +118,14 @@ export function getWorkflowPhaseHandler(
   return detectPhase(workspace)
 }
 
-export function getPromotionCandidatesHandler(
+export function getAdvanceCandidatesHandler(
   basePath: string,
   projectId: string,
-): WorkspaceItem[] {
-  return createOps(basePath, projectId).getPromotionCandidates()
+): Scenario[] {
+  return createOps(basePath, projectId).getAdvanceCandidates()
 }
 
-export function exportWorkspaceHandler(
+export function exportScenariosHandler(
   input: { format: 'markdown' | 'json' },
   basePath: string,
   projectId: string,
@@ -143,7 +135,7 @@ export function exportWorkspaceHandler(
   return input.format === 'markdown' ? exportMarkdown(workspace) : exportJson(workspace)
 }
 
-export function importWorkspaceHandler(
+export function importScenariosHandler(
   input: { json: string },
   basePath: string,
   projectId: string,
@@ -154,24 +146,24 @@ export function importWorkspaceHandler(
 
 // --- MCP tool registration ---
 
-const stageEnum = z.enum(['observed', 'explored', 'intended', 'formalized'])
+const stageEnum = z.enum(['captured', 'characterized', 'mapped', 'specified', 'implemented'])
 
 export function registerWorkspaceTools(server: McpServer): void {
   server.registerTool(
-    'get_workspace_summary',
+    'get_scenario_summary',
     {
       description: 'Get a summary of the scenario workspace with counts per maturity stage and open questions',
     },
     async () => {
-      const result = getWorkspaceSummaryHandler(resolveBasePath(), resolveProjectId())
+      const result = getScenarioSummaryHandler(resolveBasePath(), resolveProjectId())
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] }
     },
   )
 
   server.registerTool(
-    'get_workspace_items',
+    'get_scenarios',
     {
-      description: 'Get workspace items with optional filters by stage, story, or keyword',
+      description: 'Get scenarios with optional filters by stage, story, or keyword',
       inputSchema: {
         stage: stageEnum.optional().describe('Filter by maturity stage'),
         story: z.string().optional().describe('Filter by story name'),
@@ -179,70 +171,56 @@ export function registerWorkspaceTools(server: McpServer): void {
       },
     },
     async (input) => {
-      const result = getWorkspaceItemsHandler(input, resolveBasePath(), resolveProjectId())
+      const result = getScenariosHandler(input, resolveBasePath(), resolveProjectId())
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] }
     },
   )
 
   server.registerTool(
-    'record_observation',
+    'capture_scenario',
     {
-      description: 'Record an observed behavior in the workspace. Creates an item at the "observed" stage.',
+      description: 'Capture a scenario in the workspace. Creates a scenario at the "captured" stage.',
       inputSchema: {
-        behavior: z.string().describe('The observed behavior'),
-        context: z.string().optional().describe('Context where the behavior was observed'),
-      },
-    },
-    async (input) => {
-      const result = recordObservationHandler(input, resolveBasePath(), resolveProjectId())
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] }
-    },
-  )
-
-  server.registerTool(
-    'record_intent',
-    {
-      description: 'Record an intended behavior in the workspace. Creates an item at the "intended" stage.',
-      inputSchema: {
-        behavior: z.string().describe('The intended behavior'),
+        behavior: z.string().describe('The observed or intended behavior'),
+        context: z.string().optional().describe('Context where the behavior was observed or is intended'),
         story: z.string().optional().describe('Story or feature this behavior belongs to'),
-        context: z.string().optional().describe('Context for the intended behavior'),
+        mode: z.enum(['observed', 'intended']).optional().describe('Whether this is an observed behavior or stated intent'),
       },
     },
     async (input) => {
-      const result = recordIntentHandler(input, resolveBasePath(), resolveProjectId())
+      const result = captureScenarioHandler(input, resolveBasePath(), resolveProjectId())
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] }
     },
   )
 
   server.registerTool(
-    'promote_item',
+    'advance_scenario',
     {
-      description: 'Promote a workspace item to the next maturity stage (observed -> explored -> intended -> formalized)',
+      description: 'Advance a scenario to the next maturity stage (captured -> characterized -> mapped -> specified -> implemented)',
       inputSchema: {
-        id: z.string().describe('The ID of the item to promote'),
-        rationale: z.string().describe('Reason for promotion'),
-        promotedBy: z.string().describe('Who is promoting the item'),
+        id: z.string().describe('The ID of the scenario to advance'),
+        rationale: z.string().describe('Reason for advancement'),
+        promotedBy: z.string().describe('Who is advancing the scenario'),
       },
     },
     async (input) => {
-      const result = promoteItemHandler(input, resolveBasePath(), resolveProjectId())
+      const result = advanceScenarioHandler(input, resolveBasePath(), resolveProjectId())
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] }
     },
   )
 
   server.registerTool(
-    'demote_item',
+    'regress_scenario',
     {
-      description: 'Demote a workspace item to an earlier maturity stage',
+      description: 'Regress a scenario to an earlier maturity stage',
       inputSchema: {
-        id: z.string().describe('The ID of the item to demote'),
-        targetStage: stageEnum.describe('The stage to demote to'),
-        rationale: z.string().describe('Reason for demotion'),
+        id: z.string().describe('The ID of the scenario to regress'),
+        targetStage: stageEnum.describe('The stage to regress to'),
+        rationale: z.string().describe('Reason for regression'),
       },
     },
     async (input) => {
-      const result = demoteItemHandler(input, resolveBasePath(), resolveProjectId())
+      const result = regressScenarioHandler(input, resolveBasePath(), resolveProjectId())
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] }
     },
   )
@@ -250,9 +228,9 @@ export function registerWorkspaceTools(server: McpServer): void {
   server.registerTool(
     'add_question',
     {
-      description: 'Add an open question to a workspace item',
+      description: 'Add an open question to a scenario',
       inputSchema: {
-        itemId: z.string().describe('The ID of the item to add a question to'),
+        itemId: z.string().describe('The ID of the scenario to add a question to'),
         text: z.string().describe('The question text'),
       },
     },
@@ -265,9 +243,9 @@ export function registerWorkspaceTools(server: McpServer): void {
   server.registerTool(
     'resolve_question',
     {
-      description: 'Resolve an open question on a workspace item with an answer',
+      description: 'Resolve an open question on a scenario with an answer',
       inputSchema: {
-        itemId: z.string().describe('The ID of the item'),
+        itemId: z.string().describe('The ID of the scenario'),
         questionId: z.string().describe('The ID of the question to resolve'),
         answer: z.string().describe('The answer to the question'),
       },
@@ -281,9 +259,9 @@ export function registerWorkspaceTools(server: McpServer): void {
   server.registerTool(
     'link_to_domain',
     {
-      description: 'Link a workspace item to domain artifacts (domain operation, test names, approval baseline)',
+      description: 'Link a scenario to domain artifacts (domain operation, test names, approval baseline)',
       inputSchema: {
-        itemId: z.string().describe('The ID of the item to link'),
+        itemId: z.string().describe('The ID of the scenario to link'),
         domainOperation: z.string().optional().describe('Domain operation name (e.g., "Cart.addItem")'),
         testNames: z.array(z.string()).optional().describe('Associated test names'),
         approvalBaseline: z.string().optional().describe('Approval baseline path'),
@@ -298,7 +276,7 @@ export function registerWorkspaceTools(server: McpServer): void {
   server.registerTool(
     'get_workflow_phase',
     {
-      description: 'Detect the current workflow phase based on workspace state (kickoff, discovery, mapping, formalization, implementation, verification)',
+      description: 'Detect the current workflow phase based on workspace state (kickoff, investigation, mapping, specification, implementation, verification)',
     },
     async () => {
       const result = getWorkflowPhaseHandler(resolveBasePath(), resolveProjectId())
@@ -307,40 +285,40 @@ export function registerWorkspaceTools(server: McpServer): void {
   )
 
   server.registerTool(
-    'get_promotion_candidates',
+    'get_advance_candidates',
     {
-      description: 'Get workspace items that are eligible for promotion (no open questions, not yet formalized)',
+      description: 'Get scenarios that are eligible for advancement (no open questions, not yet implemented)',
     },
     async () => {
-      const result = getPromotionCandidatesHandler(resolveBasePath(), resolveProjectId())
+      const result = getAdvanceCandidatesHandler(resolveBasePath(), resolveProjectId())
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] }
     },
   )
 
   server.registerTool(
-    'export_workspace',
+    'export_scenarios',
     {
-      description: 'Export the workspace as markdown or JSON',
+      description: 'Export the scenario workspace as markdown or JSON',
       inputSchema: {
         format: z.enum(['markdown', 'json']).describe('Export format'),
       },
     },
     async (input) => {
-      const result = exportWorkspaceHandler(input, resolveBasePath(), resolveProjectId())
+      const result = exportScenariosHandler(input, resolveBasePath(), resolveProjectId())
       return { content: [{ type: 'text' as const, text: result }] }
     },
   )
 
   server.registerTool(
-    'import_workspace',
+    'import_scenarios',
     {
-      description: 'Import workspace items from JSON. Skips items with duplicate IDs.',
+      description: 'Import scenarios from JSON. Skips scenarios with duplicate IDs.',
       inputSchema: {
         json: z.string().describe('JSON string of workspace data to import'),
       },
     },
     async (input) => {
-      const result = importWorkspaceHandler(input, resolveBasePath(), resolveProjectId())
+      const result = importScenariosHandler(input, resolveBasePath(), resolveProjectId())
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] }
     },
   )

@@ -83,6 +83,7 @@ export class WorkspaceOps {
     if (targetIdx >= currentIdx) throw new Error('Cannot regress to a later stage')
 
     scenario.promotedFrom = scenario.stage
+    scenario.regressionRationale = input.rationale
     scenario.stage = input.targetStage
     scenario.updatedAt = new Date().toISOString()
     this.store.save(ws)

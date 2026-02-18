@@ -141,9 +141,8 @@ describe('WorkspaceOps', () => {
 
       const updated = ops.getScenario(scenario.id)!
       expect(updated.stage).toBe('captured')
-      // The rationale should be persisted (bug fix: previously silently dropped)
-      // We check promotedFrom was set to the old stage
       expect(updated.promotedFrom).toBe('mapped')
+      expect(updated.regressionRationale).toBe('needs re-investigation')
     })
   })
 

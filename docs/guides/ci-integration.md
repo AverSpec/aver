@@ -32,6 +32,8 @@ jobs:
       - run: npx aver run
 ```
 
+`aver run` wraps `vitest run` and adds adapter/domain filtering via `--adapter` and `--domain` flags. For Vitest-specific options like `--reporter` or `--outputFile`, use `npx vitest run` directly.
+
 ## JUnit Reporting
 
 Use Vitest's built-in JUnit reporter for CI-friendly test output:

@@ -1,16 +1,20 @@
 import { describe, beforeEach } from 'vitest'
-import { suite, resetRegistry } from '@aver/core'
+import { suite, registerAdapter, resetRegistry } from '@aver/core'
 import { averMcp } from './domains/aver-mcp'
 import { averMcpAdapter } from './adapters/aver-mcp.unit'
+import { averMcpIntegrationAdapter } from './adapters/aver-mcp.mcp'
+
+registerAdapter(averMcpAdapter)
+registerAdapter(averMcpIntegrationAdapter)
 
 describe('MCP Test Execution (acceptance)', () => {
-  const { test } = suite(averMcp, averMcpAdapter)
+  const { test } = suite(averMcp)
 
   beforeEach(() => {
     resetRegistry()
   })
 
-  test('retrieves failure details after saving a run with failures', async ({ act, assert }) => {
+  test('retrieves failure details after saving a run with failures', async ({ act, query }) => {
     await act.saveTestRun({
       results: [
         { testName: 'passes', domain: 'Cart', status: 'pass', trace: [] },
@@ -20,13 +24,14 @@ describe('MCP Test Execution (acceptance)', () => {
       ],
     })
 
-    await act.callTool({ tool: 'get_failure_details' })
-
-    await assert.toolResultContains({ path: 'failures.0.testName', expected: 'fails' })
-    await assert.toolResultContains({ path: 'failures.0.domain', expected: 'Cart' })
+    const details = await query.failureDetails()
+    if (details.failures[0].testName !== 'fails')
+      throw new Error(`Expected 'fails', got '${details.failures[0].testName}'`)
+    if (details.failures[0].domain !== 'Cart')
+      throw new Error(`Expected 'Cart', got '${details.failures[0].domain}'`)
   })
 
-  test('retrieves test trace by name', async ({ act, assert }) => {
+  test('retrieves test trace by name', async ({ act, query }) => {
     await act.saveTestRun({
       results: [
         { testName: 'my-test', domain: 'Cart', status: 'pass', trace: [
@@ -36,18 +41,19 @@ describe('MCP Test Execution (acceptance)', () => {
       ],
     })
 
-    await act.callTool({ tool: 'get_test_trace', input: { testName: 'my-test' } })
-
-    await assert.toolResultContains({ path: 'testName', expected: 'my-test' })
-    await assert.toolResultContains({ path: 'status', expected: 'pass' })
+    const trace = await query.testTrace({ testName: 'my-test' })
+    if (!trace) throw new Error('Expected trace but got null')
+    if (trace.testName !== 'my-test')
+      throw new Error(`Expected 'my-test', got '${trace.testName}'`)
+    if (trace.status !== 'pass')
+      throw new Error(`Expected 'pass', got '${trace.status}'`)
   })
 
-  test('returns null trace for unknown test', async ({ act, assert }) => {
+  test('returns null trace for unknown test', async ({ act, query }) => {
     await act.saveTestRun({ results: [] })
 
-    await act.callTool({ tool: 'get_test_trace', input: { testName: 'nonexistent' } })
-
-    await assert.toolResultIsError({ substring: 'not found' })
+    const trace = await query.testTrace({ testName: 'nonexistent' })
+    if (trace !== null) throw new Error(`Expected null but got ${JSON.stringify(trace)}`)
   })
 
   // --- RunStore retention ---

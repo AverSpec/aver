@@ -1,16 +1,20 @@
 import { describe, beforeEach } from 'vitest'
-import { suite, resetRegistry } from '@aver/core'
+import { suite, registerAdapter, resetRegistry } from '@aver/core'
 import { averMcp } from './domains/aver-mcp'
 import { averMcpAdapter } from './adapters/aver-mcp.unit'
+import { averMcpIntegrationAdapter } from './adapters/aver-mcp.mcp'
+
+registerAdapter(averMcpAdapter)
+registerAdapter(averMcpIntegrationAdapter)
 
 describe('MCP Incremental Reporting (acceptance)', () => {
-  const { test } = suite(averMcp, averMcpAdapter)
+  const { test } = suite(averMcp)
 
   beforeEach(() => {
     resetRegistry()
   })
 
-  test('diffs two runs showing newly passing and newly failing', async ({ act, assert }) => {
+  test('diffs two runs showing newly passing and newly failing', async ({ act, query }) => {
     // First run: test-a passes, test-b fails
     await act.saveTestRun({
       results: [
@@ -27,15 +31,16 @@ describe('MCP Incremental Reporting (acceptance)', () => {
       ],
     })
 
-    await act.callTool({ tool: 'get_run_diff' })
-
-    await assert.toolResultContains({ path: 'newlyFailing', expected: ['test-a'] })
-    await assert.toolResultContains({ path: 'newlyPassing', expected: ['test-b'] })
+    const diff = await query.runDiff()
+    if (!diff) throw new Error('Expected diff but got null')
+    if (diff.newlyFailing[0] !== 'test-a')
+      throw new Error(`Expected newlyFailing to contain 'test-a', got ${JSON.stringify(diff.newlyFailing)}`)
+    if (diff.newlyPassing[0] !== 'test-b')
+      throw new Error(`Expected newlyPassing to contain 'test-b', got ${JSON.stringify(diff.newlyPassing)}`)
   })
 
-  test('returns error when fewer than 2 runs exist', async ({ act, assert }) => {
-    await act.callTool({ tool: 'get_run_diff' })
-
-    await assert.toolResultIsError({ substring: 'Need at least 2' })
+  test('returns null when fewer than 2 runs exist', async ({ query }) => {
+    const diff = await query.runDiff()
+    if (diff !== null) throw new Error(`Expected null but got ${JSON.stringify(diff)}`)
   })
 })

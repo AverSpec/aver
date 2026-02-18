@@ -19,7 +19,7 @@ The easiest way to get started is with the agent plugin, which bundles the MCP s
 claude plugin add @aver/agent-plugin
 ```
 
-This gives you all MCP tools plus the `aver-workflow` skill — a maturity pipeline workflow guiding behaviors from observation through formalized tests.
+This gives you all MCP tools plus the `aver-workflow` skill — a scenario mapping workflow that moves behaviors through five stages: captured → characterized → mapped → specified → implemented.
 
 ### Manual Setup
 

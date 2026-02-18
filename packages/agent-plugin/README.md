@@ -4,8 +4,8 @@ Agent plugin for [Aver](https://github.com/njackson/aver) — domain-driven acce
 
 ## What's Included
 
-- **MCP Server** — pre-configured `aver-mcp` with tools for exploring domains, managing workspaces, running tests, and scaffolding code
-- **Skill** — `aver-workflow` teaching the maturity pipeline workflow (Observed, Explored, Intended, Formalized)
+- **MCP Server** — pre-configured `aver-mcp` with tools for exploring domains, managing scenarios, running tests, and scaffolding code
+- **Skill** — `aver-workflow` teaching the outer-loop scenario mapping workflow (captured → characterized → mapped → specified → implemented)
 
 ## Installation
 
@@ -27,28 +27,27 @@ claude --plugin-dir path/to/node_modules/@aver/agent-plugin
 Once installed, Claude Code can:
 
 1. Explore your Aver domains and adapters via MCP tools
-2. Follow the maturity pipeline workflow when adding features
+2. Follow the scenario mapping workflow when adding features
 3. Use `/aver:aver-workflow` to invoke the skill directly
 
 ## MCP Tools
 
-### Workspace Tools
+### Scenario Tools
 
 | Tool | Description |
 |------|-------------|
 | `get_workflow_phase` | Determine current workflow phase |
-| `get_workspace_summary` | Overview of workspace items by phase |
-| `get_workspace_items` | List items, optionally filtered by phase |
-| `record_observation` | Record something noticed about the system |
-| `record_intent` | Record a confirmed behavioral intent |
-| `promote_item` | Move item to next maturity phase |
-| `demote_item` | Move item back to previous phase |
-| `add_question` | Attach a question to a workspace item |
+| `get_scenario_summary` | Overview of scenarios by stage |
+| `get_scenarios` | List scenarios, optionally filtered by stage |
+| `capture_scenario` | Capture a new scenario (observed behavior or confirmed intent) |
+| `advance_scenario` | Move scenario to next maturity stage |
+| `regress_scenario` | Move scenario back to a previous stage |
+| `add_question` | Attach a question to a scenario |
 | `resolve_question` | Mark a question as answered |
-| `link_to_domain` | Connect workspace item to an Aver domain |
-| `get_promotion_candidates` | Find items ready to advance |
-| `export_workspace` | Export workspace as portable JSON |
-| `import_workspace` | Import workspace from JSON |
+| `link_to_domain` | Connect scenario to an Aver domain |
+| `get_advance_candidates` | Find scenarios ready to advance |
+| `export_scenarios` | Export scenarios as portable JSON |
+| `import_scenarios` | Import scenarios from JSON |
 
 ### Domain & Testing Tools
 

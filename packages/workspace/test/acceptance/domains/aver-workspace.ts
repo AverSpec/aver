@@ -19,6 +19,7 @@ export const averWorkspace = defineDomain({
       testNames?: string[]
       approvalBaseline?: string
     }>(),
+    deleteScenario: action<{ id: string }>(),
     importScenarios: action<{ json: string }>(),
     reloadFromDisk: action(),
   },
@@ -59,6 +60,7 @@ export const averWorkspace = defineDomain({
     markdownContains: assertion<{ text: string }>(),
     importResultIs: assertion<{ added: number; skipped: number }>(),
     scenarioSurvivedRoundTrip: assertion<{ id: string; behavior: string }>(),
+    scenarioDoesNotExist: assertion<{ id: string }>(),
     throwsError: assertion<{ message: string }>(),
   },
 })

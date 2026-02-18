@@ -84,6 +84,14 @@ export function regressScenarioHandler(
   })
 }
 
+export function deleteScenarioHandler(
+  input: { id: string },
+  basePath: string,
+  projectId: string,
+): void {
+  createOps(basePath, projectId).deleteScenario(input.id)
+}
+
 export function addQuestionHandler(
   input: { scenarioId: string; text: string },
   basePath: string,
@@ -222,6 +230,20 @@ export function registerWorkspaceTools(server: McpServer): void {
     async (input) => {
       const result = regressScenarioHandler(input, resolveBasePath(), resolveProjectId())
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] }
+    },
+  )
+
+  server.registerTool(
+    'delete_scenario',
+    {
+      description: 'Delete a scenario from the workspace by ID',
+      inputSchema: {
+        id: z.string().describe('The ID of the scenario to delete'),
+      },
+    },
+    async (input) => {
+      deleteScenarioHandler(input, resolveBasePath(), resolveProjectId())
+      return { content: [{ type: 'text' as const, text: JSON.stringify({ deleted: input.id }) }] }
     },
   )
 

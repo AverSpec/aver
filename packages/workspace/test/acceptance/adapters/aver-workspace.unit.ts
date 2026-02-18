@@ -88,6 +88,15 @@ export const averWorkspaceAdapter = implement(averWorkspace, {
       }
     },
 
+    deleteScenario: async (session, { id }) => {
+      try {
+        session.lastError = undefined
+        session.ops.deleteScenario(id)
+      } catch (e: any) {
+        session.lastError = e
+      }
+    },
+
     importScenarios: async (session, { json }) => {
       try {
         session.lastError = undefined
@@ -266,6 +275,11 @@ export const averWorkspaceAdapter = implement(averWorkspace, {
       if (!s) throw new Error(`Scenario not found after reload: ${id}`)
       if (s.behavior !== behavior)
         throw new Error(`Expected behavior "${behavior}" but got "${s.behavior}"`)
+    },
+
+    scenarioDoesNotExist: async (session, { id }) => {
+      const s = session.ops.getScenario(id)
+      if (s) throw new Error(`Expected scenario ${id} to not exist but it does`)
     },
 
     throwsError: async (session, { message }) => {

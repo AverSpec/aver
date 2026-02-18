@@ -90,6 +90,14 @@ export class WorkspaceOps {
     return scenario
   }
 
+  deleteScenario(id: string): void {
+    const ws = this.store.load()
+    const idx = ws.scenarios.findIndex(s => s.id === id)
+    if (idx === -1) throw new Error('Scenario not found: ' + id)
+    ws.scenarios.splice(idx, 1)
+    this.store.save(ws)
+  }
+
   addQuestion(scenarioId: string, text: string): Question {
     const ws = this.store.load()
     const scenario = ws.scenarios.find(s => s.id === scenarioId)

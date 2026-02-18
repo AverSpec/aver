@@ -48,23 +48,4 @@ describe('WorkspaceStore', () => {
     expect(defaultStore.filePath).toContain('my-project')
   })
 
-  it('migrates legacy items field to scenarios on load', () => {
-    // Simulate a legacy workspace file with "items" instead of "scenarios"
-    const ws = store.load()
-    const scenario = createScenario({ stage: 'captured', behavior: 'legacy behavior' })
-    // Write with the old "items" key
-    const legacyData = {
-      projectId: ws.projectId,
-      items: [scenario],
-      createdAt: ws.createdAt,
-      updatedAt: ws.updatedAt
-    }
-    const { writeFileSync } = require('node:fs')
-    writeFileSync(store.filePath, JSON.stringify(legacyData, null, 2))
-
-    const reloaded = store.load()
-    expect(reloaded.scenarios).toHaveLength(1)
-    expect(reloaded.scenarios[0].behavior).toBe('legacy behavior')
-    expect((reloaded as any).items).toBeUndefined()
-  })
 })

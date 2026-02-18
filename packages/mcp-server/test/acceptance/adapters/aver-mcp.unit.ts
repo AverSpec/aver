@@ -14,6 +14,7 @@ import {
 } from '@aver/core'
 import type { Protocol } from '@aver/core'
 import { averMcp } from '../domains/aver-mcp'
+import { reloadConfig } from '../../../src/config'
 import {
   listDomainsHandler,
   getDomainVocabularyHandler,
@@ -264,6 +265,56 @@ export const averMcpAdapter = implement(averMcp, {
       })
     },
 
+    saveMultipleRuns: async (session, { count }) => {
+      for (let i = 0; i < count; i++) {
+        session.runStore!.save({
+          timestamp: new Date(Date.now() + i * 1000).toISOString(),
+          results: [{ testName: `test-${i}`, domain: 'Test', status: 'pass', trace: [] }],
+        })
+      }
+    },
+
+    reloadWithLoader: async (_session, { domainNames }) => {
+      await reloadConfig(async () => {
+        for (const name of domainNames) {
+          const domain = realDefineDomain({
+            name,
+            actions: {},
+            queries: {},
+            assertions: {},
+          })
+          registerAdapter(implement(domain as any, {
+            protocol: { name: 'test-inner', async setup() { return null }, async teardown() {} } as any,
+            actions: {},
+            queries: {},
+            assertions: {},
+          }))
+        }
+      })
+    },
+
+    discoverFromDirectory: async (_session, { domainNames }) => {
+      // Simulate discovery by registering domains directly
+      // The real discoverAndRegister reads from disk; here we test the registration path
+      resetRegistry()
+      for (const name of domainNames) {
+        const domain = realDefineDomain({
+          name,
+          actions: {},
+          queries: {},
+          assertions: {},
+        })
+        registerAdapter(implement(domain as any, {
+          protocol: { name: 'test-inner', async setup() { return null }, async teardown() {} } as any,
+          actions: {},
+          queries: {},
+          assertions: {},
+        }))
+      }
+      // Re-register the outer adapter so the test framework keeps working
+      registerAdapter(averMcpAdapter)
+    },
+
     resetState: async (session) => {
       resetRegistry()
       registerAdapter(averMcpAdapter)
@@ -274,6 +325,15 @@ export const averMcpAdapter = implement(averMcp, {
   queries: {
     lastToolResult: async (session) => {
       return session.lastToolResult
+    },
+
+    runCount: async (session) => {
+      return session.runStore!.listRuns().length
+    },
+
+    registeredDomainCount: async () => {
+      const result = listDomainsHandler()
+      return result.length
     },
   },
 
@@ -297,6 +357,19 @@ export const averMcpAdapter = implement(averMcp, {
       const result = session.lastToolResult as any
       if (!result || result.length !== length)
         throw new Error(`Expected result length ${length} but got ${result?.length ?? 'undefined'}`)
+    },
+
+    runCountIs: async (session, { count }) => {
+      const actual = session.runStore!.listRuns().length
+      if (actual !== count)
+        throw new Error(`Expected ${count} runs but got ${actual}`)
+    },
+
+    domainIsRegistered: async (_session, { name }) => {
+      const domains = listDomainsHandler()
+      const found = domains.find((d: any) => d.name === name)
+      if (!found)
+        throw new Error(`Expected domain "${name}" to be registered but found: ${domains.map((d: any) => d.name).join(', ')}`)
     },
 
     toolResultIsError: async (session, { substring }) => {

@@ -27,15 +27,7 @@ export class WorkspaceStore {
         updatedAt: now
       }
     }
-    const data = JSON.parse(readFileSync(this.filePath, 'utf-8'))
-
-    // Migration: rename legacy "items" field to "scenarios"
-    if (data.items && !data.scenarios) {
-      data.scenarios = data.items
-      delete data.items
-    }
-
-    return data
+    return JSON.parse(readFileSync(this.filePath, 'utf-8'))
   }
 
   save(workspace: Workspace): void {

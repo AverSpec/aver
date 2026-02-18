@@ -14,6 +14,7 @@ import {
 import type { Scenario, Question } from '../../../src/index'
 
 interface WorkspaceTestSession {
+  basePath: string
   store: WorkspaceStore
   ops: WorkspaceOps
   lastCapturedId: string
@@ -24,10 +25,10 @@ interface WorkspaceTestSession {
 
 export const averWorkspaceAdapter = implement(averWorkspace, {
   protocol: unit<WorkspaceTestSession>(() => {
-    const dir = mkdtempSync(join(tmpdir(), 'aver-workspace-'))
-    const store = new WorkspaceStore(dir, 'test')
+    const basePath = mkdtempSync(join(tmpdir(), 'aver-workspace-'))
+    const store = new WorkspaceStore(basePath, 'test')
     const ops = new WorkspaceOps(store)
-    return { store, ops, lastCapturedId: '', lastQuestionId: '' }
+    return { basePath, store, ops, lastCapturedId: '', lastQuestionId: '' }
   }),
 
   actions: {
@@ -95,6 +96,13 @@ export const averWorkspaceAdapter = implement(averWorkspace, {
         session.lastError = e
       }
     },
+
+    reloadFromDisk: async (session) => {
+      // Create a fresh store and ops from the same base path, proving disk persistence
+      const newStore = new WorkspaceStore(session.basePath, 'test')
+      session.store = newStore
+      session.ops = new WorkspaceOps(newStore)
+    },
   },
 
   queries: {
@@ -141,6 +149,11 @@ export const averWorkspaceAdapter = implement(averWorkspace, {
 
     lastQuestionId: async (session) => {
       return session.lastQuestionId
+    },
+
+    scenarioCount: async (session) => {
+      const workspace = session.store.load()
+      return workspace.scenarios.length
     },
   },
 
@@ -246,6 +259,13 @@ export const averWorkspaceAdapter = implement(averWorkspace, {
         throw new Error(`Expected ${added} added but got ${session.lastImportResult.added}`)
       if (session.lastImportResult.skipped !== skipped)
         throw new Error(`Expected ${skipped} skipped but got ${session.lastImportResult.skipped}`)
+    },
+
+    scenarioSurvivedRoundTrip: async (session, { id, behavior }) => {
+      const s = session.ops.getScenario(id)
+      if (!s) throw new Error(`Scenario not found after reload: ${id}`)
+      if (s.behavior !== behavior)
+        throw new Error(`Expected behavior "${behavior}" but got "${s.behavior}"`)
     },
 
     throwsError: async (session, { message }) => {

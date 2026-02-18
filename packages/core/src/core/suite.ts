@@ -43,6 +43,11 @@ export interface TestContext<D extends Domain> {
   trace: () => TraceEntry[]
 }
 
+export interface PlannedTest {
+  name: string
+  status: 'register' | 'skip'
+}
+
 export interface SuiteReturn<D extends Domain> {
   test: (name: string, fn: (ctx: TestContext<D>) => Promise<void>) => void
   it: (name: string, fn: (ctx: TestContext<D>) => Promise<void>) => void
@@ -56,6 +61,8 @@ export interface SuiteReturn<D extends Domain> {
   teardown(): Promise<void>
   getTrace(): TraceEntry[]
   getCoverage(): VocabularyCoverage
+  /** Returns what test names would be registered for a given test name. */
+  getPlannedTests(name: string): PlannedTest[]
 }
 
 interface Proxies<D extends Domain> {
@@ -274,6 +281,19 @@ export function suite<D extends Domain>(domain: D, adapter?: Adapter): SuiteRetu
       calledOps.queries,
       calledOps.assertions,
     ),
+    getPlannedTests: (name: string): PlannedTest[] => {
+      if (shouldFilterOutDomain(domain)) {
+        return [{ name, status: 'skip' }]
+      }
+      const adapters = getEffectiveAdapters()
+      if (adapters.length <= 1) {
+        return [{ name, status: 'register' }]
+      }
+      return adapters.map(a => ({
+        name: `${name} [${a.protocol.name}]`,
+        status: 'register' as const,
+      }))
+    },
   }
 }
 

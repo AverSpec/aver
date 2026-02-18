@@ -249,6 +249,32 @@ describe('Scenario Pipeline', () => {
     })
   })
 
+  // --- Persistence ---
+
+  describe('persistence', () => {
+    test('scenarios survive save and reload from disk', async ({ act, assert, query }) => {
+      await act.captureScenario({ behavior: 'persisted behavior' })
+      const id = await query.lastCapturedId()
+
+      await act.reloadFromDisk()
+
+      const count = await query.scenarioCount()
+      expect(count).toBe(1)
+      await assert.scenarioSurvivedRoundTrip({ id, behavior: 'persisted behavior' })
+    })
+
+    test('multiple scenarios persist across reload', async ({ act, query }) => {
+      await act.captureScenario({ behavior: 'first' })
+      await act.captureScenario({ behavior: 'second' })
+      await act.captureScenario({ behavior: 'third' })
+
+      await act.reloadFromDisk()
+
+      const count = await query.scenarioCount()
+      expect(count).toBe(3)
+    })
+  })
+
   // --- Summary queries ---
 
   describe('summary', () => {

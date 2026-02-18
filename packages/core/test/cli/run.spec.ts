@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseRunArgs } from '../../src/cli/run'
+import { parseRunArgs, buildVitestArgs, buildRunEnv } from '../../src/cli/run'
 
 describe('parseRunArgs()', () => {
   it('parses --adapter flag', () => {
@@ -80,5 +80,49 @@ describe('parseRunArgs()', () => {
       '--bail',
       '1',
     ])
+  })
+})
+
+describe('buildVitestArgs()', () => {
+  it('builds run command by default', () => {
+    expect(buildVitestArgs(false, [])).toEqual(['run'])
+  })
+
+  it('builds watch command when watch is true', () => {
+    expect(buildVitestArgs(true, [])).toEqual(['watch'])
+  })
+
+  it('appends passthrough args', () => {
+    expect(buildVitestArgs(false, ['--reporter=json', 'tests/cart.spec.ts'])).toEqual([
+      'run', '--reporter=json', 'tests/cart.spec.ts',
+    ])
+  })
+})
+
+describe('buildRunEnv()', () => {
+  it('sets AVER_ADAPTER when adapter is specified', () => {
+    const env = buildRunEnv({ adapter: 'playwright', watch: false, passthroughArgs: [] }, {})
+    expect(env.AVER_ADAPTER).toBe('playwright')
+  })
+
+  it('sets AVER_DOMAIN when domain is specified', () => {
+    const env = buildRunEnv({ domain: 'Cart', watch: false, passthroughArgs: [] }, {})
+    expect(env.AVER_DOMAIN).toBe('Cart')
+  })
+
+  it('sets AVER_AUTOLOAD_CONFIG when not already set', () => {
+    const env = buildRunEnv({ watch: false, passthroughArgs: [] }, {})
+    expect(env.AVER_AUTOLOAD_CONFIG).toBe('true')
+  })
+
+  it('does not override existing AVER_AUTOLOAD_CONFIG', () => {
+    const env = buildRunEnv({ watch: false, passthroughArgs: [] }, { AVER_AUTOLOAD_CONFIG: 'false' })
+    expect(env.AVER_AUTOLOAD_CONFIG).toBeUndefined()
+  })
+
+  it('omits unspecified flags', () => {
+    const env = buildRunEnv({ watch: false, passthroughArgs: [] }, {})
+    expect(env.AVER_ADAPTER).toBeUndefined()
+    expect(env.AVER_DOMAIN).toBeUndefined()
   })
 })

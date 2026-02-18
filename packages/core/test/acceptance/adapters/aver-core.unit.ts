@@ -8,7 +8,7 @@ import {
   suite as realSuite,
   unit,
 } from '../../../src/index'
-import type { Domain, Adapter, Protocol } from '../../../src/index'
+import type { Domain, Adapter, Protocol, PlannedTest } from '../../../src/index'
 import type { SuiteReturn } from '../../../src/core/suite'
 import type { TraceEntry } from '../../../src/core/trace'
 import { registerAdapter } from '../../../src/core/registry'
@@ -134,6 +134,46 @@ export const averCoreAdapter = implement(averCore, {
       await fn(payload)
     },
 
+    registerSecondAdapter: async (session, { protocolName }) => {
+      const dom = session.extendedDomain ?? session.domain
+      if (!dom) throw new Error('No domain defined')
+
+      const proto: Protocol<null> = {
+        name: protocolName,
+        async setup() { return null },
+        async teardown() {},
+      }
+
+      const actionHandlers: Record<string, any> = {}
+      for (const name of Object.keys(dom.vocabulary.actions)) {
+        actionHandlers[name] = async () => {}
+      }
+      const queryHandlers: Record<string, any> = {}
+      for (const name of Object.keys(dom.vocabulary.queries)) {
+        queryHandlers[name] = async () => `result:${name}`
+      }
+      const assertionHandlers: Record<string, any> = {}
+      for (const name of Object.keys(dom.vocabulary.assertions)) {
+        assertionHandlers[name] = async () => {}
+      }
+
+      const secondAdapter = implement(dom as any, {
+        protocol: proto,
+        actions: actionHandlers,
+        queries: queryHandlers,
+        assertions: assertionHandlers,
+      })
+      registerAdapter(secondAdapter)
+    },
+
+    setDomainFilter: async (_session, { domainName }) => {
+      process.env.AVER_DOMAIN = domainName
+    },
+
+    clearDomainFilter: async () => {
+      delete process.env.AVER_DOMAIN
+    },
+
     executeFailingAssertion: async (session, { name, payload }) => {
       if (!session.suiteInstance) throw new Error('No suite created')
       const adapter = session.adapter!
@@ -192,6 +232,11 @@ export const averCoreAdapter = implement(averCore, {
         queries: cov.queries.called,
         assertions: cov.assertions.called,
       }
+    },
+
+    plannedTestNames: async (session, { testName }) => {
+      if (!session.suiteInstance) throw new Error('No suite created')
+      return session.suiteInstance.getPlannedTests(testName)
     },
 
     uncoveredOperations: async (session) => {
@@ -277,6 +322,24 @@ export const averCoreAdapter = implement(averCore, {
       const called = (cov as any)[kind + 's']?.called as string[]
       if (called && called.includes(name))
         throw new Error(`Expected ${kind} "${name}" to be uncovered`)
+    },
+
+    testIsParameterized: async (session, { testName, protocols }) => {
+      if (!session.suiteInstance) throw new Error('No suite created')
+      const planned = session.suiteInstance.getPlannedTests(testName)
+      const expected = protocols.map(p => `${testName} [${p}]`)
+      const actual = planned.map(p => p.name)
+      if (JSON.stringify(actual.sort()) !== JSON.stringify(expected.sort()))
+        throw new Error(`Expected parameterized names ${JSON.stringify(expected)} but got ${JSON.stringify(actual)}`)
+      if (planned.some(p => p.status !== 'register'))
+        throw new Error(`Expected all planned tests to have status "register"`)
+    },
+
+    testIsSkipped: async (session, { testName }) => {
+      if (!session.suiteInstance) throw new Error('No suite created')
+      const planned = session.suiteInstance.getPlannedTests(testName)
+      if (planned.length !== 1 || planned[0].status !== 'skip')
+        throw new Error(`Expected test "${testName}" to be skipped but got ${JSON.stringify(planned)}`)
     },
   },
 })

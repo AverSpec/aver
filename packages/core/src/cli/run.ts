@@ -42,6 +42,21 @@ export function parseRunArgs(argv: string[]): RunArgs {
   return { adapter, domain, watch, passthroughArgs }
 }
 
+export function buildVitestArgs(watch: boolean, passthroughArgs: string[]): string[] {
+  return [watch ? 'watch' : 'run', ...passthroughArgs]
+}
+
+export function buildRunEnv(
+  args: RunArgs,
+  currentEnv: Record<string, string | undefined>,
+): Record<string, string> {
+  const env: Record<string, string> = {}
+  if (args.adapter) env.AVER_ADAPTER = args.adapter
+  if (args.domain) env.AVER_DOMAIN = args.domain
+  if (!currentEnv.AVER_AUTOLOAD_CONFIG) env.AVER_AUTOLOAD_CONFIG = 'true'
+  return env
+}
+
 export async function runCommand(argv: string[]): Promise<void> {
   if (argv.includes('--help') || argv.includes('-h')) {
     console.log(`
@@ -64,15 +79,8 @@ Examples:
   }
 
   const args = parseRunArgs(argv)
-
-  const vitestArgs = ['run']
-  if (args.watch) vitestArgs[0] = 'watch'
-  vitestArgs.push(...args.passthroughArgs)
-
-  const env: Record<string, string> = {}
-  if (args.adapter) env.AVER_ADAPTER = args.adapter
-  if (args.domain) env.AVER_DOMAIN = args.domain
-  if (!process.env.AVER_AUTOLOAD_CONFIG) env.AVER_AUTOLOAD_CONFIG = 'true'
+  const vitestArgs = buildVitestArgs(args.watch, args.passthroughArgs)
+  const env = buildRunEnv(args, process.env)
 
   const { execFileSync } = await import('node:child_process')
   const npx = process.platform === 'win32' ? 'npx.cmd' : 'npx'

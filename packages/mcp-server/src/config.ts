@@ -52,7 +52,13 @@ export async function loadConfig(configPath: string): Promise<void> {
   await import(pathToFileURL(configPath).href)
 }
 
-export async function reloadConfig(): Promise<void> {
+export async function reloadConfig(loader?: () => Promise<void>): Promise<void> {
+  if (loader) {
+    resetRegistry()
+    await loader()
+    return
+  }
+
   if (storedConfigPath) {
     resetRegistry()
     // Cache-bust the ESM import by appending a unique query param

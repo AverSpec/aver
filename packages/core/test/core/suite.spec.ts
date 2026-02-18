@@ -414,6 +414,67 @@ describe('suite() — vocabulary coverage in callback API', () => {
   })
 })
 
+describe('suite() — getPlannedTests()', () => {
+  beforeEach(() => {
+    resetRegistry()
+    delete process.env.AVER_DOMAIN
+  })
+
+  afterEach(() => {
+    delete process.env.AVER_DOMAIN
+  })
+
+  it('returns single test name for single adapter', () => {
+    const s = suite(cart, cartAdapter)
+    const planned = s.getPlannedTests('add item')
+    expect(planned).toEqual([
+      { name: 'add item', status: 'register' },
+    ])
+  })
+
+  it('returns parameterized names for multiple adapters', () => {
+    const httpProtocol: Protocol<null> = {
+      name: 'http',
+      async setup() { return null },
+      async teardown() {},
+    }
+    const httpAdapter = implement(cart, {
+      protocol: httpProtocol,
+      actions: { addItem: async () => {} },
+      queries: { total: async () => 0 },
+      assertions: { isEmpty: async () => {} },
+    })
+
+    registerAdapter(cartAdapter)
+    registerAdapter(httpAdapter)
+    const s = suite(cart)
+
+    const planned = s.getPlannedTests('add item')
+    expect(planned).toEqual([
+      { name: 'add item [test]', status: 'register' },
+      { name: 'add item [http]', status: 'register' },
+    ])
+  })
+
+  it('returns skip status when AVER_DOMAIN does not match', () => {
+    process.env.AVER_DOMAIN = 'OtherDomain'
+    const s = suite(cart, cartAdapter)
+    const planned = s.getPlannedTests('add item')
+    expect(planned).toEqual([
+      { name: 'add item', status: 'skip' },
+    ])
+  })
+
+  it('returns register status when AVER_DOMAIN matches', () => {
+    process.env.AVER_DOMAIN = 'Cart'
+    const s = suite(cart, cartAdapter)
+    const planned = s.getPlannedTests('add item')
+    expect(planned).toEqual([
+      { name: 'add item', status: 'register' },
+    ])
+  })
+})
+
 describe('getAdapters()', () => {
   beforeEach(() => {
     resetRegistry()

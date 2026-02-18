@@ -21,6 +21,9 @@ export const averCore = defineDomain({
     executeQuery: action<{ name: string }>(),
     executeAssertion: action<{ name: string; payload?: Record<string, unknown> }>(),
     executeFailingAssertion: action<{ name: string; payload?: Record<string, unknown> }>(),
+    registerSecondAdapter: action<{ protocolName: string }>(),
+    setDomainFilter: action<{ domainName: string }>(),
+    clearDomainFilter: action(),
   },
   queries: {
     vocabularyKeys: query<{ actions: string[]; queries: string[]; assertions: string[] }>(),
@@ -29,6 +32,7 @@ export const averCore = defineDomain({
     coveragePercentage: query<number>(),
     coveredOperations: query<{ actions: string[]; queries: string[]; assertions: string[] }>(),
     uncoveredOperations: query<{ actions: string[]; queries: string[]; assertions: string[] }>(),
+    plannedTestNames: query<{ testName: string }, Array<{ name: string; status: string }>>(),
   },
   assertions: {
     hasVocabulary: assertion<{ actions: string[]; queries: string[]; assertions: string[] }>(),
@@ -40,5 +44,7 @@ export const averCore = defineDomain({
     coverageIsPercent: assertion<{ percentage: number }>(),
     operationIsCovered: assertion<{ kind: string; name: string }>(),
     operationIsUncovered: assertion<{ kind: string; name: string }>(),
+    testIsParameterized: assertion<{ testName: string; protocols: string[] }>(),
+    testIsSkipped: assertion<{ testName: string }>(),
   },
 })

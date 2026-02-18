@@ -27,28 +27,69 @@ function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
+interface ScenarioSummary {
+  captured: number
+  characterized: number
+  mapped: number
+  specified: number
+  implemented: number
+  total: number
+  openQuestions: number
+}
+
+interface Phase {
+  name: string
+  description: string
+  recommendedActions: string[]
+}
+
+interface ScenarioRow {
+  id: string
+  stage: string
+  behavior: string
+}
+
+export function formatSummary(summary: ScenarioSummary, phase: Phase, projectId: string): string {
+  const lines = [
+    `Workspace: ${projectId}`,
+    `Phase: ${capitalize(phase.name)} (${phase.description})`,
+    '',
+    `  Captured: ${summary.captured}`,
+    `  Characterized: ${summary.characterized}`,
+    `  Mapped: ${summary.mapped}`,
+    `  Specified: ${summary.specified}`,
+    `  Implemented: ${summary.implemented}`,
+    `  Total: ${summary.total}`,
+    `  Open questions: ${summary.openQuestions}`,
+    '',
+    'Recommended actions:',
+    ...phase.recommendedActions.map(a => `  - ${a}`),
+  ]
+  return lines.join('\n')
+}
+
+export function formatScenarioTable(scenarios: ScenarioRow[]): string {
+  if (scenarios.length === 0) return 'No scenarios found.'
+
+  const lines = [
+    `${'ID'.padEnd(10)} ${'Stage'.padEnd(14)} Behavior`,
+    `${''.padEnd(10, '-')} ${''.padEnd(14, '-')} ${''.padEnd(40, '-')}`,
+  ]
+  for (const scenario of scenarios) {
+    const behavior = scenario.behavior.length > 60 ? scenario.behavior.slice(0, 57) + '...' : scenario.behavior
+    lines.push(`${scenario.id.padEnd(10)} ${scenario.stage.padEnd(14)} ${behavior}`)
+  }
+  lines.push(`\n${scenarios.length} scenario(s)`)
+  return lines.join('\n')
+}
+
 async function statusCommand(store: WorkspaceStore): Promise<void> {
   const ops = new WorkspaceOps(store)
   const summary = ops.getScenarioSummary()
   const workspace = store.load()
   const phase = detectPhase(workspace)
   const projectId = basename(process.cwd())
-
-  console.log(`Workspace: ${projectId}`)
-  console.log(`Phase: ${capitalize(phase.name)} (${phase.description})`)
-  console.log()
-  console.log(`  Captured: ${summary.captured}`)
-  console.log(`  Characterized: ${summary.characterized}`)
-  console.log(`  Mapped: ${summary.mapped}`)
-  console.log(`  Specified: ${summary.specified}`)
-  console.log(`  Implemented: ${summary.implemented}`)
-  console.log(`  Total: ${summary.total}`)
-  console.log(`  Open questions: ${summary.openQuestions}`)
-  console.log()
-  console.log('Recommended actions:')
-  for (const action of phase.recommendedActions) {
-    console.log(`  - ${action}`)
-  }
+  console.log(formatSummary(summary, phase, projectId))
 }
 
 async function captureCommand(store: WorkspaceStore, args: string[]): Promise<void> {
@@ -141,21 +182,7 @@ async function scenariosCommand(store: WorkspaceStore, args: string[]): Promise<
     stage: values.stage as Stage | undefined,
     keyword: values.keyword,
   })
-
-  if (scenarios.length === 0) {
-    console.log('No scenarios found.')
-    return
-  }
-
-  console.log(`${'ID'.padEnd(10)} ${'Stage'.padEnd(14)} Behavior`)
-  console.log(`${''.padEnd(10, '-')} ${''.padEnd(14, '-')} ${''.padEnd(40, '-')}`)
-
-  for (const scenario of scenarios) {
-    const behavior = scenario.behavior.length > 60 ? scenario.behavior.slice(0, 57) + '...' : scenario.behavior
-    console.log(`${scenario.id.padEnd(10)} ${scenario.stage.padEnd(14)} ${behavior}`)
-  }
-
-  console.log(`\n${scenarios.length} scenario(s)`)
+  console.log(formatScenarioTable(scenarios))
 }
 
 async function exportCommand(store: WorkspaceStore, args: string[]): Promise<void> {

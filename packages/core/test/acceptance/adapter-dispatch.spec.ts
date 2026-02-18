@@ -59,4 +59,39 @@ describe('Adapter dispatch and suite proxy', () => {
 
     await assert.traceContains({ kind: 'assertion', name: 'isValid', status: 'pass' })
   })
+
+  // --- Multi-adapter dispatch ---
+
+  test('parameterizes test names for multiple adapters', async ({ act, assert }) => {
+    await act.defineDomain({
+      name: 'MultiProto',
+      actions: ['doSomething'],
+      queries: [],
+      assertions: [],
+    })
+    await act.implementDomain()
+    await act.registerAdapter()
+    await act.registerSecondAdapter({ protocolName: 'http' })
+    await act.createSuite()
+
+    await assert.testIsParameterized({ testName: 'my test', protocols: ['test-inner', 'http'] })
+  })
+
+  // --- Domain filtering ---
+
+  test('skips tests when domain filter does not match', async ({ act, assert }) => {
+    await act.defineDomain({
+      name: 'Filtered',
+      actions: ['doSomething'],
+      queries: [],
+      assertions: [],
+    })
+    await act.implementDomain()
+    await act.registerAdapter()
+    await act.createSuite()
+
+    await act.setDomainFilter({ domainName: 'OtherDomain' })
+    await assert.testIsSkipped({ testName: 'my test' })
+    await act.clearDomainFilter()
+  })
 })

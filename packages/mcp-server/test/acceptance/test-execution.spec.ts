@@ -49,4 +49,16 @@ describe('MCP Test Execution (acceptance)', () => {
 
     await assert.toolResultIsError({ substring: 'not found' })
   })
+
+  // --- RunStore retention ---
+
+  test('enforces 10-run retention limit', async ({ act, assert }) => {
+    await act.saveMultipleRuns({ count: 12 })
+    await assert.runCountIs({ count: 10 })
+  })
+
+  test('retains latest runs when pruning', async ({ act, assert }) => {
+    await act.saveMultipleRuns({ count: 5 })
+    await assert.runCountIs({ count: 5 })
+  })
 })

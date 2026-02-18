@@ -20,6 +20,7 @@ export const averWorkspace = defineDomain({
       approvalBaseline?: string
     }>(),
     importScenarios: action<{ json: string }>(),
+    reloadFromDisk: action(),
   },
   queries: {
     scenario: query<
@@ -40,6 +41,7 @@ export const averWorkspace = defineDomain({
     exportedJson: query<void, string>(),
     lastCapturedId: query<void, string>(),
     lastQuestionId: query<void, string>(),
+    scenarioCount: query<void, number>(),
   },
   assertions: {
     scenarioHasStage: assertion<{ id: string; stage: string }>(),
@@ -56,6 +58,7 @@ export const averWorkspace = defineDomain({
     advanceCandidateCountIs: assertion<{ count: number }>(),
     markdownContains: assertion<{ text: string }>(),
     importResultIs: assertion<{ added: number; skipped: number }>(),
+    scenarioSurvivedRoundTrip: assertion<{ id: string; behavior: string }>(),
     throwsError: assertion<{ message: string }>(),
   },
 })

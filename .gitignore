@@ -5,6 +5,8 @@ dist/
 .aver/
 .mcp.json
 .claude/settings.local.json
+.claude/settings.json
+.claude-plugin/
 test-results/
 docs/_site/
 docs/plans/

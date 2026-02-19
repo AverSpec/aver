@@ -9,6 +9,7 @@ export default defineConfig({
       'packages/protocol-http',
       'packages/protocol-playwright',
       'packages/workspace',
+      'packages/agent',
       'examples/task-board',
     ],
     exclude: ['.worktrees/**'],

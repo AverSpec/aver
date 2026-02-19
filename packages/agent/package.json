@@ -1,0 +1,49 @@
+{
+  "name": "@aver/agent",
+  "version": "0.1.0",
+  "description": "AI agent platform for domain-driven development with Aver",
+  "type": "module",
+  "license": "MIT",
+  "author": "Nate Jackson",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/njackson/aver.git",
+    "directory": "packages/agent"
+  },
+  "homepage": "https://github.com/njackson/aver",
+  "bugs": "https://github.com/njackson/aver/issues",
+  "keywords": ["testing", "aver", "agent", "ai-agent", "tdd"],
+  "publishConfig": { "access": "public" },
+  "engines": { "node": ">=18.0.0" },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "pnpm run build"
+  },
+  "dependencies": {
+    "@aver/workspace": "workspace:^",
+    "@anthropic-ai/claude-agent-sdk": "^0.1.0"
+  },
+  "peerDependencies": {
+    "@aver/core": "workspace:^"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0",
+    "@types/node": "^22.0.0",
+    "@aver/core": "workspace:^"
+  }
+}

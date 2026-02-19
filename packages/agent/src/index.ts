@@ -18,3 +18,7 @@ export type {
 } from './types.js'
 
 export { DEFAULT_CONFIG } from './types.js'
+
+export { SessionStore } from './memory/session.js'
+export { EventLog } from './memory/events.js'
+export { ArtifactStore } from './memory/artifacts.js'

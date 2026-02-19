@@ -38,9 +38,7 @@ export class ContextCurator {
     this.checkpointManager = new CheckpointManager(this.artifactStore, {
       rollupThreshold: options.rollupThreshold,
     })
-    this.storyArchiver = new StoryArchiver(this.artifactStore, {
-      rollupThreshold: options.rollupThreshold,
-    })
+    this.storyArchiver = new StoryArchiver(this.artifactStore)
   }
 
   getArtifactStore(): ArtifactStore {

@@ -13,7 +13,7 @@ describe('StoryArchiver', () => {
   beforeEach(async () => {
     dir = await mkdtemp(join(tmpdir(), 'aver-stories-'))
     store = new ArtifactStore(dir)
-    archiver = new StoryArchiver(store, { rollupThreshold: 3 })
+    archiver = new StoryArchiver(store)
   })
 
   afterEach(async () => {

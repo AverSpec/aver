@@ -16,6 +16,8 @@ export class CheckpointManager {
   async createCheckpoint(summary: string): Promise<void> {
     const index = await this.store.getIndex()
     const checkpoints = index.filter((a) => a.type === 'checkpoint').sort((a, b) => a.name.localeCompare(b.name))
+    // Sequence resets after rollup since archived checkpoints are removed from the index.
+    // This is safe because rollup also moves checkpoint files to archive/.
     const seq = checkpoints.length
     const name = `checkpoint-${String(seq).padStart(3, '0')}`
 

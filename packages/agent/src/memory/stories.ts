@@ -1,16 +1,10 @@
 import type { ArtifactStore } from './artifacts.js'
 
-interface StoryArchiverOptions {
-  rollupThreshold: number
-}
-
 export class StoryArchiver {
   private readonly store: ArtifactStore
-  private readonly rollupThreshold: number
 
-  constructor(store: ArtifactStore, options: StoryArchiverOptions) {
+  constructor(store: ArtifactStore) {
     this.store = store
-    this.rollupThreshold = options.rollupThreshold
   }
 
   async archiveStory(

@@ -49,13 +49,13 @@ Your job is to lock in existing behavior by writing tests that capture what the 
 The goal is a safety net before making changes.`,
 }
 
-export function buildWorkerPrompt(input: WorkerInput, skill: string): PromptParts {
-  const system = buildSystemPrompt(skill)
+export function buildWorkerPrompt(input: WorkerInput, skill: string, skillContent?: string): PromptParts {
+  const system = buildSystemPrompt(skill, skillContent)
   const user = buildUserPrompt(input)
   return { system, user }
 }
 
-function buildSystemPrompt(skill: string): string {
+function buildSystemPrompt(skill: string, skillContent?: string): string {
   const parts: string[] = []
 
   parts.push(`You are a worker agent for Aver, a domain-driven development platform.
@@ -86,9 +86,9 @@ When you are done, your final message MUST include a JSON block with your result
 }
 \`\`\``)
 
-  const skillInstructions = SKILL_INSTRUCTIONS[skill]
-  if (skillInstructions) {
-    parts.push(skillInstructions)
+  const instructions = skillContent ?? SKILL_INSTRUCTIONS[skill]
+  if (instructions) {
+    parts.push(instructions)
   }
 
   return parts.join('\n\n')

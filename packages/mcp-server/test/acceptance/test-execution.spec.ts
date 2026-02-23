@@ -1,4 +1,4 @@
-import { describe, beforeEach } from 'vitest'
+import { describe, beforeEach, expect } from 'vitest'
 import { suite, registerAdapter, resetRegistry } from '@aver/core'
 import { averMcp } from './domains/aver-mcp'
 import { averMcpAdapter } from './adapters/aver-mcp.unit'
@@ -25,10 +25,8 @@ describe('MCP Test Execution (acceptance)', () => {
     })
 
     const details = await query.failureDetails()
-    if (details.failures[0].testName !== 'fails')
-      throw new Error(`Expected 'fails', got '${details.failures[0].testName}'`)
-    if (details.failures[0].domain !== 'Cart')
-      throw new Error(`Expected 'Cart', got '${details.failures[0].domain}'`)
+    expect(details.failures[0].testName).toBe('fails')
+    expect(details.failures[0].domain).toBe('Cart')
   })
 
   test('retrieves test trace by name', async ({ act, query }) => {
@@ -42,18 +40,16 @@ describe('MCP Test Execution (acceptance)', () => {
     })
 
     const trace = await query.testTrace({ testName: 'my-test' })
-    if (!trace) throw new Error('Expected trace but got null')
-    if (trace.testName !== 'my-test')
-      throw new Error(`Expected 'my-test', got '${trace.testName}'`)
-    if (trace.status !== 'pass')
-      throw new Error(`Expected 'pass', got '${trace.status}'`)
+    expect(trace).not.toBeNull()
+    expect(trace!.testName).toBe('my-test')
+    expect(trace!.status).toBe('pass')
   })
 
   test('returns null trace for unknown test', async ({ act, query }) => {
     await act.saveTestRun({ results: [] })
 
     const trace = await query.testTrace({ testName: 'nonexistent' })
-    if (trace !== null) throw new Error(`Expected null but got ${JSON.stringify(trace)}`)
+    expect(trace).toBeNull()
   })
 
   // --- RunStore retention ---

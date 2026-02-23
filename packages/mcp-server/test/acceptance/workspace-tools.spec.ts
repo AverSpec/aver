@@ -1,4 +1,4 @@
-import { describe, beforeEach } from 'vitest'
+import { describe, beforeEach, expect } from 'vitest'
 import { suite, registerAdapter, resetRegistry } from '@aver/core'
 import { averMcp } from './domains/aver-mcp'
 import { averMcpAdapter } from './adapters/aver-mcp.unit'
@@ -19,16 +19,12 @@ describe('MCP Workspace Tools (acceptance)', () => {
       await act.captureScenario({ behavior: 'user logs in', story: 'Auth' })
 
       const captured = await query.lastCapturedScenario()
-      if (captured.stage !== 'captured')
-        throw new Error(`Expected 'captured', got '${captured.stage}'`)
-      if (captured.behavior !== 'user logs in')
-        throw new Error(`Expected 'user logs in', got '${captured.behavior}'`)
+      expect(captured.stage).toBe('captured')
+      expect(captured.behavior).toBe('user logs in')
 
       const summary = await query.scenarioSummary()
-      if (summary.captured !== 1)
-        throw new Error(`Expected 1 captured, got ${summary.captured}`)
-      if (summary.total !== 1)
-        throw new Error(`Expected 1 total, got ${summary.total}`)
+      expect(summary.captured).toBe(1)
+      expect(summary.total).toBe(1)
     })
 
     test('advances a scenario to the next stage', async ({ act, query, assert }) => {
@@ -67,8 +63,7 @@ describe('MCP Workspace Tools (acceptance)', () => {
 
       await act.addQuestion({ scenarioId: scenario.id, text: 'What about edge cases?' })
       const question = await query.lastAddedQuestion()
-      if (question.text !== 'What about edge cases?')
-        throw new Error(`Expected 'What about edge cases?', got '${question.text}'`)
+      expect(question.text).toBe('What about edge cases?')
 
       await act.resolveQuestion({ scenarioId: scenario.id, questionId: question.id, answer: 'Handle them' })
       await assert.questionIsResolved({ scenarioId: scenario.id, questionId: question.id })
@@ -96,10 +91,8 @@ describe('MCP Workspace Tools (acceptance)', () => {
       await act.advanceScenario({ id: first.id, rationale: 'r', promotedBy: 'p' })
 
       const captured = await query.scenarios({ stage: 'captured' })
-      if (captured.length !== 1)
-        throw new Error(`Expected 1 captured scenario, got ${captured.length}`)
-      if (captured[0].behavior !== 'second')
-        throw new Error(`Expected 'second', got '${captured[0].behavior}'`)
+      expect(captured).toHaveLength(1)
+      expect(captured[0].behavior).toBe('second')
     })
 
     test('returns advance candidates without open questions', async ({ act, query }) => {
@@ -107,14 +100,12 @@ describe('MCP Workspace Tools (acceptance)', () => {
       const scenario = await query.lastCapturedScenario()
 
       const before = await query.advanceCandidates()
-      if (before.length !== 1)
-        throw new Error(`Expected 1 candidate, got ${before.length}`)
+      expect(before).toHaveLength(1)
 
       await act.addQuestion({ scenarioId: scenario.id, text: 'Blocking?' })
 
       const after = await query.advanceCandidates()
-      if (after.length !== 0)
-        throw new Error(`Expected 0 candidates, got ${after.length}`)
+      expect(after).toHaveLength(0)
     })
   })
 
@@ -133,10 +124,8 @@ describe('MCP Workspace Tools (acceptance)', () => {
       await act.captureScenario({ behavior: 'exportable', story: 'Export' })
 
       const md = await query.exportedScenarios({ format: 'markdown' })
-      if (!md.includes('exportable'))
-        throw new Error('Expected markdown to contain "exportable"')
-      if (!md.includes('Captured'))
-        throw new Error('Expected markdown to contain "Captured"')
+      expect(md).toContain('exportable')
+      expect(md).toContain('Captured')
     })
 
     test('exports and imports JSON with deduplication', async ({ act, query, assert }) => {

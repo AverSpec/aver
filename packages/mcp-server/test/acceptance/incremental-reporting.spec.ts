@@ -1,4 +1,4 @@
-import { describe, beforeEach } from 'vitest'
+import { describe, beforeEach, expect } from 'vitest'
 import { suite, registerAdapter, resetRegistry } from '@aver/core'
 import { averMcp } from './domains/aver-mcp'
 import { averMcpAdapter } from './adapters/aver-mcp.unit'
@@ -32,15 +32,13 @@ describe('MCP Incremental Reporting (acceptance)', () => {
     })
 
     const diff = await query.runDiff()
-    if (!diff) throw new Error('Expected diff but got null')
-    if (diff.newlyFailing[0] !== 'test-a')
-      throw new Error(`Expected newlyFailing to contain 'test-a', got ${JSON.stringify(diff.newlyFailing)}`)
-    if (diff.newlyPassing[0] !== 'test-b')
-      throw new Error(`Expected newlyPassing to contain 'test-b', got ${JSON.stringify(diff.newlyPassing)}`)
+    expect(diff).not.toBeNull()
+    expect(diff!.newlyFailing[0]).toBe('test-a')
+    expect(diff!.newlyPassing[0]).toBe('test-b')
   })
 
   test('returns null when fewer than 2 runs exist', async ({ query }) => {
     const diff = await query.runDiff()
-    if (diff !== null) throw new Error(`Expected null but got ${JSON.stringify(diff)}`)
+    expect(diff).toBeNull()
   })
 })

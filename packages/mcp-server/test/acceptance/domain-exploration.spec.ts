@@ -1,4 +1,4 @@
-import { describe, beforeEach } from 'vitest'
+import { describe, beforeEach, expect } from 'vitest'
 import { suite, registerAdapter, resetRegistry } from '@aver/core'
 import { averMcp } from './domains/aver-mcp'
 import { averMcpAdapter } from './adapters/aver-mcp.unit'
@@ -23,10 +23,10 @@ describe('MCP Domain Exploration (acceptance)', () => {
     })
 
     const domains = await query.domainList()
-    if (domains.length !== 1) throw new Error(`Expected 1 domain, got ${domains.length}`)
-    if (domains[0].name !== 'Cart') throw new Error(`Expected 'Cart', got '${domains[0].name}'`)
-    if (domains[0].actionCount !== 2) throw new Error(`Expected 2 actions, got ${domains[0].actionCount}`)
-    if (domains[0].queryCount !== 1) throw new Error(`Expected 1 query, got ${domains[0].queryCount}`)
+    expect(domains).toHaveLength(1)
+    expect(domains[0].name).toBe('Cart')
+    expect(domains[0].actionCount).toBe(2)
+    expect(domains[0].queryCount).toBe(1)
   })
 
   test('gets vocabulary for a specific domain', async ({ act, query }) => {
@@ -38,15 +38,15 @@ describe('MCP Domain Exploration (acceptance)', () => {
     })
 
     const vocab = await query.domainVocabulary({ name: 'Auth' })
-    if (!vocab) throw new Error('Expected vocabulary but got null')
-    if (vocab.name !== 'Auth') throw new Error(`Expected 'Auth', got '${vocab.name}'`)
-    if (vocab.actions.length !== 2) throw new Error(`Expected 2 actions, got ${vocab.actions.length}`)
-    if (vocab.queries.length !== 1) throw new Error(`Expected 1 query, got ${vocab.queries.length}`)
+    expect(vocab).not.toBeNull()
+    expect(vocab!.name).toBe('Auth')
+    expect(vocab!.actions).toHaveLength(2)
+    expect(vocab!.queries).toHaveLength(1)
   })
 
   test('returns null for unknown domain vocabulary', async ({ query }) => {
     const result = await query.domainVocabulary({ name: 'NonExistent' })
-    if (result !== null) throw new Error(`Expected null but got ${JSON.stringify(result)}`)
+    expect(result).toBeNull()
   })
 
   test('lists all registered adapters', async ({ act, query }) => {
@@ -59,11 +59,11 @@ describe('MCP Domain Exploration (acceptance)', () => {
 
     const adapters = await query.adapterList()
     const cartAdapter = adapters.find(a => a.domainName === 'Cart')
-    if (!cartAdapter) throw new Error(`Expected adapter for 'Cart' but found: ${adapters.map(a => a.domainName).join(', ')}`)
+    expect(cartAdapter).toBeDefined()
   })
 
   test('returns null for project context when no config loaded', async ({ query }) => {
     const result = await query.projectContext()
-    if (result !== null) throw new Error(`Expected null but got ${JSON.stringify(result)}`)
+    expect(result).toBeNull()
   })
 })

@@ -1,4 +1,4 @@
-import { describe, beforeEach } from 'vitest'
+import { describe, beforeEach, expect } from 'vitest'
 import { suite, registerAdapter, resetRegistry } from '@aver/core'
 import { averMcp } from './domains/aver-mcp'
 import { averMcpAdapter } from './adapters/aver-mcp.unit'
@@ -16,10 +16,8 @@ describe('MCP Scaffolding (acceptance)', () => {
 
   test('generates a domain structure template from a description', async ({ query }) => {
     const structure = await query.domainStructure({ description: 'user authentication' })
-    if (structure.suggestedName !== 'userAuthentication')
-      throw new Error(`Expected 'userAuthentication', got '${structure.suggestedName}'`)
-    if ((structure.actions as any[])[0].name !== 'create')
-      throw new Error(`Expected first action to be 'create', got '${(structure.actions as any[])[0].name}'`)
+    expect(structure.suggestedName).toBe('userAuthentication')
+    expect((structure.actions as any[])[0].name).toBe('create')
   })
 
   test('describes adapter structure for an existing domain', async ({ act, query }) => {
@@ -31,15 +29,13 @@ describe('MCP Scaffolding (acceptance)', () => {
     })
 
     const structure = await query.adapterStructure({ domain: 'Cart', protocol: 'test-inner' })
-    if (!structure) throw new Error('Expected structure but got null')
-    if (structure.domain !== 'Cart')
-      throw new Error(`Expected 'Cart', got '${structure.domain}'`)
-    if (structure.handlers.actions[0] !== 'addItem')
-      throw new Error(`Expected 'addItem', got '${structure.handlers.actions[0]}'`)
+    expect(structure).not.toBeNull()
+    expect(structure!.domain).toBe('Cart')
+    expect(structure!.handlers.actions[0]).toBe('addItem')
   })
 
   test('returns null for unknown domain adapter structure', async ({ query }) => {
     const result = await query.adapterStructure({ domain: 'Unknown', protocol: 'direct' })
-    if (result !== null) throw new Error(`Expected null but got ${JSON.stringify(result)}`)
+    expect(result).toBeNull()
   })
 })

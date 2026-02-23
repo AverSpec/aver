@@ -41,3 +41,4 @@ export type { PermissionLevel, PromptUser, HookInput, HookResult, HookFn } from 
 export { extractJson } from './parsing.js'
 export { parseAgentArgs, printAgentHelp } from './cli.js'
 export type { AgentArgs } from './cli.js'
+export { AverAgent } from './domain.js'

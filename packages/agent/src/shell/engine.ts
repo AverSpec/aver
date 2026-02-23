@@ -2,11 +2,14 @@ import { WorkspaceStore, WorkspaceOps } from '@aver/workspace'
 import { ContextCurator } from '../memory/curator.js'
 import { SessionStore } from '../memory/session.js'
 import { dispatchSupervisor } from '../supervisor/dispatch.js'
+import type { SupervisorResult } from '../supervisor/dispatch.js'
 import { dispatchWorker } from '../worker/dispatch.js'
+import type { WorkerDispatchResult } from '../worker/dispatch.js'
 import type {
   AgentConfig,
   AgentSession,
   SupervisorDecision,
+  SupervisorInput,
   WorkerDispatch,
   WorkerResult,
   AgentEvent,
@@ -15,11 +18,17 @@ import type {
 
 const DEFAULT_MAX_CYCLE_DEPTH = 50
 
+export interface Dispatchers {
+  supervisor: (input: SupervisorInput, config: AgentConfig) => Promise<SupervisorResult>
+  worker: (dispatch: WorkerDispatch, artifacts: ArtifactContent[], config: AgentConfig) => Promise<WorkerDispatchResult>
+}
+
 export interface EngineOptions {
   agentPath: string
   workspacePath: string
   projectId: string
   config: AgentConfig
+  dispatchers?: Dispatchers
   onMessage?: (message: string) => void
   onQuestion?: (question: string, options?: string[]) => Promise<string>
 }
@@ -29,6 +38,8 @@ export class CycleEngine {
   private readonly curator: ContextCurator
   private readonly workspaceOps: WorkspaceOps
   private readonly config: AgentConfig
+  private readonly dispatchSupervisorFn: Dispatchers['supervisor']
+  private readonly dispatchWorkerFn: Dispatchers['worker']
   private readonly onMessage: (message: string) => void
   private readonly onQuestion?: (question: string, options?: string[]) => Promise<string>
   private readonly maxCycleDepth: number
@@ -42,6 +53,8 @@ export class CycleEngine {
     const store = new WorkspaceStore(options.workspacePath, options.projectId)
     this.workspaceOps = new WorkspaceOps(store)
     this.config = options.config
+    this.dispatchSupervisorFn = options.dispatchers?.supervisor ?? dispatchSupervisor
+    this.dispatchWorkerFn = options.dispatchers?.worker ?? dispatchWorker
     this.onMessage = options.onMessage ?? (() => {})
     this.onQuestion = options.onQuestion
     this.maxCycleDepth = options.config.cycles.maxCycleDepth ?? DEFAULT_MAX_CYCLE_DEPTH
@@ -97,7 +110,7 @@ export class CycleEngine {
     let decision: SupervisorDecision
     let tokenUsage: number
     try {
-      const result = await dispatchSupervisor(input, this.config)
+      const result = await this.dispatchSupervisorFn(input, this.config)
       decision = result.decision
       tokenUsage = result.tokenUsage
     } catch (err) {
@@ -179,7 +192,7 @@ export class CycleEngine {
     let tokenUsage: number
     try {
       const artifacts = await this.curator.loadArtifacts(dispatch.artifacts)
-      const response = await dispatchWorker(dispatch, artifacts, this.config)
+      const response = await this.dispatchWorkerFn(dispatch, artifacts, this.config)
       result = response.result
       tokenUsage = response.tokenUsage
     } catch (err) {
@@ -210,7 +223,7 @@ export class CycleEngine {
       let tokenUsage: number
       try {
         const artifacts = await this.curator.loadArtifacts(dispatch.artifacts)
-        const response = await dispatchWorker(dispatch, artifacts, this.config)
+        const response = await this.dispatchWorkerFn(dispatch, artifacts, this.config)
         result = response.result
         tokenUsage = response.tokenUsage
       } catch (err) {

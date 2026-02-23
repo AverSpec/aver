@@ -3,17 +3,10 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import {
   implement,
-  defineDomain as realDefineDomain,
-  action as realAction,
-  query as realQuery,
-  assertion as realAssertion,
   unit,
   registerAdapter,
-  resetRegistry,
 } from '@aver/core'
-import type { Protocol } from '@aver/core'
 import { averMcp } from '../domains/aver-mcp'
-import { reloadConfig } from '../../../src/config'
 import {
   listDomainsHandler,
   getDomainVocabularyHandler,
@@ -45,15 +38,29 @@ import {
   exportScenariosHandler,
   importScenariosHandler,
 } from '../../../src/tools/workspace'
+import type { SharedSessionFields } from './shared-fixtures'
+import {
+  registerTestDomainAction,
+  saveTestRunAction,
+  saveMultipleRunsAction,
+  reloadConfigAction,
+  discoverDomainsAction,
+  resetStateAction,
+  queryRunCount,
+  queryLastCapturedScenario,
+  queryLastAddedQuestion,
+  queryImportResult,
+  assertRunCountIs,
+  assertScenarioHasStage,
+  assertScenarioHasRegressionRationale,
+  assertQuestionIsResolved,
+  assertScenarioHasDomainOperation,
+  assertImportResultIs,
+  assertWorkflowPhaseIs,
+  assertScenarioCountIs,
+} from './shared-fixtures'
 
-interface McpUnitSession {
-  runStore: RunStore
-  workspaceBasePath: string
-  workspaceProjectId: string
-  lastCapturedScenario?: { id: string; stage: string; behavior: string }
-  lastAddedQuestion?: { id: string; text: string }
-  lastImportResult?: { added: number; skipped: number }
-}
+interface McpUnitSession extends SharedSessionFields {}
 
 export const averMcpAdapter = implement(averMcp, {
   protocol: unit<McpUnitSession>(() => {
@@ -68,100 +75,12 @@ export const averMcpAdapter = implement(averMcp, {
 
   actions: {
     // --- Fixtures ---
-    registerTestDomain: async (_session, { name, actions, queries, assertions }) => {
-      const actionMarkers: Record<string, any> = {}
-      for (const a of actions) actionMarkers[a] = realAction()
-
-      const queryMarkers: Record<string, any> = {}
-      for (const q of queries) queryMarkers[q] = realQuery()
-
-      const assertionMarkers: Record<string, any> = {}
-      for (const a of assertions) assertionMarkers[a] = realAssertion()
-
-      const domain = realDefineDomain({
-        name,
-        actions: actionMarkers,
-        queries: queryMarkers,
-        assertions: assertionMarkers,
-      })
-
-      const proto: Protocol<null> = {
-        name: 'test-inner',
-        async setup() { return null },
-        async teardown() {},
-      }
-
-      const adapter = implement(domain as any, {
-        protocol: proto,
-        actions: Object.fromEntries(Object.keys(actionMarkers).map(k => [k, async () => {}])),
-        queries: Object.fromEntries(Object.keys(queryMarkers).map(k => [k, async () => `result:${k}`])),
-        assertions: Object.fromEntries(Object.keys(assertionMarkers).map(k => [k, async () => {}])),
-      })
-
-      registerAdapter(adapter)
-    },
-
-    saveTestRun: async (session, { results }) => {
-      session.runStore.save({
-        timestamp: new Date().toISOString(),
-        results,
-      })
-    },
-
-    saveMultipleRuns: async (session, { count }) => {
-      for (let i = 0; i < count; i++) {
-        session.runStore.save({
-          timestamp: new Date(Date.now() + i * 1000).toISOString(),
-          results: [{ testName: `test-${i}`, domain: 'Test', status: 'pass', trace: [] }],
-        })
-      }
-    },
-
-    reloadConfig: async (_session, { domainNames }) => {
-      await reloadConfig(async () => {
-        for (const name of domainNames) {
-          const domain = realDefineDomain({
-            name,
-            actions: {},
-            queries: {},
-            assertions: {},
-          })
-          registerAdapter(implement(domain as any, {
-            protocol: { name: 'test-inner', async setup() { return null }, async teardown() {} } as any,
-            actions: {},
-            queries: {},
-            assertions: {},
-          }))
-        }
-      })
-    },
-
-    discoverDomains: async (_session, { domainNames }) => {
-      resetRegistry()
-      for (const name of domainNames) {
-        const domain = realDefineDomain({
-          name,
-          actions: {},
-          queries: {},
-          assertions: {},
-        })
-        registerAdapter(implement(domain as any, {
-          protocol: { name: 'test-inner', async setup() { return null }, async teardown() {} } as any,
-          actions: {},
-          queries: {},
-          assertions: {},
-        }))
-      }
-      registerAdapter(averMcpAdapter)
-    },
-
-    resetState: async (session) => {
-      resetRegistry()
-      registerAdapter(averMcpAdapter)
-      session.lastCapturedScenario = undefined
-      session.lastAddedQuestion = undefined
-      session.lastImportResult = undefined
-    },
+    registerTestDomain: async (_session, input) => registerTestDomainAction(_session, input),
+    saveTestRun: async (session, input) => saveTestRunAction(session, input),
+    saveMultipleRuns: async (session, input) => saveMultipleRunsAction(session, input),
+    reloadConfig: async (_session, input) => reloadConfigAction(_session, input),
+    discoverDomains: async (_session, input) => discoverDomainsAction(_session, input, [averMcpAdapter]),
+    resetState: async (session) => resetStateAction(session, [averMcpAdapter]),
 
     // --- System actions ---
     captureScenario: async (session, input) => {
@@ -268,28 +187,15 @@ export const averMcpAdapter = implement(averMcp, {
     },
 
     // --- Test-support queries ---
-    runCount: async (session) => {
-      return session.runStore.listRuns().length
-    },
+    runCount: async (session) => queryRunCount(session),
 
     registeredDomainCount: async () => {
       return listDomainsHandler().length
     },
 
-    lastCapturedScenario: async (session) => {
-      if (!session.lastCapturedScenario) throw new Error('No scenario has been captured yet')
-      return session.lastCapturedScenario
-    },
-
-    lastAddedQuestion: async (session) => {
-      if (!session.lastAddedQuestion) throw new Error('No question has been added yet')
-      return session.lastAddedQuestion
-    },
-
-    importResult: async (session) => {
-      if (!session.lastImportResult) throw new Error('No import has been performed yet')
-      return session.lastImportResult
-    },
+    lastCapturedScenario: async (session) => queryLastCapturedScenario(session),
+    lastAddedQuestion: async (session) => queryLastAddedQuestion(session),
+    importResult: async (session) => queryImportResult(session),
   },
 
   assertions: {
@@ -300,62 +206,13 @@ export const averMcpAdapter = implement(averMcp, {
         throw new Error(`Expected domain "${name}" to be registered but found: ${domains.map((d: any) => d.name).join(', ')}`)
     },
 
-    runCountIs: async (session, { count }) => {
-      const actual = session.runStore.listRuns().length
-      if (actual !== count)
-        throw new Error(`Expected ${count} runs but got ${actual}`)
-    },
-
-    scenarioHasStage: async (session, { id, stage }) => {
-      const scenarios = await getScenariosHandler({}, session.workspaceBasePath, session.workspaceProjectId)
-      const scenario = scenarios.find(s => s.id === id)
-      if (!scenario) throw new Error(`Scenario "${id}" not found`)
-      if (scenario.stage !== stage)
-        throw new Error(`Expected scenario "${id}" to have stage "${stage}" but got "${scenario.stage}"`)
-    },
-
-    scenarioHasRegressionRationale: async (session, { id, rationale }) => {
-      const scenarios = await getScenariosHandler({}, session.workspaceBasePath, session.workspaceProjectId)
-      const scenario = scenarios.find(s => s.id === id)
-      if (!scenario) throw new Error(`Scenario "${id}" not found`)
-      if (scenario.regressionRationale !== rationale)
-        throw new Error(`Expected regression rationale "${rationale}" but got "${scenario.regressionRationale}"`)
-    },
-
-    questionIsResolved: async (session, { scenarioId, questionId }) => {
-      const scenarios = await getScenariosHandler({}, session.workspaceBasePath, session.workspaceProjectId)
-      const scenario = scenarios.find(s => s.id === scenarioId)
-      if (!scenario) throw new Error(`Scenario "${scenarioId}" not found`)
-      const question = scenario.questions?.find(q => q.id === questionId)
-      if (!question) throw new Error(`Question "${questionId}" not found on scenario "${scenarioId}"`)
-      if (!question.resolvedAt)
-        throw new Error(`Question "${questionId}" is not resolved`)
-    },
-
-    scenarioHasDomainOperation: async (session, { id, operation }) => {
-      const scenarios = await getScenariosHandler({}, session.workspaceBasePath, session.workspaceProjectId)
-      const scenario = scenarios.find(s => s.id === id)
-      if (!scenario) throw new Error(`Scenario "${id}" not found`)
-      if (scenario.domainOperation !== operation)
-        throw new Error(`Expected domain operation "${operation}" but got "${scenario.domainOperation}"`)
-    },
-
-    importResultIs: async (session, { added, skipped }) => {
-      if (!session.lastImportResult) throw new Error('No import has been performed yet')
-      if (session.lastImportResult.added !== added || session.lastImportResult.skipped !== skipped)
-        throw new Error(`Expected import result { added: ${added}, skipped: ${skipped} } but got ${JSON.stringify(session.lastImportResult)}`)
-    },
-
-    workflowPhaseIs: async (session, { phase }) => {
-      const result = await getWorkflowPhaseHandler(session.workspaceBasePath, session.workspaceProjectId)
-      if (result.name !== phase)
-        throw new Error(`Expected workflow phase "${phase}" but got "${result.name}"`)
-    },
-
-    scenarioCountIs: async (session, { count }) => {
-      const scenarios = await getScenariosHandler({}, session.workspaceBasePath, session.workspaceProjectId)
-      if (scenarios.length !== count)
-        throw new Error(`Expected ${count} scenarios but got ${scenarios.length}`)
-    },
+    runCountIs: async (session, input) => assertRunCountIs(session, input),
+    scenarioHasStage: async (session, input) => assertScenarioHasStage(session, input),
+    scenarioHasRegressionRationale: async (session, input) => assertScenarioHasRegressionRationale(session, input),
+    questionIsResolved: async (session, input) => assertQuestionIsResolved(session, input),
+    scenarioHasDomainOperation: async (session, input) => assertScenarioHasDomainOperation(session, input),
+    importResultIs: async (session, input) => assertImportResultIs(session, input),
+    workflowPhaseIs: async (session, input) => assertWorkflowPhaseIs(session, input),
+    scenarioCountIs: async (session, input) => assertScenarioCountIs(session, input),
   },
 })

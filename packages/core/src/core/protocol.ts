@@ -14,7 +14,7 @@ export interface TestCompletion extends TestMetadata {
   error?: unknown
 }
 
-export type TestFailureResult = void | TraceAttachment[] | { attachments?: TraceAttachment[] }
+export type TestFailureResult = void | TraceAttachment[]
 
 /**
  * A protocol defines how to create and tear down a context

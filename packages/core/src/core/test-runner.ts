@@ -42,7 +42,6 @@ export async function runTestWithAdapter<D extends Domain>(
     try {
       const result = await adapter.protocol.onTestFail?.(ctx, { ...metadata, status: 'fail', error, trace: [...trace] })
       if (Array.isArray(result)) attachments = result
-      else if (result && Array.isArray((result as any).attachments)) attachments = (result as any).attachments
     } catch {
       // Ignore hook failures to preserve original error.
     }

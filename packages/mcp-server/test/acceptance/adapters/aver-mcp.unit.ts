@@ -165,16 +165,16 @@ export const averMcpAdapter = implement(averMcp, {
 
     // --- System actions ---
     captureScenario: async (session, input) => {
-      const result = captureScenarioHandler(input, session.workspaceBasePath, session.workspaceProjectId)
+      const result = await captureScenarioHandler(input, session.workspaceBasePath, session.workspaceProjectId)
       session.lastCapturedScenario = { id: result.id, stage: result.stage, behavior: result.behavior }
     },
 
     advanceScenario: async (session, input) => {
-      advanceScenarioHandler(input, session.workspaceBasePath, session.workspaceProjectId)
+      await advanceScenarioHandler(input, session.workspaceBasePath, session.workspaceProjectId)
     },
 
     regressScenario: async (session, input) => {
-      regressScenarioHandler(
+      await regressScenarioHandler(
         { id: input.id, targetStage: input.targetStage as any, rationale: input.rationale },
         session.workspaceBasePath,
         session.workspaceProjectId,
@@ -182,24 +182,24 @@ export const averMcpAdapter = implement(averMcp, {
     },
 
     deleteScenario: async (session, input) => {
-      deleteScenarioHandler(input, session.workspaceBasePath, session.workspaceProjectId)
+      await deleteScenarioHandler(input, session.workspaceBasePath, session.workspaceProjectId)
     },
 
     addQuestion: async (session, input) => {
-      const result = addQuestionHandler(input, session.workspaceBasePath, session.workspaceProjectId)
+      const result = await addQuestionHandler(input, session.workspaceBasePath, session.workspaceProjectId)
       session.lastAddedQuestion = { id: result.id, text: result.text }
     },
 
     resolveQuestion: async (session, input) => {
-      resolveQuestionHandler(input, session.workspaceBasePath, session.workspaceProjectId)
+      await resolveQuestionHandler(input, session.workspaceBasePath, session.workspaceProjectId)
     },
 
     linkToDomain: async (session, input) => {
-      linkToDomainHandler(input, session.workspaceBasePath, session.workspaceProjectId)
+      await linkToDomainHandler(input, session.workspaceBasePath, session.workspaceProjectId)
     },
 
     importScenarios: async (session, input) => {
-      const result = importScenariosHandler(input, session.workspaceBasePath, session.workspaceProjectId)
+      const result = await importScenariosHandler(input, session.workspaceBasePath, session.workspaceProjectId)
       session.lastImportResult = result
     },
   },
@@ -241,7 +241,7 @@ export const averMcpAdapter = implement(averMcp, {
     },
 
     scenarios: async (session, input) => {
-      const results = getScenariosHandler(input ?? {}, session.workspaceBasePath, session.workspaceProjectId)
+      const results = await getScenariosHandler(input ?? {}, session.workspaceBasePath, session.workspaceProjectId)
       return results.map(s => ({
         id: s.id,
         stage: s.stage,
@@ -251,7 +251,7 @@ export const averMcpAdapter = implement(averMcp, {
     },
 
     advanceCandidates: async (session) => {
-      const results = getAdvanceCandidatesHandler(session.workspaceBasePath, session.workspaceProjectId)
+      const results = await getAdvanceCandidatesHandler(session.workspaceBasePath, session.workspaceProjectId)
       return results.map(s => ({ id: s.id, stage: s.stage }))
     },
 
@@ -307,7 +307,7 @@ export const averMcpAdapter = implement(averMcp, {
     },
 
     scenarioHasStage: async (session, { id, stage }) => {
-      const scenarios = getScenariosHandler({}, session.workspaceBasePath, session.workspaceProjectId)
+      const scenarios = await getScenariosHandler({}, session.workspaceBasePath, session.workspaceProjectId)
       const scenario = scenarios.find(s => s.id === id)
       if (!scenario) throw new Error(`Scenario "${id}" not found`)
       if (scenario.stage !== stage)
@@ -315,7 +315,7 @@ export const averMcpAdapter = implement(averMcp, {
     },
 
     scenarioHasRegressionRationale: async (session, { id, rationale }) => {
-      const scenarios = getScenariosHandler({}, session.workspaceBasePath, session.workspaceProjectId)
+      const scenarios = await getScenariosHandler({}, session.workspaceBasePath, session.workspaceProjectId)
       const scenario = scenarios.find(s => s.id === id)
       if (!scenario) throw new Error(`Scenario "${id}" not found`)
       if (scenario.regressionRationale !== rationale)
@@ -323,7 +323,7 @@ export const averMcpAdapter = implement(averMcp, {
     },
 
     questionIsResolved: async (session, { scenarioId, questionId }) => {
-      const scenarios = getScenariosHandler({}, session.workspaceBasePath, session.workspaceProjectId)
+      const scenarios = await getScenariosHandler({}, session.workspaceBasePath, session.workspaceProjectId)
       const scenario = scenarios.find(s => s.id === scenarioId)
       if (!scenario) throw new Error(`Scenario "${scenarioId}" not found`)
       const question = scenario.questions?.find(q => q.id === questionId)
@@ -333,7 +333,7 @@ export const averMcpAdapter = implement(averMcp, {
     },
 
     scenarioHasDomainOperation: async (session, { id, operation }) => {
-      const scenarios = getScenariosHandler({}, session.workspaceBasePath, session.workspaceProjectId)
+      const scenarios = await getScenariosHandler({}, session.workspaceBasePath, session.workspaceProjectId)
       const scenario = scenarios.find(s => s.id === id)
       if (!scenario) throw new Error(`Scenario "${id}" not found`)
       if (scenario.domainOperation !== operation)
@@ -347,13 +347,13 @@ export const averMcpAdapter = implement(averMcp, {
     },
 
     workflowPhaseIs: async (session, { phase }) => {
-      const result = getWorkflowPhaseHandler(session.workspaceBasePath, session.workspaceProjectId)
+      const result = await getWorkflowPhaseHandler(session.workspaceBasePath, session.workspaceProjectId)
       if (result.name !== phase)
         throw new Error(`Expected workflow phase "${phase}" but got "${result.name}"`)
     },
 
     scenarioCountIs: async (session, { count }) => {
-      const scenarios = getScenariosHandler({}, session.workspaceBasePath, session.workspaceProjectId)
+      const scenarios = await getScenariosHandler({}, session.workspaceBasePath, session.workspaceProjectId)
       if (scenarios.length !== count)
         throw new Error(`Expected ${count} scenarios but got ${scenarios.length}`)
     },

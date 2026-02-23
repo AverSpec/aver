@@ -1,15 +1,26 @@
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs'
+import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { homedir } from 'node:os'
+import { SafeJsonFile } from './safe-json-file.js'
 import type { Workspace } from './types.js'
 
 export class WorkspaceStore {
   readonly filePath: string
+  private readonly file: SafeJsonFile<Workspace>
 
   constructor(basePath: string, projectId: string) {
     const projectDir = join(basePath, projectId)
     mkdirSync(projectDir, { recursive: true })
     this.filePath = join(projectDir, 'workspace.json')
+    this.file = new SafeJsonFile(this.filePath, () => {
+      const now = new Date().toISOString()
+      return {
+        projectId,
+        scenarios: [],
+        createdAt: now,
+        updatedAt: now,
+      }
+    })
   }
 
   static withDefaults(projectId: string): WorkspaceStore {
@@ -17,21 +28,15 @@ export class WorkspaceStore {
     return new WorkspaceStore(basePath, projectId)
   }
 
-  load(): Workspace {
-    if (!existsSync(this.filePath)) {
-      const now = new Date().toISOString()
-      return {
-        projectId: this.filePath.split('/').at(-2)!,
-        scenarios: [],
-        createdAt: now,
-        updatedAt: now
-      }
-    }
-    return JSON.parse(readFileSync(this.filePath, 'utf-8'))
+  async load(): Promise<Workspace> {
+    return this.file.read()
   }
 
-  save(workspace: Workspace): void {
-    workspace.updatedAt = new Date().toISOString()
-    writeFileSync(this.filePath, JSON.stringify(workspace, null, 2))
+  async mutate(fn: (ws: Workspace) => Workspace): Promise<Workspace> {
+    return this.file.mutate(ws => {
+      const updated = fn(ws)
+      updated.updatedAt = new Date().toISOString()
+      return updated
+    })
   }
 }

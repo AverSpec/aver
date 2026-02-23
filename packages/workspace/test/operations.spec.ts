@@ -20,8 +20,8 @@ describe('WorkspaceOps', () => {
   })
 
   describe('captureScenario', () => {
-    it('creates a captured scenario with observed mode and persists it', () => {
-      const scenario = ops.captureScenario({
+    it('creates a captured scenario with observed mode and persists it', async () => {
+      const scenario = await ops.captureScenario({
         behavior: 'API returns 200 for errors',
         context: 'observed on POST /orders'
       })
@@ -30,20 +30,20 @@ describe('WorkspaceOps', () => {
       expect(scenario.mode).toBe('observed')
       expect(scenario.behavior).toBe('API returns 200 for errors')
 
-      const scenarios = ops.getScenarios()
+      const scenarios = await ops.getScenarios()
       expect(scenarios).toHaveLength(1)
     })
 
-    it('defaults to observed mode when mode is omitted', () => {
-      const scenario = ops.captureScenario({
+    it('defaults to observed mode when mode is omitted', async () => {
+      const scenario = await ops.captureScenario({
         behavior: 'API returns 200 for errors'
       })
 
       expect(scenario.mode).toBe('observed')
     })
 
-    it('creates a captured scenario with intended mode and story', () => {
-      const scenario = ops.captureScenario({
+    it('creates a captured scenario with intended mode and story', async () => {
+      const scenario = await ops.captureScenario({
         behavior: 'Users can cancel pending orders',
         story: 'Cancel Order',
         mode: 'intended'
@@ -56,9 +56,9 @@ describe('WorkspaceOps', () => {
   })
 
   describe('advanceScenario', () => {
-    it('advances captured to characterized with rationale', () => {
-      const scenario = ops.captureScenario({ behavior: 'returns 200 for errors' })
-      const advanced = ops.advanceScenario(scenario.id, {
+    it('advances captured to characterized with rationale', async () => {
+      const scenario = await ops.captureScenario({ behavior: 'returns 200 for errors' })
+      const advanced = await ops.advanceScenario(scenario.id, {
         rationale: 'API predates REST conventions',
         promotedBy: 'dev'
       })
@@ -68,54 +68,54 @@ describe('WorkspaceOps', () => {
       expect(advanced.promotedBy).toBe('dev')
     })
 
-    it('advances characterized to mapped', () => {
-      const scenario = ops.captureScenario({ behavior: 'test' })
-      ops.advanceScenario(scenario.id, { rationale: 'characterized', promotedBy: 'dev' })
-      const advanced = ops.advanceScenario(scenario.id, { rationale: 'confirmed', promotedBy: 'business' })
+    it('advances characterized to mapped', async () => {
+      const scenario = await ops.captureScenario({ behavior: 'test' })
+      await ops.advanceScenario(scenario.id, { rationale: 'characterized', promotedBy: 'dev' })
+      const advanced = await ops.advanceScenario(scenario.id, { rationale: 'confirmed', promotedBy: 'business' })
       expect(advanced.stage).toBe('mapped')
     })
 
-    it('advances mapped to specified', () => {
-      const scenario = ops.captureScenario({ behavior: 'test' })
-      ops.advanceScenario(scenario.id, { rationale: 'characterized', promotedBy: 'dev' })
-      ops.advanceScenario(scenario.id, { rationale: 'mapped', promotedBy: 'business' })
-      const advanced = ops.advanceScenario(scenario.id, { rationale: 'examples complete', promotedBy: 'testing' })
+    it('advances mapped to specified', async () => {
+      const scenario = await ops.captureScenario({ behavior: 'test' })
+      await ops.advanceScenario(scenario.id, { rationale: 'characterized', promotedBy: 'dev' })
+      await ops.advanceScenario(scenario.id, { rationale: 'mapped', promotedBy: 'business' })
+      const advanced = await ops.advanceScenario(scenario.id, { rationale: 'examples complete', promotedBy: 'testing' })
       expect(advanced.stage).toBe('specified')
     })
 
-    it('advances specified to implemented', () => {
-      const scenario = ops.captureScenario({ behavior: 'test' })
-      ops.advanceScenario(scenario.id, { rationale: 'characterized', promotedBy: 'dev' })
-      ops.advanceScenario(scenario.id, { rationale: 'mapped', promotedBy: 'business' })
-      ops.advanceScenario(scenario.id, { rationale: 'specified', promotedBy: 'testing' })
-      const advanced = ops.advanceScenario(scenario.id, { rationale: 'tests written', promotedBy: 'testing' })
+    it('advances specified to implemented', async () => {
+      const scenario = await ops.captureScenario({ behavior: 'test' })
+      await ops.advanceScenario(scenario.id, { rationale: 'characterized', promotedBy: 'dev' })
+      await ops.advanceScenario(scenario.id, { rationale: 'mapped', promotedBy: 'business' })
+      await ops.advanceScenario(scenario.id, { rationale: 'specified', promotedBy: 'testing' })
+      const advanced = await ops.advanceScenario(scenario.id, { rationale: 'tests written', promotedBy: 'testing' })
       expect(advanced.stage).toBe('implemented')
     })
 
-    it('throws on invalid advancement (already implemented)', () => {
-      const scenario = ops.captureScenario({ behavior: 'test' })
-      ops.advanceScenario(scenario.id, { rationale: 'a', promotedBy: 'dev' })
-      ops.advanceScenario(scenario.id, { rationale: 'b', promotedBy: 'dev' })
-      ops.advanceScenario(scenario.id, { rationale: 'c', promotedBy: 'dev' })
-      ops.advanceScenario(scenario.id, { rationale: 'd', promotedBy: 'dev' })
-      expect(() => ops.advanceScenario(scenario.id, { rationale: 'again', promotedBy: 'testing' }))
-        .toThrow('Cannot advance beyond implemented')
+    it('throws on invalid advancement (already implemented)', async () => {
+      const scenario = await ops.captureScenario({ behavior: 'test' })
+      await ops.advanceScenario(scenario.id, { rationale: 'a', promotedBy: 'dev' })
+      await ops.advanceScenario(scenario.id, { rationale: 'b', promotedBy: 'dev' })
+      await ops.advanceScenario(scenario.id, { rationale: 'c', promotedBy: 'dev' })
+      await ops.advanceScenario(scenario.id, { rationale: 'd', promotedBy: 'dev' })
+      await expect(ops.advanceScenario(scenario.id, { rationale: 'again', promotedBy: 'testing' }))
+        .rejects.toThrow('Cannot advance beyond implemented')
     })
 
-    it('throws for unknown scenario', () => {
-      expect(() => ops.advanceScenario('nonexistent', { rationale: 'x', promotedBy: 'dev' }))
-        .toThrow('Scenario not found')
+    it('throws for unknown scenario', async () => {
+      await expect(ops.advanceScenario('nonexistent', { rationale: 'x', promotedBy: 'dev' }))
+        .rejects.toThrow('Scenario not found')
     })
   })
 
   describe('regressScenario', () => {
-    it('regresses implemented back to characterized', () => {
-      const scenario = ops.captureScenario({ behavior: 'test' })
-      ops.advanceScenario(scenario.id, { rationale: 'a', promotedBy: 'dev' })
-      ops.advanceScenario(scenario.id, { rationale: 'b', promotedBy: 'dev' })
-      ops.advanceScenario(scenario.id, { rationale: 'c', promotedBy: 'dev' })
-      ops.advanceScenario(scenario.id, { rationale: 'd', promotedBy: 'dev' })
-      const regressed = ops.regressScenario(scenario.id, {
+    it('regresses implemented back to characterized', async () => {
+      const scenario = await ops.captureScenario({ behavior: 'test' })
+      await ops.advanceScenario(scenario.id, { rationale: 'a', promotedBy: 'dev' })
+      await ops.advanceScenario(scenario.id, { rationale: 'b', promotedBy: 'dev' })
+      await ops.advanceScenario(scenario.id, { rationale: 'c', promotedBy: 'dev' })
+      await ops.advanceScenario(scenario.id, { rationale: 'd', promotedBy: 'dev' })
+      const regressed = await ops.regressScenario(scenario.id, {
         targetStage: 'characterized',
         rationale: 'test started failing after system change'
       })
@@ -123,97 +123,97 @@ describe('WorkspaceOps', () => {
       expect(regressed.stage).toBe('characterized')
     })
 
-    it('throws when regressing to a later stage', () => {
-      const scenario = ops.captureScenario({ behavior: 'test' })
-      expect(() => ops.regressScenario(scenario.id, { targetStage: 'mapped', rationale: 'x' }))
-        .toThrow('Cannot regress to a later stage')
+    it('throws when regressing to a later stage', async () => {
+      const scenario = await ops.captureScenario({ behavior: 'test' })
+      await expect(ops.regressScenario(scenario.id, { targetStage: 'mapped', rationale: 'x' }))
+        .rejects.toThrow('Cannot regress to a later stage')
     })
 
-    it('persists the rationale on the scenario', () => {
-      const scenario = ops.captureScenario({ behavior: 'test' })
-      ops.advanceScenario(scenario.id, { rationale: 'a', promotedBy: 'dev' })
-      ops.advanceScenario(scenario.id, { rationale: 'b', promotedBy: 'dev' })
+    it('persists the rationale on the scenario', async () => {
+      const scenario = await ops.captureScenario({ behavior: 'test' })
+      await ops.advanceScenario(scenario.id, { rationale: 'a', promotedBy: 'dev' })
+      await ops.advanceScenario(scenario.id, { rationale: 'b', promotedBy: 'dev' })
 
-      ops.regressScenario(scenario.id, {
+      await ops.regressScenario(scenario.id, {
         targetStage: 'captured',
         rationale: 'needs re-investigation'
       })
 
-      const updated = ops.getScenario(scenario.id)!
-      expect(updated.stage).toBe('captured')
-      expect(updated.promotedFrom).toBe('mapped')
-      expect(updated.regressionRationale).toBe('needs re-investigation')
+      const updated = await ops.getScenario(scenario.id)
+      expect(updated!.stage).toBe('captured')
+      expect(updated!.promotedFrom).toBe('mapped')
+      expect(updated!.regressionRationale).toBe('needs re-investigation')
     })
   })
 
   describe('addQuestion / resolveQuestion', () => {
-    it('adds and resolves a question on a scenario', () => {
-      const scenario = ops.captureScenario({ behavior: 'test' })
-      const question = ops.addQuestion(scenario.id, 'What happens with null input?')
+    it('adds and resolves a question on a scenario', async () => {
+      const scenario = await ops.captureScenario({ behavior: 'test' })
+      const question = await ops.addQuestion(scenario.id, 'What happens with null input?')
 
-      const updated = ops.getScenario(scenario.id)!
-      expect(updated.questions).toHaveLength(1)
-      expect(updated.questions[0].text).toBe('What happens with null input?')
-      expect(updated.questions[0].answer).toBeUndefined()
+      const updated = await ops.getScenario(scenario.id)
+      expect(updated!.questions).toHaveLength(1)
+      expect(updated!.questions[0].text).toBe('What happens with null input?')
+      expect(updated!.questions[0].answer).toBeUndefined()
 
-      ops.resolveQuestion(scenario.id, question.id, 'It throws a 400 error')
-      const resolved = ops.getScenario(scenario.id)!
-      expect(resolved.questions[0].answer).toBe('It throws a 400 error')
+      await ops.resolveQuestion(scenario.id, question.id, 'It throws a 400 error')
+      const resolved = await ops.getScenario(scenario.id)
+      expect(resolved!.questions[0].answer).toBe('It throws a 400 error')
     })
   })
 
   describe('getScenarios — filtering', () => {
-    it('filters by stage', () => {
-      ops.captureScenario({ behavior: 'a' })
-      ops.captureScenario({ behavior: 'b' })
-      ops.captureScenario({ behavior: 'c', mode: 'intended' })
+    it('filters by stage', async () => {
+      await ops.captureScenario({ behavior: 'a' })
+      await ops.captureScenario({ behavior: 'b' })
+      await ops.captureScenario({ behavior: 'c', mode: 'intended' })
 
-      expect(ops.getScenarios({ stage: 'captured' })).toHaveLength(3)
+      expect(await ops.getScenarios({ stage: 'captured' })).toHaveLength(3)
     })
 
-    it('filters by story', () => {
-      ops.captureScenario({ behavior: 'a', story: 'Cancel Order', mode: 'intended' })
-      ops.captureScenario({ behavior: 'b', story: 'Create Order', mode: 'intended' })
+    it('filters by story', async () => {
+      await ops.captureScenario({ behavior: 'a', story: 'Cancel Order', mode: 'intended' })
+      await ops.captureScenario({ behavior: 'b', story: 'Create Order', mode: 'intended' })
 
-      expect(ops.getScenarios({ story: 'Cancel Order' })).toHaveLength(1)
+      expect(await ops.getScenarios({ story: 'Cancel Order' })).toHaveLength(1)
     })
 
-    it('filters by keyword in behavior', () => {
-      ops.captureScenario({ behavior: 'API returns 200 for errors' })
-      ops.captureScenario({ behavior: 'Database uses soft delete' })
+    it('filters by keyword in behavior', async () => {
+      await ops.captureScenario({ behavior: 'API returns 200 for errors' })
+      await ops.captureScenario({ behavior: 'Database uses soft delete' })
 
-      expect(ops.getScenarios({ keyword: 'error' })).toHaveLength(1)
+      expect(await ops.getScenarios({ keyword: 'error' })).toHaveLength(1)
     })
   })
 
   describe('linkToDomain', () => {
-    it('links a scenario to domain artifacts', () => {
-      const scenario = ops.captureScenario({ behavior: 'test' })
-      ops.advanceScenario(scenario.id, { rationale: 'a', promotedBy: 'dev' })
-      ops.advanceScenario(scenario.id, { rationale: 'b', promotedBy: 'dev' })
-      ops.advanceScenario(scenario.id, { rationale: 'c', promotedBy: 'dev' })
-      ops.advanceScenario(scenario.id, { rationale: 'd', promotedBy: 'dev' })
+    it('links a scenario to domain artifacts', async () => {
+      const scenario = await ops.captureScenario({ behavior: 'test' })
+      await ops.advanceScenario(scenario.id, { rationale: 'a', promotedBy: 'dev' })
+      await ops.advanceScenario(scenario.id, { rationale: 'b', promotedBy: 'dev' })
+      await ops.advanceScenario(scenario.id, { rationale: 'c', promotedBy: 'dev' })
+      await ops.advanceScenario(scenario.id, { rationale: 'd', promotedBy: 'dev' })
 
-      ops.linkToDomain(scenario.id, {
+      await ops.linkToDomain(scenario.id, {
         domainOperation: 'action.cancelOrder',
         testNames: ['cancels pending order [unit]', 'cancels pending order [http]']
       })
 
-      const linked = ops.getScenario(scenario.id)!
-      expect(linked.domainOperation).toBe('action.cancelOrder')
-      expect(linked.testNames).toEqual(['cancels pending order [unit]', 'cancels pending order [http]'])
+      const linked = await ops.getScenario(scenario.id)
+      expect(linked!.domainOperation).toBe('action.cancelOrder')
+      expect(linked!.testNames).toEqual(['cancels pending order [unit]', 'cancels pending order [http]'])
     })
   })
 
   describe('getScenarioSummary', () => {
-    it('returns counts per stage and open questions', () => {
-      ops.captureScenario({ behavior: 'a' })
-      ops.captureScenario({ behavior: 'b' })
-      ops.captureScenario({ behavior: 'c', mode: 'intended' })
-      const scenario = ops.captureScenario({ behavior: 'd' })
-      ops.addQuestion(scenario.id, 'why?')
+    it('returns counts per stage and open questions', async () => {
+      await ops.captureScenario({ behavior: 'a' })
+      await ops.captureScenario({ behavior: 'b' })
+      await ops.captureScenario({ behavior: 'c', mode: 'intended' })
+      const scenario = await ops.captureScenario({ behavior: 'd' })
+      await ops.addQuestion(scenario.id, 'why?')
 
-      const summary = ops.getScenarioSummary()
+      const summary = await ops.getScenarioSummary()
       expect(summary.captured).toBe(4)
       expect(summary.openQuestions).toBe(1)
       expect(summary.total).toBe(4)
@@ -221,17 +221,32 @@ describe('WorkspaceOps', () => {
   })
 
   describe('getAdvanceCandidates', () => {
-    it('returns characterized scenarios with no open questions', () => {
-      const a = ops.captureScenario({ behavior: 'a' })
-      ops.advanceScenario(a.id, { rationale: 'characterized', promotedBy: 'dev' })
+    it('returns characterized scenarios with no open questions', async () => {
+      const a = await ops.captureScenario({ behavior: 'a' })
+      await ops.advanceScenario(a.id, { rationale: 'characterized', promotedBy: 'dev' })
 
-      const b = ops.captureScenario({ behavior: 'b' })
-      ops.advanceScenario(b.id, { rationale: 'characterized', promotedBy: 'dev' })
-      ops.addQuestion(b.id, 'unresolved question')
+      const b = await ops.captureScenario({ behavior: 'b' })
+      await ops.advanceScenario(b.id, { rationale: 'characterized', promotedBy: 'dev' })
+      await ops.addQuestion(b.id, 'unresolved question')
 
-      const candidates = ops.getAdvanceCandidates()
+      const candidates = await ops.getAdvanceCandidates()
       expect(candidates).toHaveLength(1)
       expect(candidates[0].id).toBe(a.id)
+    })
+  })
+
+  describe('concurrency', () => {
+    it('serializes concurrent captureScenario calls', async () => {
+      const promises = Array.from({ length: 5 }, (_, i) =>
+        ops.captureScenario({ behavior: `concurrent-${i}` })
+      )
+      const results = await Promise.all(promises)
+
+      const all = await ops.getScenarios()
+      expect(all).toHaveLength(5)
+      // Each capture should have produced a unique scenario
+      const ids = new Set(results.map(s => s.id))
+      expect(ids.size).toBe(5)
     })
   })
 })

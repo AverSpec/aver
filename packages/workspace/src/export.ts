@@ -62,26 +62,28 @@ export function exportJson(workspace: Workspace): string {
   return JSON.stringify(workspace, null, 2)
 }
 
-export function importJson(
+export async function importJson(
   store: WorkspaceStore,
   json: string
-): { added: number; skipped: number } {
+): Promise<{ added: number; skipped: number }> {
   const source: Workspace = JSON.parse(json)
-  const target = store.load()
-  const existingIds = new Set(target.scenarios.map(s => s.id))
-
   let added = 0
   let skipped = 0
 
-  for (const scenario of source.scenarios) {
-    if (existingIds.has(scenario.id)) {
-      skipped++
-    } else {
-      target.scenarios.push(scenario)
-      added++
-    }
-  }
+  await store.mutate(target => {
+    const existingIds = new Set(target.scenarios.map(s => s.id))
 
-  store.save(target)
+    for (const scenario of source.scenarios) {
+      if (existingIds.has(scenario.id)) {
+        skipped++
+      } else {
+        target.scenarios.push(scenario)
+        added++
+      }
+    }
+
+    return target
+  })
+
   return { added, skipped }
 }

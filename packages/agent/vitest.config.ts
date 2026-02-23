@@ -10,6 +10,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@aver/core': resolve(__dirname, '../core/src/index.ts'),
+      '@aver/workspace': resolve(__dirname, '../workspace/src/index.ts'),
     },
   },
 })

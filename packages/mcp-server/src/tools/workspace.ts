@@ -40,117 +40,117 @@ function createStore(basePath: string, projectId: string): WorkspaceStore {
   return new WorkspaceStore(basePath, projectId)
 }
 
-// --- Handler functions (pure, no MCP dependency) ---
+// --- Handler functions (async, no MCP dependency) ---
 
-export function captureScenarioHandler(
+export async function captureScenarioHandler(
   input: { behavior: string; context?: string; story?: string; mode?: 'observed' | 'intended' },
   basePath: string,
   projectId: string,
-): Scenario {
+): Promise<Scenario> {
   return createOps(basePath, projectId).captureScenario(input)
 }
 
-export function getScenarioSummaryHandler(
+export async function getScenarioSummaryHandler(
   basePath: string,
   projectId: string,
-): ScenarioSummary {
+): Promise<ScenarioSummary> {
   return createOps(basePath, projectId).getScenarioSummary()
 }
 
-export function getScenariosHandler(
+export async function getScenariosHandler(
   input: { stage?: Stage; story?: string; keyword?: string },
   basePath: string,
   projectId: string,
-): Scenario[] {
+): Promise<Scenario[]> {
   return createOps(basePath, projectId).getScenarios(input)
 }
 
-export function advanceScenarioHandler(
+export async function advanceScenarioHandler(
   input: { id: string; rationale: string; promotedBy: string },
   basePath: string,
   projectId: string,
-): Scenario {
+): Promise<Scenario> {
   return createOps(basePath, projectId).advanceScenario(input.id, {
     rationale: input.rationale,
     promotedBy: input.promotedBy,
   })
 }
 
-export function regressScenarioHandler(
+export async function regressScenarioHandler(
   input: { id: string; targetStage: Stage; rationale: string },
   basePath: string,
   projectId: string,
-): Scenario {
+): Promise<Scenario> {
   return createOps(basePath, projectId).regressScenario(input.id, {
     targetStage: input.targetStage,
     rationale: input.rationale,
   })
 }
 
-export function deleteScenarioHandler(
+export async function deleteScenarioHandler(
   input: { id: string },
   basePath: string,
   projectId: string,
-): void {
-  createOps(basePath, projectId).deleteScenario(input.id)
+): Promise<void> {
+  await createOps(basePath, projectId).deleteScenario(input.id)
 }
 
-export function addQuestionHandler(
+export async function addQuestionHandler(
   input: { scenarioId: string; text: string },
   basePath: string,
   projectId: string,
-): Question {
+): Promise<Question> {
   return createOps(basePath, projectId).addQuestion(input.scenarioId, input.text)
 }
 
-export function resolveQuestionHandler(
+export async function resolveQuestionHandler(
   input: { scenarioId: string; questionId: string; answer: string },
   basePath: string,
   projectId: string,
-): void {
-  createOps(basePath, projectId).resolveQuestion(input.scenarioId, input.questionId, input.answer)
+): Promise<void> {
+  await createOps(basePath, projectId).resolveQuestion(input.scenarioId, input.questionId, input.answer)
 }
 
-export function linkToDomainHandler(
+export async function linkToDomainHandler(
   input: { scenarioId: string; domainOperation?: string; testNames?: string[]; approvalBaseline?: string },
   basePath: string,
   projectId: string,
-): void {
+): Promise<void> {
   const { scenarioId, ...links } = input
-  createOps(basePath, projectId).linkToDomain(scenarioId, links)
+  await createOps(basePath, projectId).linkToDomain(scenarioId, links)
 }
 
-export function getWorkflowPhaseHandler(
+export async function getWorkflowPhaseHandler(
   basePath: string,
   projectId: string,
-): Phase {
+): Promise<Phase> {
   const store = createStore(basePath, projectId)
-  const workspace = store.load()
+  const workspace = await store.load()
   return detectPhase(workspace)
 }
 
-export function getAdvanceCandidatesHandler(
+export async function getAdvanceCandidatesHandler(
   basePath: string,
   projectId: string,
-): Scenario[] {
+): Promise<Scenario[]> {
   return createOps(basePath, projectId).getAdvanceCandidates()
 }
 
-export function exportScenariosHandler(
+export async function exportScenariosHandler(
   input: { format: 'markdown' | 'json' },
   basePath: string,
   projectId: string,
-): string {
+): Promise<string> {
   const store = createStore(basePath, projectId)
-  const workspace = store.load()
+  const workspace = await store.load()
   return input.format === 'markdown' ? exportMarkdown(workspace) : exportJson(workspace)
 }
 
-export function importScenariosHandler(
+export async function importScenariosHandler(
   input: { json: string },
   basePath: string,
   projectId: string,
-): { added: number; skipped: number } {
+): Promise<{ added: number; skipped: number }> {
   const store = createStore(basePath, projectId)
   return importJson(store, input.json)
 }
@@ -167,7 +167,7 @@ export function registerWorkspaceTools(server: McpServer, config?: ToolsConfig):
       description: 'Get a summary of the scenario workspace with counts per maturity stage and open questions',
     },
     async () => {
-      const result = getScenarioSummaryHandler(resolveBasePath(), resolveProjectId())
+      const result = await getScenarioSummaryHandler(resolveBasePath(), resolveProjectId())
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] }
     },
   )
@@ -183,7 +183,7 @@ export function registerWorkspaceTools(server: McpServer, config?: ToolsConfig):
       },
     },
     async (input) => {
-      const result = getScenariosHandler(input, resolveBasePath(), resolveProjectId())
+      const result = await getScenariosHandler(input, resolveBasePath(), resolveProjectId())
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] }
     },
   )
@@ -200,7 +200,7 @@ export function registerWorkspaceTools(server: McpServer, config?: ToolsConfig):
       },
     },
     async (input) => {
-      const result = captureScenarioHandler(input, resolveBasePath(), resolveProjectId())
+      const result = await captureScenarioHandler(input, resolveBasePath(), resolveProjectId())
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] }
     },
   )
@@ -216,7 +216,7 @@ export function registerWorkspaceTools(server: McpServer, config?: ToolsConfig):
       },
     },
     async (input) => {
-      const result = advanceScenarioHandler(input, resolveBasePath(), resolveProjectId())
+      const result = await advanceScenarioHandler(input, resolveBasePath(), resolveProjectId())
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] }
     },
   )
@@ -232,7 +232,7 @@ export function registerWorkspaceTools(server: McpServer, config?: ToolsConfig):
       },
     },
     async (input) => {
-      const result = regressScenarioHandler(input, resolveBasePath(), resolveProjectId())
+      const result = await regressScenarioHandler(input, resolveBasePath(), resolveProjectId())
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] }
     },
   )
@@ -246,7 +246,7 @@ export function registerWorkspaceTools(server: McpServer, config?: ToolsConfig):
       },
     },
     async (input) => {
-      deleteScenarioHandler(input, resolveBasePath(), resolveProjectId())
+      await deleteScenarioHandler(input, resolveBasePath(), resolveProjectId())
       return { content: [{ type: 'text' as const, text: JSON.stringify({ deleted: input.id }) }] }
     },
   )
@@ -261,7 +261,7 @@ export function registerWorkspaceTools(server: McpServer, config?: ToolsConfig):
       },
     },
     async (input) => {
-      const result = addQuestionHandler(input, resolveBasePath(), resolveProjectId())
+      const result = await addQuestionHandler(input, resolveBasePath(), resolveProjectId())
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] }
     },
   )
@@ -277,7 +277,7 @@ export function registerWorkspaceTools(server: McpServer, config?: ToolsConfig):
       },
     },
     async (input) => {
-      resolveQuestionHandler(input, resolveBasePath(), resolveProjectId())
+      await resolveQuestionHandler(input, resolveBasePath(), resolveProjectId())
       return { content: [{ type: 'text' as const, text: JSON.stringify({ success: true }, null, 2) }] }
     },
   )
@@ -294,7 +294,7 @@ export function registerWorkspaceTools(server: McpServer, config?: ToolsConfig):
       },
     },
     async (input) => {
-      linkToDomainHandler(input, resolveBasePath(), resolveProjectId())
+      await linkToDomainHandler(input, resolveBasePath(), resolveProjectId())
       return { content: [{ type: 'text' as const, text: JSON.stringify({ success: true }, null, 2) }] }
     },
   )
@@ -305,7 +305,7 @@ export function registerWorkspaceTools(server: McpServer, config?: ToolsConfig):
       description: 'Detect the current workflow phase based on workspace state (kickoff, investigation, mapping, specification, implementation, verification)',
     },
     async () => {
-      const result = getWorkflowPhaseHandler(resolveBasePath(), resolveProjectId())
+      const result = await getWorkflowPhaseHandler(resolveBasePath(), resolveProjectId())
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] }
     },
   )
@@ -316,7 +316,7 @@ export function registerWorkspaceTools(server: McpServer, config?: ToolsConfig):
       description: 'Get scenarios that are eligible for advancement (no open questions, not yet implemented)',
     },
     async () => {
-      const result = getAdvanceCandidatesHandler(resolveBasePath(), resolveProjectId())
+      const result = await getAdvanceCandidatesHandler(resolveBasePath(), resolveProjectId())
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] }
     },
   )
@@ -330,7 +330,7 @@ export function registerWorkspaceTools(server: McpServer, config?: ToolsConfig):
       },
     },
     async (input) => {
-      const result = exportScenariosHandler(input, resolveBasePath(), resolveProjectId())
+      const result = await exportScenariosHandler(input, resolveBasePath(), resolveProjectId())
       return { content: [{ type: 'text' as const, text: result }] }
     },
   )
@@ -344,7 +344,7 @@ export function registerWorkspaceTools(server: McpServer, config?: ToolsConfig):
       },
     },
     async (input) => {
-      const result = importScenariosHandler(input, resolveBasePath(), resolveProjectId())
+      const result = await importScenariosHandler(input, resolveBasePath(), resolveProjectId())
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] }
     },
   )

@@ -85,8 +85,8 @@ export function formatScenarioTable(scenarios: ScenarioRow[]): string {
 
 async function statusCommand(store: WorkspaceStore): Promise<void> {
   const ops = new WorkspaceOps(store)
-  const summary = ops.getScenarioSummary()
-  const workspace = store.load()
+  const summary = await ops.getScenarioSummary()
+  const workspace = await store.load()
   const phase = detectPhase(workspace)
   const projectId = basename(process.cwd())
   console.log(formatSummary(summary, phase, projectId))
@@ -112,7 +112,7 @@ async function captureCommand(store: WorkspaceStore, args: string[]): Promise<vo
 
   const mode = (values.mode === 'intended' ? 'intended' : 'observed') as 'observed' | 'intended'
   const ops = new WorkspaceOps(store)
-  const scenario = ops.captureScenario({ behavior, context: values.context, story: values.story, mode })
+  const scenario = await ops.captureScenario({ behavior, context: values.context, story: values.story, mode })
   console.log(`Captured scenario: ${scenario.id}`)
   console.log(`  Behavior: ${scenario.behavior}`)
   console.log(`  Mode: ${scenario.mode}`)
@@ -138,7 +138,7 @@ async function advanceCommand(store: WorkspaceStore, args: string[]): Promise<vo
   }
 
   const ops = new WorkspaceOps(store)
-  const scenario = ops.advanceScenario(id, { rationale: values.rationale, promotedBy: values.by })
+  const scenario = await ops.advanceScenario(id, { rationale: values.rationale, promotedBy: values.by })
   console.log(`Advanced: ${scenario.id} -> ${scenario.stage}`)
   console.log(`  Behavior: ${scenario.behavior}`)
 }
@@ -161,7 +161,7 @@ async function regressCommand(store: WorkspaceStore, args: string[]): Promise<vo
   }
 
   const ops = new WorkspaceOps(store)
-  const scenario = ops.regressScenario(id, { targetStage: values.to as Stage, rationale: values.rationale })
+  const scenario = await ops.regressScenario(id, { targetStage: values.to as Stage, rationale: values.rationale })
   console.log(`Regressed: ${scenario.id} -> ${scenario.stage}`)
   console.log(`  Behavior: ${scenario.behavior}`)
 }
@@ -178,7 +178,7 @@ async function scenariosCommand(store: WorkspaceStore, args: string[]): Promise<
   })
 
   const ops = new WorkspaceOps(store)
-  const scenarios = ops.getScenarios({
+  const scenarios = await ops.getScenarios({
     stage: values.stage as Stage | undefined,
     keyword: values.keyword,
   })
@@ -196,7 +196,7 @@ async function exportCommand(store: WorkspaceStore, args: string[]): Promise<voi
     allowPositionals: false,
   })
 
-  const workspace = store.load()
+  const workspace = await store.load()
   const format = values.format ?? 'md'
   const output = format === 'json' ? exportJson(workspace) : exportMarkdown(workspace)
 
@@ -223,7 +223,7 @@ async function importCommand(store: WorkspaceStore, args: string[]): Promise<voi
   }
 
   const json = readFileSync(resolve(filePath), 'utf-8')
-  const result = importJson(store, json)
+  const result = await importJson(store, json)
   console.log(`Import complete: ${result.added} added, ${result.skipped} skipped`)
 }
 

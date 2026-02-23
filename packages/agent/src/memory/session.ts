@@ -1,14 +1,14 @@
-import { readFile, writeFile, mkdir } from 'node:fs/promises'
-import { join, dirname } from 'node:path'
-import { existsSync } from 'node:fs'
+import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
+import { SafeJsonFile } from '@aver/workspace'
 import type { AgentSession } from '../types.js'
 
 export class SessionStore {
-  private readonly filePath: string
+  private readonly file: SafeJsonFile<AgentSession | null>
 
   constructor(basePath: string) {
-    this.filePath = join(basePath, 'session.json')
+    const filePath = join(basePath, 'session.json')
+    this.file = new SafeJsonFile(filePath, () => null)
   }
 
   async create(goal: string): Promise<AgentSession> {
@@ -23,26 +23,56 @@ export class SessionStore {
       createdAt: now,
       updatedAt: now,
     }
-    await this.save(session)
+    await this.file.write(session)
     return session
   }
 
   async load(): Promise<AgentSession | undefined> {
-    if (!existsSync(this.filePath)) return undefined
-    const content = await readFile(this.filePath, 'utf-8')
-    return JSON.parse(content) as AgentSession
+    const session = await this.file.read()
+    return session ?? undefined
   }
 
   async update(partial: Partial<AgentSession>): Promise<AgentSession> {
-    const session = await this.load()
-    if (!session) throw new Error('No active session')
-    const updated = { ...session, ...partial, updatedAt: new Date().toISOString() }
-    await this.save(updated)
-    return updated
+    return this.file.mutate(session => {
+      if (!session) throw new Error('No active session')
+      return { ...session, ...partial, updatedAt: new Date().toISOString() }
+    }) as Promise<AgentSession>
   }
 
-  private async save(session: AgentSession): Promise<void> {
-    await mkdir(dirname(this.filePath), { recursive: true })
-    await writeFile(this.filePath, JSON.stringify(session, null, 2), 'utf-8')
+  async recordWorkerCompletion(workerTokenUsage: number): Promise<AgentSession> {
+    return this.file.mutate(session => {
+      if (!session) throw new Error('No active session')
+      return {
+        ...session,
+        workerCount: session.workerCount + 1,
+        tokenUsage: {
+          supervisor: session.tokenUsage.supervisor,
+          worker: session.tokenUsage.worker + workerTokenUsage,
+        },
+        updatedAt: new Date().toISOString(),
+      }
+    }) as Promise<AgentSession>
+  }
+
+  async recordCycleCompletion(supervisorTokenUsage: number): Promise<AgentSession> {
+    return this.file.mutate(session => {
+      if (!session) throw new Error('No active session')
+      return {
+        ...session,
+        cycleCount: session.cycleCount + 1,
+        tokenUsage: {
+          supervisor: session.tokenUsage.supervisor + supervisorTokenUsage,
+          worker: session.tokenUsage.worker,
+        },
+        updatedAt: new Date().toISOString(),
+      }
+    }) as Promise<AgentSession>
+  }
+
+  async updateStatus(status: AgentSession['status'], lastError?: string): Promise<AgentSession> {
+    return this.file.mutate(session => {
+      if (!session) throw new Error('No active session')
+      return { ...session, status, lastError, updatedAt: new Date().toISOString() }
+    }) as Promise<AgentSession>
   }
 }

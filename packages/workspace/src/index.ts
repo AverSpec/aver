@@ -7,3 +7,4 @@ export type { AdvanceInput, RegressInput, ScenarioFilter, ScenarioSummary } from
 export { exportMarkdown, exportJson, importJson } from './export.js'
 export { detectPhase } from './phase.js'
 export type { Phase, PhaseName } from './phase.js'
+export { SafeJsonFile, atomicWriteFile, atomicWriteFileSync, withLock } from './safe-json-file.js'

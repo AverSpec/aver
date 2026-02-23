@@ -1,18 +1,23 @@
-import { readFile, writeFile, appendFile, mkdir } from 'node:fs/promises'
+import { readFile, appendFile, mkdir } from 'node:fs/promises'
 import { join, dirname } from 'node:path'
 import { existsSync } from 'node:fs'
+import { withLock, atomicWriteFile } from '@aver/workspace'
 import type { AgentEvent } from '../types.js'
 
 export class EventLog {
   private readonly filePath: string
+  private readonly lockKey: string
 
   constructor(basePath: string) {
     this.filePath = join(basePath, 'events.jsonl')
+    this.lockKey = this.filePath
   }
 
   async append(event: AgentEvent): Promise<void> {
-    await mkdir(dirname(this.filePath), { recursive: true })
-    await appendFile(this.filePath, JSON.stringify(event) + '\n', 'utf-8')
+    await withLock(this.lockKey, async () => {
+      await mkdir(dirname(this.filePath), { recursive: true })
+      await appendFile(this.filePath, JSON.stringify(event) + '\n', 'utf-8')
+    })
   }
 
   async readAll(): Promise<AgentEvent[]> {
@@ -30,8 +35,13 @@ export class EventLog {
   }
 
   async truncateBefore(timestamp: string): Promise<void> {
-    const remaining = await this.readSince(timestamp)
-    const content = remaining.map((e) => JSON.stringify(e)).join('\n') + (remaining.length ? '\n' : '')
-    await writeFile(this.filePath, content, 'utf-8')
+    await withLock(this.lockKey, async () => {
+      if (!existsSync(this.filePath)) return
+      const content = await readFile(this.filePath, 'utf-8')
+      const all = content.split('\n').filter(Boolean).map(line => JSON.parse(line) as AgentEvent)
+      const remaining = all.filter(e => e.timestamp >= timestamp)
+      const output = remaining.map(e => JSON.stringify(e)).join('\n') + (remaining.length ? '\n' : '')
+      await atomicWriteFile(this.filePath, output)
+    })
   }
 }

@@ -78,7 +78,7 @@ export class CycleEngine {
       return
     }
 
-    const scenarios = this.workspaceOps.getScenarios()
+    const scenarios = await this.workspaceOps.getScenarios()
 
     const input = await this.curator.buildSupervisorInput({
       trigger,
@@ -107,16 +107,7 @@ export class CycleEngine {
       return
     }
 
-    const session = await this.sessionStore.load()
-    if (session) {
-      await this.sessionStore.update({
-        cycleCount: session.cycleCount + 1,
-        tokenUsage: {
-          supervisor: session.tokenUsage.supervisor + tokenUsage,
-          worker: session.tokenUsage.worker,
-        },
-      })
-    }
+    await this.sessionStore.recordCycleCompletion(tokenUsage)
 
     if (decision.messageToUser) {
       this.onMessage(decision.messageToUser)
@@ -132,11 +123,11 @@ export class CycleEngine {
   ): Promise<void> {
     switch (decision.action.type) {
       case 'stop':
-        await this.sessionStore.update({ status: 'stopped' })
+        await this.sessionStore.updateStatus('stopped')
         break
 
       case 'ask_user':
-        await this.sessionStore.update({ status: 'paused' })
+        await this.sessionStore.updateStatus('paused')
         if (this.onQuestion) {
           const answer = await this.onQuestion(decision.action.question, decision.action.options)
           await this.logEvent('user:answer', { answer })
@@ -170,7 +161,7 @@ export class CycleEngine {
       case 'update_workspace':
         for (const update of decision.action.updates) {
           if (update.stage) {
-            this.workspaceOps.advanceScenario(update.scenarioId, {
+            await this.workspaceOps.advanceScenario(update.scenarioId, {
               rationale: update.rationale ?? '',
               promotedBy: 'aver-agent',
             })
@@ -202,16 +193,7 @@ export class CycleEngine {
       await this.curator.getArtifactStore().write(artifact)
     }
 
-    const session = await this.sessionStore.load()
-    if (session) {
-      await this.sessionStore.update({
-        workerCount: session.workerCount + 1,
-        tokenUsage: {
-          supervisor: session.tokenUsage.supervisor,
-          worker: session.tokenUsage.worker + tokenUsage,
-        },
-      })
-    }
+    await this.sessionStore.recordWorkerCompletion(tokenUsage)
 
     await this.logEvent('worker:result', { summary: result.summary, status: result.status })
     await this.runCycle('workers_complete', undefined, [result], depth + 1)
@@ -242,16 +224,7 @@ export class CycleEngine {
         await this.curator.getArtifactStore().write(artifact)
       }
 
-      const session = await this.sessionStore.load()
-      if (session) {
-        await this.sessionStore.update({
-          workerCount: session.workerCount + 1,
-          tokenUsage: {
-            supervisor: session.tokenUsage.supervisor,
-            worker: session.tokenUsage.worker + tokenUsage,
-          },
-        })
-      }
+      await this.sessionStore.recordWorkerCompletion(tokenUsage)
 
       await this.logEvent('worker:result', { summary: result.summary, status: result.status })
       results.push(result)
@@ -269,7 +242,7 @@ export class CycleEngine {
 
   private async handleError(message: string): Promise<void> {
     await this.logEvent('cycle:end', { error: message })
-    await this.sessionStore.update({ status: 'error', lastError: message })
+    await this.sessionStore.updateStatus('error', message)
   }
 
   private async logEvent(type: AgentEvent['type'], data: Record<string, unknown>): Promise<void> {

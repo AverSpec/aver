@@ -38,117 +38,132 @@ export interface ScenarioSummary {
 export class WorkspaceOps {
   constructor(private store: WorkspaceStore) {}
 
-  captureScenario(input: {
+  async captureScenario(input: {
     behavior: string
     context?: string
     story?: string
     mode?: 'observed' | 'intended'
-  }): Scenario {
-    const scenario = createScenario({
-      stage: 'captured',
-      behavior: input.behavior,
-      context: input.context,
-      story: input.story,
-      mode: input.mode ?? 'observed'
+  }): Promise<Scenario> {
+    let captured!: Scenario
+    await this.store.mutate(ws => {
+      captured = createScenario({
+        stage: 'captured',
+        behavior: input.behavior,
+        context: input.context,
+        story: input.story,
+        mode: input.mode ?? 'observed'
+      })
+      ws.scenarios.push(captured)
+      return ws
     })
-    const ws = this.store.load()
-    ws.scenarios.push(scenario)
-    this.store.save(ws)
-    return scenario
+    return captured
   }
 
-  advanceScenario(id: string, input: AdvanceInput): Scenario {
-    const ws = this.store.load()
-    const scenario = ws.scenarios.find(s => s.id === id)
-    if (!scenario) throw new Error('Scenario not found: ' + id)
+  async advanceScenario(id: string, input: AdvanceInput): Promise<Scenario> {
+    let advanced!: Scenario
+    await this.store.mutate(ws => {
+      const scenario = ws.scenarios.find(s => s.id === id)
+      if (!scenario) throw new Error('Scenario not found: ' + id)
 
-    const next = nextStage(scenario.stage)
-    if (!next) throw new Error('Cannot advance beyond implemented')
+      const next = nextStage(scenario.stage)
+      if (!next) throw new Error('Cannot advance beyond implemented')
 
-    scenario.promotedFrom = scenario.stage
-    scenario.promotedBy = input.promotedBy
-    scenario.stage = next
-    scenario.updatedAt = new Date().toISOString()
-    this.store.save(ws)
-    return scenario
+      scenario.promotedFrom = scenario.stage
+      scenario.promotedBy = input.promotedBy
+      scenario.stage = next
+      scenario.updatedAt = new Date().toISOString()
+      advanced = scenario
+      return ws
+    })
+    return advanced
   }
 
-  regressScenario(id: string, input: RegressInput): Scenario {
-    const ws = this.store.load()
-    const scenario = ws.scenarios.find(s => s.id === id)
-    if (!scenario) throw new Error('Scenario not found: ' + id)
+  async regressScenario(id: string, input: RegressInput): Promise<Scenario> {
+    let regressed!: Scenario
+    await this.store.mutate(ws => {
+      const scenario = ws.scenarios.find(s => s.id === id)
+      if (!scenario) throw new Error('Scenario not found: ' + id)
 
-    const currentIdx = STAGE_ORDER.indexOf(scenario.stage)
-    const targetIdx = STAGE_ORDER.indexOf(input.targetStage)
-    if (targetIdx >= currentIdx) throw new Error('Cannot regress to a later stage')
+      const currentIdx = STAGE_ORDER.indexOf(scenario.stage)
+      const targetIdx = STAGE_ORDER.indexOf(input.targetStage)
+      if (targetIdx >= currentIdx) throw new Error('Cannot regress to a later stage')
 
-    scenario.promotedFrom = scenario.stage
-    scenario.regressionRationale = input.rationale
-    scenario.stage = input.targetStage
-    scenario.updatedAt = new Date().toISOString()
-    this.store.save(ws)
-    return scenario
+      scenario.promotedFrom = scenario.stage
+      scenario.regressionRationale = input.rationale
+      scenario.stage = input.targetStage
+      scenario.updatedAt = new Date().toISOString()
+      regressed = scenario
+      return ws
+    })
+    return regressed
   }
 
-  deleteScenario(id: string): void {
-    const ws = this.store.load()
-    const idx = ws.scenarios.findIndex(s => s.id === id)
-    if (idx === -1) throw new Error('Scenario not found: ' + id)
-    ws.scenarios.splice(idx, 1)
-    this.store.save(ws)
+  async deleteScenario(id: string): Promise<void> {
+    await this.store.mutate(ws => {
+      const idx = ws.scenarios.findIndex(s => s.id === id)
+      if (idx === -1) throw new Error('Scenario not found: ' + id)
+      ws.scenarios.splice(idx, 1)
+      return ws
+    })
   }
 
-  addQuestion(scenarioId: string, text: string): Question {
-    const ws = this.store.load()
-    const scenario = ws.scenarios.find(s => s.id === scenarioId)
-    if (!scenario) throw new Error('Scenario not found: ' + scenarioId)
+  async addQuestion(scenarioId: string, text: string): Promise<Question> {
+    let question!: Question
+    await this.store.mutate(ws => {
+      const scenario = ws.scenarios.find(s => s.id === scenarioId)
+      if (!scenario) throw new Error('Scenario not found: ' + scenarioId)
 
-    const question: Question = {
-      id: randomUUID().replace(/-/g, '').slice(0, 8),
-      text
-    }
-    scenario.questions.push(question)
-    scenario.updatedAt = new Date().toISOString()
-    this.store.save(ws)
+      question = {
+        id: randomUUID().replace(/-/g, '').slice(0, 8),
+        text
+      }
+      scenario.questions.push(question)
+      scenario.updatedAt = new Date().toISOString()
+      return ws
+    })
     return question
   }
 
-  resolveQuestion(scenarioId: string, questionId: string, answer: string): void {
-    const ws = this.store.load()
-    const scenario = ws.scenarios.find(s => s.id === scenarioId)
-    if (!scenario) throw new Error('Scenario not found: ' + scenarioId)
+  async resolveQuestion(scenarioId: string, questionId: string, answer: string): Promise<void> {
+    await this.store.mutate(ws => {
+      const scenario = ws.scenarios.find(s => s.id === scenarioId)
+      if (!scenario) throw new Error('Scenario not found: ' + scenarioId)
 
-    const question = scenario.questions.find(q => q.id === questionId)
-    if (!question) throw new Error('Question not found: ' + questionId)
+      const question = scenario.questions.find(q => q.id === questionId)
+      if (!question) throw new Error('Question not found: ' + questionId)
 
-    question.answer = answer
-    question.resolvedAt = new Date().toISOString()
-    scenario.updatedAt = new Date().toISOString()
-    this.store.save(ws)
+      question.answer = answer
+      question.resolvedAt = new Date().toISOString()
+      scenario.updatedAt = new Date().toISOString()
+      return ws
+    })
   }
 
-  linkToDomain(scenarioId: string, links: {
+  async linkToDomain(scenarioId: string, links: {
     domainOperation?: string
     testNames?: string[]
     approvalBaseline?: string
-  }): void {
-    const ws = this.store.load()
-    const scenario = ws.scenarios.find(s => s.id === scenarioId)
-    if (!scenario) throw new Error('Scenario not found: ' + scenarioId)
+  }): Promise<void> {
+    await this.store.mutate(ws => {
+      const scenario = ws.scenarios.find(s => s.id === scenarioId)
+      if (!scenario) throw new Error('Scenario not found: ' + scenarioId)
 
-    if (links.domainOperation) scenario.domainOperation = links.domainOperation
-    if (links.testNames) scenario.testNames = links.testNames
-    if (links.approvalBaseline) scenario.approvalBaseline = links.approvalBaseline
-    scenario.updatedAt = new Date().toISOString()
-    this.store.save(ws)
+      if (links.domainOperation) scenario.domainOperation = links.domainOperation
+      if (links.testNames) scenario.testNames = links.testNames
+      if (links.approvalBaseline) scenario.approvalBaseline = links.approvalBaseline
+      scenario.updatedAt = new Date().toISOString()
+      return ws
+    })
   }
 
-  getScenario(id: string): Scenario | undefined {
-    return this.store.load().scenarios.find(s => s.id === id)
+  async getScenario(id: string): Promise<Scenario | undefined> {
+    const ws = await this.store.load()
+    return ws.scenarios.find(s => s.id === id)
   }
 
-  getScenarios(filter?: ScenarioFilter): Scenario[] {
-    let scenarios = this.store.load().scenarios
+  async getScenarios(filter?: ScenarioFilter): Promise<Scenario[]> {
+    const ws = await this.store.load()
+    let scenarios = ws.scenarios
     if (filter?.stage) scenarios = scenarios.filter(s => s.stage === filter.stage)
     if (filter?.story) scenarios = scenarios.filter(s => s.story === filter.story)
     if (filter?.keyword) {
@@ -161,8 +176,9 @@ export class WorkspaceOps {
     return scenarios
   }
 
-  getScenarioSummary(): ScenarioSummary {
-    const scenarios = this.store.load().scenarios
+  async getScenarioSummary(): Promise<ScenarioSummary> {
+    const ws = await this.store.load()
+    const scenarios = ws.scenarios
     const openQuestions = scenarios.reduce(
       (count, scenario) => count + scenario.questions.filter(q => !q.answer).length,
       0
@@ -178,9 +194,9 @@ export class WorkspaceOps {
     }
   }
 
-  getAdvanceCandidates(): Scenario[] {
-    const scenarios = this.store.load().scenarios
-    return scenarios.filter(s => {
+  async getAdvanceCandidates(): Promise<Scenario[]> {
+    const ws = await this.store.load()
+    return ws.scenarios.filter(s => {
       if (s.stage === 'implemented') return false
       const openQuestions = s.questions.filter(q => !q.answer).length
       return openQuestions === 0

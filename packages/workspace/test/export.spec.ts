@@ -22,22 +22,22 @@ describe('export', () => {
   })
 
   describe('exportMarkdown', () => {
-    it('produces readable markdown grouped by stage', () => {
-      ops.captureScenario({ behavior: 'API returns 200 for errors' })
-      ops.captureScenario({ behavior: 'Users can cancel orders', story: 'Cancel Order', mode: 'intended' })
+    it('produces readable markdown grouped by stage', async () => {
+      await ops.captureScenario({ behavior: 'API returns 200 for errors' })
+      await ops.captureScenario({ behavior: 'Users can cancel orders', story: 'Cancel Order', mode: 'intended' })
 
-      const md = exportMarkdown(store.load())
+      const md = exportMarkdown(await store.load())
       expect(md).toContain('# Scenario Summary')
       expect(md).toContain('## Captured (2)')
       expect(md).toContain('API returns 200 for errors')
       expect(md).toContain('Cancel Order')
     })
 
-    it('includes open questions without emoji', () => {
-      const scenario = ops.captureScenario({ behavior: 'test' })
-      ops.addQuestion(scenario.id, 'Why does this happen?')
+    it('includes open questions without emoji', async () => {
+      const scenario = await ops.captureScenario({ behavior: 'test' })
+      await ops.addQuestion(scenario.id, 'Why does this happen?')
 
-      const md = exportMarkdown(store.load())
+      const md = exportMarkdown(await store.load())
       expect(md).toContain('Why does this happen?')
       // No emoji in output (project convention)
       expect(md).not.toContain('\u2753') // no red question mark emoji
@@ -46,11 +46,11 @@ describe('export', () => {
   })
 
   describe('exportJson / importJson', () => {
-    it('round-trips workspace scenarios through JSON', () => {
-      ops.captureScenario({ behavior: 'a' })
-      ops.captureScenario({ behavior: 'b', story: 'Story B', mode: 'intended' })
+    it('round-trips workspace scenarios through JSON', async () => {
+      await ops.captureScenario({ behavior: 'a' })
+      await ops.captureScenario({ behavior: 'b', story: 'Story B', mode: 'intended' })
 
-      const json = exportJson(store.load())
+      const json = exportJson(await store.load())
       const parsed = JSON.parse(json)
       expect(parsed.scenarios).toHaveLength(2)
 
@@ -59,21 +59,21 @@ describe('export', () => {
       const store2 = new WorkspaceStore(dir2, 'other-project')
       const ops2 = new WorkspaceOps(store2)
 
-      const imported = importJson(store2, json)
+      const imported = await importJson(store2, json)
       expect(imported.added).toBe(2)
-      expect(ops2.getScenarios()).toHaveLength(2)
+      expect(await ops2.getScenarios()).toHaveLength(2)
 
       rmSync(dir2, { recursive: true, force: true })
     })
 
-    it('skips duplicate scenarios on import', () => {
-      ops.captureScenario({ behavior: 'a' })
-      const json = exportJson(store.load())
+    it('skips duplicate scenarios on import', async () => {
+      await ops.captureScenario({ behavior: 'a' })
+      const json = exportJson(await store.load())
 
-      const imported = importJson(store, json)
+      const imported = await importJson(store, json)
       expect(imported.added).toBe(0)
       expect(imported.skipped).toBe(1)
-      expect(ops.getScenarios()).toHaveLength(1)
+      expect(await ops.getScenarios()).toHaveLength(1)
     })
   })
 })

@@ -35,7 +35,7 @@ export const averWorkspaceAdapter = implement(averWorkspace, {
     captureScenario: async (session, { behavior, context, story, mode }) => {
       try {
         session.lastError = undefined
-        const scenario = session.ops.captureScenario({ behavior, context, story, mode })
+        const scenario = await session.ops.captureScenario({ behavior, context, story, mode })
         session.lastCapturedId = scenario.id
       } catch (e: any) {
         session.lastError = e
@@ -45,7 +45,7 @@ export const averWorkspaceAdapter = implement(averWorkspace, {
     advanceScenario: async (session, { id, rationale, promotedBy }) => {
       try {
         session.lastError = undefined
-        session.ops.advanceScenario(id, { rationale, promotedBy })
+        await session.ops.advanceScenario(id, { rationale, promotedBy })
       } catch (e: any) {
         session.lastError = e
       }
@@ -54,7 +54,7 @@ export const averWorkspaceAdapter = implement(averWorkspace, {
     regressScenario: async (session, { id, targetStage, rationale }) => {
       try {
         session.lastError = undefined
-        session.ops.regressScenario(id, { targetStage: targetStage as any, rationale })
+        await session.ops.regressScenario(id, { targetStage: targetStage as any, rationale })
       } catch (e: any) {
         session.lastError = e
       }
@@ -63,7 +63,7 @@ export const averWorkspaceAdapter = implement(averWorkspace, {
     addQuestion: async (session, { scenarioId, text }) => {
       try {
         session.lastError = undefined
-        const question = session.ops.addQuestion(scenarioId, text)
+        const question = await session.ops.addQuestion(scenarioId, text)
         session.lastQuestionId = question.id
       } catch (e: any) {
         session.lastError = e
@@ -73,7 +73,7 @@ export const averWorkspaceAdapter = implement(averWorkspace, {
     resolveQuestion: async (session, { scenarioId, questionId, answer }) => {
       try {
         session.lastError = undefined
-        session.ops.resolveQuestion(scenarioId, questionId, answer)
+        await session.ops.resolveQuestion(scenarioId, questionId, answer)
       } catch (e: any) {
         session.lastError = e
       }
@@ -82,7 +82,7 @@ export const averWorkspaceAdapter = implement(averWorkspace, {
     linkToDomain: async (session, { scenarioId, domainOperation, testNames, approvalBaseline }) => {
       try {
         session.lastError = undefined
-        session.ops.linkToDomain(scenarioId, { domainOperation, testNames, approvalBaseline })
+        await session.ops.linkToDomain(scenarioId, { domainOperation, testNames, approvalBaseline })
       } catch (e: any) {
         session.lastError = e
       }
@@ -91,7 +91,7 @@ export const averWorkspaceAdapter = implement(averWorkspace, {
     deleteScenario: async (session, { id }) => {
       try {
         session.lastError = undefined
-        session.ops.deleteScenario(id)
+        await session.ops.deleteScenario(id)
       } catch (e: any) {
         session.lastError = e
       }
@@ -100,7 +100,7 @@ export const averWorkspaceAdapter = implement(averWorkspace, {
     importScenarios: async (session, { json }) => {
       try {
         session.lastError = undefined
-        session.lastImportResult = importJson(session.store, json)
+        session.lastImportResult = await importJson(session.store, json)
       } catch (e: any) {
         session.lastError = e
       }
@@ -116,13 +116,13 @@ export const averWorkspaceAdapter = implement(averWorkspace, {
 
   queries: {
     scenario: async (session, { id }) => {
-      const s = session.ops.getScenario(id)
+      const s = await session.ops.getScenario(id)
       if (!s) return undefined
       return { stage: s.stage, behavior: s.behavior, mode: s.mode }
     },
 
     scenarios: async (session, filter) => {
-      const list = session.ops.getScenarios(filter as any)
+      const list = await session.ops.getScenarios(filter as any)
       return list.map((s: Scenario) => ({ id: s.id, stage: s.stage, behavior: s.behavior }))
     },
 
@@ -131,24 +131,24 @@ export const averWorkspaceAdapter = implement(averWorkspace, {
     },
 
     advanceCandidates: async (session) => {
-      return session.ops.getAdvanceCandidates().map((s: Scenario) => ({
+      return (await session.ops.getAdvanceCandidates()).map((s: Scenario) => ({
         id: s.id,
         stage: s.stage,
       }))
     },
 
     workflowPhase: async (session) => {
-      const workspace = session.store.load()
+      const workspace = await session.store.load()
       return detectPhase(workspace).name
     },
 
     exportedMarkdown: async (session) => {
-      const workspace = session.store.load()
+      const workspace = await session.store.load()
       return exportMarkdown(workspace)
     },
 
     exportedJson: async (session) => {
-      const workspace = session.store.load()
+      const workspace = await session.store.load()
       return exportJson(workspace)
     },
 
@@ -161,49 +161,49 @@ export const averWorkspaceAdapter = implement(averWorkspace, {
     },
 
     scenarioCount: async (session) => {
-      const workspace = session.store.load()
+      const workspace = await session.store.load()
       return workspace.scenarios.length
     },
   },
 
   assertions: {
     scenarioHasStage: async (session, { id, stage }) => {
-      const s = session.ops.getScenario(id)
+      const s = await session.ops.getScenario(id)
       if (!s) throw new Error(`Scenario not found: ${id}`)
       if (s.stage !== stage)
         throw new Error(`Expected stage "${stage}" but got "${s.stage}"`)
     },
 
     scenarioHasMode: async (session, { id, mode }) => {
-      const s = session.ops.getScenario(id)
+      const s = await session.ops.getScenario(id)
       if (!s) throw new Error(`Scenario not found: ${id}`)
       if (s.mode !== mode)
         throw new Error(`Expected mode "${mode}" but got "${s.mode}"`)
     },
 
     scenarioHasPromotedFrom: async (session, { id, stage }) => {
-      const s = session.ops.getScenario(id)
+      const s = await session.ops.getScenario(id)
       if (!s) throw new Error(`Scenario not found: ${id}`)
       if (s.promotedFrom !== stage)
         throw new Error(`Expected promotedFrom "${stage}" but got "${s.promotedFrom}"`)
     },
 
     scenarioHasRegressionRationale: async (session, { id, rationale }) => {
-      const s = session.ops.getScenario(id)
+      const s = await session.ops.getScenario(id)
       if (!s) throw new Error(`Scenario not found: ${id}`)
       if (s.regressionRationale !== rationale)
         throw new Error(`Expected regressionRationale "${rationale}" but got "${s.regressionRationale}"`)
     },
 
     scenarioHasDomainOperation: async (session, { id, operation }) => {
-      const s = session.ops.getScenario(id)
+      const s = await session.ops.getScenario(id)
       if (!s) throw new Error(`Scenario not found: ${id}`)
       if (s.domainOperation !== operation)
         throw new Error(`Expected domainOperation "${operation}" but got "${s.domainOperation}"`)
     },
 
     scenarioHasTestNames: async (session, { id, names }) => {
-      const s = session.ops.getScenario(id)
+      const s = await session.ops.getScenario(id)
       if (!s) throw new Error(`Scenario not found: ${id}`)
       const actual = s.testNames ?? []
       if (JSON.stringify(actual.sort()) !== JSON.stringify(names.sort()))
@@ -211,7 +211,7 @@ export const averWorkspaceAdapter = implement(averWorkspace, {
     },
 
     hasOpenQuestion: async (session, { id, text }) => {
-      const s = session.ops.getScenario(id)
+      const s = await session.ops.getScenario(id)
       if (!s) throw new Error(`Scenario not found: ${id}`)
       const open = s.questions.filter((q: Question) => !q.answer)
       const match = open.find((q: Question) => q.text === text)
@@ -220,7 +220,7 @@ export const averWorkspaceAdapter = implement(averWorkspace, {
     },
 
     questionIsResolved: async (session, { scenarioId, questionId }) => {
-      const s = session.ops.getScenario(scenarioId)
+      const s = await session.ops.getScenario(scenarioId)
       if (!s) throw new Error(`Scenario not found: ${scenarioId}`)
       const q = s.questions.find((q: Question) => q.id === questionId)
       if (!q) throw new Error(`Question not found: ${questionId}`)
@@ -228,7 +228,7 @@ export const averWorkspaceAdapter = implement(averWorkspace, {
     },
 
     summaryCountIs: async (session, { stage, count }) => {
-      const summary = session.ops.getScenarioSummary()
+      const summary = await session.ops.getScenarioSummary()
       const actual = (summary as any)[stage]
       if (actual === undefined) throw new Error(`Unknown stage: ${stage}`)
       if (actual !== count)
@@ -236,26 +236,26 @@ export const averWorkspaceAdapter = implement(averWorkspace, {
     },
 
     openQuestionCountIs: async (session, { count }) => {
-      const summary = session.ops.getScenarioSummary()
+      const summary = await session.ops.getScenarioSummary()
       if (summary.openQuestions !== count)
         throw new Error(`Expected ${count} open questions but got ${summary.openQuestions}`)
     },
 
     workflowPhaseIs: async (session, { phase }) => {
-      const workspace = session.store.load()
+      const workspace = await session.store.load()
       const actual = detectPhase(workspace).name
       if (actual !== phase)
         throw new Error(`Expected phase "${phase}" but got "${actual}"`)
     },
 
     advanceCandidateCountIs: async (session, { count }) => {
-      const actual = session.ops.getAdvanceCandidates().length
+      const actual = (await session.ops.getAdvanceCandidates()).length
       if (actual !== count)
         throw new Error(`Expected ${count} advance candidates but got ${actual}`)
     },
 
     markdownContains: async (session, { text }) => {
-      const workspace = session.store.load()
+      const workspace = await session.store.load()
       const md = exportMarkdown(workspace)
       if (!md.includes(text))
         throw new Error(`Expected markdown to contain "${text}"`)
@@ -271,14 +271,14 @@ export const averWorkspaceAdapter = implement(averWorkspace, {
     },
 
     scenarioSurvivedRoundTrip: async (session, { id, behavior }) => {
-      const s = session.ops.getScenario(id)
+      const s = await session.ops.getScenario(id)
       if (!s) throw new Error(`Scenario not found after reload: ${id}`)
       if (s.behavior !== behavior)
         throw new Error(`Expected behavior "${behavior}" but got "${s.behavior}"`)
     },
 
     scenarioDoesNotExist: async (session, { id }) => {
-      const s = session.ops.getScenario(id)
+      const s = await session.ops.getScenario(id)
       if (s) throw new Error(`Expected scenario ${id} to not exist but it does`)
     },
 

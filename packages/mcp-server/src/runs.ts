@@ -1,5 +1,6 @@
-import { existsSync, mkdirSync, readFileSync, readdirSync, unlinkSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, readdirSync, unlinkSync } from 'node:fs'
 import { join } from 'node:path'
+import { atomicWriteFileSync } from '@aver/workspace'
 
 export interface TestResult {
   testName: string
@@ -38,7 +39,7 @@ export class RunStore {
     const existing = this.listRuns().filter(f => f.startsWith(base))
     const seq = String(existing.length).padStart(3, '0')
     const filename = `${base}_${seq}.json`
-    writeFileSync(join(this.dir, filename), JSON.stringify(run, null, 2))
+    atomicWriteFileSync(join(this.dir, filename), JSON.stringify(run, null, 2))
     this.enforceRetention()
   }
 

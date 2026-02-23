@@ -348,7 +348,7 @@ export const averMcpIntegrationAdapter = implement(averMcp, {
     },
 
     scenarioHasStage: async (session, { id, stage }) => {
-      const scenarios = getScenariosHandler({}, session.workspaceBasePath, session.workspaceProjectId)
+      const scenarios = await getScenariosHandler({}, session.workspaceBasePath, session.workspaceProjectId)
       const scenario = scenarios.find(s => s.id === id)
       if (!scenario) throw new Error(`Scenario "${id}" not found`)
       if (scenario.stage !== stage)
@@ -356,7 +356,7 @@ export const averMcpIntegrationAdapter = implement(averMcp, {
     },
 
     scenarioHasRegressionRationale: async (session, { id, rationale }) => {
-      const scenarios = getScenariosHandler({}, session.workspaceBasePath, session.workspaceProjectId)
+      const scenarios = await getScenariosHandler({}, session.workspaceBasePath, session.workspaceProjectId)
       const scenario = scenarios.find(s => s.id === id)
       if (!scenario) throw new Error(`Scenario "${id}" not found`)
       if (scenario.regressionRationale !== rationale)
@@ -364,7 +364,7 @@ export const averMcpIntegrationAdapter = implement(averMcp, {
     },
 
     questionIsResolved: async (session, { scenarioId, questionId }) => {
-      const scenarios = getScenariosHandler({}, session.workspaceBasePath, session.workspaceProjectId)
+      const scenarios = await getScenariosHandler({}, session.workspaceBasePath, session.workspaceProjectId)
       const scenario = scenarios.find(s => s.id === scenarioId)
       if (!scenario) throw new Error(`Scenario "${scenarioId}" not found`)
       const question = scenario.questions?.find(q => q.id === questionId)
@@ -374,7 +374,7 @@ export const averMcpIntegrationAdapter = implement(averMcp, {
     },
 
     scenarioHasDomainOperation: async (session, { id, operation }) => {
-      const scenarios = getScenariosHandler({}, session.workspaceBasePath, session.workspaceProjectId)
+      const scenarios = await getScenariosHandler({}, session.workspaceBasePath, session.workspaceProjectId)
       const scenario = scenarios.find(s => s.id === id)
       if (!scenario) throw new Error(`Scenario "${id}" not found`)
       if (scenario.domainOperation !== operation)
@@ -388,13 +388,13 @@ export const averMcpIntegrationAdapter = implement(averMcp, {
     },
 
     workflowPhaseIs: async (session, { phase }) => {
-      const result = getWorkflowPhaseHandler(session.workspaceBasePath, session.workspaceProjectId)
+      const result = await getWorkflowPhaseHandler(session.workspaceBasePath, session.workspaceProjectId)
       if (result.name !== phase)
         throw new Error(`Expected workflow phase "${phase}" but got "${result.name}"`)
     },
 
     scenarioCountIs: async (session, { count }) => {
-      const scenarios = getScenariosHandler({}, session.workspaceBasePath, session.workspaceProjectId)
+      const scenarios = await getScenariosHandler({}, session.workspaceBasePath, session.workspaceProjectId)
       if (scenarios.length !== count)
         throw new Error(`Expected ${count} scenarios but got ${scenarios.length}`)
     },

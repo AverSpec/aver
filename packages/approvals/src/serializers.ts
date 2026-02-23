@@ -1,4 +1,5 @@
-export type SerializerName = 'json' | 'text'
+import type { SerializerName } from './types'
+export type { SerializerName }
 
 export interface Serializer {
   name: SerializerName

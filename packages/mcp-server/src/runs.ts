@@ -11,6 +11,7 @@ export interface TestResult {
 export interface RunData {
   timestamp: string
   results: TestResult[]
+  error?: string
   vocabularyCoverage?: Array<{
     domain: string
     actions: { total: string[]; called: string[] }

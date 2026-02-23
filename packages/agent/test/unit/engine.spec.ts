@@ -334,6 +334,150 @@ describe('CycleEngine', () => {
     expect(artifact!.content).toContain('# Findings')
   })
 
+  it('sets error status when supervisor dispatch fails', async () => {
+    mockSupervisor.mockRejectedValueOnce(new Error('API key expired'))
+
+    const engine = new CycleEngine({
+      agentPath: dir,
+      workspacePath: dir,
+      projectId: 'test',
+      config,
+    })
+
+    await engine.start('will fail')
+    const session = await engine.getSession()
+    expect(session!.status).toBe('error')
+    expect(session!.lastError).toContain('API key expired')
+  })
+
+  it('sets error status when worker dispatch fails', async () => {
+    mockSupervisor.mockResolvedValueOnce({
+      decision: {
+        action: {
+          type: 'dispatch_worker',
+          worker: { goal: 'work', artifacts: [], skill: 'tdd-loop', allowUserQuestions: false, permissionLevel: 'edit' },
+        },
+      },
+      tokenUsage: 100,
+    })
+
+    mockWorker.mockRejectedValueOnce(new Error('Rate limit exceeded'))
+
+    const engine = new CycleEngine({
+      agentPath: dir,
+      workspacePath: dir,
+      projectId: 'test',
+      config,
+    })
+
+    await engine.start('worker will fail')
+    const session = await engine.getSession()
+    expect(session!.status).toBe('error')
+    expect(session!.lastError).toContain('Rate limit exceeded')
+  })
+
+  it('sets error status when all parallel workers fail', async () => {
+    mockSupervisor.mockResolvedValueOnce({
+      decision: {
+        action: {
+          type: 'dispatch_workers',
+          workers: [
+            { goal: 'task A', artifacts: [], skill: 'investigation', allowUserQuestions: false, permissionLevel: 'read_only' },
+            { goal: 'task B', artifacts: [], skill: 'investigation', allowUserQuestions: false, permissionLevel: 'read_only' },
+          ],
+        },
+      },
+      tokenUsage: 100,
+    })
+
+    mockWorker
+      .mockRejectedValueOnce(new Error('Worker A failed'))
+      .mockRejectedValueOnce(new Error('Worker B failed'))
+
+    const engine = new CycleEngine({
+      agentPath: dir,
+      workspacePath: dir,
+      projectId: 'test',
+      config,
+    })
+
+    await engine.start('all workers fail')
+    const session = await engine.getSession()
+    expect(session!.status).toBe('error')
+    expect(session!.lastError).toContain('All workers failed')
+  })
+
+  it('continues with successful results when some parallel workers fail', async () => {
+    mockSupervisor.mockResolvedValueOnce({
+      decision: {
+        action: {
+          type: 'dispatch_workers',
+          workers: [
+            { goal: 'task A', artifacts: [], skill: 'investigation', allowUserQuestions: false, permissionLevel: 'read_only' },
+            { goal: 'task B', artifacts: [], skill: 'investigation', allowUserQuestions: false, permissionLevel: 'read_only' },
+          ],
+        },
+      },
+      tokenUsage: 100,
+    })
+
+    mockWorker
+      .mockResolvedValueOnce({ result: { summary: 'A done', artifacts: [], status: 'complete' }, tokenUsage: 200 })
+      .mockRejectedValueOnce(new Error('Worker B failed'))
+
+    // Supervisor gets the partial results and stops
+    mockSupervisor.mockResolvedValueOnce({
+      decision: { action: { type: 'stop', reason: 'partial results' } },
+      tokenUsage: 50,
+    })
+
+    const engine = new CycleEngine({
+      agentPath: dir,
+      workspacePath: dir,
+      projectId: 'test',
+      config,
+    })
+
+    await engine.start('partial failure')
+    const session = await engine.getSession()
+    expect(session!.status).toBe('stopped')
+    // Engine continued with the one successful result
+    expect(mockSupervisor).toHaveBeenCalledTimes(2)
+  })
+
+  it('enforces cycle depth limit', async () => {
+    const limitedConfig: AgentConfig = {
+      ...config,
+      cycles: { ...config.cycles, maxCycleDepth: 2 },
+    }
+
+    // First cycle: checkpoint (depth 0 → triggers depth 1)
+    mockSupervisor.mockResolvedValueOnce({
+      decision: { action: { type: 'checkpoint', summary: 'progress' } },
+      tokenUsage: 100,
+    })
+
+    // Second cycle: another checkpoint (depth 1 → triggers depth 2, which hits limit)
+    mockSupervisor.mockResolvedValueOnce({
+      decision: { action: { type: 'checkpoint', summary: 'more progress' } },
+      tokenUsage: 100,
+    })
+
+    const engine = new CycleEngine({
+      agentPath: dir,
+      workspacePath: dir,
+      projectId: 'test',
+      config: limitedConfig,
+    })
+
+    await engine.start('deep recursion')
+    const session = await engine.getSession()
+    expect(session!.status).toBe('error')
+    expect(session!.lastError).toContain('Cycle depth limit reached')
+    // Only 2 supervisor calls — the third was blocked by depth limit
+    expect(mockSupervisor).toHaveBeenCalledTimes(2)
+  })
+
   it('resumes from paused state with user message', async () => {
     // Initial start — ask_user, no callback
     mockSupervisor.mockResolvedValueOnce({

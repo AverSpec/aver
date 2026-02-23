@@ -41,6 +41,9 @@ export async function dispatchSupervisor(
     if (message.type === 'result' && message.subtype === 'success') {
       tokenUsage = message.usage.input_tokens + message.usage.output_tokens
     }
+    if (message.type === 'result' && message.subtype === 'error') {
+      throw new Error(`Supervisor dispatch failed: ${(message as any).error ?? 'unknown SDK error'}`)
+    }
   }
 
   const decision = parseDecision(assistantText)

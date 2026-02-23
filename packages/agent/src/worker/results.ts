@@ -1,4 +1,5 @@
 import type { WorkerResult } from '../types.js'
+import { extractJson } from '../parsing.js'
 
 export function parseWorkerResult(text: string): WorkerResult {
   const json = extractJson(text)
@@ -28,21 +29,4 @@ export function parseWorkerResult(text: string): WorkerResult {
     status: obj.status === 'stuck' ? 'stuck' : 'complete',
     tokenUsage: typeof obj.tokenUsage === 'number' ? obj.tokenUsage : undefined,
   }
-}
-
-function extractJson(text: string): string {
-  const codeBlockMatch = text.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/)
-  if (codeBlockMatch) return codeBlockMatch[1].trim()
-
-  const jsonStart = text.indexOf('{')
-  if (jsonStart >= 0) {
-    let depth = 0
-    for (let i = jsonStart; i < text.length; i++) {
-      if (text[i] === '{') depth++
-      if (text[i] === '}') depth--
-      if (depth === 0) return text.slice(jsonStart, i + 1)
-    }
-  }
-
-  return text
 }

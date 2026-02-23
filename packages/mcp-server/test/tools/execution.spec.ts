@@ -7,6 +7,7 @@ import {
   buildRunSummary,
   getFailureDetailsHandler,
   getTestTraceHandler,
+  parseVitestJson,
 } from '../../src/tools/execution'
 
 describe('buildRunSummary()', () => {
@@ -139,5 +140,85 @@ describe('getTestTraceHandler()', () => {
     })
     const result = getTestTraceHandler(store, 'nonexistent')
     expect(result).toBeNull()
+  })
+})
+
+describe('parseVitestJson()', () => {
+  it('parses valid vitest JSON into results', () => {
+    const json = JSON.stringify({
+      testResults: [{
+        name: '/path/to/acceptance/Cart/cart.spec.ts',
+        assertionResults: [
+          { fullName: 'adds item to cart', status: 'passed' },
+          { fullName: 'removes item from cart', status: 'failed' },
+        ],
+      }],
+    })
+    const run = parseVitestJson(json)
+    expect(run.results).toHaveLength(2)
+    expect(run.results[0]).toMatchObject({ testName: 'adds item to cart', status: 'pass' })
+    expect(run.results[1]).toMatchObject({ testName: 'removes item from cart', status: 'fail' })
+    expect(run.error).toBeUndefined()
+  })
+
+  it('returns error field when JSON is invalid', () => {
+    const run = parseVitestJson('not valid json at all')
+    expect(run.results).toEqual([])
+    expect(run.error).toBeDefined()
+    expect(run.error).toContain('Failed to parse vitest JSON output')
+    expect(run.error).toContain('not valid json at all')
+  })
+
+  it('returns error field when input is empty string', () => {
+    const run = parseVitestJson('')
+    expect(run.results).toEqual([])
+    expect(run.error).toBeDefined()
+    expect(run.error).toContain('Failed to parse vitest JSON output')
+  })
+
+  it('returns empty results without error when testResults is missing', () => {
+    const run = parseVitestJson('{}')
+    expect(run.results).toEqual([])
+    expect(run.error).toBeUndefined()
+  })
+
+  it('returns empty results without error when testResults is empty array', () => {
+    const run = parseVitestJson(JSON.stringify({ testResults: [] }))
+    expect(run.results).toEqual([])
+    expect(run.error).toBeUndefined()
+  })
+
+  it('truncates raw output snippet to 500 chars', () => {
+    const longGarbage = 'x'.repeat(1000)
+    const run = parseVitestJson(longGarbage)
+    expect(run.error).toBeDefined()
+    // The snippet in the error message should be at most 500 chars of the original
+    const snippetMatch = run.error!.match(/Raw output \(first 500 chars\): (.*)/)
+    expect(snippetMatch).toBeTruthy()
+    expect(snippetMatch![1].length).toBe(500)
+  })
+})
+
+describe('buildRunSummary() error propagation', () => {
+  it('propagates error from RunData to RunSummary', () => {
+    const run = {
+      timestamp: '2026-01-01T00:00:00.000Z',
+      results: [],
+      error: 'Failed to parse vitest JSON output: Unexpected token',
+    }
+    const summary = buildRunSummary(run)
+    expect(summary.error).toBe('Failed to parse vitest JSON output: Unexpected token')
+    expect(summary.total).toBe(0)
+  })
+
+  it('omits error when RunData has no error', () => {
+    const run = {
+      timestamp: '2026-01-01T00:00:00.000Z',
+      results: [
+        { testName: 'test1', domain: 'Cart', status: 'pass' as const, trace: [] },
+      ],
+    }
+    const summary = buildRunSummary(run)
+    expect(summary.error).toBeUndefined()
   })
 })

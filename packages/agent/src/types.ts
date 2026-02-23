@@ -5,10 +5,11 @@ import type { Workspace, Scenario, Stage } from '@aver/workspace'
 export interface AgentSession {
   id: string
   goal: string
-  status: 'running' | 'paused' | 'stopped' | 'complete'
+  status: 'running' | 'paused' | 'stopped' | 'complete' | 'error'
   cycleCount: number
   workerCount: number
   tokenUsage: { supervisor: number; worker: number }
+  lastError?: string
   createdAt: string
   updatedAt: string
 }
@@ -28,6 +29,7 @@ export interface AgentConfig {
     checkpointInterval: number
     rollupThreshold: number
     maxWorkerIterations: number
+    maxCycleDepth?: number
   }
   dashboard: {
     port: number

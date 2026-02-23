@@ -1,4 +1,5 @@
 import type { SupervisorDecision } from '../types.js'
+import { extractJson } from '../parsing.js'
 
 const VALID_ACTION_TYPES = new Set([
   'dispatch_worker',
@@ -33,23 +34,4 @@ export function parseDecision(text: string): SupervisorDecision {
   }
 
   return decision
-}
-
-function extractJson(text: string): string {
-  // Try to extract from markdown code block
-  const codeBlockMatch = text.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/)
-  if (codeBlockMatch) return codeBlockMatch[1].trim()
-
-  // Try raw JSON (starts with {)
-  const jsonStart = text.indexOf('{')
-  if (jsonStart >= 0) {
-    let depth = 0
-    for (let i = jsonStart; i < text.length; i++) {
-      if (text[i] === '{') depth++
-      if (text[i] === '}') depth--
-      if (depth === 0) return text.slice(jsonStart, i + 1)
-    }
-  }
-
-  return text
 }

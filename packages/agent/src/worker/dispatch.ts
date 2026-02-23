@@ -50,6 +50,9 @@ export async function dispatchWorker(
     if (message.type === 'result' && message.subtype === 'success') {
       tokenUsage = message.usage.input_tokens + message.usage.output_tokens
     }
+    if (message.type === 'result' && message.subtype === 'error') {
+      throw new Error(`Worker dispatch failed: ${(message as any).error ?? 'unknown SDK error'}`)
+    }
   }
 
   const result = parseWorkerResult(assistantText)

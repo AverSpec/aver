@@ -8,6 +8,7 @@ export interface RunSummary {
   failed: number
   skipped: number
   failures: Array<{ testName: string; domain: string }>
+  error?: string
   vocabularyCoverage?: RunData['vocabularyCoverage']
 }
 
@@ -24,6 +25,7 @@ export function buildRunSummary(run: RunData): RunSummary {
     failures: run.results
       .filter((r) => r.status === 'fail')
       .map((r) => ({ testName: r.testName, domain: r.domain })),
+    error: run.error,
     vocabularyCoverage: run.vocabularyCoverage,
   }
 }
@@ -61,7 +63,7 @@ export function runTestsHandler(
   return buildRunSummary(run)
 }
 
-function parseVitestJson(jsonStr: string): RunData {
+export function parseVitestJson(jsonStr: string): RunData {
   const timestamp = new Date().toISOString()
   const results: TestResult[] = []
 
@@ -78,8 +80,11 @@ function parseVitestJson(jsonStr: string): RunData {
         })
       }
     }
-  } catch {
-    // If we can't parse JSON, return empty results
+  } catch (err: unknown) {
+    const reason = err instanceof Error ? err.message : String(err)
+    const snippet = jsonStr.slice(0, 500)
+    const error = `Failed to parse vitest JSON output: ${reason}. Raw output (first 500 chars): ${snippet}`
+    return { timestamp, results, error }
   }
 
   return { timestamp, results }

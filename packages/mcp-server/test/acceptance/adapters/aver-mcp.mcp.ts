@@ -67,11 +67,16 @@ const mcpProtocol: Protocol<McpIntegrationSession> = {
 function parseToolResult(result: any): unknown {
   const text = result.content?.[0]?.text
   if (!text) return null
-  try {
-    return JSON.parse(text)
-  } catch {
-    return text
+  const trimmed = text.trimStart()
+  if (trimmed[0] === '{' || trimmed[0] === '[') {
+    try {
+      return JSON.parse(text)
+    } catch (e) {
+      throw new Error(`Failed to parse MCP tool result as JSON: ${(e as Error).message}\nRaw text: ${text.slice(0, 200)}`)
+    }
   }
+  // Plain-text response (error messages, info text) — return as-is for callers to handle
+  return text
 }
 
 export const averMcpIntegrationAdapter = implement(averMcp, {

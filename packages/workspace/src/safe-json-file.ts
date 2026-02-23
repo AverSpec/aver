@@ -15,7 +15,17 @@ export function withLock(key: string, fn: () => Promise<void>): Promise<void> {
   const prev = locks.get(key) ?? Promise.resolve()
   const next = prev.then(fn, fn) // run fn regardless of prior rejection
   locks.set(key, next)
+  next.then(() => {
+    if (locks.get(key) === next) locks.delete(key)
+  }, () => {
+    if (locks.get(key) === next) locks.delete(key)
+  })
   return next
+}
+
+/** @internal — exposed for testing only */
+export function _testLockMapSize(): number {
+  return locks.size
 }
 
 /**

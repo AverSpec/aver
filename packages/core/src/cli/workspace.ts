@@ -28,6 +28,28 @@ interface ScenarioRow {
   behavior: string
 }
 
+/**
+ * Shape of the dynamically-imported @aver/workspace module.
+ * We don't import types at compile time to avoid a hard dependency.
+ */
+interface WorkspaceModule {
+  WorkspaceOps: new (store: any) => {
+    getScenarioSummary(): Promise<ScenarioSummary>
+    captureScenario(input: { behavior: string; context?: string; story?: string; mode?: 'observed' | 'intended' }): Promise<any>
+    advanceScenario(id: string, opts: { rationale: string; promotedBy: string }): Promise<{ scenario: any; warnings: string[] }>
+    regressScenario(id: string, opts: { targetStage: string; rationale: string }): Promise<any>
+    getScenarios(filter: { stage?: string; keyword?: string }): Promise<ScenarioRow[]>
+  }
+  WorkspaceStore: {
+    new (basePath: string, projectId: string): { load(): Promise<any> }
+    withDefaults(projectId: string): { load(): Promise<any> }
+  }
+  detectPhase(workspace: any): Phase
+  exportMarkdown(workspace: any): string
+  exportJson(workspace: any): string
+  importJson(store: any, json: string): Promise<{ added: number; skipped: number }>
+}
+
 export function formatSummary(summary: ScenarioSummary, phase: Phase, projectId: string): string {
   const lines = [
     `Workspace: ${projectId}`,
@@ -62,7 +84,7 @@ export function formatScenarioTable(scenarios: ScenarioRow[]): string {
   return lines.join('\n')
 }
 
-async function statusCommand(store: any, ws: any): Promise<void> {
+async function statusCommand(store: any, ws: WorkspaceModule): Promise<void> {
   const ops = new ws.WorkspaceOps(store)
   const summary = await ops.getScenarioSummary()
   const workspace = await store.load()
@@ -71,7 +93,7 @@ async function statusCommand(store: any, ws: any): Promise<void> {
   console.log(formatSummary(summary, phase, projectId))
 }
 
-async function captureCommand(store: any, ws: any, args: string[]): Promise<void> {
+async function captureCommand(store: any, ws: WorkspaceModule, args: string[]): Promise<void> {
   const { values, positionals } = parseArgs({
     args,
     options: {
@@ -99,7 +121,7 @@ async function captureCommand(store: any, ws: any, args: string[]): Promise<void
   if (scenario.story) console.log(`  Story: ${scenario.story}`)
 }
 
-async function advanceCommand(store: any, ws: any, args: string[]): Promise<void> {
+async function advanceCommand(store: any, ws: WorkspaceModule, args: string[]): Promise<void> {
   const { values, positionals } = parseArgs({
     args,
     options: {
@@ -125,7 +147,7 @@ async function advanceCommand(store: any, ws: any, args: string[]): Promise<void
   }
 }
 
-async function regressCommand(store: any, ws: any, args: string[]): Promise<void> {
+async function regressCommand(store: any, ws: WorkspaceModule, args: string[]): Promise<void> {
   const { values, positionals } = parseArgs({
     args,
     options: {
@@ -148,7 +170,7 @@ async function regressCommand(store: any, ws: any, args: string[]): Promise<void
   console.log(`  Behavior: ${scenario.behavior}`)
 }
 
-async function scenariosCommand(store: any, ws: any, args: string[]): Promise<void> {
+async function scenariosCommand(store: any, ws: WorkspaceModule, args: string[]): Promise<void> {
   const { values } = parseArgs({
     args,
     options: {
@@ -167,7 +189,7 @@ async function scenariosCommand(store: any, ws: any, args: string[]): Promise<vo
   console.log(formatScenarioTable(scenarios))
 }
 
-async function exportCommand(store: any, ws: any, args: string[]): Promise<void> {
+async function exportCommand(store: any, ws: WorkspaceModule, args: string[]): Promise<void> {
   const { values } = parseArgs({
     args,
     options: {
@@ -190,7 +212,7 @@ async function exportCommand(store: any, ws: any, args: string[]): Promise<void>
   }
 }
 
-async function importCommand(store: any, ws: any, args: string[]): Promise<void> {
+async function importCommand(store: any, ws: WorkspaceModule, args: string[]): Promise<void> {
   const { positionals } = parseArgs({
     args,
     options: {},
@@ -241,9 +263,9 @@ export async function runWorkspace(rawArgs: string[]): Promise<void> {
     return
   }
 
-  let ws: any
+  let ws: WorkspaceModule
   try {
-    ws = await import('@aver/workspace')
+    ws = await import('@aver/workspace') as unknown as WorkspaceModule
   } catch (e: unknown) {
     if (e && typeof e === 'object' && 'code' in e && e.code === 'ERR_MODULE_NOT_FOUND') {
       console.error('Workspace not installed. Run: pnpm add @aver/workspace')

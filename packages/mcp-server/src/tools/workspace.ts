@@ -209,7 +209,7 @@ export function registerWorkspaceTools(server: McpServer, config?: ToolsConfig):
   server.registerTool(
     'advance_scenario',
     {
-      description: 'Advance a scenario to the next maturity stage (captured -> characterized -> mapped -> specified -> implemented)',
+      description: 'Advance a scenario to the next maturity stage (captured -> characterized -> mapped -> specified -> implemented). Returns { scenario, warnings } where warnings contains advisory messages about missing content (e.g., no rules, open questions, no domain links).',
       inputSchema: {
         id: z.string().describe('The ID of the scenario to advance'),
         rationale: z.string().describe('Reason for advancement'),

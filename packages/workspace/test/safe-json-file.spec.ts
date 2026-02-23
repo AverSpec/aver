@@ -3,7 +3,7 @@ import { mkdtemp, rm, writeFile, readFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { SafeJsonFile, atomicWriteFile, atomicWriteFileSync, withLock } from '../src/safe-json-file'
+import { SafeJsonFile, atomicWriteFile, atomicWriteFileSync, withLock, _testLockMapSize } from '../src/safe-json-file'
 
 describe('SafeJsonFile', () => {
   let dir: string
@@ -187,5 +187,12 @@ describe('withLock', () => {
     await Promise.all([p1, p2])
     // b should finish before a (different keys, no serialization)
     expect(order).toEqual(['b', 'a'])
+  })
+
+  it('cleans up lock entries after operations complete', async () => {
+    await withLock('cleanup-key', async () => {})
+    // Allow microtask to run cleanup
+    await new Promise(r => setTimeout(r, 0))
+    expect(_testLockMapSize()).toBe(0)
   })
 })

@@ -41,20 +41,24 @@ export class ContextCurator {
     this.storyArchiver = new StoryArchiver(this.artifactStore)
   }
 
-  getArtifactStore(): ArtifactStore {
-    return this.artifactStore
+  async writeArtifact(artifact: { type: string; name: string; summary: string; content: string }): Promise<void> {
+    await this.artifactStore.write(artifact)
   }
 
-  getEventLog(): EventLog {
-    return this.eventLog
+  async readArtifact(name: string): Promise<ArtifactContent | undefined> {
+    return this.artifactStore.read(name)
   }
 
-  getCheckpointManager(): CheckpointManager {
-    return this.checkpointManager
+  async logEvent(event: { timestamp: string; type: string; cycleId: string; data: Record<string, unknown> }): Promise<void> {
+    await this.eventLog.append(event)
   }
 
-  getStoryArchiver(): StoryArchiver {
-    return this.storyArchiver
+  async createCheckpoint(summary: string): Promise<void> {
+    await this.checkpointManager.createCheckpoint(summary)
+  }
+
+  async archiveStory(scenarioId: string, summary: string, constraints: string[]): Promise<void> {
+    await this.storyArchiver.archiveStory(scenarioId, summary, constraints)
   }
 
   async buildSupervisorInput(options: BuildInputOptions): Promise<SupervisorInput> {

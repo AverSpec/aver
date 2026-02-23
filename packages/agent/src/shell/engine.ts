@@ -74,7 +74,7 @@ export class CycleEngine {
   }
 
   async readArtifact(name: string): Promise<ArtifactContent | undefined> {
-    return this.curator.getArtifactStore().read(name)
+    return this.curator.readArtifact(name)
   }
 
   private async runCycle(
@@ -157,13 +157,13 @@ export class CycleEngine {
         break
 
       case 'checkpoint':
-        await this.curator.getCheckpointManager().createCheckpoint(decision.action.summary)
+        await this.curator.createCheckpoint(decision.action.summary)
         await this.logEvent('checkpoint', { summary: decision.action.summary })
         await this.runCycle('timer', undefined, undefined, depth + 1)
         break
 
       case 'complete_story':
-        await this.curator.getStoryArchiver().archiveStory(
+        await this.curator.archiveStory(
           decision.action.scenarioId,
           decision.action.summary,
           decision.action.projectConstraints ?? [],
@@ -203,7 +203,7 @@ export class CycleEngine {
     }
 
     for (const artifact of result.artifacts) {
-      await this.curator.getArtifactStore().write(artifact)
+      await this.curator.writeArtifact(artifact)
     }
 
     await this.sessionStore.recordWorkerCompletion(tokenUsage)
@@ -234,7 +234,7 @@ export class CycleEngine {
       }
 
       for (const artifact of result.artifacts) {
-        await this.curator.getArtifactStore().write(artifact)
+        await this.curator.writeArtifact(artifact)
       }
 
       await this.sessionStore.recordWorkerCompletion(tokenUsage)
@@ -260,7 +260,7 @@ export class CycleEngine {
 
   private async logEvent(type: AgentEvent['type'], data: Record<string, unknown>): Promise<void> {
     const session = await this.sessionStore.load()
-    await this.curator.getEventLog().append({
+    await this.curator.logEvent({
       timestamp: new Date().toISOString(),
       type,
       cycleId: `cycle-${session?.cycleCount ?? 0}`,

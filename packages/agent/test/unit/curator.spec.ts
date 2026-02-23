@@ -44,9 +44,8 @@ describe('ContextCurator', () => {
   })
 
   it('loads curated artifacts for worker', async () => {
-    const artifacts = curator.getArtifactStore()
-    await artifacts.write({ type: 'investigation', name: 'auth', summary: 'auth inv', content: 'auth content' })
-    await artifacts.write({ type: 'investigation', name: 'checkout', summary: 'checkout inv', content: 'checkout content' })
+    await curator.writeArtifact({ type: 'investigation', name: 'auth', summary: 'auth inv', content: 'auth content' })
+    await curator.writeArtifact({ type: 'investigation', name: 'checkout', summary: 'checkout inv', content: 'checkout content' })
 
     const loaded = await curator.loadArtifacts(['auth'])
     expect(loaded).toHaveLength(1)

@@ -1,27 +1,6 @@
 import { basename, resolve } from 'node:path'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { parseArgs } from 'node:util'
-import { WorkspaceStore, WorkspaceOps, detectPhase, exportMarkdown, exportJson, importJson } from '@aver/workspace'
-import type { Stage } from '@aver/workspace'
-
-function resolveStore(args: string[]): { store: WorkspaceStore; remainingArgs: string[] } {
-  // Extract --workspace-path from args before subcommand parsing
-  const wpIdx = args.indexOf('--workspace-path')
-  let workspacePath: string | undefined
-  const remainingArgs = [...args]
-
-  if (wpIdx !== -1 && wpIdx + 1 < args.length) {
-    workspacePath = args[wpIdx + 1]
-    remainingArgs.splice(wpIdx, 2)
-  }
-
-  const projectId = basename(process.cwd())
-
-  if (workspacePath) {
-    return { store: new WorkspaceStore(resolve(workspacePath), projectId), remainingArgs }
-  }
-  return { store: WorkspaceStore.withDefaults(projectId), remainingArgs }
-}
 
 function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1)
@@ -83,16 +62,16 @@ export function formatScenarioTable(scenarios: ScenarioRow[]): string {
   return lines.join('\n')
 }
 
-async function statusCommand(store: WorkspaceStore): Promise<void> {
-  const ops = new WorkspaceOps(store)
+async function statusCommand(store: any, ws: any): Promise<void> {
+  const ops = new ws.WorkspaceOps(store)
   const summary = await ops.getScenarioSummary()
   const workspace = await store.load()
-  const phase = detectPhase(workspace)
+  const phase = ws.detectPhase(workspace)
   const projectId = basename(process.cwd())
   console.log(formatSummary(summary, phase, projectId))
 }
 
-async function captureCommand(store: WorkspaceStore, args: string[]): Promise<void> {
+async function captureCommand(store: any, ws: any, args: string[]): Promise<void> {
   const { values, positionals } = parseArgs({
     args,
     options: {
@@ -111,7 +90,7 @@ async function captureCommand(store: WorkspaceStore, args: string[]): Promise<vo
   }
 
   const mode = (values.mode === 'intended' ? 'intended' : 'observed') as 'observed' | 'intended'
-  const ops = new WorkspaceOps(store)
+  const ops = new ws.WorkspaceOps(store)
   const scenario = await ops.captureScenario({ behavior, context: values.context, story: values.story, mode })
   console.log(`Captured scenario: ${scenario.id}`)
   console.log(`  Behavior: ${scenario.behavior}`)
@@ -120,7 +99,7 @@ async function captureCommand(store: WorkspaceStore, args: string[]): Promise<vo
   if (scenario.story) console.log(`  Story: ${scenario.story}`)
 }
 
-async function advanceCommand(store: WorkspaceStore, args: string[]): Promise<void> {
+async function advanceCommand(store: any, ws: any, args: string[]): Promise<void> {
   const { values, positionals } = parseArgs({
     args,
     options: {
@@ -137,13 +116,13 @@ async function advanceCommand(store: WorkspaceStore, args: string[]): Promise<vo
     process.exit(1)
   }
 
-  const ops = new WorkspaceOps(store)
+  const ops = new ws.WorkspaceOps(store)
   const scenario = await ops.advanceScenario(id, { rationale: values.rationale, promotedBy: values.by })
   console.log(`Advanced: ${scenario.id} -> ${scenario.stage}`)
   console.log(`  Behavior: ${scenario.behavior}`)
 }
 
-async function regressCommand(store: WorkspaceStore, args: string[]): Promise<void> {
+async function regressCommand(store: any, ws: any, args: string[]): Promise<void> {
   const { values, positionals } = parseArgs({
     args,
     options: {
@@ -160,13 +139,13 @@ async function regressCommand(store: WorkspaceStore, args: string[]): Promise<vo
     process.exit(1)
   }
 
-  const ops = new WorkspaceOps(store)
-  const scenario = await ops.regressScenario(id, { targetStage: values.to as Stage, rationale: values.rationale })
+  const ops = new ws.WorkspaceOps(store)
+  const scenario = await ops.regressScenario(id, { targetStage: values.to, rationale: values.rationale })
   console.log(`Regressed: ${scenario.id} -> ${scenario.stage}`)
   console.log(`  Behavior: ${scenario.behavior}`)
 }
 
-async function scenariosCommand(store: WorkspaceStore, args: string[]): Promise<void> {
+async function scenariosCommand(store: any, ws: any, args: string[]): Promise<void> {
   const { values } = parseArgs({
     args,
     options: {
@@ -177,15 +156,15 @@ async function scenariosCommand(store: WorkspaceStore, args: string[]): Promise<
     allowPositionals: false,
   })
 
-  const ops = new WorkspaceOps(store)
+  const ops = new ws.WorkspaceOps(store)
   const scenarios = await ops.getScenarios({
-    stage: values.stage as Stage | undefined,
+    stage: values.stage,
     keyword: values.keyword,
   })
   console.log(formatScenarioTable(scenarios))
 }
 
-async function exportCommand(store: WorkspaceStore, args: string[]): Promise<void> {
+async function exportCommand(store: any, ws: any, args: string[]): Promise<void> {
   const { values } = parseArgs({
     args,
     options: {
@@ -198,7 +177,7 @@ async function exportCommand(store: WorkspaceStore, args: string[]): Promise<voi
 
   const workspace = await store.load()
   const format = values.format ?? 'md'
-  const output = format === 'json' ? exportJson(workspace) : exportMarkdown(workspace)
+  const output = format === 'json' ? ws.exportJson(workspace) : ws.exportMarkdown(workspace)
 
   if (values.file) {
     writeFileSync(resolve(values.file), output)
@@ -208,7 +187,7 @@ async function exportCommand(store: WorkspaceStore, args: string[]): Promise<voi
   }
 }
 
-async function importCommand(store: WorkspaceStore, args: string[]): Promise<void> {
+async function importCommand(store: any, ws: any, args: string[]): Promise<void> {
   const { positionals } = parseArgs({
     args,
     options: {},
@@ -223,7 +202,7 @@ async function importCommand(store: WorkspaceStore, args: string[]): Promise<voi
   }
 
   const json = readFileSync(resolve(filePath), 'utf-8')
-  const result = await importJson(store, json)
+  const result = await ws.importJson(store, json)
   console.log(`Import complete: ${result.added} added, ${result.skipped} skipped`)
 }
 
@@ -248,30 +227,66 @@ Run "aver workspace <command> --help" for command-specific options.
 }
 
 export async function runWorkspace(rawArgs: string[]): Promise<void> {
-  const { store, remainingArgs } = resolveStore(rawArgs)
+  // Strip --workspace-path before checking subcommand
+  const argsWithoutWp = rawArgs.filter((a, i) =>
+    a !== '--workspace-path' && rawArgs[i - 1] !== '--workspace-path')
+  const subcommandArg = argsWithoutWp[0]
+
+  // Help doesn't need workspace package
+  if (subcommandArg === '--help' || subcommandArg === '-h' || subcommandArg === undefined) {
+    printWorkspaceHelp()
+    return
+  }
+
+  let ws: any
+  try {
+    ws = await import('@aver/workspace')
+  } catch (e: unknown) {
+    if (e && typeof e === 'object' && 'code' in e && e.code === 'ERR_MODULE_NOT_FOUND') {
+      console.error('Workspace not installed. Run: pnpm add @aver/workspace')
+      process.exit(1)
+    }
+    throw e
+  }
+
+  // Extract --workspace-path from args before subcommand parsing
+  const wpIdx = rawArgs.indexOf('--workspace-path')
+  let workspacePath: string | undefined
+  const remainingArgs = [...rawArgs]
+
+  if (wpIdx !== -1 && wpIdx + 1 < rawArgs.length) {
+    workspacePath = rawArgs[wpIdx + 1]
+    remainingArgs.splice(wpIdx, 2)
+  }
+
+  const projectId = basename(process.cwd())
+  const store = workspacePath
+    ? new ws.WorkspaceStore(resolve(workspacePath), projectId)
+    : ws.WorkspaceStore.withDefaults(projectId)
+
   const [subcommand, ...subArgs] = remainingArgs
 
   switch (subcommand) {
     case 'status':
-      await statusCommand(store)
+      await statusCommand(store, ws)
       break
     case 'capture':
-      await captureCommand(store, subArgs)
+      await captureCommand(store, ws, subArgs)
       break
     case 'advance':
-      await advanceCommand(store, subArgs)
+      await advanceCommand(store, ws, subArgs)
       break
     case 'regress':
-      await regressCommand(store, subArgs)
+      await regressCommand(store, ws, subArgs)
       break
     case 'scenarios':
-      await scenariosCommand(store, subArgs)
+      await scenariosCommand(store, ws, subArgs)
       break
     case 'export':
-      await exportCommand(store, subArgs)
+      await exportCommand(store, ws, subArgs)
       break
     case 'import':
-      await importCommand(store, subArgs)
+      await importCommand(store, ws, subArgs)
       break
     case '--help':
     case '-h':

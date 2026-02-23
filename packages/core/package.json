@@ -57,7 +57,11 @@
     "prepublishOnly": "pnpm run build"
   },
   "peerDependencies": {
-    "vitest": ">=2.0.0"
+    "vitest": ">=2.0.0",
+    "@aver/workspace": ">=0.1.0"
+  },
+  "peerDependenciesMeta": {
+    "@aver/workspace": { "optional": true }
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
@@ -66,7 +70,6 @@
     "vitest": "^3.0.0"
   },
   "dependencies": {
-    "@aver/workspace": "workspace:^",
     "@clack/prompts": "^1.0.0"
   }
 }

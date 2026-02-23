@@ -36,7 +36,6 @@ export interface Scenario {
   promotedBy?: string
   promotedFrom?: Stage
   regressionRationale?: string
-  humanConfirmed?: boolean
   createdAt: string
   updatedAt: string
 

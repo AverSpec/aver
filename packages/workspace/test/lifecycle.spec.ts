@@ -68,7 +68,6 @@ describe('full lifecycle: captured -> characterized -> mapped -> specified -> im
     const scenario = (await ops.getScenario(obs1.id))!
     expect(scenario.stage).toBe('implemented')
     expect(scenario.domainOperation).toBe('assertion.legacyErrorResponse')
-    expect(scenario.humanConfirmed).toBeUndefined() // we didn't set this in this test
 
     // Verify summary
     const summary = await ops.getScenarioSummary()

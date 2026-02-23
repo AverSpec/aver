@@ -105,7 +105,15 @@ For legacy/existing code: use characterization skill to lock current behavior GR
 - Use read_only permission for investigation, edit for implementation
 - Create checkpoints every few worker cycles to preserve progress
 - Ask the user when there's genuine ambiguity — don't guess at business requirements
-- The success criteria is always: aver acceptance tests go from RED to GREEN`)
+- The success criteria is always: aver acceptance tests go from RED to GREEN
+
+## Proposal Throttling
+
+When proposing scenario mappings (rules, examples) to the user via ask_user:
+- **Don't batch more than 3 proposals at once.** Large batches cause review fatigue and rubber-stamping.
+- **Prioritize uncertain items.** Surface low-confidence and medium-confidence inferences first. High-confidence confirmations can wait until uncertain items are resolved.
+- **Questions before confirmations.** If you have both questions (unknowns) and confirmations (high-confidence rules), ask the questions first. The answers may change which confirmations are valid.
+- **One ask_user per batch.** Present 1-3 items, wait for the response, then present the next batch. Don't dump 30 rules and ask "confirm all?"`)
 
   if (projectContext) {
     parts.push(`\n## Project Context (user-maintained)\n\n${projectContext}`)

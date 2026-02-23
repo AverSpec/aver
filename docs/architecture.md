@@ -195,3 +195,24 @@ The cost model determines when Aver earns its keep.
 **What grows with what:** Vocabulary grows with *domain surface area* — the number of distinct behaviors your system exposes. Tests grow with *scenarios* — the number of ways those behaviors compose. Domain surface area grows slowly; scenarios grow fast. Five domain operations can support fifty tests that compose them in different ways. The adapter investment is amortized across every scenario that uses those operations.
 
 **The breakeven:** With a single adapter, Aver's overhead is roughly equal to well-structured page objects or helper functions — you'd extract those anyway. The cross-adapter benefit kicks in at the second adapter: when two adapters disagree on a behavior, that disagreement surfaces a real bug (API returns different data than the UI shows, unit layer assumes state the integration layer doesn't create). By the time you have two adapters, the bugs caught by cross-level verification exceed the cost of maintaining two sets of handlers.
+
+## Using Aver with AI Agents
+
+`aver run` returning exit code 0 is a machine-verifiable success criterion that any agent framework can use. You don't need `@aver/agent` to get this benefit.
+
+```bash
+# Any agent can use this as its verification step
+npx aver run
+echo $?  # 0 = all behavioral specs pass, non-zero = failures
+```
+
+If your agent framework supports running shell commands and checking exit codes, it can use Aver as its verification layer:
+
+1. Define your domain vocabulary and write behavioral specs
+2. Have your agent implement code
+3. Run `npx aver run` — if it exits 0, the implementation satisfies the spec
+4. If it exits non-zero, the agent has failing tests to work from
+
+This works with Claude Code, Cursor, Cline, Aider, or any agent that can run tests. The domain vocabulary defines correctness; `aver run` verifies it. The agent is a consumer of the testing framework, not a prerequisite for it.
+
+Aver also ships `@aver/agent` — a purpose-built agent that drives the scenario pipeline and uses `aver run` as its own success criterion. But the testing framework stands alone.

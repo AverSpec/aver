@@ -236,6 +236,70 @@ Clears all registered adapters. Useful in test setup.
 
 ---
 
+## Registry Lifecycle
+
+### How Adapters Are Registered
+
+`defineConfig({ adapters })` calls `registerAdapter()` for each adapter when the config module is evaluated. This is the standard path — your `aver.config.ts` runs once and registers all adapters for the process.
+
+```typescript
+// aver.config.ts
+import { defineConfig } from '@aver/core'
+import { unitAdapter } from './adapters/cart.unit'
+import { httpAdapter } from './adapters/cart.http'
+
+export default defineConfig({
+  adapters: [unitAdapter, httpAdapter],
+})
+```
+
+You can also call `registerAdapter()` directly in test files or setup files.
+
+### When Adapters Are Resolved
+
+`suite(domain)` resolves adapters lazily — at test execution time, not when `suite()` is called. On first invocation, `suite()` calls `maybeAutoloadConfig()` to import `aver.config.ts` if it hasn't been loaded yet. Set `AVER_AUTOLOAD_CONFIG=false` to skip this.
+
+Passing an adapter directly — `suite(domain, adapter)` — bypasses the registry entirely.
+
+### Environment Filtering
+
+Two environment variables control which tests run:
+
+- `AVER_ADAPTER=unit` — only run tests for adapters whose protocol name matches
+- `AVER_DOMAIN=ShoppingCart` — only register tests for the named domain
+
+These map to the CLI flags `aver run --adapter unit` and `aver run --domain ShoppingCart`.
+
+### Multi-Adapter Dispatch
+
+When multiple adapters are registered for one domain, `suite()` creates a parameterized test for each:
+
+```
+add item [unit]     ← runs against unit adapter
+add item [http]     ← runs against http adapter
+```
+
+Each adapter gets its own protocol context (fresh `setup()` / `teardown()` per test per adapter).
+
+### Parent Chain Resolution
+
+If no adapter is registered for a domain, `findAdapter()` walks the `domain.parent` chain. This means an adapter registered for a parent domain works for extended domains that haven't overridden it.
+
+### Test Isolation
+
+The registry is process-global state. If your tests register their own adapters (common in framework-level testing), call `resetRegistry()` in `beforeEach` to prevent cross-test leakage:
+
+```typescript
+import { resetRegistry, registerAdapter } from '@aver/core'
+
+beforeEach(() => {
+  resetRegistry()
+  registerAdapter(myTestAdapter)
+})
+```
+
+---
+
 ## Types
 
 ```typescript

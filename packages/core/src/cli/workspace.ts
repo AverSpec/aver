@@ -117,9 +117,12 @@ async function advanceCommand(store: any, ws: any, args: string[]): Promise<void
   }
 
   const ops = new ws.WorkspaceOps(store)
-  const scenario = await ops.advanceScenario(id, { rationale: values.rationale, promotedBy: values.by })
+  const { scenario, warnings } = await ops.advanceScenario(id, { rationale: values.rationale, promotedBy: values.by })
   console.log(`Advanced: ${scenario.id} -> ${scenario.stage}`)
   console.log(`  Behavior: ${scenario.behavior}`)
+  for (const warning of warnings) {
+    console.log(`  Warning: ${warning}`)
+  }
 }
 
 async function regressCommand(store: any, ws: any, args: string[]): Promise<void> {

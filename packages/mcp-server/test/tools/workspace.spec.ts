@@ -113,14 +113,14 @@ describe('workspace tool handlers', () => {
   describe('advance_scenario', () => {
     it('advances captured to characterized', async () => {
       const scenario = await captureScenarioHandler({ behavior: 'a' }, dir, projectId)
-      const advanced = await advanceScenarioHandler({ id: scenario.id, rationale: 'investigated', promotedBy: 'dev' }, dir, projectId)
+      const { scenario: advanced } = await advanceScenarioHandler({ id: scenario.id, rationale: 'investigated', promotedBy: 'dev' }, dir, projectId)
       expect(advanced.stage).toBe('characterized')
     })
 
     it('advances characterized to mapped', async () => {
       const scenario = await captureScenarioHandler({ behavior: 'a' }, dir, projectId)
       await advanceScenarioHandler({ id: scenario.id, rationale: 'step 1', promotedBy: 'dev' }, dir, projectId)
-      const advanced = await advanceScenarioHandler({ id: scenario.id, rationale: 'step 2', promotedBy: 'dev' }, dir, projectId)
+      const { scenario: advanced } = await advanceScenarioHandler({ id: scenario.id, rationale: 'step 2', promotedBy: 'dev' }, dir, projectId)
       expect(advanced.stage).toBe('mapped')
     })
 

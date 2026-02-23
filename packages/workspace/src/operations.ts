@@ -14,6 +14,11 @@ export interface AdvanceInput {
   promotedBy: string
 }
 
+export interface AdvanceResult {
+  scenario: Scenario
+  warnings: string[]
+}
+
 export interface RegressInput {
   targetStage: Stage
   rationale: string
@@ -33,6 +38,31 @@ export interface ScenarioSummary {
   implemented: number
   total: number
   openQuestions: number
+}
+
+function validateAdvancement(scenario: Scenario, from: Stage, to: Stage): string[] {
+  const warnings: string[] = []
+
+  if (from === 'characterized' && to === 'mapped') {
+    if (scenario.rules.length === 0 && scenario.examples.length === 0) {
+      warnings.push('Advancing to mapped with no rules or examples. Consider adding rules/examples first.')
+    }
+  }
+
+  if (from === 'mapped' && to === 'specified') {
+    const openQuestions = scenario.questions.filter(q => !q.answer).length
+    if (openQuestions > 0) {
+      warnings.push(`Advancing to specified with ${openQuestions} open question(s). Consider resolving them first.`)
+    }
+  }
+
+  if (from === 'specified' && to === 'implemented') {
+    if (!scenario.domainOperation && (!scenario.testNames || scenario.testNames.length === 0)) {
+      warnings.push('Advancing to implemented with no domain links. Consider linking to domain operations/tests first.')
+    }
+  }
+
+  return warnings
 }
 
 export class WorkspaceOps {
@@ -59,14 +89,17 @@ export class WorkspaceOps {
     return captured
   }
 
-  async advanceScenario(id: string, input: AdvanceInput): Promise<Scenario> {
+  async advanceScenario(id: string, input: AdvanceInput): Promise<AdvanceResult> {
     let advanced!: Scenario
+    let warnings: string[] = []
     await this.store.mutate(ws => {
       const scenario = ws.scenarios.find(s => s.id === id)
       if (!scenario) throw new Error('Scenario not found: ' + id)
 
       const next = nextStage(scenario.stage)
       if (!next) throw new Error('Cannot advance beyond implemented')
+
+      warnings = validateAdvancement(scenario, scenario.stage, next)
 
       scenario.promotedFrom = scenario.stage
       scenario.promotedBy = input.promotedBy
@@ -75,7 +108,7 @@ export class WorkspaceOps {
       advanced = scenario
       return ws
     })
-    return advanced
+    return { scenario: advanced, warnings }
   }
 
   async regressScenario(id: string, input: RegressInput): Promise<Scenario> {

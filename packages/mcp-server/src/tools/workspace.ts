@@ -12,6 +12,7 @@ import {
   importJson,
   type Stage,
   type Scenario,
+  type AdvanceResult,
   type ScenarioSummary,
   type Question,
   type Phase,
@@ -69,7 +70,7 @@ export async function advanceScenarioHandler(
   input: { id: string; rationale: string; promotedBy: string },
   basePath: string,
   projectId: string,
-): Promise<Scenario> {
+): Promise<AdvanceResult> {
   return createOps(basePath, projectId).advanceScenario(input.id, {
     rationale: input.rationale,
     promotedBy: input.promotedBy,

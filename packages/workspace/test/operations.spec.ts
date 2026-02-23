@@ -58,7 +58,7 @@ describe('WorkspaceOps', () => {
   describe('advanceScenario', () => {
     it('advances captured to characterized with rationale', async () => {
       const scenario = await ops.captureScenario({ behavior: 'returns 200 for errors' })
-      const advanced = await ops.advanceScenario(scenario.id, {
+      const { scenario: advanced } = await ops.advanceScenario(scenario.id, {
         rationale: 'API predates REST conventions',
         promotedBy: 'dev'
       })
@@ -71,7 +71,7 @@ describe('WorkspaceOps', () => {
     it('advances characterized to mapped', async () => {
       const scenario = await ops.captureScenario({ behavior: 'test' })
       await ops.advanceScenario(scenario.id, { rationale: 'characterized', promotedBy: 'dev' })
-      const advanced = await ops.advanceScenario(scenario.id, { rationale: 'confirmed', promotedBy: 'business' })
+      const { scenario: advanced } = await ops.advanceScenario(scenario.id, { rationale: 'confirmed', promotedBy: 'business' })
       expect(advanced.stage).toBe('mapped')
     })
 
@@ -79,7 +79,7 @@ describe('WorkspaceOps', () => {
       const scenario = await ops.captureScenario({ behavior: 'test' })
       await ops.advanceScenario(scenario.id, { rationale: 'characterized', promotedBy: 'dev' })
       await ops.advanceScenario(scenario.id, { rationale: 'mapped', promotedBy: 'business' })
-      const advanced = await ops.advanceScenario(scenario.id, { rationale: 'examples complete', promotedBy: 'testing' })
+      const { scenario: advanced } = await ops.advanceScenario(scenario.id, { rationale: 'examples complete', promotedBy: 'testing' })
       expect(advanced.stage).toBe('specified')
     })
 
@@ -88,7 +88,7 @@ describe('WorkspaceOps', () => {
       await ops.advanceScenario(scenario.id, { rationale: 'characterized', promotedBy: 'dev' })
       await ops.advanceScenario(scenario.id, { rationale: 'mapped', promotedBy: 'business' })
       await ops.advanceScenario(scenario.id, { rationale: 'specified', promotedBy: 'testing' })
-      const advanced = await ops.advanceScenario(scenario.id, { rationale: 'tests written', promotedBy: 'testing' })
+      const { scenario: advanced } = await ops.advanceScenario(scenario.id, { rationale: 'tests written', promotedBy: 'testing' })
       expect(advanced.stage).toBe('implemented')
     })
 
@@ -105,6 +105,46 @@ describe('WorkspaceOps', () => {
     it('throws for unknown scenario', async () => {
       await expect(ops.advanceScenario('nonexistent', { rationale: 'x', promotedBy: 'dev' }))
         .rejects.toThrow('Scenario not found')
+    })
+  })
+
+  describe('advancement warnings', () => {
+    it('warns when advancing to mapped with no rules or examples', async () => {
+      const scenario = await ops.captureScenario({ behavior: 'test' })
+      await ops.advanceScenario(scenario.id, { rationale: 'a', promotedBy: 'dev' })
+      // Now at characterized, advance to mapped
+      const { warnings } = await ops.advanceScenario(scenario.id, { rationale: 'b', promotedBy: 'dev' })
+      expect(warnings).toHaveLength(1)
+      expect(warnings[0]).toContain('no rules or examples')
+    })
+
+    it('warns when advancing to specified with open questions', async () => {
+      const scenario = await ops.captureScenario({ behavior: 'test' })
+      await ops.advanceScenario(scenario.id, { rationale: 'a', promotedBy: 'dev' })
+      await ops.advanceScenario(scenario.id, { rationale: 'b', promotedBy: 'dev' })
+      // Now at mapped, add an open question
+      await ops.addQuestion(scenario.id, 'What about edge cases?')
+      const { warnings } = await ops.advanceScenario(scenario.id, { rationale: 'c', promotedBy: 'dev' })
+      expect(warnings).toHaveLength(1)
+      expect(warnings[0]).toContain('open question')
+    })
+
+    it('warns when advancing to implemented with no domain links', async () => {
+      const scenario = await ops.captureScenario({ behavior: 'test' })
+      await ops.advanceScenario(scenario.id, { rationale: 'a', promotedBy: 'dev' })
+      await ops.advanceScenario(scenario.id, { rationale: 'b', promotedBy: 'dev' })
+      await ops.advanceScenario(scenario.id, { rationale: 'c', promotedBy: 'dev' })
+      // Now at specified, advance to implemented
+      const { warnings } = await ops.advanceScenario(scenario.id, { rationale: 'd', promotedBy: 'dev' })
+      expect(warnings).toHaveLength(1)
+      expect(warnings[0]).toContain('no domain links')
+    })
+
+    it('returns no warnings when content is present', async () => {
+      const scenario = await ops.captureScenario({ behavior: 'test' })
+      // captured -> characterized (no warnings for this transition)
+      const { warnings } = await ops.advanceScenario(scenario.id, { rationale: 'a', promotedBy: 'dev' })
+      expect(warnings).toHaveLength(0)
     })
   })
 

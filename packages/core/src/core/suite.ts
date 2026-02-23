@@ -1,16 +1,15 @@
 import type { Domain } from './domain'
 import type { Adapter } from './adapter'
 import { findAdapter, findAdapters, getAdapters } from './registry'
-import type { TraceEntry, TraceAttachment } from './trace'
+import type { TraceEntry } from './trace'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { runWithTestContext } from './test-context'
 import { computeCoverage } from './coverage'
 import type { VocabularyCoverage } from './coverage'
 import { createProxies } from './proxy'
-import type { CalledOps, Proxies, ActProxy, QueryProxy, AssertProxy } from './proxy'
-import { enhanceWithTrace } from './trace-format'
+import type { CalledOps, ActProxy, QueryProxy, AssertProxy } from './proxy'
+import { runTestWithAdapter } from './test-runner'
 
 export type { ActProxy, QueryProxy, AssertProxy } from './proxy'
 
@@ -159,65 +158,6 @@ export function suite<D extends Domain>(domain: D, adapter?: Adapter): SuiteRetu
         status: 'register' as const,
       }))
     },
-  }
-}
-
-async function runTestWithAdapter<D extends Domain>(
-  adapter: Adapter,
-  domain: D,
-  testName: string,
-  fn: (ctx: TestContext<D>) => Promise<void>,
-  calledOps?: CalledOps,
-): Promise<void> {
-  const trace: TraceEntry[] = []
-  const ctx = await adapter.protocol.setup()
-  const proxies = createProxies(domain, () => ctx, () => adapter, trace, calledOps)
-  const metadata = {
-    testName,
-    domainName: domain.name,
-    adapterName: adapter.domain.name,
-    protocolName: adapter.protocol.name,
-  }
-
-  try {
-    await adapter.protocol.onTestStart?.(ctx, metadata)
-    await runWithTestContext(
-      {
-        testName,
-        domainName: domain.name,
-        protocolName: adapter.protocol.name,
-        trace,
-        extensions: adapter.protocol.extensions ?? {},
-      },
-      async () => fn({ act: proxies.act, query: proxies.query, assert: proxies.assert, trace: () => [...trace] }),
-    )
-    await adapter.protocol.onTestEnd?.(ctx, { ...metadata, status: 'pass', trace: [...trace] })
-  } catch (error) {
-    let attachments: TraceAttachment[] | undefined
-    try {
-      const result = await adapter.protocol.onTestFail?.(ctx, { ...metadata, status: 'fail', error, trace: [...trace] })
-      if (Array.isArray(result)) attachments = result
-      else if (result && Array.isArray((result as any).attachments)) attachments = (result as any).attachments
-    } catch {
-      // Ignore hook failures to preserve original error.
-    }
-    if (attachments && attachments.length > 0) {
-      trace.push({
-        kind: 'test',
-        name: 'failure-artifacts',
-        payload: undefined,
-        status: 'fail',
-        attachments,
-      })
-    }
-    try {
-      await adapter.protocol.onTestEnd?.(ctx, { ...metadata, status: 'fail', error, trace: [...trace] })
-    } catch {
-      // Ignore hook failures to preserve original error.
-    }
-    throw enhanceWithTrace(error, trace, domain, adapter.protocol.name)
-  } finally {
-    await adapter.protocol.teardown(ctx)
   }
 }
 

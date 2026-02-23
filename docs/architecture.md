@@ -185,3 +185,13 @@ The trace is recorded automatically by `suite()` as it proxies domain calls thro
 - **TypeScript-first** — phantom types enforce that adapters implement every domain item. Queries and assertions are typed end-to-end.
 - **Adapter authors receive ready-to-use context** — protocols handle lifecycle (launching browsers, creating HTTP clients). Adapter code focuses on domain logic.
 - **Tests are protocol-agnostic** — they import domains, never adapters. The same test runs everywhere.
+
+## Economics
+
+The cost model determines when Aver earns its keep.
+
+**Cost per domain operation:** One vocabulary entry in the domain definition, plus one handler per adapter. At one adapter, this is comparable to extracting a page object method — you're doing the same factoring work, just in a standard shape. At three adapters, it's a 1:3 ratio (one vocabulary entry, three handlers), but each handler is isolated and self-contained.
+
+**What grows with what:** Vocabulary grows with *domain surface area* — the number of distinct behaviors your system exposes. Tests grow with *scenarios* — the number of ways those behaviors compose. Domain surface area grows slowly; scenarios grow fast. Five domain operations can support fifty tests that compose them in different ways. The adapter investment is amortized across every scenario that uses those operations.
+
+**The breakeven:** With a single adapter, Aver's overhead is roughly equal to well-structured page objects or helper functions — you'd extract those anyway. The cross-adapter benefit kicks in at the second adapter: when two adapters disagree on a behavior, that disagreement surfaces a real bug (API returns different data than the UI shows, unit layer assumes state the integration layer doesn't create). By the time you have two adapters, the bugs caught by cross-level verification exceed the cost of maintaining two sets of handlers.

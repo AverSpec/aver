@@ -38,7 +38,7 @@ The tooling has struggled. Early Cucumber relied on fragile regex-based step mat
 
 Cucumber got the big things right: tests should speak domain language, and the vocabulary should emerge from collaborative discovery. Where Aver diverges is in the mechanism and the audience. The vocabulary is defined in code, enforced by a type system, and composed through function calls — optimized for the development team rather than for cross-functional readability. The discovery still happens in conversations and workshops. Aver gives the discovered vocabulary a home in the type system.
 
-## The Spec Is the Test
+## Define It Once, Verify It Everywhere
 
 This is where Aver starts. A domain definition in Aver is simultaneously a specification and a test contract:
 

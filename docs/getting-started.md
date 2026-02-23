@@ -180,6 +180,28 @@ npx aver run
    ✓ calculate total [unit]
 ```
 
+## Working with Domains
+
+### Evolving your vocabulary
+
+Your first domain vocabulary won't be your last. You'll rename operations as your understanding deepens — `addItem` might become `addToCart`, or `taskInStatus` might split into `taskExists` and `taskHasStatus`. That's expected. The vocabulary is code; refactor it like code.
+
+The renaming cost is the same as renaming a page object method: update the domain definition, every adapter handler that implements it, and every test that calls it. TypeScript's rename refactoring (`F2` in most editors) handles all three in one operation. This cost is proportional to the number of adapters, not the number of tests — fifty tests that call `act.createTask` all update when the domain definition changes.
+
+### Type discipline
+
+Start with simple payload types:
+
+```typescript
+actions: {
+  createTask: action<{ title: string; status?: string }>(),
+}
+```
+
+Resist the urge to make types increasingly precise too early — branded `TaskId` types, nominal `Status` enums, refined string patterns. Add that precision only when the compiler catches a real mistake you've actually made. If you've never accidentally passed a task title where a task ID was expected, you don't need `TaskId` yet.
+
+The value of the domain vocabulary is in *naming*, not in *typing*. `act.createTask` communicates intent regardless of how precise its type signature is. Keep the types helpful, not aspirational.
+
 ## Next Steps
 
 - [Example App](example-app) — full task board tested across unit, HTTP, and Playwright

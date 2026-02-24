@@ -8,6 +8,16 @@ export interface Serializer {
   normalize?(value: string): string
 }
 
+const customSerializers = new Map<string, Serializer>()
+
+export function registerSerializer(name: string, serializer: Serializer): void {
+  customSerializers.set(name, serializer)
+}
+
+export function resetSerializers(): void {
+  customSerializers.clear()
+}
+
 export function jsonSerializer(): Serializer {
   return {
     name: 'json',
@@ -25,6 +35,9 @@ export function textSerializer(): Serializer {
 }
 
 export function resolveSerializer(name: SerializerName): Serializer {
+  const custom = customSerializers.get(name)
+  if (custom) return custom
+
   switch (name) {
     case 'json':
       return jsonSerializer()

@@ -21,6 +21,7 @@ export async function captureVisual(
 
 export async function diffImages(
   paths: ApprovalPaths,
+  threshold = 0.1,
 ): Promise<TraceAttachment | undefined> {
   if (!existsSync(paths.approvedImagePath) || !existsSync(paths.receivedImagePath)) {
     return undefined
@@ -37,7 +38,7 @@ export async function diffImages(
     const a = padImage(PNG, img1, width, height)
     const b = padImage(PNG, img2, width, height)
     const diff = new PNG({ width, height })
-    pixelmatch(a.data, b.data, diff.data, width, height, { threshold: 0.1 })
+    pixelmatch(a.data, b.data, diff.data, width, height, { threshold })
     writeFileSync(paths.diffImagePath, PNG.sync.write(diff))
     return { name: 'approval-diff', path: paths.diffImagePath, mime: 'image/png' }
   } catch {

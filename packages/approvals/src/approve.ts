@@ -18,7 +18,7 @@ export async function approve(value: unknown, options: ApproveOptions = {}): Pro
     )
   }
 
-  const serializerName = defaultSerializerFor(value)
+  const serializerName = options.serializer ?? defaultSerializerFor(value)
   const serializer = resolveSerializer(serializerName)
   const extension = options.fileExtension ?? serializer.fileExtension
   const paths = resolveApprovalPaths(testPath, testName, options.name ?? 'approval', extension)
@@ -32,7 +32,10 @@ export async function approve(value: unknown, options: ApproveOptions = {}): Pro
   const approved = approvedExists ? readFileSync(paths.approvedPath, 'utf-8') : ''
 
   const context = getTestContext()
-  const comparison = compareValues(approved, received)
+  const comparison = compareValues(approved, received, {
+    comparator: options.comparator,
+    serializer,
+  })
   const shouldApprove = process.env.AVER_APPROVE === '1' || process.env.AVER_APPROVE === 'true'
 
   if (!approvedExists) {
@@ -132,12 +135,13 @@ approve.visual = async function visual(
   }
 
   // Both images exist — diff them
-  const imageDiff = await diffImages(paths)
+  const pixelThreshold = opts.threshold ?? 0.1
+  const imageDiff = await diffImages(paths, pixelThreshold)
   const allAttachments = [...pendingAttachments]
   if (imageDiff) allAttachments.push(imageDiff)
 
   // Check if images match (0 diff pixels)
-  const match = await imagesMatch(paths)
+  const match = await imagesMatch(paths, pixelThreshold)
 
   if (match) return
 
@@ -155,7 +159,10 @@ approve.visual = async function visual(
   throw new Error(`Visual approval mismatch: ${paths.approvedImagePath}`)
 }
 
-async function imagesMatch(paths: { approvedImagePath: string; receivedImagePath: string }): Promise<boolean> {
+async function imagesMatch(
+  paths: { approvedImagePath: string; receivedImagePath: string },
+  threshold = 0.1,
+): Promise<boolean> {
   // Fast path: byte-identical files always match
   const approved = readFileSync(paths.approvedImagePath)
   const received = readFileSync(paths.receivedImagePath)
@@ -169,7 +176,7 @@ async function imagesMatch(paths: { approvedImagePath: string; receivedImagePath
     const img2 = PNG.sync.read(received)
     if (img1.width !== img2.width || img1.height !== img2.height) return false
     const totalPixels = img1.width * img1.height
-    const diffCount = pixelmatch(img1.data, img2.data, null, img1.width, img1.height, { threshold: 0.1 })
+    const diffCount = pixelmatch(img1.data, img2.data, null, img1.width, img1.height, { threshold })
     // Allow up to 0.1% of pixels to differ (subpixel anti-aliasing)
     return diffCount / totalPixels < 0.001
   } catch {

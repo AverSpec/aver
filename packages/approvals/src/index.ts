@@ -1,2 +1,4 @@
 export { approve } from './approve'
-export type { ApproveOptions, VisualApproveOptions } from './types'
+export { registerSerializer, resetSerializers } from './serializers'
+export type { Serializer } from './serializers'
+export type { ApproveOptions, VisualApproveOptions, Comparator, SerializerName } from './types'

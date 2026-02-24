@@ -28,7 +28,7 @@ import {
   getScenarioSummaryHandler,
   getScenariosHandler,
   advanceScenarioHandler,
-  regressScenarioHandler,
+  revisitScenarioHandler,
   deleteScenarioHandler,
   addQuestionHandler,
   resolveQuestionHandler,
@@ -52,7 +52,7 @@ import {
   queryImportResult,
   assertRunCountIs,
   assertScenarioHasStage,
-  assertScenarioHasRegressionRationale,
+  assertScenarioHasRevisitRationale,
   assertQuestionIsResolved,
   assertScenarioHasDomainOperation,
   assertImportResultIs,
@@ -92,8 +92,8 @@ export const averMcpAdapter = implement(averMcp, {
       await advanceScenarioHandler(input, session.workspaceBasePath, session.workspaceProjectId)
     },
 
-    regressScenario: async (session, input) => {
-      await regressScenarioHandler(
+    revisitScenario: async (session, input) => {
+      await revisitScenarioHandler(
         { id: input.id, targetStage: input.targetStage as any, rationale: input.rationale },
         session.workspaceBasePath,
         session.workspaceProjectId,
@@ -208,7 +208,7 @@ export const averMcpAdapter = implement(averMcp, {
 
     runCountIs: async (session, input) => assertRunCountIs(session, input),
     scenarioHasStage: async (session, input) => assertScenarioHasStage(session, input),
-    scenarioHasRegressionRationale: async (session, input) => assertScenarioHasRegressionRationale(session, input),
+    scenarioHasRevisitRationale: async (session, input) => assertScenarioHasRevisitRationale(session, input),
     questionIsResolved: async (session, input) => assertQuestionIsResolved(session, input),
     scenarioHasDomainOperation: async (session, input) => assertScenarioHasDomainOperation(session, input),
     importResultIs: async (session, input) => assertImportResultIs(session, input),

@@ -51,10 +51,24 @@ export const averWorkspaceAdapter = implement(averWorkspace, {
       }
     },
 
-    regressScenario: async (session, { id, targetStage, rationale }) => {
+    revisitScenario: async (session, { id, targetStage, rationale }) => {
       try {
         session.lastError = undefined
-        await session.ops.regressScenario(id, { targetStage: targetStage as any, rationale })
+        await session.ops.revisitScenario(id, { targetStage: targetStage as any, rationale })
+      } catch (e: any) {
+        session.lastError = e
+      }
+    },
+
+    setConfirmedBy: async (session, { id, confirmer }) => {
+      try {
+        session.lastError = undefined
+        await session.store.mutate(ws => {
+          const s = ws.scenarios.find(s => s.id === id)
+          if (!s) throw new Error('Scenario not found: ' + id)
+          s.confirmedBy = confirmer
+          return ws
+        })
       } catch (e: any) {
         session.lastError = e
       }
@@ -188,11 +202,11 @@ export const averWorkspaceAdapter = implement(averWorkspace, {
         throw new Error(`Expected promotedFrom "${stage}" but got "${s.promotedFrom}"`)
     },
 
-    scenarioHasRegressionRationale: async (session, { id, rationale }) => {
+    scenarioHasRevisitRationale: async (session, { id, rationale }) => {
       const s = await session.ops.getScenario(id)
       if (!s) throw new Error(`Scenario not found: ${id}`)
-      if (s.regressionRationale !== rationale)
-        throw new Error(`Expected regressionRationale "${rationale}" but got "${s.regressionRationale}"`)
+      if (s.revisitRationale !== rationale)
+        throw new Error(`Expected revisitRationale "${rationale}" but got "${s.revisitRationale}"`)
     },
 
     scenarioHasDomainOperation: async (session, { id, operation }) => {

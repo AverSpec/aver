@@ -31,7 +31,7 @@ export const averMcp = defineDomain({
       mode?: 'observed' | 'intended'
     }>(),
     advanceScenario: action<{ id: string; rationale: string; promotedBy: string }>(),
-    regressScenario: action<{ id: string; targetStage: string; rationale: string }>(),
+    revisitScenario: action<{ id: string; targetStage: string; rationale: string }>(),
     deleteScenario: action<{ id: string }>(),
     addQuestion: action<{ scenarioId: string; text: string }>(),
     resolveQuestion: action<{ scenarioId: string; questionId: string; answer: string }>(),
@@ -95,7 +95,7 @@ export const averMcp = defineDomain({
     domainIsRegistered: assertion<{ name: string }>(),
     runCountIs: assertion<{ count: number }>(),
     scenarioHasStage: assertion<{ id: string; stage: string }>(),
-    scenarioHasRegressionRationale: assertion<{ id: string; rationale: string }>(),
+    scenarioHasRevisitRationale: assertion<{ id: string; rationale: string }>(),
     questionIsResolved: assertion<{ scenarioId: string; questionId: string }>(),
     scenarioHasDomainOperation: assertion<{ id: string; operation: string }>(),
     importResultIs: assertion<{ added: number; skipped: number }>(),

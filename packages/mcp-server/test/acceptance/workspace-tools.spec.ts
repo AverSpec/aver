@@ -35,15 +35,15 @@ describe('MCP Workspace Tools (acceptance)', () => {
       await assert.scenarioHasStage({ id: captured.id, stage: 'characterized' })
     })
 
-    test('regresses a scenario to an earlier stage', async ({ act, query, assert }) => {
-      await act.captureScenario({ behavior: 'regress test' })
+    test('revisits a scenario to an earlier stage', async ({ act, query, assert }) => {
+      await act.captureScenario({ behavior: 'revisit test' })
       const captured = await query.lastCapturedScenario()
 
       await act.advanceScenario({ id: captured.id, rationale: 'r', promotedBy: 'p' })
-      await act.regressScenario({ id: captured.id, targetStage: 'captured', rationale: 'changed mind' })
+      await act.revisitScenario({ id: captured.id, targetStage: 'captured', rationale: 'changed mind' })
 
       await assert.scenarioHasStage({ id: captured.id, stage: 'captured' })
-      await assert.scenarioHasRegressionRationale({ id: captured.id, rationale: 'changed mind' })
+      await assert.scenarioHasRevisitRationale({ id: captured.id, rationale: 'changed mind' })
     })
 
     test('deletes a scenario from the workspace', async ({ act, query, assert }) => {

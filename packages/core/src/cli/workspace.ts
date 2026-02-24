@@ -37,7 +37,7 @@ interface WorkspaceModule {
     getScenarioSummary(): Promise<ScenarioSummary>
     captureScenario(input: { behavior: string; context?: string; story?: string; mode?: 'observed' | 'intended' }): Promise<any>
     advanceScenario(id: string, opts: { rationale: string; promotedBy: string }): Promise<{ scenario: any; warnings: string[] }>
-    regressScenario(id: string, opts: { targetStage: string; rationale: string }): Promise<any>
+    revisitScenario(id: string, opts: { targetStage: string; rationale: string }): Promise<any>
     getScenarios(filter: { stage?: string; keyword?: string }): Promise<ScenarioRow[]>
   }
   WorkspaceStore: {
@@ -147,7 +147,7 @@ async function advanceCommand(store: any, ws: WorkspaceModule, args: string[]): 
   }
 }
 
-async function regressCommand(store: any, ws: WorkspaceModule, args: string[]): Promise<void> {
+async function revisitCommand(store: any, ws: WorkspaceModule, args: string[]): Promise<void> {
   const { values, positionals } = parseArgs({
     args,
     options: {
@@ -160,13 +160,13 @@ async function regressCommand(store: any, ws: WorkspaceModule, args: string[]): 
 
   const id = positionals[0]
   if (!id || !values.to || !values.rationale) {
-    console.error('Usage: aver workspace regress <id> --to <stage> --rationale "<rationale>"')
+    console.error('Usage: aver workspace revisit <id> --to <stage> --rationale "<rationale>"')
     process.exit(1)
   }
 
   const ops = new ws.WorkspaceOps(store)
-  const scenario = await ops.regressScenario(id, { targetStage: values.to, rationale: values.rationale })
-  console.log(`Regressed: ${scenario.id} -> ${scenario.stage}`)
+  const scenario = await ops.revisitScenario(id, { targetStage: values.to, rationale: values.rationale })
+  console.log(`Revisited: ${scenario.id} -> ${scenario.stage}`)
   console.log(`  Behavior: ${scenario.behavior}`)
 }
 
@@ -239,7 +239,7 @@ Commands:
   status                              Show workspace status and phase
   capture "<behavior>"                Capture a new scenario
   advance <id>                        Advance a scenario to the next stage
-  regress <id>                        Regress a scenario to an earlier stage
+  revisit <id>                        Revisit a scenario by moving to an earlier stage
   scenarios                           List scenarios
   export                              Export scenarios
   import <file>                       Import scenarios from JSON file
@@ -301,8 +301,8 @@ export async function runWorkspace(rawArgs: string[]): Promise<void> {
     case 'advance':
       await advanceCommand(store, ws, subArgs)
       break
-    case 'regress':
-      await regressCommand(store, ws, subArgs)
+    case 'revisit':
+      await revisitCommand(store, ws, subArgs)
       break
     case 'scenarios':
       await scenariosCommand(store, ws, subArgs)

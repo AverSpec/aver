@@ -570,6 +570,12 @@ describe('CycleEngine', () => {
     // Create and advance a scenario to 'mapped'
     const scenario = await ops.captureScenario({ behavior: 'test behavior', mode: 'observed' })
     await ops.advanceScenario(scenario.id, { rationale: 'test', promotedBy: 'test' }) // captured -> characterized
+    // Set confirmedBy before characterized -> mapped (required by unified verification)
+    await store.mutate(ws => {
+      const s = ws.scenarios.find(s => s.id === scenario.id)
+      if (s) s.confirmedBy = 'test-confirmer'
+      return ws
+    })
     await ops.advanceScenario(scenario.id, { rationale: 'test', promotedBy: 'test' }) // characterized -> mapped
     await ops.addQuestion(scenario.id, 'Unanswered question?')
 

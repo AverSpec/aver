@@ -1,6 +1,6 @@
 import type { Workspace } from './types.js'
 
-export type PhaseName = 'kickoff' | 'investigation' | 'mapping' | 'specification' | 'implementation' | 'verification'
+export type PhaseName = 'kickoff' | 'investigation' | 'mapping' | 'specification' | 'implementation' | 'verification' | 'discovery'
 
 export interface Phase {
   name: PhaseName
@@ -30,6 +30,20 @@ export function detectPhase(workspace: Workspace): Phase {
 
   const implementedWithoutLinks = implemented.filter(s => !s.domainOperation)
   const openQuestions = scenarios.flatMap(s => s.questions.filter(q => !q.answer))
+
+  // Discovery loop: new learning happening alongside completed work
+  if (captured.length > 0 && implemented.length > 0) {
+    return {
+      name: 'discovery',
+      description: `${captured.length} new captured scenario(s) discovered alongside ${implemented.length} implemented scenario(s). New learning is happening.`,
+      recommendedActions: [
+        'Investigate newly captured scenarios: trace code paths, find seams',
+        'Compare new discoveries against existing implemented scenarios',
+        'Advance characterized scenarios with context and rationale',
+        ...(openQuestions.length > 0 ? [`Resolve ${openQuestions.length} open question(s)`] : [])
+      ]
+    }
+  }
 
   // Prioritize earliest unfinished stage — that's where attention is needed
   if (captured.length > 0) {

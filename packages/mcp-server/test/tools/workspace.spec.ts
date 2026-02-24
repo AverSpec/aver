@@ -7,7 +7,7 @@ import {
   getScenariosHandler,
   captureScenarioHandler,
   advanceScenarioHandler,
-  regressScenarioHandler,
+  revisitScenarioHandler,
   addQuestionHandler,
   resolveQuestionHandler,
   linkToDomainHandler,
@@ -16,6 +16,7 @@ import {
   exportScenariosHandler,
   importScenariosHandler,
 } from '../../src/tools/workspace'
+import { WorkspaceStore } from '@aver/workspace'
 
 describe('workspace tool handlers', () => {
   let dir: string
@@ -28,6 +29,16 @@ describe('workspace tool handlers', () => {
   afterEach(() => {
     rmSync(dir, { recursive: true, force: true })
   })
+
+  /** Helper: set confirmedBy on a scenario via store mutation */
+  async function setConfirmedBy(id: string, confirmer: string) {
+    const store = new WorkspaceStore(dir, projectId)
+    await store.mutate(ws => {
+      const s = ws.scenarios.find(s => s.id === id)
+      if (s) s.confirmedBy = confirmer
+      return ws
+    })
+  }
 
   describe('capture_scenario', () => {
     it('creates a captured scenario with observed mode', async () => {
@@ -117,11 +128,20 @@ describe('workspace tool handlers', () => {
       expect(advanced.stage).toBe('characterized')
     })
 
-    it('advances characterized to mapped', async () => {
+    it('advances characterized to mapped when confirmedBy is set', async () => {
       const scenario = await captureScenarioHandler({ behavior: 'a' }, dir, projectId)
       await advanceScenarioHandler({ id: scenario.id, rationale: 'step 1', promotedBy: 'dev' }, dir, projectId)
+      await setConfirmedBy(scenario.id, 'business-user')
       const { scenario: advanced } = await advanceScenarioHandler({ id: scenario.id, rationale: 'step 2', promotedBy: 'dev' }, dir, projectId)
       expect(advanced.stage).toBe('mapped')
+    })
+
+    it('blocks characterized to mapped without confirmedBy', async () => {
+      const scenario = await captureScenarioHandler({ behavior: 'a' }, dir, projectId)
+      await advanceScenarioHandler({ id: scenario.id, rationale: 'step 1', promotedBy: 'dev' }, dir, projectId)
+      await expect(
+        advanceScenarioHandler({ id: scenario.id, rationale: 'step 2', promotedBy: 'dev' }, dir, projectId)
+      ).rejects.toThrow('confirmedBy is required')
     })
 
     it('throws for unknown scenario', async () => {
@@ -131,17 +151,17 @@ describe('workspace tool handlers', () => {
     })
   })
 
-  describe('regress_scenario', () => {
-    it('regresses characterized back to captured', async () => {
+  describe('revisit_scenario', () => {
+    it('revisits characterized back to captured', async () => {
       const scenario = await captureScenarioHandler({ behavior: 'a' }, dir, projectId)
       await advanceScenarioHandler({ id: scenario.id, rationale: 'advance', promotedBy: 'dev' }, dir, projectId)
-      const regressed = await regressScenarioHandler({ id: scenario.id, targetStage: 'captured', rationale: 'rethinking' }, dir, projectId)
-      expect(regressed.stage).toBe('captured')
+      const revisited = await revisitScenarioHandler({ id: scenario.id, targetStage: 'captured', rationale: 'rethinking' }, dir, projectId)
+      expect(revisited.stage).toBe('captured')
     })
 
     it('throws for unknown scenario', async () => {
       await expect(
-        regressScenarioHandler({ id: 'nonexistent', targetStage: 'captured', rationale: 'test' }, dir, projectId)
+        revisitScenarioHandler({ id: 'nonexistent', targetStage: 'captured', rationale: 'test' }, dir, projectId)
       ).rejects.toThrow('Scenario not found')
     })
   })

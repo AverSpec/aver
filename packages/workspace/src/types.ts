@@ -15,6 +15,14 @@ export interface Question {
   resolvedAt?: string
 }
 
+export interface Transition {
+  from: Stage
+  to: Stage
+  at: string
+  by?: string
+  rationale?: string
+}
+
 export interface Scenario {
   id: string
   stage: Stage
@@ -35,9 +43,13 @@ export interface Scenario {
   // Provenance
   promotedBy?: string
   promotedFrom?: Stage
-  regressionRationale?: string
+  confirmedBy?: string
+  revisitRationale?: string
   createdAt: string
   updatedAt: string
+
+  // Audit trail
+  transitions: Transition[]
 
   // Links to domain artifacts
   domainOperation?: string
@@ -77,6 +89,7 @@ export function createScenario(input: {
     questions: [],
     constraints: [],
     seams: [],
+    transitions: [],
     createdAt: now,
     updatedAt: now
   }

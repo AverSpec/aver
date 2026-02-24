@@ -205,15 +205,15 @@ export async function assertScenarioHasStage(
     throw new Error(`Expected scenario "${input.id}" to have stage "${input.stage}" but got "${scenario.stage}"`)
 }
 
-export async function assertScenarioHasRegressionRationale(
+export async function assertScenarioHasRevisitRationale(
   session: SharedSessionFields,
   input: { id: string; rationale: string },
 ): Promise<void> {
   const scenarios = await getScenariosHandler({}, session.workspaceBasePath, session.workspaceProjectId)
   const scenario = scenarios.find(s => s.id === input.id)
   if (!scenario) throw new Error(`Scenario "${input.id}" not found`)
-  if (scenario.regressionRationale !== input.rationale)
-    throw new Error(`Expected regression rationale "${input.rationale}" but got "${scenario.regressionRationale}"`)
+  if (scenario.revisitRationale !== input.rationale)
+    throw new Error(`Expected revisit rationale "${input.rationale}" but got "${scenario.revisitRationale}"`)
 }
 
 export async function assertQuestionIsResolved(

@@ -10,7 +10,8 @@ export const averWorkspace = defineDomain({
       mode?: 'observed' | 'intended'
     }>(),
     advanceScenario: action<{ id: string; rationale: string; promotedBy: string }>(),
-    regressScenario: action<{ id: string; targetStage: string; rationale: string }>(),
+    revisitScenario: action<{ id: string; targetStage: string; rationale: string }>(),
+    setConfirmedBy: action<{ id: string; confirmer: string }>(),
     addQuestion: action<{ scenarioId: string; text: string }>(),
     resolveQuestion: action<{ scenarioId: string; questionId: string; answer: string }>(),
     linkToDomain: action<{
@@ -48,7 +49,7 @@ export const averWorkspace = defineDomain({
     scenarioHasStage: assertion<{ id: string; stage: string }>(),
     scenarioHasMode: assertion<{ id: string; mode: string }>(),
     scenarioHasPromotedFrom: assertion<{ id: string; stage: string }>(),
-    scenarioHasRegressionRationale: assertion<{ id: string; rationale: string }>(),
+    scenarioHasRevisitRationale: assertion<{ id: string; rationale: string }>(),
     scenarioHasDomainOperation: assertion<{ id: string; operation: string }>(),
     scenarioHasTestNames: assertion<{ id: string; names: string[] }>(),
     hasOpenQuestion: assertion<{ id: string; text: string }>(),

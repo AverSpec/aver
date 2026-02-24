@@ -19,7 +19,7 @@ export interface AdvanceResult {
   warnings: string[]
 }
 
-export interface RegressInput {
+export interface RevisitInput {
   targetStage: Stage
   rationale: string
 }
@@ -40,29 +40,61 @@ export interface ScenarioSummary {
   openQuestions: number
 }
 
-function validateAdvancement(scenario: Scenario, from: Stage, to: Stage): string[] {
+export interface AdvancementVerification {
+  blocked: boolean
+  hardBlocks: string[]
+  warnings: string[]
+}
+
+/**
+ * Unified advancement verification — single source of truth for all callers.
+ * Returns hard blocks (prevent advancement) and warnings (advisory only).
+ */
+export function verifyAdvancement(scenario: Scenario, from: Stage, to: Stage): AdvancementVerification {
+  const hardBlocks: string[] = []
   const warnings: string[] = []
 
+  // Hard block: characterized -> mapped requires confirmedBy
   if (from === 'characterized' && to === 'mapped') {
+    if (!scenario.confirmedBy) {
+      hardBlocks.push('Cannot advance to mapped: confirmedBy is required (human must confirm intent)')
+    }
     if (scenario.rules.length === 0 && scenario.examples.length === 0) {
       warnings.push('Advancing to mapped with no rules or examples. Consider adding rules/examples first.')
     }
   }
 
+  // Hard block: mapped -> specified with open questions
   if (from === 'mapped' && to === 'specified') {
     const openQuestions = scenario.questions.filter(q => !q.answer).length
     if (openQuestions > 0) {
-      warnings.push(`Advancing to specified with ${openQuestions} open question(s). Consider resolving them first.`)
+      hardBlocks.push(`Cannot advance to specified: ${openQuestions} open question(s) must be resolved first`)
     }
   }
 
+  // Hard block: specified -> implemented without domain links
   if (from === 'specified' && to === 'implemented') {
-    if (!scenario.domainOperation && (!scenario.testNames || scenario.testNames.length === 0)) {
-      warnings.push('Advancing to implemented with no domain links. Consider linking to domain operations/tests first.')
+    const hasDomainLinks = !!(scenario.domainOperation || (scenario.testNames && scenario.testNames.length > 0))
+    if (!hasDomainLinks) {
+      hardBlocks.push('Cannot advance to implemented: no domain links (domainOperation or testNames required)')
     }
   }
 
-  return warnings
+  // Conditional warning: captured -> characterized for observed mode without evidence
+  if (from === 'captured' && to === 'characterized') {
+    if (scenario.mode === 'observed') {
+      const hasEvidence = scenario.seams.length > 0 || scenario.constraints.length > 0
+      if (!hasEvidence) {
+        warnings.push('Advancing with no investigation evidence (no seams or constraints identified)')
+      }
+    }
+  }
+
+  return {
+    blocked: hardBlocks.length > 0,
+    hardBlocks,
+    warnings,
+  }
 }
 
 export class WorkspaceOps {
@@ -99,36 +131,67 @@ export class WorkspaceOps {
       const next = nextStage(scenario.stage)
       if (!next) throw new Error('Cannot advance beyond implemented')
 
-      warnings = validateAdvancement(scenario, scenario.stage, next)
+      const verification = verifyAdvancement(scenario, scenario.stage, next)
+      if (verification.blocked) {
+        throw new Error(verification.hardBlocks[0])
+      }
+      warnings = verification.warnings
 
-      scenario.promotedFrom = scenario.stage
+      const from = scenario.stage
+      const now = new Date().toISOString()
+
+      // Ensure transitions array exists (backward compat with pre-existing data)
+      if (!scenario.transitions) scenario.transitions = []
+
+      scenario.transitions.push({
+        from,
+        to: next,
+        at: now,
+        by: input.promotedBy,
+        rationale: input.rationale,
+      })
+
+      scenario.promotedFrom = from
       scenario.promotedBy = input.promotedBy
       scenario.stage = next
-      scenario.updatedAt = new Date().toISOString()
+      scenario.updatedAt = now
       advanced = scenario
       return ws
     })
     return { scenario: advanced, warnings }
   }
 
-  async regressScenario(id: string, input: RegressInput): Promise<Scenario> {
-    let regressed!: Scenario
+  async revisitScenario(id: string, input: RevisitInput): Promise<Scenario> {
+    let revisited!: Scenario
     await this.store.mutate(ws => {
       const scenario = ws.scenarios.find(s => s.id === id)
       if (!scenario) throw new Error('Scenario not found: ' + id)
 
       const currentIdx = STAGE_ORDER.indexOf(scenario.stage)
       const targetIdx = STAGE_ORDER.indexOf(input.targetStage)
-      if (targetIdx >= currentIdx) throw new Error('Cannot regress to a later stage')
+      if (targetIdx >= currentIdx) throw new Error('Cannot revisit to a later or same stage')
 
-      scenario.promotedFrom = scenario.stage
-      scenario.regressionRationale = input.rationale
+      const from = scenario.stage
+      const now = new Date().toISOString()
+
+      // Ensure transitions array exists (backward compat with pre-existing data)
+      if (!scenario.transitions) scenario.transitions = []
+
+      scenario.transitions.push({
+        from,
+        to: input.targetStage,
+        at: now,
+        rationale: input.rationale,
+      })
+
+      scenario.promotedFrom = from
+      scenario.revisitRationale = input.rationale
       scenario.stage = input.targetStage
-      scenario.updatedAt = new Date().toISOString()
-      regressed = scenario
+      scenario.updatedAt = now
+      revisited = scenario
       return ws
     })
-    return regressed
+    return revisited
   }
 
   async deleteScenario(id: string): Promise<void> {

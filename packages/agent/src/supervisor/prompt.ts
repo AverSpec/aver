@@ -75,7 +75,7 @@ Only parallelize when workers are truly independent (different scenarios, differ
 }
 \`\`\`
 
-### update_workspace — Advance/regress scenarios
+### update_workspace — Advance/revisit scenarios
 \`\`\`json
 {
   "action": {

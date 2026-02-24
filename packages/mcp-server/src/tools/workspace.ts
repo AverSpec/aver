@@ -77,12 +77,12 @@ export async function advanceScenarioHandler(
   })
 }
 
-export async function regressScenarioHandler(
+export async function revisitScenarioHandler(
   input: { id: string; targetStage: Stage; rationale: string },
   basePath: string,
   projectId: string,
 ): Promise<Scenario> {
-  return createOps(basePath, projectId).regressScenario(input.id, {
+  return createOps(basePath, projectId).revisitScenario(input.id, {
     targetStage: input.targetStage,
     rationale: input.rationale,
   })
@@ -209,7 +209,7 @@ export function registerWorkspaceTools(server: McpServer, config?: ToolsConfig):
   server.registerTool(
     'advance_scenario',
     {
-      description: 'Advance a scenario to the next maturity stage (captured -> characterized -> mapped -> specified -> implemented). Returns { scenario, warnings } where warnings contains advisory messages about missing content (e.g., no rules, open questions, no domain links).',
+      description: 'Advance a scenario to the next maturity stage (captured -> characterized -> mapped -> specified -> implemented). Returns { scenario, warnings } where warnings contains advisory messages. Hard blocks (e.g., open questions, missing domain links, missing confirmedBy) will throw an error.',
       inputSchema: {
         id: z.string().describe('The ID of the scenario to advance'),
         rationale: z.string().describe('Reason for advancement'),
@@ -223,17 +223,17 @@ export function registerWorkspaceTools(server: McpServer, config?: ToolsConfig):
   )
 
   server.registerTool(
-    'regress_scenario',
+    'revisit_scenario',
     {
-      description: 'Regress a scenario to an earlier maturity stage',
+      description: 'Revisit a scenario by moving it back to an earlier maturity stage',
       inputSchema: {
-        id: z.string().describe('The ID of the scenario to regress'),
-        targetStage: stageEnum.describe('The stage to regress to'),
-        rationale: z.string().describe('Reason for regression'),
+        id: z.string().describe('The ID of the scenario to revisit'),
+        targetStage: stageEnum.describe('The stage to revisit to'),
+        rationale: z.string().describe('Reason for revisiting'),
       },
     },
     async (input) => {
-      const result = await regressScenarioHandler(input, resolveBasePath(), resolveProjectId())
+      const result = await revisitScenarioHandler(input, resolveBasePath(), resolveProjectId())
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] }
     },
   )

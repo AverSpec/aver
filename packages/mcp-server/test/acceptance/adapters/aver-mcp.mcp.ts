@@ -26,7 +26,7 @@ import {
   queryImportResult,
   assertRunCountIs,
   assertScenarioHasStage,
-  assertScenarioHasRegressionRationale,
+  assertScenarioHasRevisitRationale,
   assertQuestionIsResolved,
   assertScenarioHasDomainOperation,
   assertImportResultIs,
@@ -102,8 +102,8 @@ export const averMcpIntegrationAdapter = implement(averMcp, {
       await session.client.callTool({ name: 'advance_scenario', arguments: input })
     },
 
-    regressScenario: async (session, input) => {
-      await session.client.callTool({ name: 'regress_scenario', arguments: input })
+    revisitScenario: async (session, input) => {
+      await session.client.callTool({ name: 'revisit_scenario', arguments: input })
     },
 
     deleteScenario: async (session, input) => {
@@ -249,7 +249,7 @@ export const averMcpIntegrationAdapter = implement(averMcp, {
 
     runCountIs: async (session, input) => assertRunCountIs(session, input),
     scenarioHasStage: async (session, input) => assertScenarioHasStage(session, input),
-    scenarioHasRegressionRationale: async (session, input) => assertScenarioHasRegressionRationale(session, input),
+    scenarioHasRevisitRationale: async (session, input) => assertScenarioHasRevisitRationale(session, input),
     questionIsResolved: async (session, input) => assertQuestionIsResolved(session, input),
     scenarioHasDomainOperation: async (session, input) => assertScenarioHasDomainOperation(session, input),
     importResultIs: async (session, input) => assertImportResultIs(session, input),

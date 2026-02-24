@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os'
 import { WorkspaceOps } from '../src/operations'
 import { WorkspaceStore } from '../src/storage'
 import { detectPhase } from '../src/phase'
+import type { Stage } from '../src/types'
 
 describe('detectPhase', () => {
   let dir: string
@@ -20,6 +21,36 @@ describe('detectPhase', () => {
   afterEach(() => {
     rmSync(dir, { recursive: true, force: true })
   })
+
+  /** Helper: set confirmedBy on a scenario */
+  async function setConfirmedBy(id: string, confirmer: string) {
+    await store.mutate(ws => {
+      const s = ws.scenarios.find(s => s.id === id)
+      if (s) s.confirmedBy = confirmer
+      return ws
+    })
+  }
+
+  /** Helper: advance a scenario through stages with required prerequisites */
+  async function advanceToStage(id: string, targetStage: Stage) {
+    const stages: Stage[] = ['captured', 'characterized', 'mapped', 'specified', 'implemented']
+    const scenario = await ops.getScenario(id)
+    if (!scenario) throw new Error('Scenario not found')
+    const currentIdx = stages.indexOf(scenario.stage)
+    const targetIdx = stages.indexOf(targetStage)
+
+    for (let i = currentIdx; i < targetIdx; i++) {
+      const from = stages[i]
+      const to = stages[i + 1]
+      if (from === 'characterized' && to === 'mapped') {
+        await setConfirmedBy(id, 'business')
+      }
+      if (from === 'specified' && to === 'implemented') {
+        await ops.linkToDomain(id, { domainOperation: 'test.op' })
+      }
+      await ops.advanceScenario(id, { rationale: `advance to ${to}`, promotedBy: 'dev' })
+    }
+  }
 
   it('returns kickoff when workspace is empty', async () => {
     const phase = detectPhase(await store.load())
@@ -46,8 +77,7 @@ describe('detectPhase', () => {
 
   it('returns specification when scenarios are mapped', async () => {
     const scenario = await ops.captureScenario({ behavior: 'a' })
-    await ops.advanceScenario(scenario.id, { rationale: 'characterized', promotedBy: 'dev' })
-    await ops.advanceScenario(scenario.id, { rationale: 'mapped', promotedBy: 'business' })
+    await advanceToStage(scenario.id, 'mapped')
 
     const phase = detectPhase(await store.load())
     expect(phase.name).toBe('specification')
@@ -55,9 +85,7 @@ describe('detectPhase', () => {
 
   it('returns implementation when specified scenarios exist without domain links', async () => {
     const scenario = await ops.captureScenario({ behavior: 'a' })
-    await ops.advanceScenario(scenario.id, { rationale: 'a', promotedBy: 'dev' })
-    await ops.advanceScenario(scenario.id, { rationale: 'b', promotedBy: 'dev' })
-    await ops.advanceScenario(scenario.id, { rationale: 'c', promotedBy: 'dev' })
+    await advanceToStage(scenario.id, 'specified')
 
     const phase = detectPhase(await store.load())
     expect(phase.name).toBe('implementation')
@@ -65,10 +93,13 @@ describe('detectPhase', () => {
 
   it('returns implementation when implemented scenarios exist without domain links', async () => {
     const scenario = await ops.captureScenario({ behavior: 'a' })
-    await ops.advanceScenario(scenario.id, { rationale: 'a', promotedBy: 'dev' })
-    await ops.advanceScenario(scenario.id, { rationale: 'b', promotedBy: 'dev' })
-    await ops.advanceScenario(scenario.id, { rationale: 'c', promotedBy: 'dev' })
-    await ops.advanceScenario(scenario.id, { rationale: 'd', promotedBy: 'dev' })
+    await advanceToStage(scenario.id, 'implemented')
+    // advanceToStage sets domainOperation to pass hard block; remove it to test this phase
+    await store.mutate(ws => {
+      const s = ws.scenarios.find(s => s.id === scenario.id)
+      if (s) delete s.domainOperation
+      return ws
+    })
 
     const phase = detectPhase(await store.load())
     expect(phase.name).toBe('implementation')
@@ -76,10 +107,9 @@ describe('detectPhase', () => {
 
   it('returns verification when all implemented scenarios have domain links', async () => {
     const scenario = await ops.captureScenario({ behavior: 'a' })
-    await ops.advanceScenario(scenario.id, { rationale: 'a', promotedBy: 'dev' })
-    await ops.advanceScenario(scenario.id, { rationale: 'b', promotedBy: 'dev' })
-    await ops.advanceScenario(scenario.id, { rationale: 'c', promotedBy: 'dev' })
-    await ops.advanceScenario(scenario.id, { rationale: 'd', promotedBy: 'dev' })
+    await advanceToStage(scenario.id, 'implemented')
+    // advanceToStage already sets domainOperation for specified->implemented
+    // But let's also add testNames for completeness
     await ops.linkToDomain(scenario.id, { domainOperation: 'action.doA', testNames: ['test a'] })
 
     const phase = detectPhase(await store.load())
@@ -99,5 +129,18 @@ describe('detectPhase', () => {
     for (const action of phase.recommendedActions) {
       expect(action.toLowerCase()).not.toContain('item')
     }
+  })
+
+  it('returns discovery when implemented and captured scenarios coexist', async () => {
+    const scenario = await ops.captureScenario({ behavior: 'fully done' })
+    await advanceToStage(scenario.id, 'implemented')
+    await ops.linkToDomain(scenario.id, { domainOperation: 'Test.action' })
+
+    await ops.captureScenario({ behavior: 'new discovery' })
+
+    const phase = detectPhase(await store.load())
+    expect(phase.name).toBe('discovery')
+    expect(phase.description).toContain('new captured')
+    expect(phase.description).toContain('implemented')
   })
 })

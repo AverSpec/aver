@@ -178,28 +178,37 @@ export class CycleEngine {
           if (update.stage) {
             const scenario = scenarios.find((s) => s.id === update.scenarioId)
             if (!scenario) continue
-            const verification = verifyAdvancement(scenario, update.stage)
+            const verification = verifyAdvancement(scenario, scenario.stage, update.stage)
             if (verification.blocked) {
               await this.logEvent('advancement:blocked', {
                 scenarioId: update.scenarioId,
                 from: scenario.stage,
                 to: update.stage,
-                reason: verification.reason,
+                reason: verification.hardBlocks[0],
               })
               continue
             }
-            if (verification.warning) {
+            for (const warning of verification.warnings) {
               await this.logEvent('advancement:warning', {
                 scenarioId: update.scenarioId,
                 from: scenario.stage,
                 to: update.stage,
-                warning: verification.warning,
+                warning,
               })
             }
-            await this.workspaceOps.advanceScenario(update.scenarioId, {
-              rationale: update.rationale ?? '',
-              promotedBy: 'aver-agent',
-            })
+            try {
+              await this.workspaceOps.advanceScenario(update.scenarioId, {
+                rationale: update.rationale ?? '',
+                promotedBy: 'aver-agent',
+              })
+            } catch (err) {
+              await this.logEvent('advancement:blocked', {
+                scenarioId: update.scenarioId,
+                from: scenario.stage,
+                to: update.stage,
+                reason: err instanceof Error ? err.message : String(err),
+              })
+            }
           }
         }
         await this.runCycle('timer', undefined, undefined, depth + 1)

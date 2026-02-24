@@ -44,8 +44,15 @@ export async function runTestWithAdapter<D extends Domain>(
     try {
       const result = await adapter.protocol.onTestFail?.(ctx, { ...metadata, status: 'fail', error, trace: [...trace] })
       if (Array.isArray(result)) attachments = result
-    } catch {
-      // Ignore hook failures to preserve original error.
+    } catch (hookError) {
+      trace.push({
+        kind: 'test',
+        name: 'hook-error:onTestFail',
+        payload: undefined,
+        status: 'fail',
+        error: hookError,
+        correlationId,
+      })
     }
     if (attachments && attachments.length > 0) {
       trace.push({
@@ -59,11 +66,29 @@ export async function runTestWithAdapter<D extends Domain>(
     }
     try {
       await adapter.protocol.onTestEnd?.(ctx, { ...metadata, status: 'fail', error, trace: [...trace] })
-    } catch {
-      // Ignore hook failures to preserve original error.
+    } catch (hookError) {
+      trace.push({
+        kind: 'test',
+        name: 'hook-error:onTestEnd',
+        payload: undefined,
+        status: 'fail',
+        error: hookError,
+        correlationId,
+      })
     }
     throw enhanceWithTrace(error, trace, domain, adapter.protocol.name)
   } finally {
-    await adapter.protocol.teardown(ctx)
+    try {
+      await adapter.protocol.teardown(ctx)
+    } catch (teardownError) {
+      trace.push({
+        kind: 'test',
+        name: 'teardown-error',
+        payload: undefined,
+        status: 'fail',
+        error: teardownError,
+        correlationId,
+      })
+    }
   }
 }

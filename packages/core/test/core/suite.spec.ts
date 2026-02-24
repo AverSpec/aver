@@ -475,6 +475,205 @@ describe('suite() — getPlannedTests()', () => {
   })
 })
 
+describe('suite() — teardown error handling', () => {
+  const originalTest = (globalThis as any).test
+  const originalIt = (globalThis as any).it
+
+  afterEach(() => {
+    if (originalTest) (globalThis as any).test = originalTest
+    if (originalIt) (globalThis as any).it = originalIt
+  })
+
+  it('does not replace original test error when teardown throws', async () => {
+    let pending: Promise<void> | undefined
+
+    const fakeTest = (name: string, fn: () => Promise<void>) => {
+      pending = fn()
+      return pending
+    }
+    fakeTest.skip = () => {}
+    ;(globalThis as any).test = fakeTest
+
+    const failDomain = defineDomain({
+      name: 'TeardownFail',
+      actions: { go: action() },
+      queries: {},
+      assertions: {},
+    })
+    const protocol: Protocol<{}> = {
+      name: 'teardown-failing',
+      async setup() { return {} },
+      async teardown() { throw new Error('teardown boom') },
+    }
+    const adapter = implement(failDomain, {
+      protocol,
+      actions: { go: async () => { throw new Error('original error') } },
+      queries: {},
+      assertions: {},
+    })
+
+    const { test: suiteTest } = suite(failDomain, adapter)
+    suiteTest('teardown test', async ({ act }) => {
+      await act.go()
+    })
+
+    let caught: any
+    await pending!.catch(e => { caught = e })
+    expect(caught).toBeDefined()
+    expect(caught.message).toContain('original error')
+  })
+
+  it('records teardown error in trace without throwing', async () => {
+    let pending: Promise<void> | undefined
+    let lastTrace: any[] = []
+
+    const fakeTest = (name: string, fn: () => Promise<void>) => {
+      pending = fn()
+      return pending
+    }
+    fakeTest.skip = () => {}
+    ;(globalThis as any).test = fakeTest
+
+    const okDomain = defineDomain({
+      name: 'TeardownTrace',
+      actions: {},
+      queries: {},
+      assertions: { check: assertion() },
+    })
+    const protocol: Protocol<{}> = {
+      name: 'teardown-trace',
+      async setup() { return {} },
+      async teardown() { throw new Error('teardown boom') },
+      async onTestEnd(_ctx, meta) {
+        lastTrace = meta.trace
+      },
+    }
+    const adapter = implement(okDomain, {
+      protocol,
+      actions: {},
+      queries: {},
+      assertions: { check: async () => {} },
+    })
+
+    const { test: suiteTest } = suite(okDomain, adapter)
+    suiteTest('passing test with bad teardown', async ({ assert }) => {
+      await assert.check()
+    })
+
+    // Test itself passes, teardown error is caught but not re-thrown
+    await pending
+  })
+})
+
+describe('suite() — hook error tracing', () => {
+  const originalTest = (globalThis as any).test
+  const originalIt = (globalThis as any).it
+
+  afterEach(() => {
+    if (originalTest) (globalThis as any).test = originalTest
+    if (originalIt) (globalThis as any).it = originalIt
+  })
+
+  it('records onTestFail hook error in trace', async () => {
+    let pending: Promise<void> | undefined
+    let lastTrace: any[] = []
+
+    const fakeTest = (name: string, fn: () => Promise<void>) => {
+      pending = fn()
+      return pending
+    }
+    fakeTest.skip = () => {}
+    ;(globalThis as any).test = fakeTest
+
+    const failDomain = defineDomain({
+      name: 'HookFail',
+      actions: {},
+      queries: {},
+      assertions: { boom: assertion() },
+    })
+
+    const protocol: Protocol<{}> = {
+      name: 'hook-fail-proto',
+      async setup() { return {} },
+      async teardown() {},
+      async onTestFail() {
+        throw new Error('onTestFail hook broke')
+      },
+      async onTestEnd(_ctx, meta) {
+        lastTrace = meta.trace
+      },
+    }
+
+    const adapter = implement(failDomain, {
+      protocol,
+      actions: {},
+      queries: {},
+      assertions: { boom: async () => { throw new Error('assertion error') } },
+    })
+
+    const { test: suiteTest } = suite(failDomain, adapter)
+    suiteTest('hook fail test', async ({ assert }) => {
+      await assert.boom()
+    })
+
+    let caught: any
+    await pending!.catch(e => { caught = e })
+    expect(caught).toBeDefined()
+    // Original error should be preserved
+    expect(caught.message).toContain('assertion error')
+    // Hook error should be in trace
+    const hookEntry = lastTrace.find(e => e.name === 'hook-error:onTestFail')
+    expect(hookEntry).toBeDefined()
+    expect(hookEntry.status).toBe('fail')
+    expect((hookEntry.error as Error).message).toBe('onTestFail hook broke')
+  })
+
+  it('records onTestEnd hook error in trace', async () => {
+    let pending: Promise<void> | undefined
+
+    const fakeTest = (name: string, fn: () => Promise<void>) => {
+      pending = fn()
+      return pending
+    }
+    fakeTest.skip = () => {}
+    ;(globalThis as any).test = fakeTest
+
+    const failDomain = defineDomain({
+      name: 'HookEndFail',
+      actions: {},
+      queries: {},
+      assertions: { boom: assertion() },
+    })
+
+    const protocol: Protocol<{}> = {
+      name: 'hook-end-fail-proto',
+      async setup() { return {} },
+      async teardown() {},
+      async onTestEnd() {
+        throw new Error('onTestEnd hook broke')
+      },
+    }
+
+    const adapter = implement(failDomain, {
+      protocol,
+      actions: {},
+      queries: {},
+      assertions: { boom: async () => { throw new Error('assertion error') } },
+    })
+
+    const { test: suiteTest } = suite(failDomain, adapter)
+    suiteTest('hook end fail test', async ({ assert }) => {
+      await assert.boom()
+    })
+
+    let caught: any
+    await pending!.catch(e => { caught = e })
+    expect(caught).toBeDefined()
+    // Original error should be preserved
+    expect(caught.message).toContain('assertion error')
+  })
+})
+
 describe('getAdapters()', () => {
   beforeEach(() => {
     resetRegistry()

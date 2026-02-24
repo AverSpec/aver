@@ -1,12 +1,26 @@
+// User-facing API
 export { action, query, assertion } from './core/markers'
 export { defineDomain } from './core/domain'
 export { implement } from './core/adapter'
 export { suite } from './core/suite'
 export { defineConfig } from './core/config'
-export { getAdapters, registerAdapter, findAdapter, findAdapters, resetRegistry, registerDomain, getDomains, getDomain } from './core/registry'
 export { unit } from './protocols/unit'
 export { withFixture } from './core/protocol'
 export { getTestContext, runWithTestContext } from './core/test-context'
+
+// Internals — also available via '@aver/core/internals'
+export {
+  registerDomain,
+  registerAdapter,
+  getDomains,
+  getDomain,
+  getAdapters,
+  findAdapter,
+  findAdapters,
+  resetRegistry,
+  getGlobalTest,
+  getGlobalDescribe,
+} from './internals'
 
 export type { ActionMarker, QueryMarker, AssertionMarker } from './core/types'
 export type { Domain } from './core/domain'
@@ -18,3 +32,4 @@ export type { AverConfig } from './core/config'
 export type { VocabularyCoverage } from './core/coverage'
 export type { TraceEntry, TraceAttachment } from './core/trace'
 export type { ActProxy, QueryProxy, AssertProxy, TestContext, SuiteReturn, PlannedTest } from './core/suite'
+export type { Clock } from './core/proxy'

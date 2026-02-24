@@ -1,5 +1,6 @@
 import type { Adapter } from './adapter'
 import type { Domain } from './domain'
+import { resetConfigAutoload } from './autoload-state'
 
 let adapters: Adapter[] = []
 let domains: Domain[] = []
@@ -69,4 +70,5 @@ export function getAdapters(): Adapter[] {
 export function resetRegistry(): void {
   adapters = []
   domains = []
+  resetConfigAutoload()
 }

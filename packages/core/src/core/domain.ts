@@ -23,7 +23,7 @@ export interface Domain<
     readonly assertions: S
   }
   readonly parent?: Domain<any, any, any>
-  extend<_Protocol = unknown>(extension: {
+  extend(name: string, extension: {
     actions?: Record<string, ActionMarker<any>>
     queries?: Record<string, QueryMarker<any, any>>
     assertions?: Record<string, AssertionMarker<any>>
@@ -47,9 +47,9 @@ function makeDomain<
     name,
     vocabulary: vocab,
     parent,
-    extend(extension) {
+    extend(childName, extension) {
       return makeDomain(
-        name,
+        childName,
         {
           actions: { ...vocab.actions, ...(extension.actions ?? {}) } as any,
           queries: { ...vocab.queries, ...(extension.queries ?? {}) } as any,

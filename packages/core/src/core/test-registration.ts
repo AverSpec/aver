@@ -7,12 +7,15 @@ import { pathToFileURL } from 'node:url'
 import { runTestWithAdapter } from './test-runner'
 import type { CalledOps } from './proxy'
 import type { TestContext } from './suite'
+import { getConfigAutoloadAttempted, setConfigAutoloadAttempted, resetConfigAutoload } from './autoload-state'
 
-export function getGlobalTest(): any {
+export function getGlobalTest(injected?: any): any {
+  if (injected !== undefined) return injected
   return (globalThis as any).test ?? (globalThis as any).it
 }
 
-export function getGlobalDescribe(): (name: string, fn: () => void) => void {
+export function getGlobalDescribe(injected?: (name: string, fn: () => void) => void): (name: string, fn: () => void) => void {
+  if (injected !== undefined) return injected
   const describe = (globalThis as any).describe
   if (typeof describe !== 'function') {
     return () => {
@@ -161,10 +164,11 @@ function makeTestFn<D extends Domain>(
   }
 }
 
-let configAutoloadAttempted = false
+export { resetConfigAutoload }
+
 async function maybeAutoloadConfig(): Promise<void> {
-  if (configAutoloadAttempted) return
-  configAutoloadAttempted = true
+  if (getConfigAutoloadAttempted()) return
+  setConfigAutoloadAttempted(true)
   if (typeof process === 'undefined') return
   if (process.env.AVER_AUTOLOAD_CONFIG === 'false') return
   const cwd = process.cwd()

@@ -62,13 +62,13 @@ describe('domain.extend()', () => {
       assertions: { isEmpty: assertion() },
     })
 
-    const extended = base.extend({
+    const extended = base.extend('CartUI', {
       assertions: {
         showsSpinner: assertion(),
       },
     })
 
-    expect(extended.name).toBe('Cart')
+    expect(extended.name).toBe('CartUI')
     expect(extended.vocabulary.actions.addItem).toEqual({ kind: 'action' })
     expect(extended.vocabulary.queries.total).toEqual({ kind: 'query' })
     expect(extended.vocabulary.assertions.isEmpty).toEqual({ kind: 'assertion' })
@@ -83,7 +83,7 @@ describe('domain.extend()', () => {
       assertions: {},
     })
 
-    const extended = base.extend({ assertions: { foo: assertion() } })
+    const extended = base.extend('CartExtended', { assertions: { foo: assertion() } })
     expect(extended.parent).toBe(base)
   })
 
@@ -96,12 +96,29 @@ describe('domain.extend()', () => {
     })
 
     const extended = base
-      .extend({ queries: { total: query<number>() } })
-      .extend({ assertions: { isEmpty: assertion() } })
+      .extend('CartWithQueries', { queries: { total: query<number>() } })
+      .extend('CartFull', { assertions: { isEmpty: assertion() } })
 
     expect(extended.vocabulary.actions.addItem).toEqual({ kind: 'action' })
     expect(extended.vocabulary.queries.total).toEqual({ kind: 'query' })
     expect(extended.vocabulary.assertions.isEmpty).toEqual({ kind: 'assertion' })
+  })
+
+  it('gives extended domain its own name, distinct from parent', () => {
+    const base = defineDomain({
+      name: 'Cart',
+      actions: { addItem: action() },
+      queries: {},
+      assertions: {},
+    })
+
+    const extended = base.extend('CartUI', {
+      assertions: { showsSpinner: assertion() },
+    })
+
+    expect(extended.name).toBe('CartUI')
+    expect(base.name).toBe('Cart')
+    expect(extended.name).not.toBe(base.name)
   })
 
   it('allows extending with empty sections', () => {
@@ -112,7 +129,7 @@ describe('domain.extend()', () => {
       assertions: {},
     })
 
-    const extended = base.extend({})
+    const extended = base.extend('CartEmpty', {})
     expect(extended.vocabulary.actions.addItem).toEqual({ kind: 'action' })
   })
 })

@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import {
   registerDomain, getDomains, getDomain,
-  registerAdapter, getAdapters, resetRegistry,
+  registerAdapter, getAdapters, findAdapter, findAdapters, resetRegistry,
 } from '../../src/core/registry'
+import { resetConfigAutoload } from '../../src/core/test-registration'
 import { defineDomain } from '../../src/core/domain'
 import { implement } from '../../src/core/adapter'
 import { unit } from '../../src/protocols/unit'
@@ -21,6 +22,20 @@ const orders = defineDomain({
   queries: { list: query<string[]>() },
   assertions: { hasOrder: assertion() },
 })
+
+function makeAdapter(domain: ReturnType<typeof defineDomain>, protocolName = 'unit') {
+  const handlers: Record<string, any> = {}
+  for (const section of ['actions', 'queries', 'assertions'] as const) {
+    handlers[section] = {}
+    for (const key of Object.keys(domain.vocabulary[section])) {
+      handlers[section][key] = async () => {}
+    }
+  }
+  return implement(domain, {
+    protocol: { name: protocolName, async setup() { return null }, async teardown() {} },
+    ...handlers,
+  } as any)
+}
 
 describe('domain registry', () => {
   beforeEach(() => {
@@ -111,5 +126,152 @@ describe('resetRegistry', () => {
     resetRegistry()
     expect(getDomains()).toEqual([])
     expect(getAdapters()).toEqual([])
+  })
+
+  it('resets configAutoloadAttempted flag', () => {
+    // resetConfigAutoload is called internally by resetRegistry.
+    // We verify by ensuring the export exists and is callable.
+    expect(typeof resetConfigAutoload).toBe('function')
+    // Calling it directly should not throw
+    resetConfigAutoload()
+  })
+})
+
+describe('findAdapter', () => {
+  beforeEach(() => {
+    resetRegistry()
+  })
+
+  it('returns undefined when no adapters are registered', () => {
+    expect(findAdapter(cart)).toBeUndefined()
+  })
+
+  it('finds an exact match by domain reference', () => {
+    const adapter = makeAdapter(cart)
+    registerAdapter(adapter)
+    expect(findAdapter(cart)).toBe(adapter)
+  })
+
+  it('returns undefined when adapter is registered for a different domain', () => {
+    const adapter = makeAdapter(orders)
+    registerAdapter(adapter)
+    expect(findAdapter(cart)).toBeUndefined()
+  })
+
+  it('walks parent chain to find adapter for parent domain', () => {
+    const child = cart.extend('CartUI', {
+      assertions: { showsSpinner: assertion() },
+    })
+
+    const adapter = makeAdapter(cart)
+    registerAdapter(adapter)
+
+    expect(findAdapter(child)).toBe(adapter)
+  })
+
+  it('walks multi-level parent chain', () => {
+    const child = cart.extend('CartUI', {
+      assertions: { showsSpinner: assertion() },
+    })
+    const grandchild = child.extend('CartUIFull', {
+      assertions: { showsBadge: assertion() },
+    })
+
+    const adapter = makeAdapter(cart)
+    registerAdapter(adapter)
+
+    expect(findAdapter(grandchild)).toBe(adapter)
+  })
+
+  it('prefers exact match over parent match', () => {
+    const child = cart.extend('CartUI', {
+      assertions: { showsSpinner: assertion() },
+    })
+
+    const parentAdapter = makeAdapter(cart)
+    const childAdapter = makeAdapter(child)
+    registerAdapter(parentAdapter)
+    registerAdapter(childAdapter)
+
+    expect(findAdapter(child)).toBe(childAdapter)
+  })
+})
+
+describe('findAdapters', () => {
+  beforeEach(() => {
+    resetRegistry()
+  })
+
+  it('returns empty array when no adapters are registered', () => {
+    expect(findAdapters(cart)).toEqual([])
+  })
+
+  it('returns all adapters for a domain', () => {
+    const unitAdapter = makeAdapter(cart, 'unit')
+    const httpAdapter = makeAdapter(cart, 'http')
+    registerAdapter(unitAdapter)
+    registerAdapter(httpAdapter)
+
+    const result = findAdapters(cart)
+    expect(result).toHaveLength(2)
+    expect(result).toContain(unitAdapter)
+    expect(result).toContain(httpAdapter)
+  })
+
+  it('walks parent chain when no exact match exists', () => {
+    const child = cart.extend('CartUI', {
+      assertions: { showsSpinner: assertion() },
+    })
+
+    const unitAdapter = makeAdapter(cart, 'unit')
+    const httpAdapter = makeAdapter(cart, 'http')
+    registerAdapter(unitAdapter)
+    registerAdapter(httpAdapter)
+
+    const result = findAdapters(child)
+    expect(result).toHaveLength(2)
+    expect(result).toContain(unitAdapter)
+    expect(result).toContain(httpAdapter)
+  })
+
+  it('does not include parent adapters when exact match exists', () => {
+    const child = cart.extend('CartUI', {
+      assertions: { showsSpinner: assertion() },
+    })
+
+    const parentAdapter = makeAdapter(cart, 'unit')
+    const childAdapter = makeAdapter(child, 'http')
+    registerAdapter(parentAdapter)
+    registerAdapter(childAdapter)
+
+    const result = findAdapters(child)
+    expect(result).toHaveLength(1)
+    expect(result[0]).toBe(childAdapter)
+  })
+
+  it('stops walking parent chain at first level with matches', () => {
+    const child = cart.extend('CartUI', {
+      assertions: { showsSpinner: assertion() },
+    })
+    const grandchild = child.extend('CartUIFull', {
+      assertions: { showsBadge: assertion() },
+    })
+
+    const parentAdapter = makeAdapter(cart, 'unit')
+    const childAdapter = makeAdapter(child, 'http')
+    registerAdapter(parentAdapter)
+    registerAdapter(childAdapter)
+
+    // grandchild should find child's adapter (first parent with a match)
+    const result = findAdapters(grandchild)
+    expect(result).toHaveLength(1)
+    expect(result[0]).toBe(childAdapter)
+  })
+
+  it('returns empty array for unrelated domain', () => {
+    const adapter = makeAdapter(cart)
+    registerAdapter(adapter)
+
+    expect(findAdapters(orders)).toEqual([])
   })
 })

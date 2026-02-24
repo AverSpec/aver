@@ -65,7 +65,7 @@ export const averCoreAdapter = implement(averCore, {
         ext.assertions = {}
         for (const a of assertions) ext.assertions[a] = realAssertion()
       }
-      session.extendedDomain = session.domain.extend(ext)
+      session.extendedDomain = session.domain.extend(`${session.domain.name}Extended`, ext)
     },
 
     implementDomain: async (session) => {

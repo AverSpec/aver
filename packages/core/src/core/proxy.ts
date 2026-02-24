@@ -35,6 +35,8 @@ export interface Proxies<D extends Domain> {
   assert: AssertProxy<D>
 }
 
+export type Clock = () => number
+
 export function createProxies<D extends Domain>(
   domain: D,
   getCtx: () => any,
@@ -42,6 +44,7 @@ export function createProxies<D extends Domain>(
   trace: TraceEntry[],
   calledOps?: CalledOps,
   correlationId?: string,
+  clock: Clock = Date.now,
 ): Proxies<D> {
   const act: any = {}
   const query: any = {}
@@ -51,7 +54,7 @@ export function createProxies<D extends Domain>(
     act[name] = async (payload?: any) => {
       calledOps?.actions.add(name)
       const handler = (getAdapter().handlers.actions as any)[name]
-      const entry: TraceEntry = { kind: 'action', name, payload, status: 'pass', startAt: Date.now(), correlationId }
+      const entry: TraceEntry = { kind: 'action', name, payload, status: 'pass', startAt: clock(), correlationId }
       try {
         await handler(getCtx(), payload)
       } catch (error) {
@@ -59,7 +62,7 @@ export function createProxies<D extends Domain>(
         entry.error = error
         throw error
       } finally {
-        entry.endAt = Date.now()
+        entry.endAt = clock()
         if (entry.startAt !== undefined) entry.durationMs = entry.endAt - entry.startAt
         trace.push(entry)
       }
@@ -70,7 +73,7 @@ export function createProxies<D extends Domain>(
     query[name] = async (payload?: any) => {
       calledOps?.queries.add(name)
       const handler = (getAdapter().handlers.queries as any)[name]
-      const entry: TraceEntry = { kind: 'query', name, payload, status: 'pass', startAt: Date.now(), correlationId }
+      const entry: TraceEntry = { kind: 'query', name, payload, status: 'pass', startAt: clock(), correlationId }
       try {
         const result = await handler(getCtx(), payload)
         entry.result = result
@@ -80,7 +83,7 @@ export function createProxies<D extends Domain>(
         entry.error = error
         throw error
       } finally {
-        entry.endAt = Date.now()
+        entry.endAt = clock()
         if (entry.startAt !== undefined) entry.durationMs = entry.endAt - entry.startAt
         trace.push(entry)
       }
@@ -91,7 +94,7 @@ export function createProxies<D extends Domain>(
     assert[name] = async (payload?: any) => {
       calledOps?.assertions.add(name)
       const handler = (getAdapter().handlers.assertions as any)[name]
-      const entry: TraceEntry = { kind: 'assertion', name, payload, status: 'pass', startAt: Date.now(), correlationId }
+      const entry: TraceEntry = { kind: 'assertion', name, payload, status: 'pass', startAt: clock(), correlationId }
       try {
         await handler(getCtx(), payload)
       } catch (error) {
@@ -99,7 +102,7 @@ export function createProxies<D extends Domain>(
         entry.error = error
         throw error
       } finally {
-        entry.endAt = Date.now()
+        entry.endAt = clock()
         if (entry.startAt !== undefined) entry.durationMs = entry.endAt - entry.startAt
         trace.push(entry)
       }

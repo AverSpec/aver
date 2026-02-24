@@ -34,6 +34,16 @@
         "default": "./dist/index.cjs"
       }
     },
+    "./internals": {
+      "import": {
+        "types": "./dist/internals.d.ts",
+        "default": "./dist/internals.js"
+      },
+      "require": {
+        "types": "./dist/internals.d.cts",
+        "default": "./dist/internals.cjs"
+      }
+    },
     "./reporter": {
       "import": {
         "types": "./dist/reporter.d.ts",
@@ -65,12 +75,10 @@
   },
   "devDependencies": {
     "@aver/workspace": "workspace:*",
+    "@clack/prompts": "^1.0.0",
     "@types/node": "^22.0.0",
     "tsup": "^8.0.0",
     "typescript": "^5.7.0",
     "vitest": "^3.0.0"
-  },
-  "dependencies": {
-    "@clack/prompts": "^1.0.0"
   }
 }

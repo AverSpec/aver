@@ -511,6 +511,57 @@ describe('CycleEngine', () => {
     expect(mockSupervisor).toHaveBeenCalledTimes(2)
   })
 
+  it('passes scenarioDetail to worker when scenarioId is provided', async () => {
+    // Seed a scenario in the workspace
+    const store = new WorkspaceStore(dir, 'test')
+    const ops = new WorkspaceOps(store)
+    const scenario = await ops.captureScenario({ behavior: 'test behavior', mode: 'intended' })
+
+    // Supervisor dispatches a worker with scenarioId
+    mockSupervisor.mockResolvedValueOnce({
+      decision: {
+        action: {
+          type: 'dispatch_worker',
+          worker: {
+            goal: 'implement feature',
+            artifacts: [],
+            skill: 'tdd-loop',
+            allowUserQuestions: false,
+            permissionLevel: 'edit',
+            scenarioId: scenario.id,
+          },
+        },
+      },
+      tokenUsage: 100,
+    })
+
+    mockWorker.mockResolvedValueOnce({
+      result: { summary: 'done', artifacts: [], status: 'complete' },
+      tokenUsage: 500,
+    })
+
+    mockSupervisor.mockResolvedValueOnce({
+      decision: { action: { type: 'stop', reason: 'done' } },
+      tokenUsage: 50,
+    })
+
+    const engine = new CycleEngine({
+      agentPath: dir,
+      workspacePath: dir,
+      projectId: 'test',
+      config,
+    })
+
+    await engine.start('test scenario passthrough')
+
+    // Verify mockWorker was called with scenarioDetail as 4th arg
+    expect(mockWorker).toHaveBeenCalledTimes(1)
+    const callArgs = mockWorker.mock.calls[0]
+    expect(callArgs[3]).toBeDefined()
+    expect(callArgs[3]!.id).toBe(scenario.id)
+    expect(callArgs[3]!.behavior).toBe('test behavior')
+  })
+
   it('blocks advancement when verification fails (open questions)', async () => {
     // Seed a mapped scenario with an open question
     const store = new WorkspaceStore(dir, 'test')

@@ -1,4 +1,4 @@
-import { WorkspaceStore, WorkspaceOps } from '@aver/workspace'
+import { WorkspaceStore, WorkspaceOps, type Scenario } from '@aver/workspace'
 import { verifyAdvancement } from './verification.js'
 import { ContextCurator } from '../memory/curator.js'
 import { SessionStore } from '../memory/session.js'
@@ -21,7 +21,7 @@ const DEFAULT_MAX_CYCLE_DEPTH = 50
 
 export interface Dispatchers {
   supervisor: (input: SupervisorInput, config: AgentConfig) => Promise<SupervisorResult>
-  worker: (dispatch: WorkerDispatch, artifacts: ArtifactContent[], config: AgentConfig) => Promise<WorkerDispatchResult>
+  worker: (dispatch: WorkerDispatch, artifacts: ArtifactContent[], config: AgentConfig, scenarioDetail?: Scenario) => Promise<WorkerDispatchResult>
 }
 
 export interface EngineOptions {
@@ -215,7 +215,15 @@ export class CycleEngine {
     let tokenUsage: number
     try {
       const artifacts = await this.curator.loadArtifacts(dispatch.artifacts)
-      const response = await this.dispatchWorkerFn(dispatch, artifacts, this.config)
+
+      // Look up scenario detail if scenarioId is provided
+      let scenarioDetail: Scenario | undefined
+      if (dispatch.scenarioId) {
+        const scenarios = await this.workspaceOps.getScenarios()
+        scenarioDetail = scenarios.find((s) => s.id === dispatch.scenarioId)
+      }
+
+      const response = await this.dispatchWorkerFn(dispatch, artifacts, this.config, scenarioDetail)
       result = response.result
       tokenUsage = response.tokenUsage
     } catch (err) {
@@ -239,6 +247,9 @@ export class CycleEngine {
     const results: WorkerResult[] = []
     const errors: string[] = []
 
+    // Pre-load scenarios once for all workers
+    const scenarios = await this.workspaceOps.getScenarios()
+
     const promises = dispatches.map(async (dispatch) => {
       await this.logEvent('worker:dispatch', { goal: dispatch.goal, skill: dispatch.skill })
 
@@ -246,7 +257,10 @@ export class CycleEngine {
       let tokenUsage: number
       try {
         const artifacts = await this.curator.loadArtifacts(dispatch.artifacts)
-        const response = await this.dispatchWorkerFn(dispatch, artifacts, this.config)
+        const scenarioDetail = dispatch.scenarioId
+          ? scenarios.find((s) => s.id === dispatch.scenarioId)
+          : undefined
+        const response = await this.dispatchWorkerFn(dispatch, artifacts, this.config, scenarioDetail)
         result = response.result
         tokenUsage = response.tokenUsage
       } catch (err) {

@@ -2,7 +2,8 @@ import { query } from '@anthropic-ai/claude-agent-sdk'
 import { buildWorkerPrompt } from './prompt.js'
 import { loadSkill } from './skill-loader.js'
 import { parseWorkerResult } from './results.js'
-import type { WorkerDispatch, WorkerResult, ArtifactContent, AgentConfig } from '../types.js'
+import type { WorkerDispatch, WorkerResult, ArtifactContent, AgentConfig, WorkerInput } from '../types.js'
+import type { Scenario } from '@aver/workspace'
 
 export interface WorkerDispatchResult {
   result: WorkerResult
@@ -15,10 +16,12 @@ export async function dispatchWorker(
   dispatch: WorkerDispatch,
   artifacts: ArtifactContent[],
   config: AgentConfig,
+  scenarioDetail?: Scenario,
 ): Promise<WorkerDispatchResult> {
-  const input = {
+  const input: WorkerInput = {
     goal: dispatch.goal,
     artifacts,
+    scenarioDetail,
   }
 
   const skillContent = await loadSkill(dispatch.skill)

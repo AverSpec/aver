@@ -1,9 +1,10 @@
-import { implement } from '@aver/core'
+import { implement, withFixture } from '@aver/core'
 import { playwright } from '@aver/protocol-playwright'
 import { taskBoard } from '../domains/task-board.js'
 import { createServer } from '../src/server/index.js'
 import type { Server } from 'node:http'
 import type { Page } from 'playwright'
+import { expect } from '@playwright/test'
 
 let server: Server | undefined
 let baseUrl: string | undefined
@@ -15,35 +16,38 @@ const proto = playwright({
     'backlog': '[data-testid="column-backlog"]',
   },
 })
-const originalSetup = proto.setup.bind(proto)
-const originalTeardown = proto.teardown.bind(proto)
 
-proto.setup = async function (): Promise<Page> {
-  const { app } = createServer()
-  server = await new Promise<Server>(resolve => {
-    const s = app.listen(0, () => resolve(s))
-  })
-  const addr = server.address()
-  const port = typeof addr === 'object' && addr ? addr.port : 3000
-  baseUrl = `http://localhost:${port}`
+// Use withFixture to manage server lifecycle in setup/teardown
+const protocolWithServer = withFixture(proto, {
+  async before() {
+    const { app } = createServer()
+    server = await new Promise<Server>(resolve => {
+      const s = app.listen(0, () => resolve(s))
+    })
+    const addr = server.address()
+    const port = typeof addr === 'object' && addr ? addr.port : 3000
+    baseUrl = `http://localhost:${port}`
+  },
+  async after() {
+    if (server) {
+      await new Promise<void>((resolve) => server!.close(() => resolve()))
+      server = undefined
+      baseUrl = undefined
+    }
+  },
+})
 
+// Wrap setup to navigate to the app after protocol setup
+const originalSetup = protocolWithServer.setup.bind(protocolWithServer)
+protocolWithServer.setup = async function (): Promise<Page> {
   const page = await originalSetup()
-  await page.goto(baseUrl)
-  await page.waitForLoadState('networkidle')
+  await page.goto(baseUrl!)
+  await page.waitForLoadState('domcontentloaded')
   return page
 }
 
-proto.teardown = async function (page: Page): Promise<void> {
-  await originalTeardown(page)
-  if (server) {
-    await new Promise<void>((resolve) => server!.close(() => resolve()))
-    server = undefined
-    baseUrl = undefined
-  }
-}
-
 export const playwrightAdapter = implement(taskBoard, {
-  protocol: proto,
+  protocol: protocolWithServer,
 
   actions: {
     deleteTask: async (page, { title }) => {
@@ -98,24 +102,16 @@ export const playwrightAdapter = implement(taskBoard, {
   assertions: {
     taskInStatus: async (page, { title, status }) => {
       const card = page.getByTestId(`column-${status}`).getByTestId(`task-${title}`)
-      const count = await card.count()
-      if (count === 0) {
-        throw new Error(`Expected task "${title}" in column "${status}" but not found`)
-      }
+      await expect(card).toBeVisible()
     },
     taskAssignedTo: async (page, { title, assignee }) => {
-      const text = await page.getByTestId(`task-${title}`).getByTestId('card-assignee').textContent()
-      if (text?.trim() !== assignee) {
-        throw new Error(`Expected task "${title}" assigned to "${assignee}" but was "${text?.trim()}"`)
-      }
+      const assigneeEl = page.getByTestId(`task-${title}`).getByTestId('card-assignee')
+      await expect(assigneeEl).toHaveText(assignee)
     },
     taskCount: async (page, { status, count }) => {
       const column = page.getByTestId(`column-${status}`)
       const cards = column.getByTestId(/^task-/)
-      const actual = await cards.count()
-      if (actual !== count) {
-        throw new Error(`Expected ${count} tasks in "${status}" but found ${actual}`)
-      }
+      await expect(cards).toHaveCount(count)
     },
   },
 })

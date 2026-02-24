@@ -10,9 +10,16 @@ export interface HttpContext {
 
 export interface HttpOptions {
   baseUrl: string
+  /** Request timeout in milliseconds (default: 30000) */
+  timeout?: number
+  /** Default headers to include with every request */
+  defaultHeaders?: Record<string, string>
 }
 
 export function http(options: HttpOptions): Protocol<HttpContext> {
+  const timeout = options.timeout ?? 30_000
+  const defaultHeaders = options.defaultHeaders ?? {}
+
   return {
     name: 'http',
     async setup(): Promise<HttpContext> {
@@ -20,11 +27,21 @@ export function http(options: HttpOptions): Protocol<HttpContext> {
 
       function request(method: string) {
         return async (path: string, body?: unknown): Promise<Response> => {
-          return fetch(`${base}${path}`, {
-            method,
-            headers: body !== undefined ? { 'Content-Type': 'application/json' } : {},
-            body: body !== undefined ? JSON.stringify(body) : undefined,
-          })
+          const controller = new AbortController()
+          const timer = setTimeout(() => controller.abort(), timeout)
+          try {
+            return await fetch(`${base}${path}`, {
+              method,
+              headers: {
+                ...defaultHeaders,
+                ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+              },
+              body: body !== undefined ? JSON.stringify(body) : undefined,
+              signal: controller.signal,
+            })
+          } finally {
+            clearTimeout(timer)
+          }
         }
       }
 

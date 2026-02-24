@@ -4,10 +4,11 @@ import { taskBoard } from '../domains/task-board.js'
 import { createServer } from '../src/server/index.js'
 import type { Server } from 'node:http'
 import type { HttpContext } from '@aver/protocol-http'
+import type { Protocol } from '@aver/core'
 
 let server: Server | undefined
 
-const httpProtocol = {
+const httpProtocol: Protocol<HttpContext> = {
   name: 'http',
   async setup(): Promise<HttpContext> {
     const { app } = createServer()

@@ -10,6 +10,8 @@ import type {
   WorkspaceSnapshot,
   WorkerResult,
   ArtifactContent,
+  NewArtifact,
+  AgentEvent,
 } from '../types.js'
 
 interface CuratorOptions {
@@ -41,7 +43,7 @@ export class ContextCurator {
     this.storyArchiver = new StoryArchiver(this.artifactStore)
   }
 
-  async writeArtifact(artifact: { type: string; name: string; summary: string; content: string }): Promise<void> {
+  async writeArtifact(artifact: NewArtifact): Promise<void> {
     await this.artifactStore.write(artifact)
   }
 
@@ -49,7 +51,7 @@ export class ContextCurator {
     return this.artifactStore.read(name)
   }
 
-  async logEvent(event: { timestamp: string; type: string; cycleId: string; data: Record<string, unknown> }): Promise<void> {
+  async logEvent(event: AgentEvent): Promise<void> {
     await this.eventLog.append(event)
   }
 

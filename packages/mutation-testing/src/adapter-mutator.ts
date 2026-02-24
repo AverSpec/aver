@@ -72,14 +72,15 @@ function cloneAdapterWithMutation(
   mutatedHandler: Function,
 ): Adapter {
   const key = kind === 'action' ? 'actions' : kind === 'query' ? 'queries' : 'assertions'
+  const handlers = {
+    actions: key === 'actions' ? { ...adapter.handlers.actions, [handlerName]: mutatedHandler } : adapter.handlers.actions,
+    queries: key === 'queries' ? { ...adapter.handlers.queries, [handlerName]: mutatedHandler } : adapter.handlers.queries,
+    assertions: key === 'assertions' ? { ...adapter.handlers.assertions, [handlerName]: mutatedHandler } : adapter.handlers.assertions,
+  }
   return {
     domain,
     protocol: adapter.protocol,
-    handlers: {
-      actions: key === 'actions' ? { ...adapter.handlers.actions, [handlerName]: mutatedHandler } : adapter.handlers.actions,
-      queries: key === 'queries' ? { ...adapter.handlers.queries, [handlerName]: mutatedHandler } : adapter.handlers.queries,
-      assertions: key === 'assertions' ? { ...adapter.handlers.assertions, [handlerName]: mutatedHandler } : adapter.handlers.assertions,
-    },
+    handlers: handlers as Adapter['handlers'],
   }
 }
 

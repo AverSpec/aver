@@ -1,5 +1,5 @@
 // Judge primitives
-export { judge, setDefaultProvider, VerdictSchema, buildJudgePrompt, JUDGE_SYSTEM_PROMPT } from './judge.js'
+export { judge, createJudge, setDefaultProvider, VerdictSchema, buildJudgePrompt, JUDGE_SYSTEM_PROMPT } from './judge.js'
 export type { Verdict } from './judge.js'
 
 // Provider interface and implementations

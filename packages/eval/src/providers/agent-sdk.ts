@@ -51,7 +51,8 @@ export function agentSdkProvider(opts?: AgentSdkProviderOptions): JudgeProvider 
           throw new Error('@aver/eval: Judge failed to produce structured output after max retries')
         }
         if (message.type === 'result' && 'is_error' in message && message.is_error) {
-          const errors = 'errors' in message ? (message as any).errors : []
+          const msg = message as Record<string, unknown>
+          const errors = Array.isArray(msg.errors) ? (msg.errors as string[]) : []
           throw new Error(`@aver/eval: Judge dispatch failed: ${errors.join(', ') || 'unknown error'}`)
         }
       }

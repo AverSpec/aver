@@ -41,6 +41,10 @@ export function getDefaultProvider(): JudgeProvider {
   return defaultProvider
 }
 
+export function createJudge(provider: JudgeProvider): (content: string, rubric: string) => Promise<Verdict> {
+  return (content, rubric) => provider.judge(content, rubric)
+}
+
 export async function judge(content: string, rubric: string): Promise<Verdict> {
   return getDefaultProvider().judge(content, rubric)
 }

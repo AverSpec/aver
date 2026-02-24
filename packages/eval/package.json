@@ -38,6 +38,7 @@
     "@anthropic-ai/sdk": ">=0.30.0"
   },
   "peerDependenciesMeta": {
+    "@anthropic-ai/claude-agent-sdk": { "optional": true },
     "@anthropic-ai/sdk": { "optional": true }
   },
   "dependencies": {

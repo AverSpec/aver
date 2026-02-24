@@ -37,8 +37,10 @@ describe('loadSkill', () => {
   })
 
   it('returns undefined for unknown skill', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const content = await loadSkill('nonexistent')
     expect(content).toBeUndefined()
+    warnSpy.mockRestore()
   })
 
   it('warns on stderr when skill is not found', async () => {

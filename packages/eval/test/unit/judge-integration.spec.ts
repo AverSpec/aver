@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { judge, setDefaultProvider } from '../../src/judge'
+import { judge, createJudge, setDefaultProvider } from '../../src/judge'
 import { mockProvider } from '../../src/providers/mock'
 
 describe('judge() with mock provider', () => {
@@ -33,5 +33,42 @@ describe('judge() with mock provider', () => {
   it('throws when no provider is set', async () => {
     setDefaultProvider(undefined as any)
     await expect(judge('content', 'rubric')).rejects.toThrow()
+  })
+})
+
+describe('createJudge()', () => {
+  it('returns a bound judge function that uses the given provider', async () => {
+    const provider = mockProvider([
+      { match: 'seams', verdict: { pass: true, reasoning: 'References seams.' } },
+    ])
+    const boundJudge = createJudge(provider)
+
+    const verdict = await boundJudge('content about seams', 'References seams')
+    expect(verdict.pass).toBe(true)
+    expect(verdict.reasoning).toBe('References seams.')
+  })
+
+  it('is isolated from the default provider', async () => {
+    setDefaultProvider(
+      mockProvider([
+        { match: 'default', verdict: { pass: true, reasoning: 'From default.' } },
+      ]),
+    )
+
+    const boundJudge = createJudge(
+      mockProvider([
+        { match: 'custom', verdict: { pass: false, reasoning: 'From custom.' } },
+      ]),
+    )
+
+    // bound judge uses its own provider, not the default
+    const verdict = await boundJudge('custom content', 'custom rubric')
+    expect(verdict.pass).toBe(false)
+    expect(verdict.reasoning).toBe('From custom.')
+
+    // default judge still uses its own provider
+    const defaultVerdict = await judge('default content', 'default rubric')
+    expect(defaultVerdict.pass).toBe(true)
+    expect(defaultVerdict.reasoning).toBe('From default.')
   })
 })

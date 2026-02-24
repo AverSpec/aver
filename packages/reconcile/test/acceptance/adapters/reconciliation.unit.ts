@@ -1,10 +1,11 @@
 import { implement, unit, defineDomain, action, query, assertion } from '@aver/core'
 import { reconciliation } from '../domains/reconciliation'
 import { reconcile } from '../../../src/reconcile.js'
-import type { TelemetryEvent, ReconciliationResult } from '../../../src/types.js'
+import type { TelemetryEvent, ReconciliationResult, ScenarioRef } from '../../../src/types.js'
 
 interface ReconciliationTestSession {
   events: TelemetryEvent[]
+  scenarios: ScenarioRef[]
   result: ReconciliationResult | null
 }
 
@@ -27,6 +28,7 @@ const testDomain = defineDomain({
 export const reconciliationAdapter = implement(reconciliation, {
   protocol: unit<ReconciliationTestSession>(() => ({
     events: [],
+    scenarios: [],
     result: null,
   })),
 
@@ -35,10 +37,14 @@ export const reconciliationAdapter = implement(reconciliation, {
       session.events = events as TelemetryEvent[]
     },
 
+    loadScenarios: async (session, { scenarios }) => {
+      session.scenarios = scenarios as ScenarioRef[]
+    },
+
     runReconciliation: async (session) => {
       session.result = reconcile({
         domain: testDomain,
-        scenarios: [],
+        scenarios: session.scenarios,
         events: session.events,
       })
     },

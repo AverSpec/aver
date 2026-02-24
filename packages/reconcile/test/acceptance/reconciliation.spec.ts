@@ -67,6 +67,50 @@ describe('Reconciliation', () => {
     expect(count).toBe(1)
   })
 
+  test('excludes covered operations from uncovered list', async ({ act, assert, query }) => {
+    await act.loadScenarios({
+      scenarios: [
+        { id: 'sc-1', behavior: 'create an order', domainOperation: 'createOrder' },
+      ],
+    })
+    await act.loadProductionEvents({
+      events: [
+        {
+          schemaVersion: '1.0.0',
+          domain: 'TestApp',
+          operation: 'createOrder',
+          kind: 'action',
+          payload: {},
+          timestamp: '2026-02-23T00:00:00Z',
+          correlationId: 'corr-1',
+          environment: 'production',
+        },
+        {
+          schemaVersion: '1.0.0',
+          domain: 'TestApp',
+          operation: 'cancelOrder',
+          kind: 'action',
+          payload: {},
+          timestamp: '2026-02-23T01:00:00Z',
+          correlationId: 'corr-2',
+          environment: 'production',
+        },
+      ],
+    })
+    await act.runReconciliation({ domainName: 'TestApp' })
+
+    // createOrder is covered by a scenario, cancelOrder is not
+    const uncovered = await query.uncoveredOperations()
+    expect(uncovered.length).toBe(1)
+    expect(uncovered[0].operation).toBe('cancelOrder')
+
+    // Coverage: 1 covered / 2 total = 50%
+    const pct = await query.coveragePercentage()
+    expect(pct).toBe(50)
+
+    await assert.coverageAbove({ threshold: 40 })
+  })
+
   test('coverage percentage is calculated correctly', async ({ act, query }) => {
     // With 3 different operations and 0 scenarios, coverage should be 0%
     await act.loadProductionEvents({

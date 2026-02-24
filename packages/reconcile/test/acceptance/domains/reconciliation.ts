@@ -1,10 +1,11 @@
 import { defineDomain, action, query, assertion } from '@aver/core'
-import type { TelemetryEvent, UncoveredOperation } from '../../../src/types'
+import type { TelemetryEvent, UncoveredOperation, ScenarioRef } from '../../../src/types'
 
 export const reconciliation = defineDomain({
   name: 'Reconciliation',
   actions: {
     loadProductionEvents: action<{ events: TelemetryEvent[] }>(),
+    loadScenarios: action<{ scenarios: ScenarioRef[] }>(),
     runReconciliation: action<{ domainName: string }>(),
   },
   queries: {

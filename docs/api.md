@@ -60,13 +60,12 @@ hasItems: assertion<{ count: number }>()  // typed payload
 isEmpty: assertion()                       // no payload
 ```
 
-### `domain.extend(config)`
+### `domain.extend(name, config)`
 
-Extends a domain with additional vocabulary. The extended domain inherits all items from the parent.
+Extends a domain with additional vocabulary. The extended domain inherits all items from the parent. The name is passed as the first argument.
 
 ```typescript
-const cartUI = cart.extend({
-  name: 'shopping-cart-ui',
+const cartUI = cart.extend('shopping-cart-ui', {
   assertions: {
     showsSpinner: assertion(),
   },
@@ -167,20 +166,26 @@ const { test } = suite(cart, unitAdapter)
 | Property | Type | Description |
 |:---------|:-----|:------------|
 | `test` | `(name, fn) => void` | Wraps Vitest's `test()` with domain proxies |
+| `it` | `(name, fn) => void` | Alias for `test` |
+| `describe` | `(name, fn) => void` | Wraps Vitest's `describe()` for grouping |
+| `context` | `(name, fn) => void` | Alias for `describe` |
 | `act` | `ActProxy` | Programmatic access to actions |
 | `query` | `QueryProxy` | Programmatic access to queries |
 | `assert` | `AssertProxy` | Programmatic access to assertions |
 | `setup` | `() => Promise<void>` | Manual setup (for programmatic use) |
 | `teardown` | `() => Promise<void>` | Manual teardown (for programmatic use) |
 | `getTrace` | `() => TraceEntry[]` | Get the current action trace |
+| `getCoverage` | `() => VocabularyCoverage` | Get vocabulary coverage stats |
+| `getPlannedTests` | `(name) => PlannedTest[]` | Preview what test names would be registered |
 
 ### `test(name, fn)`
 
 Wraps Vitest's `test()`, passing typed domain proxies via callback:
 
 ```typescript
-test('add item', async ({ act, query, assert, trace }) => {
-  await act.addItem({ name: 'Widget' })
+test('add item', async ({ given, when, query, assert, trace }) => {
+  await given.addItem({ name: 'Widget' })
+  await when.checkout()
   await assert.hasItems({ count: 1 })
   const total = await query.cartTotal()
 })
@@ -191,6 +196,8 @@ The callback receives:
 | Property | Description |
 |:---------|:------------|
 | `act` | Typed proxy for actions |
+| `given` | Alias for `act` — narrative clarity for setup steps (Given-When-Then) |
+| `when` | Alias for `act` — narrative clarity for trigger steps (Given-When-Then) |
 | `query` | Typed proxy for queries |
 | `assert` | Typed proxy for assertions |
 | `trace` | Current action trace array |
@@ -324,12 +331,18 @@ import type {
 
 ```typescript
 interface TraceEntry {
-  kind: 'action' | 'query' | 'assertion'
+  kind: 'action' | 'query' | 'assertion' | 'test'
   name: string
-  payload?: unknown
+  payload: unknown
   status: 'pass' | 'fail'
-  error?: string
-  returnValue?: unknown
+  result?: unknown
+  error?: unknown
+  startAt?: number
+  endAt?: number
+  durationMs?: number
+  attachments?: TraceAttachment[]
+  metadata?: Record<string, unknown>
+  correlationId?: string
 }
 ```
 
@@ -337,11 +350,17 @@ interface TraceEntry {
 
 ```typescript
 interface Protocol<Context> {
-  name: string
+  readonly name: string
   setup(): Promise<Context>
   teardown(ctx: Context): Promise<void>
+  onTestStart?(ctx: Context, meta: TestMetadata): Promise<void> | void
+  onTestFail?(ctx: Context, meta: TestCompletion): Promise<TestFailureResult> | TestFailureResult
+  onTestEnd?(ctx: Context, meta: TestCompletion): Promise<void> | void
+  extensions?: ProtocolExtensions
 }
 ```
+
+The lifecycle hooks are optional. `onTestStart` runs before each test body. `onTestFail` runs when a test fails and can return `TraceAttachment[]` (e.g., screenshots). `onTestEnd` runs after each test regardless of outcome.
 
 ---
 
@@ -368,6 +387,8 @@ First run fails with "Baseline missing". Run `aver approve` to create it.
 | `fileExtension` | `string` | auto | Override file extension |
 | `filePath` | `string` | auto | Override test file path (for programmatic use) |
 | `testName` | `string` | auto | Override test name (for programmatic use) |
+| `serializer` | `SerializerName` | auto | Serializer to use (`'json'`, `'text'`, or custom name) |
+| `comparator` | `Comparator` | default | Custom comparison function `(approved, received) => { equal: boolean }` |
 
 ### `approve.visual(nameOrOptions)`
 
@@ -384,6 +405,7 @@ await approve.visual({ name: 'backlog', region: 'backlog' }) // scoped region
 |:---------|:-----|:---------|:------------|
 | `name` | `string` | yes | Name for the approval image file |
 | `region` | `string` | no | Named region (maps to CSS selector in adapter) |
+| `threshold` | `number` | no | Pixel difference threshold (0-1) for visual comparison |
 
 ### `Screenshotter` <small>from `aver`</small>
 
@@ -406,6 +428,14 @@ const proto = playwright({
   },
 })
 ```
+
+### Test Runner Integration
+
+`approve()` integrates with test runners by throwing standard `Error`-based assertion errors when a baseline mismatch is detected. The test runner catches these errors and reports them as test failures.
+
+- **Vitest and Jest** work out of the box — both catch thrown errors as assertion failures
+- **Other test runners** need to support standard `Error`-based assertions (most do)
+- Set the `AVER_APPROVE` environment variable to update baselines: `AVER_APPROVE=1` writes received values as the new baselines instead of comparing. The `aver approve` CLI command sets this automatically.
 
 ---
 

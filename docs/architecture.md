@@ -104,11 +104,17 @@ A protocol manages session lifecycle and provides context to adapter handlers:
 
 ```typescript
 interface Protocol<Context> {
-  name: string
+  readonly name: string
   setup(): Promise<Context>
   teardown(ctx: Context): Promise<void>
+  onTestStart?(ctx: Context, meta: TestMetadata): Promise<void> | void
+  onTestFail?(ctx: Context, meta: TestCompletion): Promise<TestFailureResult> | TestFailureResult
+  onTestEnd?(ctx: Context, meta: TestCompletion): Promise<void> | void
+  extensions?: ProtocolExtensions
 }
 ```
+
+Beyond `setup()` and `teardown()`, protocols can hook into test lifecycle events. `onTestStart` runs before each test body. `onTestFail` runs on failure and can return attachments (e.g., Playwright captures a screenshot). `onTestEnd` runs after each test for cleanup. The `extensions` field exposes protocol-specific capabilities like `Screenshotter` for visual approvals.
 
 Aver ships three protocols:
 
@@ -151,8 +157,7 @@ Each test runs once per adapter with an isolated protocol context. Test names ar
 Domains can be extended with additional vocabulary:
 
 ```typescript
-export const shoppingCartUI = shoppingCart.extend({
-  name: 'shopping-cart-ui',
+export const shoppingCartUI = shoppingCart.extend('shopping-cart-ui', {
   assertions: {
     showsLoadingSpinner: assertion(),
   },
@@ -195,6 +200,24 @@ The cost model determines when Aver earns its keep.
 **What grows with what:** Vocabulary grows with *domain surface area* — the number of distinct behaviors your system exposes. Tests grow with *scenarios* — the number of ways those behaviors compose. Domain surface area grows slowly; scenarios grow fast. Five domain operations can support fifty tests that compose them in different ways. The adapter investment is amortized across every scenario that uses those operations.
 
 **The breakeven:** With a single adapter, Aver's overhead is roughly equal to well-structured page objects or helper functions — you'd extract those anyway. The cross-adapter benefit kicks in at the second adapter: when two adapters disagree on a behavior, that disagreement surfaces a real bug (API returns different data than the UI shows, unit layer assumes state the integration layer doesn't create). By the time you have two adapters, the bugs caught by cross-level verification exceed the cost of maintaining two sets of handlers.
+
+## Package Separation: Agent Packages
+
+The agent-related functionality is split across three packages, each with a distinct role and dependency profile:
+
+| Package | Purpose | Dependencies |
+|:--------|:--------|:-------------|
+| `@aver/skills` | Pure markdown asset package | None — no deps, no build step |
+| `@aver/agent-plugin` | Claude Code integration shim | Thin packaging layer |
+| `@aver/agent` | Runtime with CycleEngine | Claude Agent SDK (optional peer dep) |
+
+**`@aver/skills`** contains the workflow skill definitions as markdown files. It has zero dependencies and no build step. Because skills are plain markdown, they can be consumed by any tool — not just the Aver agent. An IDE extension, a different agent framework, or a human reviewer can all read and use the skill definitions directly.
+
+**`@aver/agent-plugin`** is a thin packaging layer that copies skills and configures the MCP server for the Claude Code plugin system. It bridges `@aver/skills` and `@aver/mcp-server` into a format Claude Code understands. It exists solely to keep plugin plumbing out of the other packages.
+
+**`@aver/agent`** is the heavy runtime package. It contains the CycleEngine (supervisor/worker dispatch), session management, and shell verification logic. It depends on the Claude Agent SDK as an optional peer dependency. Most users of the testing framework never need this package.
+
+The separation ensures that users who only want the testing framework (`@aver/core` + protocol packages) do not pull in AI SDK dependencies. A team using Aver purely for multi-adapter acceptance testing has zero exposure to agent code.
 
 ## Using Aver with AI Agents
 

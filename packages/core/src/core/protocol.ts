@@ -41,8 +41,11 @@ export function withFixture<C>(
       return protocol.setup()
     },
     async teardown(ctx: C) {
-      await protocol.teardown(ctx)
-      if (fixture.after) await fixture.after()
+      try {
+        await protocol.teardown(ctx)
+      } finally {
+        if (fixture.after) await fixture.after()
+      }
     },
     onTestStart: protocol.onTestStart?.bind(protocol),
     onTestFail: protocol.onTestFail?.bind(protocol),

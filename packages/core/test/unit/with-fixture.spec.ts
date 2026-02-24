@@ -90,6 +90,22 @@ describe('withFixture()', () => {
     expect(wrapped.extensions).toEqual({ screenshotter: undefined, custom: 'ext' })
   })
 
+  it('calls after() even when teardown() throws', async () => {
+    const calls: string[] = []
+    const failing: Protocol<null> = {
+      name: 'failing',
+      async setup() { return null },
+      async teardown() { throw new Error('teardown boom') },
+    }
+    const wrapped = withFixture(failing, {
+      after: async () => { calls.push('after') },
+    })
+
+    const ctx = await wrapped.setup()
+    await expect(wrapped.teardown(ctx)).rejects.toThrow('teardown boom')
+    expect(calls).toContain('after')
+  })
+
   it('handles protocol without optional hooks', async () => {
     const bare: Protocol<null> = {
       name: 'bare',

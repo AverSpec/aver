@@ -55,12 +55,11 @@ This skill orchestrates. It does NOT own:
 
 | Concern | Delegate To |
 |---------|-------------|
-| TDD inner loop (red/green/refactor) | `superpowers:test-driven-development` |
-| Debugging failing tests | `superpowers:systematic-debugging` |
-| Parallel investigation/implementation | `superpowers:dispatching-parallel-agents` |
+| TDD inner loop (red/green/refactor) | `tdd-loop.md` in this directory |
+| Characterization testing | `characterization.md` in this directory |
 | Code review and refactoring | Standard agent capabilities |
 
-When a scenario reaches `specified`, dispatch implementation to the TDD skill. When investigation needs parallel exploration of multiple seams, dispatch to the parallel agents skill.
+When a scenario reaches `specified`, load `tdd-loop.md` for the ATDD double loop. When investigating legacy code, load `characterization.md` for locking existing behavior.
 
 ## Subagent Dispatch Model
 
@@ -134,9 +133,11 @@ The outer loop stays thin. It reads scenario state, decides what work to dispatc
 
 | Guide | When to Use |
 |-------|-------------|
-| `scenario-mapping.md` | Facilitating an Example Mapping session (mapped stage) |
 | `investigation.md` | Legacy characterization path (characterized stage) |
+| `scenario-mapping.md` | Facilitating an Example Mapping session (mapped stage) |
 | `specification.md` | Domain vocabulary and adapter interface design (specified stage) |
+| `tdd-loop.md` | Inner loop: ATDD double loop, TDD, refactoring (implemented stage) |
+| `characterization.md` | Lock existing behavior before changes |
 
 ## Conventions
 

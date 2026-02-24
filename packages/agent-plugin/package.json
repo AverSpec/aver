@@ -17,6 +17,13 @@
     "node": ">=18.0.0"
   },
   "files": [".claude-plugin", "skills", ".mcp.json"],
+  "dependencies": {
+    "@aver/skills": "workspace:^"
+  },
+  "scripts": {
+    "sync-skills": "cp node_modules/@aver/skills/*.md skills/aver-workflow/",
+    "prepublishOnly": "pnpm run sync-skills"
+  },
   "peerDependencies": {
     "@aver/mcp-server": "workspace:^"
   }

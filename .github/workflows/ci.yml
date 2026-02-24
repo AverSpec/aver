@@ -23,11 +23,17 @@ jobs:
       - name: Build packages
         run: |
           pnpm --filter @aver/core run build
-          pnpm --filter "@aver/workspace" run build
-          pnpm --filter "@aver/approvals" run build
-          pnpm --filter "@aver/protocol-http" run build
-          pnpm --filter "@aver/protocol-playwright" run build
-          pnpm --filter "@aver/example-task-board" run build
+          pnpm --filter @aver/workspace run build
+          pnpm --filter @aver/approvals run build
+          pnpm --filter @aver/agent run build
+          pnpm --filter @aver/eval run build
+          pnpm --filter @aver/mutation-testing run build
+          pnpm --filter @aver/reconcile run build
+          pnpm --filter @aver/telemetry run build
+          pnpm --filter @aver/mcp-server run build
+          pnpm --filter @aver/protocol-http run build
+          pnpm --filter @aver/protocol-playwright run build
+          pnpm --filter @aver/example-task-board run build
 
       - name: Get Playwright version
         id: pw-version
@@ -57,6 +63,31 @@ jobs:
         if: ${{ !cancelled() }}
         run: pnpm exec vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/approvals.xml
         working-directory: packages/approvals
+
+      - name: Test agent
+        if: ${{ !cancelled() }}
+        run: pnpm exec vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/agent.xml
+        working-directory: packages/agent
+
+      - name: Test eval
+        if: ${{ !cancelled() }}
+        run: pnpm exec vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/eval.xml
+        working-directory: packages/eval
+
+      - name: Test mutation-testing
+        if: ${{ !cancelled() }}
+        run: pnpm exec vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/mutation-testing.xml
+        working-directory: packages/mutation-testing
+
+      - name: Test reconcile
+        if: ${{ !cancelled() }}
+        run: pnpm exec vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/reconcile.xml
+        working-directory: packages/reconcile
+
+      - name: Test telemetry
+        if: ${{ !cancelled() }}
+        run: pnpm exec vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/telemetry.xml
+        working-directory: packages/telemetry
 
       - name: Test mcp-server
         if: ${{ !cancelled() }}

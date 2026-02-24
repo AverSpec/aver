@@ -41,7 +41,7 @@ Once installed, Claude Code can:
 | `get_scenarios` | List scenarios, optionally filtered by stage |
 | `capture_scenario` | Capture a new scenario (observed behavior or confirmed intent) |
 | `advance_scenario` | Move scenario to next maturity stage |
-| `regress_scenario` | Move scenario back to a previous stage |
+| `revisit_scenario` | Move scenario back to a previous stage |
 | `add_question` | Attach a question to a scenario |
 | `resolve_question` | Mark a question as answered |
 | `link_to_domain` | Connect scenario to an Aver domain |

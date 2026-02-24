@@ -45,7 +45,7 @@ Stop and ask the human before proceeding when:
 2. **Confirming intent** -- Never assume a captured behavior is desired. The human must confirm before advancing to `mapped`.
 3. **Ambiguous scope** -- When a scenario could map to multiple domains or the boundary is unclear.
 4. **Conflicting scenarios** -- When two scenarios suggest contradictory behaviors.
-5. **Stage regression** -- When a test starts failing due to changed requirements, confirm before regressing.
+5. **Stage revisit** -- When a test starts failing due to changed requirements, confirm before revisiting an earlier stage.
 
 Checkpoints are **non-blocking** when possible. Post the question via `add_question`, continue working on independent scenarios, and return when the human responds.
 
@@ -76,7 +76,7 @@ The outer loop stays thin. It reads scenario state, decides what work to dispatc
 - Calls MCP tools to read/write scenario state
 - Facilitates Example Mapping conversations
 - Posts questions and processes answers
-- Advances/regresses scenarios between stages
+- Advances/revisits scenarios between stages
 - Dispatches subagents for heavy work
 
 **What the outer loop does NOT do:**
@@ -95,7 +95,7 @@ The outer loop stays thin. It reads scenario state, decides what work to dispatc
 | `get_scenarios` | List scenarios, filter by stage/story/keyword |
 | `get_scenario_summary` | Counts per stage, open questions |
 | `advance_scenario` | Move a scenario to the next stage |
-| `regress_scenario` | Move a scenario back to an earlier stage |
+| `revisit_scenario` | Move a scenario back to an earlier stage |
 | `get_advance_candidates` | Scenarios eligible for advancement |
 | `add_question` | Attach an open question to a scenario |
 | `resolve_question` | Mark a question as answered |

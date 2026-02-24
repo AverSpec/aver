@@ -21,6 +21,7 @@ export function agentSdkProvider(opts?: AgentSdkProviderOptions): JudgeProvider 
         properties: {
           pass: { type: 'boolean' as const },
           reasoning: { type: 'string' as const },
+          confidence: { type: 'string' as const, enum: ['high', 'medium', 'low'] },
         },
         required: ['pass', 'reasoning'] as const,
         additionalProperties: false,

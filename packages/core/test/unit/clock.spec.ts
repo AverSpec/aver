@@ -12,6 +12,54 @@ const testDomain = defineDomain({
   assertions: { check: assertion() },
 })
 
+describe('given/when proxy aliases', () => {
+  it('given and when are the same object as act', () => {
+    const adapter = implement(testDomain, {
+      protocol: { name: 'unit', async setup() { return null }, async teardown() {} },
+      actions: { doSomething: async () => {} },
+      queries: { getValue: async () => 42 },
+      assertions: { check: async () => {} },
+    })
+
+    const trace: TraceEntry[] = []
+    const proxies = createProxies(
+      testDomain,
+      () => null,
+      () => adapter,
+      trace,
+    )
+
+    expect(proxies.given).toBe(proxies.act)
+    expect(proxies.when).toBe(proxies.act)
+  })
+
+  it('given and when route to the same handlers as act', async () => {
+    const calls: string[] = []
+    const adapter = implement(testDomain, {
+      protocol: { name: 'unit', async setup() { return null }, async teardown() {} },
+      actions: { doSomething: async () => { calls.push('called') } },
+      queries: { getValue: async () => 42 },
+      assertions: { check: async () => {} },
+    })
+
+    const trace: TraceEntry[] = []
+    const proxies = createProxies(
+      testDomain,
+      () => null,
+      () => adapter,
+      trace,
+    )
+
+    await proxies.given.doSomething()
+    await proxies.when.doSomething()
+    await proxies.act.doSomething()
+
+    expect(calls).toEqual(['called', 'called', 'called'])
+    expect(trace).toHaveLength(3)
+    expect(trace.every(e => e.kind === 'action' && e.name === 'doSomething')).toBe(true)
+  })
+})
+
 describe('injectable clock in createProxies', () => {
   it('uses injected clock for trace timing', async () => {
     let tick = 1000

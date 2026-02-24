@@ -31,6 +31,10 @@ export type AssertProxy<D extends Domain> = {
 
 export interface Proxies<D extends Domain> {
   act: ActProxy<D>
+  /** Alias for `act` — narrative clarity for setup steps. */
+  given: ActProxy<D>
+  /** Alias for `act` — narrative clarity for trigger steps. */
+  when: ActProxy<D>
   query: QueryProxy<D>
   assert: AssertProxy<D>
 }
@@ -109,5 +113,5 @@ export function createProxies<D extends Domain>(
     }
   }
 
-  return { act, query, assert }
+  return { act, given: act, when: act, query, assert }
 }

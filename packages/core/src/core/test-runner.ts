@@ -36,7 +36,7 @@ export async function runTestWithAdapter<D extends Domain>(
         trace,
         extensions: adapter.protocol.extensions ?? {},
       },
-      async () => fn({ act: proxies.act, query: proxies.query, assert: proxies.assert, trace: () => [...trace] }),
+      async () => fn({ act: proxies.act, given: proxies.given, when: proxies.when, query: proxies.query, assert: proxies.assert, trace: () => [...trace] }),
     )
     await adapter.protocol.onTestEnd?.(ctx, { ...metadata, status: 'pass', trace: [...trace] })
   } catch (error) {

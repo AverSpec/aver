@@ -151,5 +151,33 @@ describe('agentSdkProvider', () => {
         }),
       )
     })
+
+    it('returns confidence when present in structured output', async () => {
+      mockQuery.mockReturnValue(
+        asyncIterable({
+          type: 'result',
+          subtype: 'success',
+          structured_output: { pass: true, reasoning: 'Meets criteria.', confidence: 'high' },
+        }) as any,
+      )
+
+      const provider = agentSdkProvider()
+      const verdict = await provider.judge('content', 'rubric')
+      expect(verdict.confidence).toBe('high')
+    })
+
+    it('returns undefined confidence when not present', async () => {
+      mockQuery.mockReturnValue(
+        asyncIterable({
+          type: 'result',
+          subtype: 'success',
+          structured_output: { pass: true, reasoning: 'Meets criteria.' },
+        }) as any,
+      )
+
+      const provider = agentSdkProvider()
+      const verdict = await provider.judge('content', 'rubric')
+      expect(verdict.confidence).toBeUndefined()
+    })
   })
 })

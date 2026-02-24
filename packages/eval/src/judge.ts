@@ -4,6 +4,7 @@ import type { JudgeProvider } from './providers/types.js'
 export const VerdictSchema = z.object({
   pass: z.boolean(),
   reasoning: z.string().min(1),
+  confidence: z.enum(['high', 'medium', 'low']).optional(),
 })
 
 export type Verdict = z.infer<typeof VerdictSchema>
@@ -39,14 +40,10 @@ export function resetDefaultProvider(): void {
 export function getDefaultProvider(): JudgeProvider {
   if (!defaultProvider) {
     throw new Error(
-      '@aver/eval: No judge provider configured. Call setDefaultProvider() or pass a provider to createJudge().',
+      '@aver/eval: No judge provider configured. Call setDefaultProvider() before using judge().',
     )
   }
   return defaultProvider
-}
-
-export function createJudge(provider: JudgeProvider): (content: string, rubric: string) => Promise<Verdict> {
-  return (content, rubric) => provider.judge(content, rubric)
 }
 
 export async function judge(content: string, rubric: string): Promise<Verdict> {

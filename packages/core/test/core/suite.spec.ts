@@ -225,6 +225,17 @@ describe('suite().test() — callback API', () => {
     expect(t[1]).toMatchObject({ kind: 'query', name: 'total', status: 'pass' })
   })
 
+  suiteTest('given/when aliases dispatch through same action handlers', async ({ given, when, assert, trace }) => {
+    await given.addItem({ name: 'Setup' })
+    await when.addItem({ name: 'Trigger' })
+    await assert.isEmpty()
+    const t = trace()
+    expect(t).toHaveLength(3)
+    expect(t[0]).toMatchObject({ kind: 'action', name: 'addItem', payload: { name: 'Setup' } })
+    expect(t[1]).toMatchObject({ kind: 'action', name: 'addItem', payload: { name: 'Trigger' } })
+    expect(t[2]).toMatchObject({ kind: 'assertion', name: 'isEmpty' })
+  })
+
   it('exposes alias helpers and modifiers', async () => {
     expect(suiteIt).toBe(suiteTest)
     expect(typeof suiteDescribe).toBe('function')

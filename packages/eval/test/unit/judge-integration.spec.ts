@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { judge, createJudge, setDefaultProvider, resetDefaultProvider } from '../../src/judge'
+import { judge, setDefaultProvider, resetDefaultProvider } from '../../src/judge'
 import { mockProvider } from '../../src/providers/mock'
 
 describe('judge() with mock provider', () => {
@@ -40,37 +40,34 @@ describe('judge() with mock provider', () => {
   })
 })
 
-describe('createJudge()', () => {
+describe('provider.judge() direct usage (replaces createJudge)', () => {
   afterEach(() => {
     resetDefaultProvider()
   })
 
-  it('returns a bound judge function that uses the given provider', async () => {
+  it('calls provider.judge() directly without a wrapper', async () => {
     const provider = mockProvider([
       { match: 'seams', verdict: { pass: true, reasoning: 'References seams.' } },
     ])
-    const boundJudge = createJudge(provider)
 
-    const verdict = await boundJudge('content about seams', 'References seams')
+    const verdict = await provider.judge('content about seams', 'References seams')
     expect(verdict.pass).toBe(true)
     expect(verdict.reasoning).toBe('References seams.')
   })
 
-  it('is isolated from the default provider', async () => {
+  it('provider.judge() is isolated from the default provider', async () => {
     setDefaultProvider(
       mockProvider([
         { match: 'default', verdict: { pass: true, reasoning: 'From default.' } },
       ]),
     )
 
-    const boundJudge = createJudge(
-      mockProvider([
-        { match: 'custom', verdict: { pass: false, reasoning: 'From custom.' } },
-      ]),
-    )
+    const customProvider = mockProvider([
+      { match: 'custom', verdict: { pass: false, reasoning: 'From custom.' } },
+    ])
 
-    // bound judge uses its own provider, not the default
-    const verdict = await boundJudge('custom content', 'custom rubric')
+    // direct provider call uses its own rules, not the default
+    const verdict = await customProvider.judge('custom content', 'custom rubric')
     expect(verdict.pass).toBe(false)
     expect(verdict.reasoning).toBe('From custom.')
 

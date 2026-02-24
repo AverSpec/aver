@@ -22,6 +22,27 @@ describe('VerdictSchema', () => {
     expect(() => VerdictSchema.parse({ pass: true })).toThrow()
     expect(() => VerdictSchema.parse({ reasoning: 'ok' })).toThrow()
   })
+
+  it('parses verdict with confidence field', () => {
+    const result = VerdictSchema.parse({ pass: true, reasoning: 'Solid match.', confidence: 'high' })
+    expect(result.confidence).toBe('high')
+  })
+
+  it('accepts verdict without confidence (optional)', () => {
+    const result = VerdictSchema.parse({ pass: true, reasoning: 'OK.' })
+    expect(result.confidence).toBeUndefined()
+  })
+
+  it('rejects invalid confidence value', () => {
+    expect(() => VerdictSchema.parse({ pass: true, reasoning: 'OK.', confidence: 'maybe' })).toThrow()
+  })
+
+  it('accepts all valid confidence values', () => {
+    for (const level of ['high', 'medium', 'low'] as const) {
+      const result = VerdictSchema.parse({ pass: true, reasoning: 'OK.', confidence: level })
+      expect(result.confidence).toBe(level)
+    }
+  })
 })
 
 describe('mockProvider', () => {
@@ -49,5 +70,14 @@ describe('mockProvider', () => {
     ])
     const result = await provider.judge('output text', 'Check for hallucinations in the output')
     expect(result.pass).toBe(true)
+  })
+
+  it('passes through confidence from canned verdict', async () => {
+    const provider = mockProvider([
+      { match: 'seams', verdict: { pass: true, reasoning: 'Found seams.', confidence: 'high' } },
+    ])
+    const result = await provider.judge('content', 'References seams')
+    expect(result.pass).toBe(true)
+    expect(result.confidence).toBe('high')
   })
 })

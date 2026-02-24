@@ -13,6 +13,10 @@ export type { ActProxy, QueryProxy, AssertProxy } from './proxy'
 
 export interface TestContext<D extends Domain> {
   act: ActProxy<D>
+  /** Alias for `act` — narrative clarity for setup steps. */
+  given: ActProxy<D>
+  /** Alias for `act` — narrative clarity for trigger steps. */
+  when: ActProxy<D>
   query: QueryProxy<D>
   assert: AssertProxy<D>
   trace: () => TraceEntry[]

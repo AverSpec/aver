@@ -25,8 +25,14 @@ describe('removalOperator', () => {
 describe('returnValueOperator', () => {
   it('returns an operator named return-value targeting queries', () => {
     const op = returnValueOperator(null)
-    expect(op.name).toBe('return-value')
+    expect(op.name).toBe('return-value(null)')
     expect(op.targets).toBe('queries')
+  })
+
+  it('includes replacement value in operator name', () => {
+    expect(returnValueOperator(null).name).toBe('return-value(null)')
+    expect(returnValueOperator('').name).toBe('return-value("")')
+    expect(returnValueOperator(0).name).toBe('return-value(0)')
   })
 
   it('with null: returned function resolves to null', async () => {
@@ -86,13 +92,13 @@ describe('defaultOperators', () => {
     const names = ops.map(op => op.name)
 
     expect(names).toContain('removal')
-    expect(names).toContain('return-value')
+    expect(names.some(n => n.startsWith('return-value'))).toBe(true)
     expect(names).toContain('throw-error')
   })
 
   it('has three return-value variants', () => {
     const ops = defaultOperators()
-    const returnValueOps = ops.filter(op => op.name === 'return-value')
+    const returnValueOps = ops.filter(op => op.name.startsWith('return-value'))
     expect(returnValueOps).toHaveLength(3)
   })
 })

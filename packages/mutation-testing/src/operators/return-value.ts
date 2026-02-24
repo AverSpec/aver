@@ -6,7 +6,7 @@ import type { AdapterOperator } from '../engine-types.js'
  */
 export function returnValueOperator(replacement: unknown = null): AdapterOperator {
   return {
-    name: 'return-value',
+    name: `return-value(${JSON.stringify(replacement)})`,
     targets: 'queries',
     mutate(_handlerName: string, _handler: Function): Function {
       return async () => replacement

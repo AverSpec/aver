@@ -10,6 +10,7 @@ export interface TestResult {
 }
 
 export interface RunData {
+  schemaVersion?: string
   timestamp: string
   results: TestResult[]
   error?: string

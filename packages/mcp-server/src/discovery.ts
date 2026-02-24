@@ -3,6 +3,7 @@ import { join, parse as parsePath } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { registerDomain, getDomains } from '@aver/core'
 import type { Domain } from '@aver/core'
+import { log } from './logger.js'
 
 const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', 'coverage', '.aver', '.worktrees'])
 
@@ -94,7 +95,7 @@ export async function discoverDomains(rootDir: string): Promise<DiscoveredDomain
           }
         }
       } catch (err) {
-        console.error(`aver: skipping ${filePath} (import failed: ${(err as Error).message})`)
+        log('warn', 'skipping file (import failed)', { filePath, error: (err as Error).message })
       }
     }
   }
@@ -154,5 +155,5 @@ export async function discoverAndRegister(rootDir: string): Promise<void> {
     domainFilePaths.set(domain.name, filePath)
   }
   const count = getDomains().length
-  console.error(`aver: discovered ${count} domain${count !== 1 ? 's' : ''} from ${rootDir}`)
+  log('info', 'discovery complete', { domainCount: count, rootDir })
 }

@@ -4,6 +4,7 @@ import { pathToFileURL } from 'node:url'
 import { parseArgs } from 'node:util'
 import { resetRegistry } from '@aver/core'
 import { discoverAndRegister } from './discovery.js'
+import { log } from './logger.js'
 
 const CONFIG_FILENAMES = ['aver.config.ts', 'aver.config.js', 'aver.config.mjs']
 
@@ -66,7 +67,7 @@ export async function reloadConfig(loader?: () => Promise<void>): Promise<void> 
     try {
       await import(url)
     } catch (err) {
-      console.error(`aver: config reload failed, falling back to discovery: ${(err as Error).message}`)
+      log('warn', 'config reload failed, falling back to discovery', { error: (err as Error).message })
       if (projectRoot) await discoverAndRegister(projectRoot)
     }
     return

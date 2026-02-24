@@ -1,5 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
+import { log } from './logger.js'
 
 export function createServer(): McpServer {
   return new McpServer({
@@ -11,5 +12,5 @@ export function createServer(): McpServer {
 export async function startServer(server: McpServer): Promise<void> {
   const transport = new StdioServerTransport()
   await server.connect(transport)
-  console.error('aver MCP server running on stdio')
+  log('info', 'aver MCP server running on stdio')
 }

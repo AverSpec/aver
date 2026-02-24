@@ -46,6 +46,7 @@ export interface Scenario {
 }
 
 export interface Workspace {
+  schemaVersion: string
   projectId: string
   scenarios: Scenario[]
   createdAt: string

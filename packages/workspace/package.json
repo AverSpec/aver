@@ -1,6 +1,6 @@
 {
   "name": "@aver/workspace",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Scenario workspace for Aver workflow — maturity pipeline state management",
   "type": "module",
   "engines": {

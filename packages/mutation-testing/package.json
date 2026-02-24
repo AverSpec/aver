@@ -1,6 +1,6 @@
 {
   "name": "@aver/mutation-testing",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Mutation testing for Aver — verify spec precision via implementation and adapter mutations",
   "type": "module",
   "engines": {

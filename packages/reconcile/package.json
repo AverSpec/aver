@@ -1,6 +1,6 @@
 {
   "name": "@aver/reconcile",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Production deviation detection for Aver — compare telemetry against domain vocabulary and scenarios",
   "type": "module",
   "engines": { "node": ">=18.0.0" },

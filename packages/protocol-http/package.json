@@ -1,6 +1,6 @@
 {
   "name": "@aver/protocol-http",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "HTTP protocol for Aver acceptance testing",
   "type": "module",
   "license": "MIT",

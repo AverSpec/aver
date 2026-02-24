@@ -30,10 +30,12 @@
   "keywords": ["testing", "reconciliation", "aver", "production-monitoring", "deviation-detection"],
   "publishConfig": { "access": "public" },
   "peerDependencies": {
-    "@aver/core": ">=0.1.0"
+    "@aver/core": ">=0.1.0",
+    "@aver/telemetry": ">=0.1.0"
   },
   "devDependencies": {
     "@aver/core": "workspace:*",
+    "@aver/telemetry": "workspace:*",
     "@types/node": "^22.0.0",
     "tsup": "^8.0.0",
     "typescript": "^5.7.0",

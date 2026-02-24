@@ -1,20 +1,6 @@
-/**
- * TelemetryEvent shape — matches @aver/telemetry's TelemetryEvent.
- * Defined locally to avoid a hard dependency on @aver/telemetry.
- */
-export interface TelemetryEvent {
-  schemaVersion: string
-  domain: string
-  operation: string
-  kind: 'action' | 'query' | 'assertion'
-  payload: unknown
-  result?: unknown
-  error?: unknown
-  durationMs?: number
-  timestamp: string
-  correlationId: string
-  environment: string
-}
+import type { TelemetryEvent } from '@aver/telemetry'
+
+export type { TelemetryEvent }
 
 export interface UncoveredOperation {
   domain: string

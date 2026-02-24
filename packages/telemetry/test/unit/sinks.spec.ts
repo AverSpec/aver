@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { consoleSink } from '../../src/sinks/console'
-import { otelFormatSink } from '../../src/sinks/otel'
+import { structuredLogSink } from '../../src/sinks/structured-log'
 import type { TelemetryEvent } from '../../src/types'
 
 function makeTelemetryEvent(overrides?: Partial<TelemetryEvent>): TelemetryEvent {
@@ -31,10 +31,10 @@ describe('consoleSink', () => {
   })
 })
 
-describe('otelFormatSink', () => {
+describe('structuredLogSink', () => {
   it('adds service.name and otel.kind to output', () => {
     const spy = vi.spyOn(console, 'log').mockImplementation(() => {})
-    const sink = otelFormatSink({ serviceName: 'my-service' })
+    const sink = structuredLogSink({ serviceName: 'my-service' })
     const event = makeTelemetryEvent({ kind: 'query' })
 
     sink.emit(event)
@@ -48,7 +48,7 @@ describe('otelFormatSink', () => {
 
   it('uses INTERNAL kind for non-query events', () => {
     const spy = vi.spyOn(console, 'log').mockImplementation(() => {})
-    const sink = otelFormatSink({ serviceName: 'my-service' })
+    const sink = structuredLogSink({ serviceName: 'my-service' })
     const event = makeTelemetryEvent({ kind: 'action' })
 
     sink.emit(event)

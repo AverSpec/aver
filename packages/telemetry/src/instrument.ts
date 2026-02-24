@@ -4,9 +4,9 @@ import type { InstrumentOptions, TelemetryEvent } from './types.js'
 import { scrubPayload } from './scrub.js'
 
 export interface DomainEmitter {
-  action(operation: string, payload?: unknown): void
-  query(operation: string, payload?: unknown, result?: unknown, durationMs?: number): void
-  assertion(operation: string, payload?: unknown): void
+  action(operation: string, payload?: unknown, error?: unknown): Promise<void>
+  query(operation: string, payload?: unknown, result?: unknown, durationMs?: number, error?: unknown): Promise<void>
+  assertion(operation: string, payload?: unknown, error?: unknown): Promise<void>
   withCorrelation(correlationId: string): DomainEmitter
 }
 
@@ -19,14 +19,15 @@ export function instrument(domain: Domain, options: InstrumentOptions): DomainEm
   const validQueries = new Set(Object.keys(domain.vocabulary.queries))
   const validAssertions = new Set(Object.keys(domain.vocabulary.assertions))
 
-  function emit(
+  async function emit(
     kind: TelemetryEvent['kind'],
     operation: string,
     payload?: unknown,
     result?: unknown,
     durationMs?: number,
     correlationId?: string,
-  ): void {
+    error?: unknown,
+  ): Promise<void> {
     const event: TelemetryEvent = {
       schemaVersion: '1.0.0',
       domain: domainName,
@@ -34,30 +35,31 @@ export function instrument(domain: Domain, options: InstrumentOptions): DomainEm
       kind,
       payload: scrubPayload(payload, scrub),
       result: result !== undefined ? scrubPayload(result, scrub) : undefined,
+      error: error instanceof Error ? error.message : error,
       durationMs,
       timestamp: new Date().toISOString(),
       correlationId: correlationId ?? randomUUID(),
       environment,
     }
-    sink.emit(event)
+    await sink.emit(event)
   }
 
   function createEmitter(correlationId?: string): DomainEmitter {
     return {
-      action(operation: string, payload?: unknown): void {
+      async action(operation: string, payload?: unknown, error?: unknown): Promise<void> {
         if (!validActions.has(operation))
           throw new Error(`Unknown action: ${operation} in domain ${domainName}`)
-        emit('action', operation, payload, undefined, undefined, correlationId)
+        await emit('action', operation, payload, undefined, undefined, correlationId, error)
       },
-      query(operation: string, payload?: unknown, result?: unknown, durationMs?: number): void {
+      async query(operation: string, payload?: unknown, result?: unknown, durationMs?: number, error?: unknown): Promise<void> {
         if (!validQueries.has(operation))
           throw new Error(`Unknown query: ${operation} in domain ${domainName}`)
-        emit('query', operation, payload, result, durationMs, correlationId)
+        await emit('query', operation, payload, result, durationMs, correlationId, error)
       },
-      assertion(operation: string, payload?: unknown): void {
+      async assertion(operation: string, payload?: unknown, error?: unknown): Promise<void> {
         if (!validAssertions.has(operation))
           throw new Error(`Unknown assertion: ${operation} in domain ${domainName}`)
-        emit('assertion', operation, payload, undefined, undefined, correlationId)
+        await emit('assertion', operation, payload, undefined, undefined, correlationId, error)
       },
       withCorrelation(id: string): DomainEmitter {
         return createEmitter(id)

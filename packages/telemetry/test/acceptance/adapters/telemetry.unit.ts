@@ -41,12 +41,12 @@ export const telemetryAdapter = implement(telemetry, {
 
     emitAction: async (session, { operation, payload }) => {
       if (!session.emitter) throw new Error('Domain not instrumented')
-      session.emitter.action(operation, payload)
+      await session.emitter.action(operation, payload)
     },
 
     emitQuery: async (session, { operation, payload, result }) => {
       if (!session.emitter) throw new Error('Domain not instrumented')
-      session.emitter.query(operation, payload, result, 10)
+      await session.emitter.query(operation, payload, result, 10)
     },
   },
 

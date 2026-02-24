@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach } from 'vitest'
-import { judge, createJudge, setDefaultProvider } from '../../src/judge'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { judge, createJudge, setDefaultProvider, resetDefaultProvider } from '../../src/judge'
 import { mockProvider } from '../../src/providers/mock'
 
 describe('judge() with mock provider', () => {
@@ -11,6 +11,10 @@ describe('judge() with mock provider', () => {
         { match: 'actionable', verdict: { pass: false, reasoning: 'Rules are too abstract.' } },
       ]),
     )
+  })
+
+  afterEach(() => {
+    resetDefaultProvider()
   })
 
   it('returns pass for matching rubric', async () => {
@@ -31,12 +35,16 @@ describe('judge() with mock provider', () => {
   })
 
   it('throws when no provider is set', async () => {
-    setDefaultProvider(undefined as any)
+    resetDefaultProvider()
     await expect(judge('content', 'rubric')).rejects.toThrow()
   })
 })
 
 describe('createJudge()', () => {
+  afterEach(() => {
+    resetDefaultProvider()
+  })
+
   it('returns a bound judge function that uses the given provider', async () => {
     const provider = mockProvider([
       { match: 'seams', verdict: { pass: true, reasoning: 'References seams.' } },

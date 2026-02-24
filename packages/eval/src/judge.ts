@@ -32,6 +32,10 @@ export function setDefaultProvider(provider: JudgeProvider): void {
   defaultProvider = provider
 }
 
+export function resetDefaultProvider(): void {
+  defaultProvider = undefined
+}
+
 export function getDefaultProvider(): JudgeProvider {
   if (!defaultProvider) {
     throw new Error(

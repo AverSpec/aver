@@ -10,6 +10,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@aver/core': resolve(__dirname, '../core/src/index.ts'),
+      '@aver/telemetry': resolve(__dirname, '../telemetry/src/index.ts'),
     },
   },
 })

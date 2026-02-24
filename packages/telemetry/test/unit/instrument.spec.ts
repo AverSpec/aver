@@ -17,11 +17,11 @@ function collectingSink(): { collected: TelemetryEvent[]; sink: TelemetrySink } 
 }
 
 describe('instrument()', () => {
-  it('emitting an action creates a valid TelemetryEvent', () => {
+  it('emitting an action creates a valid TelemetryEvent', async () => {
     const { collected, sink } = collectingSink()
     const emitter = instrument(testDomain, { sink })
 
-    emitter.action('doWork', { input: 'hello' })
+    await emitter.action('doWork', { input: 'hello' })
 
     expect(collected).toHaveLength(1)
     const event = collected[0]
@@ -34,11 +34,11 @@ describe('instrument()', () => {
     expect(event.correlationId).toBeDefined()
   })
 
-  it('emitting a query includes result and durationMs', () => {
+  it('emitting a query includes result and durationMs', async () => {
     const { collected, sink } = collectingSink()
     const emitter = instrument(testDomain, { sink })
 
-    emitter.query('getResult', undefined, 'the-result', 42)
+    await emitter.query('getResult', undefined, 'the-result', 42)
 
     expect(collected).toHaveLength(1)
     const event = collected[0]
@@ -48,60 +48,102 @@ describe('instrument()', () => {
     expect(event.durationMs).toBe(42)
   })
 
-  it('unknown operation throws an error', () => {
+  it('unknown operation throws an error', async () => {
     const { sink } = collectingSink()
     const emitter = instrument(testDomain, { sink })
 
-    expect(() => emitter.action('nonExistent')).toThrow(
+    await expect(emitter.action('nonExistent')).rejects.toThrow(
       'Unknown action: nonExistent in domain TestDomain',
     )
-    expect(() => emitter.query('nonExistent')).toThrow(
+    await expect(emitter.query('nonExistent')).rejects.toThrow(
       'Unknown query: nonExistent in domain TestDomain',
     )
-    expect(() => emitter.assertion('nonExistent')).toThrow(
+    await expect(emitter.assertion('nonExistent')).rejects.toThrow(
       'Unknown assertion: nonExistent in domain TestDomain',
     )
   })
 
-  it('correlationId is generated per event by default', () => {
+  it('correlationId is generated per event by default', async () => {
     const { collected, sink } = collectingSink()
     const emitter = instrument(testDomain, { sink })
 
-    emitter.action('doWork', { input: 'a' })
-    emitter.action('doWork', { input: 'b' })
+    await emitter.action('doWork', { input: 'a' })
+    await emitter.action('doWork', { input: 'b' })
 
     expect(collected[0].correlationId).toBeDefined()
     expect(collected[1].correlationId).toBeDefined()
     expect(collected[0].correlationId).not.toBe(collected[1].correlationId)
   })
 
-  it('withCorrelation() uses the specified correlationId for all events', () => {
+  it('withCorrelation() uses the specified correlationId for all events', async () => {
     const { collected, sink } = collectingSink()
     const emitter = instrument(testDomain, { sink })
     const correlated = emitter.withCorrelation('my-correlation-id')
 
-    correlated.action('doWork', { input: 'a' })
-    correlated.action('doWork', { input: 'b' })
+    await correlated.action('doWork', { input: 'a' })
+    await correlated.action('doWork', { input: 'b' })
 
     expect(collected[0].correlationId).toBe('my-correlation-id')
     expect(collected[1].correlationId).toBe('my-correlation-id')
   })
 
-  it('environment defaults to production', () => {
+  it('environment defaults to production', async () => {
     const { collected, sink } = collectingSink()
     const emitter = instrument(testDomain, { sink })
 
-    emitter.action('doWork', { input: 'test' })
+    await emitter.action('doWork', { input: 'test' })
 
     expect(collected[0].environment).toBe('production')
   })
 
-  it('custom environment is used', () => {
+  it('custom environment is used', async () => {
     const { collected, sink } = collectingSink()
     const emitter = instrument(testDomain, { sink, environment: 'staging' })
 
-    emitter.action('doWork', { input: 'test' })
+    await emitter.action('doWork', { input: 'test' })
 
     expect(collected[0].environment).toBe('staging')
+  })
+
+  it('populates error field with Error message', async () => {
+    const { collected, sink } = collectingSink()
+    const emitter = instrument(testDomain, { sink })
+
+    await emitter.action('doWork', { input: 'test' }, new Error('something broke'))
+
+    expect(collected[0].error).toBe('something broke')
+  })
+
+  it('populates error field with non-Error value', async () => {
+    const { collected, sink } = collectingSink()
+    const emitter = instrument(testDomain, { sink })
+
+    await emitter.action('doWork', { input: 'test' }, 'string error')
+
+    expect(collected[0].error).toBe('string error')
+  })
+
+  it('error field is undefined when no error is provided', async () => {
+    const { collected, sink } = collectingSink()
+    const emitter = instrument(testDomain, { sink })
+
+    await emitter.action('doWork', { input: 'test' })
+
+    expect(collected[0].error).toBeUndefined()
+  })
+
+  it('awaits async sink.emit()', async () => {
+    const collected: TelemetryEvent[] = []
+    const sink: TelemetrySink = {
+      async emit(e) {
+        await new Promise(resolve => setTimeout(resolve, 10))
+        collected.push(e)
+      },
+    }
+    const emitter = instrument(testDomain, { sink })
+
+    await emitter.action('doWork', { input: 'test' })
+
+    expect(collected).toHaveLength(1)
   })
 })

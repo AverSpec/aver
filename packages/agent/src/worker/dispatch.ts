@@ -1,5 +1,6 @@
 import { query } from '@anthropic-ai/claude-agent-sdk'
 import { buildWorkerPrompt } from './prompt.js'
+import { loadSkill } from './skill-loader.js'
 import { parseWorkerResult } from './results.js'
 import type { WorkerDispatch, WorkerResult, ArtifactContent, AgentConfig } from '../types.js'
 
@@ -20,7 +21,8 @@ export async function dispatchWorker(
     artifacts,
   }
 
-  const { system, user } = buildWorkerPrompt(input, dispatch.skill)
+  const skillContent = await loadSkill(dispatch.skill)
+  const { system, user } = buildWorkerPrompt(input, dispatch.skill, skillContent)
   const disallowedTools = buildDisallowedTools(dispatch.permissionLevel)
 
   let assistantText = ''

@@ -1,6 +1,23 @@
 import { describe, it, expect } from 'vitest'
 import { buildSupervisorPrompt } from '../../src/supervisor/prompt.js'
 import type { SupervisorInput } from '../../src/types.js'
+import type { Scenario } from '@aver/workspace'
+
+function makeScenario(overrides: Partial<Scenario> = {}): Scenario {
+  return {
+    id: overrides.id ?? 'sc-1',
+    stage: overrides.stage ?? 'captured',
+    behavior: overrides.behavior ?? 'test behavior',
+    rules: [],
+    examples: [],
+    questions: [],
+    constraints: [],
+    seams: [],
+    createdAt: '2026-01-01',
+    updatedAt: '2026-01-01',
+    ...overrides,
+  }
+}
 
 describe('buildSupervisorPrompt', () => {
   const baseInput: SupervisorInput = {
@@ -11,6 +28,13 @@ describe('buildSupervisorPrompt', () => {
     recentEvents: [],
     storySummaries: [],
     artifactIndex: [],
+  }
+
+  function makeInput(scenarios: Scenario[]): SupervisorInput {
+    return {
+      ...baseInput,
+      workspace: { ...baseInput.workspace, scenarios },
+    }
   }
 
   it('includes system role description', () => {
@@ -80,5 +104,74 @@ describe('buildSupervisorPrompt', () => {
     expect(system).toContain('ask_user')
     expect(system).toContain('checkpoint')
     expect(system).toContain('stop')
+  })
+
+  it('includes mode in scenario line', () => {
+    const scenarios = [
+      makeScenario({ id: 'sc-1', mode: 'observed', behavior: 'existing login flow' }),
+      makeScenario({ id: 'sc-2', mode: 'intended', behavior: 'new checkout flow' }),
+    ]
+    const { user } = buildSupervisorPrompt(makeInput(scenarios))
+    expect(user).toContain('mode:observed')
+    expect(user).toContain('mode:intended')
+  })
+
+  it('includes open question count in scenario line', () => {
+    const scenarios = [
+      makeScenario({
+        questions: [
+          { id: 'q1', text: 'What about edge case?' },
+          { id: 'q2', text: 'Resolved one', answer: 'Yes' },
+        ],
+      }),
+    ]
+    const { user } = buildSupervisorPrompt(makeInput(scenarios))
+    expect(user).toContain('questions:1open')
+  })
+
+  it('includes domain link indicator in scenario line', () => {
+    const scenarios = [
+      makeScenario({
+        domainOperation: 'Cart.addItem',
+        testNames: ['adds item to cart'],
+      }),
+    ]
+    const { user } = buildSupervisorPrompt(makeInput(scenarios))
+    expect(user).toContain('linked:yes')
+  })
+
+  it('shows progress summary in workspace section', () => {
+    const scenarios = [
+      makeScenario({ id: 'sc-1', stage: 'implemented' }),
+      makeScenario({ id: 'sc-2', stage: 'implemented' }),
+      makeScenario({ id: 'sc-3', stage: 'mapped' }),
+      makeScenario({ id: 'sc-4', stage: 'captured' }),
+    ]
+    const { user } = buildSupervisorPrompt(makeInput(scenarios))
+    expect(user).toContain('Progress: 2/4 implemented')
+  })
+
+  it('includes stage-aware workflow section', () => {
+    const { system } = buildSupervisorPrompt(baseInput)
+    expect(system).toContain('Stage-Aware Workflow')
+    expect(system).toContain('captured scenarios')
+    expect(system).toContain('characterized scenarios')
+    expect(system).toContain('mapped scenarios')
+    expect(system).toContain('specified scenarios')
+    expect(system).toContain('implemented scenarios')
+  })
+
+  it('lists all 5 skills in dispatch_worker format', () => {
+    const { system } = buildSupervisorPrompt(baseInput)
+    expect(system).toContain('investigation')
+    expect(system).toContain('tdd-loop')
+    expect(system).toContain('characterization')
+    expect(system).toContain('scenario-mapping')
+    expect(system).toContain('specification')
+  })
+
+  it('does not contain flat success criteria', () => {
+    const { system } = buildSupervisorPrompt(baseInput)
+    expect(system).not.toContain('The success criteria is always')
   })
 })

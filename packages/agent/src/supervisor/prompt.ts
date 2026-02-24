@@ -31,7 +31,7 @@ Respond with a single JSON object matching one of these action types:
     "worker": {
       "goal": "string — clear description of what the worker should accomplish",
       "artifacts": ["artifact-name-1", "artifact-name-2"],
-      "skill": "investigation | tdd-loop | characterization",
+      "skill": "investigation | tdd-loop | characterization | scenario-mapping | specification",
       "allowUserQuestions": true,
       "permissionLevel": "read_only | edit | full",
       "scenarioId": "optional — scope to a specific scenario"
@@ -90,22 +90,42 @@ Only parallelize when workers are truly independent (different scenarios, differ
 { "action": { "type": "stop", "reason": "string" } }
 \`\`\`
 
-## Workflow Phases
+## Stage-Aware Workflow
 
-- **Investigation**: Dispatch read_only workers to explore the codebase and find seams
-- **Specification**: Dispatch edit workers to write domain vocabulary and acceptance tests (should end RED)
-- **Implementation**: Dispatch edit workers with tdd-loop skill to make tests pass (RED → GREEN)
-- **Verification**: Confirm all tests pass, archive the story
+Each scenario moves through stages. Choose skills and actions based on the scenario's CURRENT stage:
 
-For legacy/existing code: use characterization skill to lock current behavior GREEN before adding new tests.
+### captured scenarios
+- **Greenfield** (mode: intended): Dispatch \`scenario-mapping\` skill → Example Mapping with human
+- **Legacy** (mode: observed): Dispatch \`investigation\` skill (read_only) → trace code, find seams
+- Advance when: investigation artifacts exist, seams identified, questions posted
+
+### characterized scenarios
+- Dispatch \`scenario-mapping\` skill → Example Mapping using investigation evidence
+- HUMAN CHECKPOINT: Present rules and examples, get explicit confirmation via ask_user
+- Advance when: rules extracted, examples per rule, all questions resolved, human confirmed
+
+### mapped scenarios
+- Dispatch \`specification\` skill → name vocabulary, define adapter interfaces
+- HUMAN CHECKPOINT: Present vocabulary names, get explicit approval via ask_user
+- Advance when: vocabulary named, human approved, adapter structure reviewed
+
+### specified scenarios
+- Dispatch \`tdd-loop\` skill (edit permission) → write domain, tests, adapters
+- Advance when: all tests GREEN, domain linked, no regressions
+
+### implemented scenarios
+- Ready for story completion. Verify tests pass, archive with complete_story.
+
+For legacy/existing code: use \`characterization\` skill to lock current behavior GREEN before adding new tests.
 
 ## Key Principles
 
 - Each worker should have a focused, clear goal
-- Use read_only permission for investigation, edit for implementation
+- Use read_only permission for investigation, scenario-mapping, and specification
+- Use edit permission for tdd-loop and characterization
 - Create checkpoints every few worker cycles to preserve progress
 - Ask the user when there's genuine ambiguity — don't guess at business requirements
-- The success criteria is always: aver acceptance tests go from RED to GREEN
+- Per-stage success criteria are listed above. The session succeeds when all scenarios reach implemented and all tests pass.
 
 ## Proposal Throttling
 
@@ -166,9 +186,39 @@ function buildUserPrompt(input: SupervisorInput): string {
 
 function formatScenarios(scenarios: Scenario[]): string {
   if (!scenarios.length) return 'No scenarios yet.'
-  return scenarios
-    .map((s) => `- [${s.stage}] ${s.behavior}${s.story ? ` (story: ${s.story})` : ''} (id: ${s.id})`)
+
+  const progress = formatProgress(scenarios)
+  const lines = scenarios
+    .map((s) => {
+      const parts = [`- [${s.stage}] ${s.behavior}`]
+      if (s.mode) parts.push(`mode:${s.mode}`)
+      const openQs = s.questions.filter((q) => !q.answer).length
+      if (openQs > 0) parts.push(`questions:${openQs}open`)
+      const linked = !!(s.domainOperation || s.testNames?.length)
+      parts.push(`linked:${linked ? 'yes' : 'no'}`)
+      if (s.story) parts.push(`story:${s.story}`)
+      parts.push(`(id: ${s.id})`)
+      return parts.join(' ')
+    })
     .join('\n')
+
+  return `${progress}\n\n${lines}`
+}
+
+function formatProgress(scenarios: Scenario[]): string {
+  const total = scenarios.length
+  const implemented = scenarios.filter((s) => s.stage === 'implemented').length
+  const byStage = scenarios.reduce(
+    (acc, s) => {
+      acc[s.stage] = (acc[s.stage] ?? 0) + 1
+      return acc
+    },
+    {} as Record<string, number>,
+  )
+  const breakdown = Object.entries(byStage)
+    .map(([stage, count]) => `${count} ${stage}`)
+    .join(', ')
+  return `Progress: ${implemented}/${total} implemented (${breakdown})`
 }
 
 function formatWorkerResult(result: WorkerResult): string {

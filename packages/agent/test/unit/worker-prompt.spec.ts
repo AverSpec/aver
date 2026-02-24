@@ -11,12 +11,23 @@ describe('buildWorkerPrompt', () => {
     expect(user).toContain('Investigate auth module')
   })
 
-  it('includes skill instructions', () => {
+  it('includes skill content when provided', () => {
+    const { system } = buildWorkerPrompt(
+      { goal: 'Implement feature', artifacts: [] },
+      'tdd-loop',
+      '## TDD Loop\n\nMake the test pass.',
+    )
+    expect(system).toContain('TDD Loop')
+    expect(system).toContain('Make the test pass.')
+  })
+
+  it('omits skill section when skillContent is undefined', () => {
     const { system } = buildWorkerPrompt(
       { goal: 'Implement feature', artifacts: [] },
       'tdd-loop',
     )
-    expect(system).toContain('TDD')
+    expect(system).toContain('worker agent for Aver')
+    expect(system).not.toContain('TDD')
   })
 
   it('includes artifact contents', () => {

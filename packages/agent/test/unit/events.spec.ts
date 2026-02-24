@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdtemp, rm, readdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { EventLog } from '../../src/memory/events.js'
@@ -58,5 +58,29 @@ describe('EventLog', () => {
   it('returns empty array when log file does not exist', async () => {
     const events = await log.readAll()
     expect(events).toEqual([])
+  })
+
+  it('rotates when file exceeds 5MB', async () => {
+    // Write enough data to exceed 5MB
+    const bigData = 'x'.repeat(1024) // 1KB payload
+    for (let i = 0; i < 5200; i++) { // ~5.2MB
+      await log.append({
+        timestamp: new Date().toISOString(),
+        type: 'cycle:start',
+        cycleId: `cycle-${i}`,
+        data: { payload: bigData },
+      })
+    }
+    // After rotation, the current events.jsonl should be small or empty
+    // and a rotated file should exist
+    const files = await readdir(dir)
+    const rotated = files.filter(f => f.startsWith('events-') && f.endsWith('.jsonl'))
+    expect(rotated.length).toBeGreaterThanOrEqual(1)
+  }, 30_000)
+
+  it('reports file size via _testFileSize', async () => {
+    await log.append({ timestamp: new Date().toISOString(), type: 'cycle:start', cycleId: 'c1', data: {} })
+    const size = await EventLog._testFileSize(join(dir, 'events.jsonl'))
+    expect(size).toBeGreaterThan(0)
   })
 })

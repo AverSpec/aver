@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { loadSkill } from '../../src/worker/skill-loader.js'
 
 describe('loadSkill', () => {
@@ -39,5 +39,14 @@ describe('loadSkill', () => {
   it('returns undefined for unknown skill', async () => {
     const content = await loadSkill('nonexistent')
     expect(content).toBeUndefined()
+  })
+
+  it('warns on stderr when skill is not found', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    await loadSkill('nonexistent')
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('could not load skill'),
+    )
+    warnSpy.mockRestore()
   })
 })

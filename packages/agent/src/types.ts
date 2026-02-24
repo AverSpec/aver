@@ -93,6 +93,8 @@ export type EventType =
   | 'user:answer'
   | 'decision'
   | 'checkpoint'
+  | 'advancement:blocked'
+  | 'advancement:warning'
 
 export interface AgentEvent {
   timestamp: string

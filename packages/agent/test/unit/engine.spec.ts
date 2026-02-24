@@ -3,6 +3,7 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { AgentConfig } from '../../src/types.js'
+import { WorkspaceStore, WorkspaceOps } from '@aver/workspace'
 
 // Mock dispatch functions
 vi.mock('../../src/supervisor/dispatch.js', () => ({
@@ -508,5 +509,48 @@ describe('CycleEngine', () => {
     session = await engine.getSession()
     expect(session!.status).toBe('stopped')
     expect(mockSupervisor).toHaveBeenCalledTimes(2)
+  })
+
+  it('blocks advancement when verification fails (open questions)', async () => {
+    // Seed a mapped scenario with an open question
+    const store = new WorkspaceStore(dir, 'test')
+    const ops = new WorkspaceOps(store)
+
+    // Create and advance a scenario to 'mapped'
+    const scenario = await ops.captureScenario({ behavior: 'test behavior', mode: 'observed' })
+    await ops.advanceScenario(scenario.id, { rationale: 'test', promotedBy: 'test' }) // captured -> characterized
+    await ops.advanceScenario(scenario.id, { rationale: 'test', promotedBy: 'test' }) // characterized -> mapped
+    await ops.addQuestion(scenario.id, 'Unanswered question?')
+
+    // Supervisor tries to advance to specified
+    mockSupervisor.mockResolvedValueOnce({
+      decision: {
+        action: {
+          type: 'update_workspace',
+          updates: [{ scenarioId: scenario.id, stage: 'specified', rationale: 'ready' }],
+        },
+      },
+      tokenUsage: 100,
+    })
+
+    // After blocked advancement, supervisor stops
+    mockSupervisor.mockResolvedValueOnce({
+      decision: { action: { type: 'stop', reason: 'done' } },
+      tokenUsage: 50,
+    })
+
+    const engine = new CycleEngine({
+      agentPath: dir,
+      workspacePath: dir,
+      projectId: 'test',
+      config,
+    })
+
+    await engine.start('test verification')
+
+    // Verify scenario is still mapped (not advanced)
+    const scenarios = await ops.getScenarios()
+    const updated = scenarios.find((s) => s.id === scenario.id)
+    expect(updated!.stage).toBe('mapped')
   })
 })

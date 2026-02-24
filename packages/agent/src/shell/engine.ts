@@ -1,4 +1,5 @@
 import { WorkspaceStore, WorkspaceOps } from '@aver/workspace'
+import { verifyAdvancement } from './verification.js'
 import { ContextCurator } from '../memory/curator.js'
 import { SessionStore } from '../memory/session.js'
 import { dispatchSupervisor } from '../supervisor/dispatch.js'
@@ -171,9 +172,30 @@ export class CycleEngine {
         await this.runCycle('timer', undefined, undefined, depth + 1)
         break
 
-      case 'update_workspace':
+      case 'update_workspace': {
+        const scenarios = await this.workspaceOps.getScenarios()
         for (const update of decision.action.updates) {
           if (update.stage) {
+            const scenario = scenarios.find((s) => s.id === update.scenarioId)
+            if (!scenario) continue
+            const verification = verifyAdvancement(scenario, update.stage)
+            if (verification.blocked) {
+              await this.logEvent('advancement:blocked', {
+                scenarioId: update.scenarioId,
+                from: scenario.stage,
+                to: update.stage,
+                reason: verification.reason,
+              })
+              continue
+            }
+            if (verification.warning) {
+              await this.logEvent('advancement:warning', {
+                scenarioId: update.scenarioId,
+                from: scenario.stage,
+                to: update.stage,
+                warning: verification.warning,
+              })
+            }
             await this.workspaceOps.advanceScenario(update.scenarioId, {
               rationale: update.rationale ?? '',
               promotedBy: 'aver-agent',
@@ -182,6 +204,7 @@ export class CycleEngine {
         }
         await this.runCycle('timer', undefined, undefined, depth + 1)
         break
+      }
     }
   }
 

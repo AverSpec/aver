@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import type { Domain } from './domain'
 import type { Adapter } from './adapter'
 import { findAdapter, findAdapters } from './registry'
@@ -85,12 +86,15 @@ export function suite<D extends Domain>(domain: D, adapter?: Adapter): SuiteRetu
   // within the event loop — concurrent tests interleave promises, not threads.
   const calledOps: CalledOps = { actions: new Set(), queries: new Set(), assertions: new Set() }
 
+  const correlationId = randomUUID()
+
   const programmaticProxies = createProxies(
     domain,
     () => programmaticCtx,
     getProgrammaticAdapter,
     programmaticTrace,
     calledOps,
+    correlationId,
   )
 
   const testApi = buildTestApi(globalTest, domain, getEffectiveAdapters, globalTestSkip, calledOps)

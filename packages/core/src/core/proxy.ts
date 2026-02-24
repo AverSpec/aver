@@ -41,6 +41,7 @@ export function createProxies<D extends Domain>(
   getAdapter: () => Adapter,
   trace: TraceEntry[],
   calledOps?: CalledOps,
+  correlationId?: string,
 ): Proxies<D> {
   const act: any = {}
   const query: any = {}
@@ -50,7 +51,7 @@ export function createProxies<D extends Domain>(
     act[name] = async (payload?: any) => {
       calledOps?.actions.add(name)
       const handler = (getAdapter().handlers.actions as any)[name]
-      const entry: TraceEntry = { kind: 'action', name, payload, status: 'pass', startAt: Date.now() }
+      const entry: TraceEntry = { kind: 'action', name, payload, status: 'pass', startAt: Date.now(), correlationId }
       try {
         await handler(getCtx(), payload)
       } catch (error) {
@@ -69,7 +70,7 @@ export function createProxies<D extends Domain>(
     query[name] = async (payload?: any) => {
       calledOps?.queries.add(name)
       const handler = (getAdapter().handlers.queries as any)[name]
-      const entry: TraceEntry = { kind: 'query', name, payload, status: 'pass', startAt: Date.now() }
+      const entry: TraceEntry = { kind: 'query', name, payload, status: 'pass', startAt: Date.now(), correlationId }
       try {
         const result = await handler(getCtx(), payload)
         entry.result = result
@@ -90,7 +91,7 @@ export function createProxies<D extends Domain>(
     assert[name] = async (payload?: any) => {
       calledOps?.assertions.add(name)
       const handler = (getAdapter().handlers.assertions as any)[name]
-      const entry: TraceEntry = { kind: 'assertion', name, payload, status: 'pass', startAt: Date.now() }
+      const entry: TraceEntry = { kind: 'assertion', name, payload, status: 'pass', startAt: Date.now(), correlationId }
       try {
         await handler(getCtx(), payload)
       } catch (error) {

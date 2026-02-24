@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import type { Domain } from './domain'
 import type { Adapter } from './adapter'
 import type { TraceEntry, TraceAttachment } from './trace'
@@ -15,8 +16,9 @@ export async function runTestWithAdapter<D extends Domain>(
   calledOps?: CalledOps,
 ): Promise<void> {
   const trace: TraceEntry[] = []
+  const correlationId = randomUUID()
   const ctx = await adapter.protocol.setup()
-  const proxies = createProxies(domain, () => ctx, () => adapter, trace, calledOps)
+  const proxies = createProxies(domain, () => ctx, () => adapter, trace, calledOps, correlationId)
   const metadata = {
     testName,
     domainName: domain.name,
@@ -52,6 +54,7 @@ export async function runTestWithAdapter<D extends Domain>(
         payload: undefined,
         status: 'fail',
         attachments,
+        correlationId,
       })
     }
     try {

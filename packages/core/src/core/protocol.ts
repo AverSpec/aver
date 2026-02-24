@@ -29,3 +29,24 @@ export interface Protocol<Context> {
   onTestEnd?(ctx: Context, meta: TestCompletion): Promise<void> | void
   extensions?: ProtocolExtensions
 }
+
+export function withFixture<C>(
+  protocol: Protocol<C>,
+  fixture: { before?: () => Promise<void>; after?: () => Promise<void> }
+): Protocol<C> {
+  return {
+    name: protocol.name,
+    async setup() {
+      if (fixture.before) await fixture.before()
+      return protocol.setup()
+    },
+    async teardown(ctx: C) {
+      await protocol.teardown(ctx)
+      if (fixture.after) await fixture.after()
+    },
+    onTestStart: protocol.onTestStart?.bind(protocol),
+    onTestFail: protocol.onTestFail?.bind(protocol),
+    onTestEnd: protocol.onTestEnd?.bind(protocol),
+    extensions: protocol.extensions,
+  }
+}

@@ -16,4 +16,5 @@ export interface TraceEntry {
   durationMs?: number
   attachments?: TraceAttachment[]
   metadata?: Record<string, unknown>
+  correlationId?: string
 }

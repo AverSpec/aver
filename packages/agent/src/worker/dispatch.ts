@@ -84,6 +84,8 @@ function buildCanUseTool(level: PermissionLevel) {
     input: Record<string, unknown>,
     options: { signal: AbortSignal },
   ) => {
+    // session_id and transcript_path are empty — the hook doesn't use them today.
+    // Thread real values here when CycleEngine manages live sessions.
     const result = await hook(
       {
         hook_event_name: 'PreToolUse',

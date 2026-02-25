@@ -74,7 +74,9 @@ export class ArtifactStore {
 
   async archive(name: string): Promise<void> {
     await mkdir(this.archiveDir, { recursive: true })
-    // Read entry metadata before removing from index
+    // Read entry metadata before removing from index.
+    // Note: this read is outside the mutex, so a concurrent archive() could race.
+    // The worst case is writing a .meta.json for an already-archived entry, which is harmless.
     const index = await this.indexFile.read()
     const entry = index.artifacts.find(a => a.name === name)
     if (entry) {

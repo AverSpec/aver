@@ -23,15 +23,16 @@ export function parseWorkerResult(text: string): WorkerResult {
   return {
     summary: obj.summary,
     artifacts: Array.isArray(obj.artifacts)
-      ? obj.artifacts.filter(
-          (a: unknown) =>
-            !!a &&
-            typeof a === 'object' &&
-            typeof (a as Record<string, unknown>).type === 'string' &&
-            typeof (a as Record<string, unknown>).name === 'string' &&
-            typeof (a as Record<string, unknown>).summary === 'string' &&
-            typeof (a as Record<string, unknown>).content === 'string',
-        )
+      ? obj.artifacts.filter((a: unknown) => {
+          if (!a || typeof a !== 'object') return false
+          const r = a as Record<string, unknown>
+          return (
+            typeof r.type === 'string' &&
+            typeof r.name === 'string' &&
+            typeof r.summary === 'string' &&
+            typeof r.content === 'string'
+          )
+        })
       : [],
     scenarioUpdates: Array.isArray(obj.scenarioUpdates) ? obj.scenarioUpdates : undefined,
     suggestedNext: typeof obj.suggestedNext === 'string' ? obj.suggestedNext : undefined,

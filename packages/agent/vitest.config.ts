@@ -5,7 +5,7 @@ export default defineConfig({
   test: {
     globals: true,
     root: __dirname,
-    include: ['test/**/*.spec.ts'],
+    include: ['test/**/*.spec.ts', 'test/**/*.spec.tsx'],
   },
   resolve: {
     alias: {

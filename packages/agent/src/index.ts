@@ -35,5 +35,8 @@ export { DecisionParseError } from './supervisor/decisions.js'
 export { parseAgentArgs, printAgentHelp } from './cli.js'
 export type { AgentArgs } from './cli.js'
 
+// ── CLI operations (session/event reads for CLI commands) ─────────
+export { loadSession, readEvents, requestStop } from './cli-ops.js'
+
 // ── Dogfood domain ──────────────────────────────────────────────────
 export { AverAgent } from './domain.js'

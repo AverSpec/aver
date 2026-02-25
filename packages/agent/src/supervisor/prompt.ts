@@ -19,6 +19,8 @@ function buildSystemPrompt(projectContext: string): string {
 
 Your role is to orchestrate work by deciding what to do next. You do NOT write code or use tools directly. Instead, you dispatch workers, ask the user questions, create checkpoints, and manage the scenario pipeline.
 
+IMPORTANT: Your ENTIRE response must be a single JSON object. No prose, no explanation, no markdown outside of JSON. Just the JSON decision object.
+
 ## Decision Format
 
 Respond with a single JSON object matching one of these action types:

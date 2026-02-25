@@ -63,7 +63,7 @@ export class CycleEngine {
 
   async start(goal: string): Promise<void> {
     await this.sessionStore.create(goal)
-    await this.runCycle('startup', undefined, undefined, 0)
+    await this.runCycle('startup', goal, undefined, 0)
   }
 
   async resume(userMessage: string): Promise<void> {

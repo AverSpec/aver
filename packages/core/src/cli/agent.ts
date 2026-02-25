@@ -47,10 +47,19 @@ async function runStart(goal?: string): Promise<void> {
   // Derive projectId from directory name
   const projectId = cwd.split('/').pop() ?? 'unknown'
 
-  // Set up readline for interactive questions
-  const rl = createInterface({ input: process.stdin, output: process.stdout })
+  // Set up readline for interactive questions (if terminal is available)
+  const isInteractive = process.stdin.isTTY === true
+  const rl = isInteractive
+    ? createInterface({ input: process.stdin, output: process.stdout })
+    : undefined
 
   const onQuestion = async (question: string, options?: string[]): Promise<string> => {
+    if (!rl) {
+      // Non-interactive mode: auto-answer with first option or default
+      const answer = options?.length ? options[0] : 'proceed'
+      console.log(`\n[non-interactive] ${question} -> auto: ${answer}`)
+      return answer
+    }
     let prompt = `\n${question}\n`
     if (options?.length) {
       options.forEach((opt, i) => {
@@ -97,7 +106,7 @@ async function runStart(goal?: string): Promise<void> {
     } catch {
       // Session may already be stopped
     }
-    rl.close()
+    rl?.close()
     process.exit(0)
   })
 
@@ -122,7 +131,7 @@ async function runStart(goal?: string): Promise<void> {
     console.error(`\nAgent error: ${err instanceof Error ? err.message : String(err)}`)
     process.exit(1)
   } finally {
-    rl.close()
+    rl?.close()
   }
 }
 

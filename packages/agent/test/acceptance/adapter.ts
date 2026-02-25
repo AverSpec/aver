@@ -56,7 +56,7 @@ export const averAgentAdapter = implement(AverAgent, {
         }
         return next
       },
-      worker: async (_dispatch: WorkerDispatch, _artifacts: ArtifactContent[], _config: AgentConfig): Promise<WorkerDispatchResult> => {
+      worker: async (_dispatch: WorkerDispatch, _artifacts: ArtifactContent[], _config: AgentConfig, _scenarioDetail?, _projectContext?: string): Promise<WorkerDispatchResult> => {
         const next = workerQueue.shift()
         if (!next) {
           return {

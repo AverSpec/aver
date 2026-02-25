@@ -223,7 +223,7 @@ function formatScenarios(scenarios: Scenario[]): string {
       const parts = [`- [${s.stage}] ${s.behavior}`]
       if (s.mode) parts.push(`mode:${s.mode}`)
       const openQs = s.questions.filter((q) => !q.answer).length
-      if (openQs > 0) parts.push(`questions:${openQs}open`)
+      if (openQs > 0) parts.push(`questions: ${openQs} open`)
       const linked = !!(s.domainOperation || s.testNames?.length)
       parts.push(`linked:${linked ? 'yes' : 'no'}`)
       if (s.story) parts.push(`story:${s.story}`)

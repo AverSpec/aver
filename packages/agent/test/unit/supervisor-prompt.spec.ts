@@ -126,7 +126,7 @@ describe('buildSupervisorPrompt', () => {
       }),
     ]
     const { user } = buildSupervisorPrompt(makeInput(scenarios))
-    expect(user).toContain('questions:1open')
+    expect(user).toContain('questions: 1 open')
   })
 
   it('includes domain link indicator in scenario line', () => {
@@ -199,5 +199,19 @@ describe('buildSupervisorPrompt', () => {
     const { system } = buildSupervisorPrompt(baseInput)
     // Should have a real example, not a placeholder comment
     expect(system).not.toContain('/* array of worker objects')
+  })
+
+  it('formats open questions with spaces', () => {
+    const scenarios = [
+      makeScenario({
+        questions: [
+          { id: 'q1', text: 'What about edge case?' },
+          { id: 'q2', text: 'Resolved', answer: 'Yes' },
+        ],
+      }),
+    ]
+    const { user } = buildSupervisorPrompt(makeInput(scenarios))
+    expect(user).toContain('questions: 1 open')
+    expect(user).not.toContain('questions:1open')
   })
 })

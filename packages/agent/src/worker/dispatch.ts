@@ -51,6 +51,7 @@ export async function dispatchWorker(
       maxTurns: config.cycles.maxWorkerIterations,
       canUseTool,
       persistSession: false,
+      ...(config.claudeExecutablePath && { pathToClaudeCodeExecutable: config.claudeExecutablePath }),
     },
   })
 

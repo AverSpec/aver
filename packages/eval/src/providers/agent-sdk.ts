@@ -5,12 +5,14 @@ import type { Verdict } from '../judge.js'
 
 export interface AgentSdkProviderOptions {
   model?: string
+  claudeExecutablePath?: string
 }
 
 const DEFAULT_MODEL = 'claude-haiku-4-5-20251001'
 
 export function agentSdkProvider(opts?: AgentSdkProviderOptions): JudgeProvider {
   const model = opts?.model ?? DEFAULT_MODEL
+  const claudePath = opts?.claudeExecutablePath
 
   return {
     async judge(content: string, rubric: string): Promise<Verdict> {
@@ -41,6 +43,7 @@ export function agentSdkProvider(opts?: AgentSdkProviderOptions): JudgeProvider 
           allowDangerouslySkipPermissions: true,
           persistSession: false,
           thinking: { type: 'disabled' },
+          ...(claudePath && { pathToClaudeCodeExecutable: claudePath }),
         },
       })
 

@@ -30,6 +30,7 @@ export async function dispatchSupervisor(
       permissionMode: 'bypassPermissions',
       allowDangerouslySkipPermissions: true,
       persistSession: false,
+      ...(config.claudeExecutablePath && { pathToClaudeCodeExecutable: config.claudeExecutablePath }),
     },
   })
 

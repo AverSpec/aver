@@ -34,6 +34,8 @@ export interface AgentConfig {
   dashboard: {
     port: number
   }
+  /** Path to the Claude Code executable. Auto-detected if not set. */
+  claudeExecutablePath?: string
 }
 
 export const DEFAULT_CONFIG: AgentConfig = {

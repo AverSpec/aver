@@ -26,16 +26,19 @@ async function runStart(goal?: string): Promise<void> {
     process.exit(1)
   }
 
-  // Check for API key early
-  if (!process.env.ANTHROPIC_API_KEY) {
-    console.error('Missing ANTHROPIC_API_KEY environment variable.')
-    console.error('Set it with: export ANTHROPIC_API_KEY=sk-ant-...')
-    process.exit(1)
-  }
-
   const { CycleEngine, DEFAULT_CONFIG } = await import('@aver/agent')
   const { resolve } = await import('node:path')
+  const { execSync } = await import('node:child_process')
   const { createInterface } = await import('node:readline')
+
+  // Detect claude executable path for the Agent SDK
+  let claudeExecutablePath: string | undefined
+  try {
+    claudeExecutablePath = execSync('which claude', { encoding: 'utf-8' }).trim()
+  } catch {
+    console.error('Could not find "claude" executable. Ensure Claude Code is installed.')
+    process.exit(1)
+  }
 
   const cwd = process.cwd()
   const agentPath = resolve(cwd, '.aver', 'agent')
@@ -72,11 +75,13 @@ async function runStart(goal?: string): Promise<void> {
     })
   }
 
+  const config = { ...DEFAULT_CONFIG, claudeExecutablePath }
+
   const engine = new CycleEngine({
     agentPath,
     workspacePath,
     projectId,
-    config: DEFAULT_CONFIG,
+    config,
     onMessage: (message: string) => {
       console.log(`\n${message}`)
     },
@@ -98,8 +103,8 @@ async function runStart(goal?: string): Promise<void> {
 
   console.log(`Starting aver agent...`)
   console.log(`  Goal: ${goal}`)
-  console.log(`  Supervisor: ${DEFAULT_CONFIG.model.supervisor}`)
-  console.log(`  Worker: ${DEFAULT_CONFIG.model.worker}`)
+  console.log(`  Supervisor: ${config.model.supervisor}`)
+  console.log(`  Worker: ${config.model.worker}`)
   console.log(`  Project: ${projectId}`)
   console.log()
 

@@ -95,7 +95,7 @@ export class ContextCurator {
     return results
   }
 
-  private async loadProjectContext(): Promise<string> {
+  async loadProjectContext(): Promise<string> {
     const path = join(this.basePath, 'project-context.md')
     if (!existsSync(path)) return ''
     return readFile(path, 'utf-8')

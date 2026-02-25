@@ -55,7 +55,7 @@ When you are done, your final message MUST include a JSON block with your result
   ],
   "suggestedNext": "What should happen next",
   "filesChanged": ["path/to/file.ts"],
-  "status": "complete | stuck"
+  "status": "complete or stuck"
 }
 \`\`\``)
 
@@ -70,6 +70,10 @@ function buildUserPrompt(input: WorkerInput): string {
   const sections: string[] = []
 
   sections.push(`## Goal\n\n${input.goal}`)
+
+  if (input.projectContext) {
+    sections.push(`## Project Context\n\n${input.projectContext}`)
+  }
 
   if (input.scenarioDetail) {
     sections.push(`## Scenario\n\n${formatScenario(input.scenarioDetail)}`)
@@ -92,11 +96,17 @@ function formatScenario(scenario: Scenario): string {
     `**Stage:** ${scenario.stage}`,
     `**ID:** ${scenario.id}`,
   ]
+  if (scenario.mode) parts.push(`**Mode:** ${scenario.mode}`)
   if (scenario.context) parts.push(`**Context:** ${scenario.context}`)
   if (scenario.story) parts.push(`**Story:** ${scenario.story}`)
   if (scenario.rules.length) parts.push(`**Rules:**\n${scenario.rules.map((r) => `- ${r}`).join('\n')}`)
+  if (scenario.examples.length) {
+    parts.push(`**Examples:**\n${scenario.examples.map((e) => `- ${e.description} → ${e.expectedOutcome}${e.given ? ` (given: ${e.given})` : ''}`).join('\n')}`)
+  }
   if (scenario.seams.length) parts.push(`**Seams:**\n${scenario.seams.map((s) => `- ${s}`).join('\n')}`)
   if (scenario.constraints.length) parts.push(`**Constraints:**\n${scenario.constraints.map((c) => `- ${c}`).join('\n')}`)
+  const openQs = scenario.questions.filter((q) => !q.answer).length
+  if (openQs > 0) parts.push(`**Open questions:** ${openQs}`)
   return parts.join('\n')
 }
 

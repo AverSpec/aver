@@ -21,7 +21,7 @@ const DEFAULT_MAX_CYCLE_DEPTH = 50
 
 export interface Dispatchers {
   supervisor: (input: SupervisorInput, config: AgentConfig) => Promise<SupervisorResult>
-  worker: (dispatch: WorkerDispatch, artifacts: ArtifactContent[], config: AgentConfig, scenarioDetail?: Scenario) => Promise<WorkerDispatchResult>
+  worker: (dispatch: WorkerDispatch, artifacts: ArtifactContent[], config: AgentConfig, scenarioDetail?: Scenario, projectContext?: string) => Promise<WorkerDispatchResult>
 }
 
 export interface EngineOptions {
@@ -232,7 +232,8 @@ export class CycleEngine {
         scenarioDetail = scenarios.find((s) => s.id === dispatch.scenarioId)
       }
 
-      const response = await this.dispatchWorkerFn(dispatch, artifacts, this.config, scenarioDetail)
+      const projectContext = await this.curator.loadProjectContext()
+      const response = await this.dispatchWorkerFn(dispatch, artifacts, this.config, scenarioDetail, projectContext)
       result = response.result
       tokenUsage = response.tokenUsage
     } catch (err) {
@@ -256,8 +257,9 @@ export class CycleEngine {
     const results: WorkerResult[] = []
     const errors: string[] = []
 
-    // Pre-load scenarios once for all workers
+    // Pre-load scenarios and project context once for all workers
     const scenarios = await this.workspaceOps.getScenarios()
+    const projectContext = await this.curator.loadProjectContext()
 
     const promises = dispatches.map(async (dispatch) => {
       await this.logEvent('worker:dispatch', { goal: dispatch.goal, skill: dispatch.skill })
@@ -269,7 +271,7 @@ export class CycleEngine {
         const scenarioDetail = dispatch.scenarioId
           ? scenarios.find((s) => s.id === dispatch.scenarioId)
           : undefined
-        const response = await this.dispatchWorkerFn(dispatch, artifacts, this.config, scenarioDetail)
+        const response = await this.dispatchWorkerFn(dispatch, artifacts, this.config, scenarioDetail, projectContext)
         result = response.result
         tokenUsage = response.tokenUsage
       } catch (err) {

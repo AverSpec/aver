@@ -18,12 +18,14 @@ export async function dispatchWorker(
   artifacts: ArtifactContent[],
   config: AgentConfig,
   scenarioDetail?: Scenario,
+  projectContext?: string,
 ): Promise<WorkerDispatchResult> {
   const input: WorkerInput = {
     goal: dispatch.goal,
     artifacts,
     scenarioDetail,
     permissionLevel: dispatch.permissionLevel as 'read_only' | 'edit' | 'full',
+    projectContext,
   }
 
   const skillResult = await loadSkill(dispatch.skill)

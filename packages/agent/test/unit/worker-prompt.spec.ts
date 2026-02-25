@@ -104,4 +104,51 @@ describe('buildWorkerPrompt', () => {
     )
     expect(system).toContain('READ-ONLY')
   })
+
+  it('includes project context when provided', () => {
+    const { user } = buildWorkerPrompt(
+      { goal: 'Implement', artifacts: [], projectContext: 'All APIs use REST' },
+      'tdd-loop',
+    )
+    expect(user).toContain('All APIs use REST')
+    expect(user).toContain('Project Context')
+  })
+
+  it('includes examples in scenario detail', () => {
+    const { user } = buildWorkerPrompt(
+      {
+        goal: 'Implement',
+        artifacts: [],
+        scenarioDetail: {
+          id: 'sc-1',
+          stage: 'specified',
+          behavior: 'user can cancel task',
+          mode: 'intended',
+          rules: ['must confirm first'],
+          examples: [{ description: 'cancel pending task', expectedOutcome: 'task is cancelled' }],
+          questions: [
+            { id: 'q1', text: 'What about in-progress?', answer: 'Block cancellation' },
+            { id: 'q2', text: 'Timeout behavior?' },
+          ],
+          constraints: [],
+          seams: [],
+          createdAt: '',
+          updatedAt: '',
+        },
+      },
+      'tdd-loop',
+    )
+    expect(user).toContain('cancel pending task')
+    expect(user).toContain('task is cancelled')
+    expect(user).toContain('**Mode:** intended')
+    expect(user).toContain('**Open questions:** 1')
+  })
+
+  it('uses "complete" or "stuck" in output format (not pipe)', () => {
+    const { system } = buildWorkerPrompt(
+      { goal: 'test', artifacts: [] },
+      'investigation',
+    )
+    expect(system).not.toContain('"complete | stuck"')
+  })
 })

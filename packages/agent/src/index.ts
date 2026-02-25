@@ -38,5 +38,6 @@ export type { AgentArgs } from './cli.js'
 // ── CLI operations (session/event reads for CLI commands) ─────────
 export { loadSession, readEvents, requestStop } from './cli-ops.js'
 
-// ── Dogfood domain ──────────────────────────────────────────────────
+// ── Dogfood domains ─────────────────────────────────────────────────
 export { AverAgent } from './domain.js'
+export { AverTui } from './tui-domain.js'

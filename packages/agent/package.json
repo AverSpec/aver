@@ -12,9 +12,19 @@
   },
   "homepage": "https://github.com/njackson/aver",
   "bugs": "https://github.com/njackson/aver/issues",
-  "keywords": ["testing", "aver", "agent", "ai-agent", "tdd"],
-  "publishConfig": { "access": "public" },
-  "engines": { "node": ">=18.0.0" },
+  "keywords": [
+    "testing",
+    "aver",
+    "agent",
+    "ai-agent",
+    "tdd"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -23,9 +33,17 @@
         "types": "./dist/index.d.ts",
         "default": "./dist/index.js"
       }
+    },
+    "./tui": {
+      "import": {
+        "types": "./dist/tui.d.ts",
+        "default": "./dist/tui.js"
+      }
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "test": "vitest run",
@@ -37,16 +55,28 @@
     "@aver/workspace": "workspace:^"
   },
   "peerDependencies": {
+    "@anthropic-ai/claude-agent-sdk": ">=0.2.0",
     "@aver/core": "workspace:^",
-    "@anthropic-ai/claude-agent-sdk": ">=0.2.0"
+    "@types/react": ">=19.0.0",
+    "ink": ">=6.0.0",
+    "react": ">=19.0.0"
   },
   "peerDependenciesMeta": {
-    "@anthropic-ai/claude-agent-sdk": { "optional": true }
+    "@anthropic-ai/claude-agent-sdk": { "optional": true },
+    "ink": { "optional": true },
+    "react": { "optional": true },
+    "@types/react": { "optional": true }
   },
   "devDependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.2.0",
     "@aver/core": "workspace:^",
+    "@inkjs/ui": "^2.0.0",
     "@types/node": "^22.0.0",
+    "@types/react": "^19.2.14",
+    "ink": "^6.8.0",
+    "ink-testing-library": "^4.0.0",
+    "ink-text-input": "^6.0.0",
+    "react": "^19.2.4",
     "tsup": "^8.0.0",
     "typescript": "^5.7.0",
     "vitest": "^3.0.0"

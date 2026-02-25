@@ -146,6 +146,9 @@ importers:
 
   packages/core:
     devDependencies:
+      '@aver/agent':
+        specifier: workspace:*
+        version: link:../agent
       '@aver/workspace':
         specifier: workspace:*
         version: link:../workspace

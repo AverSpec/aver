@@ -2,6 +2,7 @@
   "private": true,
   "packageManager": "pnpm@10.8.1",
   "devDependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.2.0",
     "@types/node": "^22.10.0",
     "playwright": "^1.58.2",
     "vitest": "^3.0.0"

@@ -8,6 +8,9 @@ importers:
 
   .:
     devDependencies:
+      '@anthropic-ai/claude-agent-sdk':
+        specifier: ^0.2.0
+        version: 0.2.47(zod@4.3.6)
       '@types/node':
         specifier: ^22.10.0
         version: 22.19.11
@@ -42,6 +45,9 @@ importers:
       '@aver/protocol-playwright':
         specifier: workspace:*
         version: link:../../packages/protocol-playwright
+      '@playwright/test':
+        specifier: ^1.52.0
+        version: 1.58.2
       '@types/express':
         specifier: ^5.0.0
         version: 5.0.6
@@ -72,9 +78,6 @@ importers:
 
   packages/agent:
     dependencies:
-      '@anthropic-ai/claude-agent-sdk':
-        specifier: ^0.2.0
-        version: 0.2.47(zod@4.3.6)
       '@aver/skills':
         specifier: workspace:^
         version: link:../skills
@@ -82,6 +85,9 @@ importers:
         specifier: workspace:^
         version: link:../workspace
     devDependencies:
+      '@anthropic-ai/claude-agent-sdk':
+        specifier: ^0.2.0
+        version: 0.2.47(zod@4.3.6)
       '@aver/core':
         specifier: workspace:^
         version: link:../core
@@ -1103,6 +1109,11 @@ packages:
     peerDependenciesMeta:
       '@cfworker/json-schema':
         optional: true
+
+  '@playwright/test@1.58.2':
+    resolution: {integrity: sha512-akea+6bHYBBfA9uQqSYmlJXn61cTa+jbO87xVLCWbTqbWadRVmhxlXATaOjOgcBaWU4ePo0wB41KMFv3o35IXA==}
+    engines: {node: '>=18'}
+    hasBin: true
 
   '@rolldown/pluginutils@1.0.0-beta.27':
     resolution: {integrity: sha512-+d0F4MKMCbeVUJwG96uQ4SgAznZNSq93I3V+9NHA4OpvqG8mRCpGdKmK8l/dl02h2CCDHwW2FqilnTyDcAnqjA==}
@@ -3054,6 +3065,10 @@ snapshots:
       zod-to-json-schema: 3.25.1(zod@3.25.76)
     transitivePeerDependencies:
       - supports-color
+
+  '@playwright/test@1.58.2':
+    dependencies:
+      playwright: 1.58.2
 
   '@rolldown/pluginutils@1.0.0-beta.27': {}
 

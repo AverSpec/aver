@@ -9,6 +9,8 @@ describe('AgentEval domain', () => {
   it('declares worker-level actions', () => {
     expect(agentEval.vocabulary.actions.seedScenario).toBeDefined()
     expect(agentEval.vocabulary.actions.seedScenario.kind).toBe('action')
+    expect(agentEval.vocabulary.actions.queueWorkerResult).toBeDefined()
+    expect(agentEval.vocabulary.actions.queueWorkerResult.kind).toBe('action')
     expect(agentEval.vocabulary.actions.runWorker).toBeDefined()
     expect(agentEval.vocabulary.actions.runWorker.kind).toBe('action')
   })

@@ -12,6 +12,15 @@ export const agentEval = defineDomain({
       rules?: string[]
       seams?: string[]
     }>(),
+    queueWorkerResult: action<{
+      summary: string
+      artifacts?: Array<{
+        type: ArtifactType
+        name: string
+        summary: string
+        content: string
+      }>
+    }>(),
     runWorker: action<{
       skill: string
       goal: string

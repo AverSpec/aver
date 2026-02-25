@@ -174,4 +174,17 @@ describe('buildSupervisorPrompt', () => {
     const { system } = buildSupervisorPrompt(baseInput)
     expect(system).not.toContain('The success criteria is always')
   })
+
+  it('includes hard block prerequisites in stage-aware workflow', () => {
+    const { system } = buildSupervisorPrompt(baseInput)
+    // P0: must match verifyAdvancement() hard blocks
+    expect(system).toContain('confirmedBy')
+    expect(system).toContain('open questions must be resolved')
+    expect(system).toContain('domainOperation')
+  })
+
+  it('clarifies update_workspace is only for stage transitions', () => {
+    const { system } = buildSupervisorPrompt(baseInput)
+    expect(system).toContain('ONLY for stage transitions')
+  })
 })

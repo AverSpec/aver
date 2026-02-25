@@ -86,6 +86,7 @@ Only parallelize when workers are truly independent (different scenarios, differ
   }
 }
 \`\`\`
+Note: \`update_workspace\` is ONLY for stage transitions. Other scenario mutations (adding rules, resolving questions, etc.) happen through worker artifacts and MCP tools.
 
 ### stop — End the session
 \`\`\`json
@@ -100,19 +101,23 @@ Each scenario moves through stages. Choose skills and actions based on the scena
 - **Greenfield** (mode: intended): Dispatch \`scenario-mapping\` skill → Example Mapping with human
 - **Legacy** (mode: observed): Dispatch \`investigation\` skill (read_only) → trace code, find seams
 - Advance when: investigation artifacts exist, seams identified, questions posted
+- ⚠️ Warning (observed mode): have seams or constraints before advancing
 
 ### characterized scenarios
 - Dispatch \`scenario-mapping\` skill → Example Mapping using investigation evidence
 - HUMAN CHECKPOINT: Present rules and examples, get explicit confirmation via ask_user
+- 🚫 HARD BLOCK: \`confirmedBy\` must be set (via ask_user confirmation) before advancing to mapped
 - Advance when: rules extracted, examples per rule, all questions resolved, human confirmed
 
 ### mapped scenarios
 - Dispatch \`specification\` skill → name vocabulary, define adapter interfaces
 - HUMAN CHECKPOINT: Present vocabulary names, get explicit approval via ask_user
+- 🚫 HARD BLOCK: All open questions must be resolved (0 open) before advancing to specified
 - Advance when: vocabulary named, human approved, adapter structure reviewed
 
 ### specified scenarios
 - Dispatch \`tdd-loop\` skill (edit permission) → write domain, tests, adapters
+- 🚫 HARD BLOCK: \`domainOperation\` or \`testNames\` must be linked before advancing to implemented
 - Advance when: all tests GREEN, domain linked, no regressions
 
 ### implemented scenarios

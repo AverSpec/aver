@@ -53,16 +53,13 @@ describe('real judge pipeline', () => {
     expect(verdict.reasoning).toBeTruthy()
   }, 60_000)
 
-  describe('dogfood artifact evaluation', () => {
-    const artifactPath = resolve(__dirname, '../../../../.aver/agent/artifacts/prompt-analysis.md')
+  const artifactPath = resolve(__dirname, '../../../../.aver/agent/artifacts/prompt-analysis.md')
+  const hasArtifact = existsSync(artifactPath)
+
+  describe.skipIf(!hasArtifact)('dogfood artifact evaluation', () => {
     let artifactContent: string
 
     beforeAll(() => {
-      if (!existsSync(artifactPath)) {
-        throw new Error(
-          `Dogfood artifact not found at ${artifactPath}. Run 'aver agent start' first.`,
-        )
-      }
       artifactContent = readFileSync(artifactPath, 'utf-8')
     })
 

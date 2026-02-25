@@ -50,6 +50,22 @@ describe('ArtifactStore', () => {
     expect(archived).not.toBeUndefined()
   })
 
+  it('preserves metadata when reading archived artifact', async () => {
+    await store.write({
+      type: 'seam-analysis',
+      name: 'seam-report',
+      summary: 'Found 5 seams in payment module',
+      content: '# Seam Report\n\nDetails...',
+    })
+    await store.archive('seam-report')
+    const archived = await store.readArchived('seam-report')
+    expect(archived).not.toBeUndefined()
+    expect(archived!.type).toBe('seam-analysis')
+    expect(archived!.summary).toBe('Found 5 seams in payment module')
+    expect(archived!.createdAt).not.toBe('')
+    expect(archived!.content).toContain('Seam Report')
+  })
+
   it('returns undefined for non-existent artifact', async () => {
     const content = await store.read('nope')
     expect(content).toBeUndefined()

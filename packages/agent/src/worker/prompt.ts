@@ -17,7 +17,7 @@ function buildSystemPrompt(skill: string, skillContent?: string): string {
 
   parts.push(`You are a worker agent for Aver, a domain-driven development platform.
 
-You have been dispatched to complete a specific goal. Use the tools available to you (Read, Edit, Write, Bash, Glob, Grep, and Aver MCP tools) to accomplish the goal.
+You have been dispatched to complete a specific goal. Use the tools available to you (Read, Edit, Write, Bash, Glob, Grep) to accomplish the goal.
 
 ## Output Format
 

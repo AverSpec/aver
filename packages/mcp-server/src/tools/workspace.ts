@@ -31,14 +31,36 @@ function resolveProjectId(): string {
   return _config?.workspaceProjectId ?? process.env.AVER_PROJECT_ID ?? basename(process.cwd())
 }
 
+// --- Store cache ---
+
+let cachedStore: WorkspaceStore | undefined
+let cachedStoreKey: string | undefined
+
+function getCachedStore(basePath: string, projectId: string): WorkspaceStore {
+  const key = `${basePath}\0${projectId}`
+  if (cachedStore && cachedStoreKey === key) return cachedStore
+  cachedStore = new WorkspaceStore(basePath, projectId)
+  cachedStoreKey = key
+  return cachedStore
+}
+
+/**
+ * Clear the cached WorkspaceStore/WorkspaceOps instance.
+ * Called when config is reloaded so stale state is not retained.
+ */
+export function clearWorkspaceCache(): void {
+  cachedStore = undefined
+  cachedStoreKey = undefined
+}
+
 // --- Helpers ---
 
 function createOps(basePath: string, projectId: string): WorkspaceOps {
-  return new WorkspaceOps(new WorkspaceStore(basePath, projectId))
+  return new WorkspaceOps(getCachedStore(basePath, projectId))
 }
 
 function createStore(basePath: string, projectId: string): WorkspaceStore {
-  return new WorkspaceStore(basePath, projectId)
+  return getCachedStore(basePath, projectId)
 }
 
 // --- Handler functions (async, no MCP dependency) ---

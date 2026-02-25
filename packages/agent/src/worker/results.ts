@@ -22,7 +22,17 @@ export function parseWorkerResult(text: string): WorkerResult {
 
   return {
     summary: obj.summary,
-    artifacts: Array.isArray(obj.artifacts) ? obj.artifacts : [],
+    artifacts: Array.isArray(obj.artifacts)
+      ? obj.artifacts.filter(
+          (a: unknown) =>
+            !!a &&
+            typeof a === 'object' &&
+            typeof (a as Record<string, unknown>).type === 'string' &&
+            typeof (a as Record<string, unknown>).name === 'string' &&
+            typeof (a as Record<string, unknown>).summary === 'string' &&
+            typeof (a as Record<string, unknown>).content === 'string',
+        )
+      : [],
     scenarioUpdates: Array.isArray(obj.scenarioUpdates) ? obj.scenarioUpdates : undefined,
     suggestedNext: typeof obj.suggestedNext === 'string' ? obj.suggestedNext : undefined,
     filesChanged: Array.isArray(obj.filesChanged) ? obj.filesChanged : undefined,

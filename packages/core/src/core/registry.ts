@@ -26,6 +26,16 @@ export function registerAdapter(adapter: Adapter): void {
   registerDomain(adapter.domain)
 }
 
+/**
+ * Find a single adapter registered for the given domain, falling back to
+ * parent domains if no exact match is found.
+ *
+ * Domains are matched by **reference identity** (`===`), not structural
+ * equality. Callers must pass the same `Domain` object that was used in
+ * `implement(domain, ...)` when the adapter was created. In practice this
+ * means importing and reusing the domain constant rather than reconstructing
+ * an equivalent object.
+ */
 export function findAdapter(domain: Domain): Adapter | undefined {
   const exact = adapters.find(a => a.domain === domain)
   if (exact) return exact

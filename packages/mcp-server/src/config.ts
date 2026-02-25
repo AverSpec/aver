@@ -5,6 +5,7 @@ import { parseArgs } from 'node:util'
 import { resetRegistry } from '@aver/core'
 import { discoverAndRegister } from './discovery.js'
 import { log } from './logger.js'
+import { clearWorkspaceCache } from './tools/workspace.js'
 
 const CONFIG_FILENAMES = ['aver.config.ts', 'aver.config.js', 'aver.config.mjs']
 
@@ -54,6 +55,8 @@ export async function loadConfig(configPath: string): Promise<void> {
 }
 
 export async function reloadConfig(loader?: () => Promise<void>): Promise<void> {
+  clearWorkspaceCache()
+
   if (loader) {
     resetRegistry()
     await loader()

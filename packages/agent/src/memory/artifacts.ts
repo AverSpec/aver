@@ -1,4 +1,4 @@
-import { readFile, mkdir, rename } from 'node:fs/promises'
+import { readFile, mkdir, rename, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { existsSync } from 'node:fs'
 import { SafeJsonFile, atomicWriteFile } from '@aver/workspace'
@@ -59,6 +59,11 @@ export class ArtifactStore {
     const contentPath = join(this.archiveDir, `${name}.md`)
     if (!existsSync(contentPath)) return undefined
     const content = await readFile(contentPath, 'utf-8')
+    const metaPath = join(this.archiveDir, `${name}.meta.json`)
+    if (existsSync(metaPath)) {
+      const meta: ArtifactEntry = JSON.parse(await readFile(metaPath, 'utf-8'))
+      return { ...meta, content }
+    }
     return { name, type: 'investigation', summary: '', content, createdAt: '' }
   }
 
@@ -69,6 +74,16 @@ export class ArtifactStore {
 
   async archive(name: string): Promise<void> {
     await mkdir(this.archiveDir, { recursive: true })
+    // Read entry metadata before removing from index
+    const index = await this.indexFile.read()
+    const entry = index.artifacts.find(a => a.name === name)
+    if (entry) {
+      await writeFile(
+        join(this.archiveDir, `${name}.meta.json`),
+        JSON.stringify(entry),
+        'utf-8',
+      )
+    }
     // Move content file (not under mutex — distinct file)
     const srcPath = join(this.dir, `${name}.md`)
     const destPath = join(this.archiveDir, `${name}.md`)
@@ -76,8 +91,8 @@ export class ArtifactStore {
       await rename(srcPath, destPath)
     }
     // Remove from index under mutex
-    await this.indexFile.mutate(index => ({
-      artifacts: index.artifacts.filter(a => a.name !== name),
+    await this.indexFile.mutate(idx => ({
+      artifacts: idx.artifacts.filter(a => a.name !== name),
     }))
   }
 }

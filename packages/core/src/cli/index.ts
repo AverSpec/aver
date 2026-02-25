@@ -31,7 +31,9 @@ switch (command) {
       if (parsed.command === 'help') {
         printAgentHelp()
       } else {
-        console.log(`Agent command: ${parsed.command}${parsed.goal ? ` (goal: ${parsed.goal})` : ''}`)
+        console.log(`aver agent: not yet implemented — the agent runtime is experimental.`)
+        console.log(`Use the @aver/agent package API directly (CycleEngine) for programmatic access.`)
+        process.exit(1)
       }
     } catch (e: unknown) {
       if (e && typeof e === 'object' && 'code' in e && e.code === 'ERR_MODULE_NOT_FOUND') {
@@ -53,7 +55,7 @@ Commands:
   aver init      Scaffold a new domain
   aver approve   Update approvals
   aver workspace Manage scenario workspaces
-  aver agent     AI agent for domain-driven development
+  aver agent     AI agent for domain-driven development (experimental)
 
 Options:
   --help         Show this help message

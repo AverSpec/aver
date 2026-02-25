@@ -2,6 +2,7 @@ import { query } from '@anthropic-ai/claude-agent-sdk'
 import { buildWorkerPrompt } from './prompt.js'
 import { loadSkill } from './skill-loader.js'
 import { parseWorkerResult } from './results.js'
+import { buildApprovalHook, type PermissionLevel } from '../shell/hooks.js'
 import type { WorkerDispatch, WorkerResult, ArtifactContent, AgentConfig, WorkerInput } from '../types.js'
 import type { Scenario } from '@aver/workspace'
 
@@ -24,13 +25,23 @@ export async function dispatchWorker(
     scenarioDetail,
   }
 
-  const skillContent = await loadSkill(dispatch.skill)
-  const { system, user } = buildWorkerPrompt(input, dispatch.skill, skillContent)
+  const skillResult = await loadSkill(dispatch.skill)
+  if ('warning' in skillResult) {
+    const w = skillResult.warning
+    console.warn(`[aver:worker] skill-load-failed — skill=${w.skill}: ${w.message}`, w.cause)
+  }
+  const { system, user } = buildWorkerPrompt(input, dispatch.skill, skillResult.content)
   const disallowedTools = buildDisallowedTools(dispatch.permissionLevel)
 
   let assistantText = ''
   let tokenUsage = 0
 
+  // Permission enforcement: two layers of defense
+  // 1. disallowedTools — SDK blocks these tools before they can execute
+  // 2. canUseTool — our approval hook (shell/hooks.ts) enforces tiered permissions:
+  //    read_only: only read tools, edit: + write tools + safe bash, full: all except sensitive bash
+  //    Sensitive commands (git push, rm -rf, sudo) are always denied in non-interactive mode.
+  const canUseTool = buildCanUseTool(dispatch.permissionLevel as PermissionLevel)
   const q = query({
     prompt: user,
     options: {
@@ -38,8 +49,7 @@ export async function dispatchWorker(
       systemPrompt: system,
       disallowedTools,
       maxTurns: config.cycles.maxWorkerIterations,
-      permissionMode: 'bypassPermissions',
-      allowDangerouslySkipPermissions: true,
+      canUseTool,
       persistSession: false,
     },
   })
@@ -55,8 +65,9 @@ export async function dispatchWorker(
     if (message.type === 'result' && message.subtype === 'success') {
       tokenUsage = message.usage.input_tokens + message.usage.output_tokens
     }
-    if (message.type === 'result' && message.subtype === 'error') {
-      throw new Error(`Worker dispatch failed: ${(message as any).error ?? 'unknown SDK error'}`)
+    if (message.type === 'result' && message.subtype !== 'success') {
+      const errors = 'errors' in message && Array.isArray(message.errors) ? message.errors : []
+      throw new Error(`Worker dispatch failed: ${errors.join('; ') || `${message.subtype}`}`)
     }
   }
 
@@ -65,15 +76,43 @@ export async function dispatchWorker(
   return { result, tokenUsage }
 }
 
+function buildCanUseTool(level: PermissionLevel) {
+  // Non-interactive: sensitive commands (git push, rm -rf, sudo) are always denied
+  const hook = buildApprovalHook(level, async () => false)
+  return async (
+    toolName: string,
+    input: Record<string, unknown>,
+    options: { signal: AbortSignal },
+  ) => {
+    const result = await hook(
+      {
+        hook_event_name: 'PreToolUse',
+        tool_name: toolName,
+        tool_input: input,
+        session_id: '',
+        transcript_path: '',
+        cwd: process.cwd(),
+      },
+      undefined,
+      { signal: options.signal },
+    )
+    const decision = result.hookSpecificOutput?.permissionDecision
+    if (decision === 'deny') {
+      return { behavior: 'deny' as const, message: result.hookSpecificOutput?.reason ?? `${toolName} denied` }
+    }
+    return { behavior: 'allow' as const }
+  }
+}
+
 function buildDisallowedTools(permissionLevel: string): string[] {
   switch (permissionLevel) {
     case 'read_only':
-      return [...WRITE_TOOLS, 'Bash']
+      return [...WRITE_TOOLS, 'Bash', 'Task']
     case 'edit':
-      return []
+      return ['Task']
     case 'full':
       return []
     default:
-      return [...WRITE_TOOLS]
+      return [...WRITE_TOOLS, 'Task']
   }
 }

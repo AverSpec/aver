@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { AgentConfig } from '../../src/types.js'
 import { WorkspaceStore, WorkspaceOps } from '@aver/workspace'
+import { EventLog } from '../../src/memory/events.js'
 
 // Mock dispatch functions
 vi.mock('../../src/supervisor/dispatch.js', () => ({
@@ -609,5 +610,111 @@ describe('CycleEngine', () => {
     const scenarios = await ops.getScenarios()
     const updated = scenarios.find((s) => s.id === scenario.id)
     expect(updated!.stage).toBe('mapped')
+  })
+
+  it('logs advancement warnings when verifyAdvancement returns warnings', async () => {
+    // Seed an observed scenario at captured stage with no seams/constraints
+    // verifyAdvancement(captured -> characterized) warns for observed mode without evidence
+    const store = new WorkspaceStore(dir, 'test')
+    const ops = new WorkspaceOps(store)
+    const scenario = await ops.captureScenario({ behavior: 'observed behavior', mode: 'observed' })
+
+    // Supervisor requests advancement to characterized
+    mockSupervisor.mockResolvedValueOnce({
+      decision: {
+        action: {
+          type: 'update_workspace',
+          updates: [{ scenarioId: scenario.id, stage: 'characterized', rationale: 'moving on' }],
+        },
+      },
+      tokenUsage: 100,
+    })
+
+    // After update_workspace, supervisor stops
+    mockSupervisor.mockResolvedValueOnce({
+      decision: { action: { type: 'stop', reason: 'done' } },
+      tokenUsage: 50,
+    })
+
+    const engine = new CycleEngine({
+      agentPath: dir,
+      workspacePath: dir,
+      projectId: 'test',
+      config,
+    })
+
+    await engine.start('test warning path')
+
+    // Read back events and verify the advancement:warning was logged
+    const eventLog = new EventLog(dir)
+    const events = await eventLog.readAll()
+    const warningEvents = events.filter(e => e.type === 'advancement:warning')
+    expect(warningEvents).toHaveLength(1)
+    expect(warningEvents[0].data).toMatchObject({
+      scenarioId: scenario.id,
+      from: 'captured',
+      to: 'characterized',
+      warning: expect.stringContaining('no investigation evidence'),
+    })
+
+    // Verify the scenario was still advanced (warnings don't block)
+    const scenarios = await ops.getScenarios()
+    const updated = scenarios.find(s => s.id === scenario.id)
+    expect(updated!.stage).toBe('characterized')
+  })
+
+  it('catches advanceScenario errors and logs them as advancement:blocked', async () => {
+    // Seed a scenario at implemented stage — advanceScenario will throw
+    // "Cannot advance beyond implemented" since there is no next stage
+    const store = new WorkspaceStore(dir, 'test')
+    const ops = new WorkspaceOps(store)
+    const scenario = await ops.captureScenario({ behavior: 'fully done', mode: 'intended' })
+
+    // Force scenario to implemented stage via direct store mutation
+    await store.mutate(ws => {
+      const s = ws.scenarios.find(s => s.id === scenario.id)
+      if (s) s.stage = 'implemented'
+      return ws
+    })
+
+    // Supervisor requests advancement (engine verifyAdvancement won't block,
+    // but WorkspaceOps.advanceScenario will throw "Cannot advance beyond implemented")
+    mockSupervisor.mockResolvedValueOnce({
+      decision: {
+        action: {
+          type: 'update_workspace',
+          updates: [{ scenarioId: scenario.id, stage: 'implemented', rationale: 'try again' }],
+        },
+      },
+      tokenUsage: 100,
+    })
+
+    // After the failed advance, supervisor stops
+    mockSupervisor.mockResolvedValueOnce({
+      decision: { action: { type: 'stop', reason: 'done' } },
+      tokenUsage: 50,
+    })
+
+    const engine = new CycleEngine({
+      agentPath: dir,
+      workspacePath: dir,
+      projectId: 'test',
+      config,
+    })
+
+    await engine.start('test catch path')
+
+    // Read back events and verify the error was caught and logged
+    const eventLog = new EventLog(dir)
+    const events = await eventLog.readAll()
+    const blockedEvents = events.filter(e =>
+      e.type === 'advancement:blocked' && e.data.scenarioId === scenario.id
+    )
+    expect(blockedEvents).toHaveLength(1)
+    expect(blockedEvents[0].data.reason).toContain('Cannot advance beyond implemented')
+
+    // Verify engine did NOT crash — it continued and stopped normally
+    const session = await engine.getSession()
+    expect(session!.status).toBe('stopped')
   })
 })

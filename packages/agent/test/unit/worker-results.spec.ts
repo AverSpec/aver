@@ -33,6 +33,23 @@ describe('parseWorkerResult', () => {
     expect(result.summary).toBe('done')
   })
 
+  it('filters out malformed artifacts', () => {
+    const text = JSON.stringify({
+      summary: 'done',
+      artifacts: [
+        42,
+        null,
+        'hello',
+        { type: 'investigation' },
+        { type: 'investigation', name: 'a', summary: 's', content: 'c' },
+        { type: 1, name: 'b', summary: 's', content: 'c' },
+      ],
+    })
+    const result = parseWorkerResult(text)
+    expect(result.artifacts).toHaveLength(1)
+    expect(result.artifacts[0].name).toBe('a')
+  })
+
   it('throws on missing summary', () => {
     const text = JSON.stringify({ artifacts: [] })
     expect(() => parseWorkerResult(text)).toThrow()

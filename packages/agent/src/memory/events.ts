@@ -49,6 +49,10 @@ export class EventLog {
     })
   }
 
+  /**
+   * Reads all events from the current (non-rotated) event file only.
+   * Rotated events are archived separately and not included.
+   */
   async readAll(): Promise<AgentEvent[]> {
     if (!existsSync(this.filePath)) return []
     const content = await readFile(this.filePath, 'utf-8')
@@ -58,6 +62,9 @@ export class EventLog {
       .map((line) => JSON.parse(line) as AgentEvent)
   }
 
+  /**
+   * Filters events since a given timestamp; may miss events from rotated files.
+   */
   async readSince(timestamp: string): Promise<AgentEvent[]> {
     const all = await this.readAll()
     return all.filter((e) => e.timestamp >= timestamp)

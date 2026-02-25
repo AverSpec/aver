@@ -17,6 +17,9 @@ export async function dispatchSupervisor(
   let assistantText = ''
   let tokenUsage = 0
 
+  // Supervisor is text-only: allowedTools: [] prevents all tool use, so no
+  // permission hooks are needed. bypassPermissions avoids interactive prompts
+  // since the supervisor runs non-interactively with maxTurns: 1.
   const q = query({
     prompt: user,
     options: {
@@ -41,8 +44,9 @@ export async function dispatchSupervisor(
     if (message.type === 'result' && message.subtype === 'success') {
       tokenUsage = message.usage.input_tokens + message.usage.output_tokens
     }
-    if (message.type === 'result' && message.subtype === 'error') {
-      throw new Error(`Supervisor dispatch failed: ${(message as any).error ?? 'unknown SDK error'}`)
+    if (message.type === 'result' && message.subtype !== 'success') {
+      const errors = 'errors' in message && Array.isArray(message.errors) ? message.errors : []
+      throw new Error(`Supervisor dispatch failed: ${errors.join('; ') || `${message.subtype}`}`)
     }
   }
 

@@ -52,7 +52,7 @@ describe('agentSdkProvider', () => {
         expect.objectContaining({
           options: expect.objectContaining({
             model: 'claude-haiku-4-5-20251001',
-            maxTurns: 1,
+            maxTurns: 3,
           }),
         }),
       )

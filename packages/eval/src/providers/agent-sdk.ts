@@ -37,12 +37,11 @@ export function agentSdkProvider(opts?: AgentSdkProviderOptions): JudgeProvider 
           model,
           systemPrompt: JUDGE_SYSTEM_PROMPT,
           allowedTools: [],
-          maxTurns: 1,
+          maxTurns: 3,
           outputFormat: { type: 'json_schema', schema: verdictJsonSchema },
           permissionMode: 'bypassPermissions',
           allowDangerouslySkipPermissions: true,
           persistSession: false,
-          thinking: { type: 'disabled' },
           ...(claudePath && { pathToClaudeCodeExecutable: claudePath }),
         },
       })
@@ -53,6 +52,9 @@ export function agentSdkProvider(opts?: AgentSdkProviderOptions): JudgeProvider 
         }
         if (message.type === 'result' && message.subtype === 'error_max_structured_output_retries') {
           throw new Error('@aver/eval: Judge failed to produce structured output after max retries')
+        }
+        if (message.type === 'result' && message.subtype === 'error_max_turns') {
+          throw new Error('@aver/eval: Judge hit max turns without producing structured output')
         }
         if (message.type === 'result' && 'is_error' in message && message.is_error) {
           const msg = message as Record<string, unknown>

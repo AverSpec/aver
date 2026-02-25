@@ -15,21 +15,14 @@ export async function runAgentCommand(parsed: AgentArgs): Promise<void> {
       await runLog()
       break
     case 'dashboard':
-      console.log('aver agent dashboard: coming soon.')
+      console.log('Use "aver agent start" to launch the interactive dashboard.')
       break
   }
 }
 
 async function runStart(goal?: string): Promise<void> {
-  if (!goal) {
-    console.error('Usage: aver agent start "your goal here"')
-    process.exit(1)
-  }
-
-  const { CycleEngine, DEFAULT_CONFIG } = await import('@aver/agent')
   const { resolve } = await import('node:path')
   const { execSync } = await import('node:child_process')
-  const { createInterface } = await import('node:readline')
 
   // Detect claude executable path for the Agent SDK
   let claudeExecutablePath: string | undefined
@@ -43,11 +36,38 @@ async function runStart(goal?: string): Promise<void> {
   const cwd = process.cwd()
   const agentPath = resolve(cwd, '.aver', 'agent')
   const workspacePath = resolve(cwd, '.aver', 'workspace')
-
-  // Derive projectId from directory name
   const projectId = cwd.split('/').pop() ?? 'unknown'
 
-  // Set up readline for interactive questions (if terminal is available)
+  const { DEFAULT_CONFIG } = await import('@aver/agent')
+  const config = { ...DEFAULT_CONFIG, claudeExecutablePath }
+
+  // Try TUI if interactive terminal
+  if (process.stdin.isTTY) {
+    try {
+      const { renderTui } = await import('@aver/agent/tui')
+      await renderTui({ goal, agentPath, workspacePath, projectId, config })
+      return
+    } catch (err) {
+      // If ink/react not installed, fall through to plain-text mode
+      if (err instanceof Error && err.message.includes('Cannot find')) {
+        console.error(
+          'TUI requires ink and react. Install them:\n  pnpm add -D ink react @types/react\n\nFalling back to plain-text mode.\n',
+        )
+      } else {
+        throw err
+      }
+    }
+  }
+
+  // Plain-text fallback (non-TTY or missing TUI deps)
+  if (!goal) {
+    console.error('Usage: aver agent start "your goal here"')
+    process.exit(1)
+  }
+
+  const { CycleEngine } = await import('@aver/agent')
+  const { createInterface } = await import('node:readline')
+
   const isInteractive = process.stdin.isTTY === true
   const rl = isInteractive
     ? createInterface({ input: process.stdin, output: process.stdout })
@@ -55,7 +75,6 @@ async function runStart(goal?: string): Promise<void> {
 
   const onQuestion = async (question: string, options?: string[]): Promise<string> => {
     if (!rl) {
-      // Non-interactive mode: auto-answer with first option or default
       const answer = options?.length ? options[0] : 'proceed'
       console.log(`\n[non-interactive] ${question} -> auto: ${answer}`)
       return answer
@@ -71,7 +90,6 @@ async function runStart(goal?: string): Promise<void> {
     }
     return new Promise((resolve) => {
       rl.question(prompt, (answer) => {
-        // If they entered a number and we have options, map it
         if (options?.length) {
           const idx = parseInt(answer, 10)
           if (idx >= 1 && idx <= options.length) {
@@ -84,8 +102,6 @@ async function runStart(goal?: string): Promise<void> {
     })
   }
 
-  const config = { ...DEFAULT_CONFIG, claudeExecutablePath }
-
   const engine = new CycleEngine({
     agentPath,
     workspacePath,
@@ -97,7 +113,6 @@ async function runStart(goal?: string): Promise<void> {
     onQuestion,
   })
 
-  // Handle Ctrl-C gracefully
   process.on('SIGINT', async () => {
     console.log('\n\nGracefully stopping agent...')
     const { requestStop } = await import('@aver/agent')

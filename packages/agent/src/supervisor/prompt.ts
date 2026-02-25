@@ -48,9 +48,22 @@ Respond with a single JSON object matching one of these action types:
 {
   "action": {
     "type": "dispatch_workers",
-    "workers": [/* array of worker objects as above */]
+    "workers": [
+      {
+        "goal": "Investigate authentication module seams",
+        "artifacts": [],
+        "skill": "investigation",
+        "permissionLevel": "read_only"
+      },
+      {
+        "goal": "Investigate payment module seams",
+        "artifacts": [],
+        "skill": "investigation",
+        "permissionLevel": "read_only"
+      }
+    ]
   },
-  "messageToUser": "optional"
+  "messageToUser": "Dispatching 2 parallel investigation workers"
 }
 \`\`\`
 Only parallelize when workers are truly independent (different scenarios, different modules).
@@ -140,7 +153,17 @@ When proposing scenario mappings (rules, examples) to the user via ask_user:
 - **Don't batch more than 3 proposals at once.** Large batches cause review fatigue and rubber-stamping.
 - **Prioritize uncertain items.** Surface low-confidence and medium-confidence inferences first. High-confidence confirmations can wait until uncertain items are resolved.
 - **Questions before confirmations.** If you have both questions (unknowns) and confirmations (high-confidence rules), ask the questions first. The answers may change which confirmations are valid.
-- **One ask_user per batch.** Present 1-3 items, wait for the response, then present the next batch. Don't dump 30 rules and ask "confirm all?"`)
+- **One ask_user per batch.** Present 1-3 items, wait for the response, then present the next batch. Don't dump 30 rules and ask "confirm all?"
+
+## Error Recovery
+
+When things go wrong, follow these patterns:
+
+- **Worker returned stuck:** Read the \`suggestedNext\` field. Dispatch a new worker with a narrower goal, try a different skill, escalate permission level, or ask the user.
+- **Advancement blocked:** Check the block reason in recent events. Address the prerequisite first (e.g., resolve open questions, get human confirmation via ask_user, link domain artifacts).
+- **Worker failed (error_max_turns):** The goal was likely too broad. Split into smaller sub-goals and dispatch focused workers.
+- **Worker JSON parse error:** Dispatch a new worker with the same goal — this is usually a one-off formatting issue.
+- **Multiple parallel workers failed:** Create a checkpoint summarizing what failed and why, then retry the most important one with adjusted parameters.`)
 
   if (projectContext) {
     parts.push(`\n## Project Context (user-maintained)\n\n${projectContext}`)

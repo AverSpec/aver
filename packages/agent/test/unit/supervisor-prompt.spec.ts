@@ -187,4 +187,17 @@ describe('buildSupervisorPrompt', () => {
     const { system } = buildSupervisorPrompt(baseInput)
     expect(system).toContain('ONLY for stage transitions')
   })
+
+  it('includes error recovery guidance', () => {
+    const { system } = buildSupervisorPrompt(baseInput)
+    expect(system).toContain('Error Recovery')
+    expect(system).toContain('stuck')
+    expect(system).toContain('error_max_turns')
+  })
+
+  it('includes concrete dispatch_workers example', () => {
+    const { system } = buildSupervisorPrompt(baseInput)
+    // Should have a real example, not a placeholder comment
+    expect(system).not.toContain('/* array of worker objects')
+  })
 })

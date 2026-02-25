@@ -73,4 +73,35 @@ describe('buildWorkerPrompt', () => {
     expect(system).toContain('summary')
     expect(system).toContain('artifacts')
   })
+
+  it('shows read-only tools when permissionLevel is read_only', () => {
+    const { system } = buildWorkerPrompt(
+      { goal: 'Investigate', artifacts: [], permissionLevel: 'read_only' },
+      'investigation',
+    )
+    expect(system).toContain('READ-ONLY')
+    expect(system).toContain('Read')
+    expect(system).toContain('Glob')
+    expect(system).toContain('Grep')
+    expect(system).not.toContain('Edit')
+    expect(system).not.toContain('Bash')
+  })
+
+  it('shows edit tools when permissionLevel is edit', () => {
+    const { system } = buildWorkerPrompt(
+      { goal: 'Implement', artifacts: [], permissionLevel: 'edit' },
+      'tdd-loop',
+    )
+    expect(system).toContain('Edit')
+    expect(system).toContain('Write')
+    expect(system).toContain('Bash')
+  })
+
+  it('defaults to read_only when permissionLevel is omitted', () => {
+    const { system } = buildWorkerPrompt(
+      { goal: 'Investigate', artifacts: [] },
+      'investigation',
+    )
+    expect(system).toContain('READ-ONLY')
+  })
 })

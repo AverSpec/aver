@@ -23,6 +23,7 @@ export async function dispatchWorker(
     goal: dispatch.goal,
     artifacts,
     scenarioDetail,
+    permissionLevel: dispatch.permissionLevel as 'read_only' | 'edit' | 'full',
   }
 
   const skillResult = await loadSkill(dispatch.skill)

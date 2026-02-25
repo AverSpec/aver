@@ -7,17 +7,33 @@ interface PromptParts {
 }
 
 export function buildWorkerPrompt(input: WorkerInput, skill: string, skillContent?: string): PromptParts {
-  const system = buildSystemPrompt(skill, skillContent)
+  const system = buildSystemPrompt(skill, skillContent, input.permissionLevel)
   const user = buildUserPrompt(input)
   return { system, user }
 }
 
-function buildSystemPrompt(skill: string, skillContent?: string): string {
+function buildSystemPrompt(skill: string, skillContent?: string, permissionLevel?: string): string {
   const parts: string[] = []
+  const level = permissionLevel ?? 'read_only'
+
+  let toolGuidance: string
+  switch (level) {
+    case 'read_only':
+      toolGuidance = 'You have READ-ONLY access. Available tools: Read, Glob, Grep. You cannot modify files or run commands.'
+      break
+    case 'edit':
+      toolGuidance = 'You can read and modify files. Available tools: Read, Edit, Write, Glob, Grep, Bash.'
+      break
+    case 'full':
+      toolGuidance = 'You have full access. Available tools: Read, Edit, Write, Bash, Glob, Grep, Task.'
+      break
+    default:
+      toolGuidance = 'You have READ-ONLY access. Available tools: Read, Glob, Grep. You cannot modify files or run commands.'
+  }
 
   parts.push(`You are a worker agent for Aver, a domain-driven development platform.
 
-You have been dispatched to complete a specific goal. Use the tools available to you (Read, Edit, Write, Bash, Glob, Grep) to accomplish the goal.
+You have been dispatched to complete a specific goal. ${toolGuidance}
 
 ## Output Format
 

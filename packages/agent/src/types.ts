@@ -160,6 +160,8 @@ export interface WorkerInput {
   artifacts: ArtifactContent[]
   domainVocabulary?: string
   scenarioDetail?: Scenario
+  permissionLevel?: 'read_only' | 'edit' | 'full'
+  projectContext?: string
 }
 
 export interface WorkerResult {

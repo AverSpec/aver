@@ -36,7 +36,7 @@
   "dependencies": {
     "@aver/workspace": "workspace:^",
     "@modelcontextprotocol/sdk": "^1.26.0",
-    "zod": "^3.24.0"
+    "zod": "^4.0.0"
   },
   "peerDependencies": {
     "@aver/core": "workspace:^"

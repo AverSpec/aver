@@ -42,7 +42,7 @@
     "@anthropic-ai/sdk": { "optional": true }
   },
   "dependencies": {
-    "zod": "^3.24.0"
+    "zod": "^4.0.0"
   },
   "devDependencies": {
     "@aver/core": "workspace:*",

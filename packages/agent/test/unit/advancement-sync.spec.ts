@@ -49,22 +49,28 @@ const baseInput: SupervisorInput = {
 }
 
 /**
- * Extract significant words from a hard block message that should appear in
- * the supervisor prompt. We strip common filler words and punctuation to
- * focus on the domain-specific prerequisite terms.
+ * Extract significant camelCase identifiers and domain-specific multi-word phrases
+ * from a hard block message. We look for:
+ *   - camelCase tokens (field names like confirmedBy, domainOperation, testNames)
+ *   - the phrase "open question" as a concept
+ *
+ * Generic words like "links", "mapped", "required" are excluded because they
+ * are too common to reliably appear verbatim in prompt text.
  */
 function extractKeyTerms(hardBlockMessage: string): string[] {
-  const stopWords = new Set([
-    'cannot', 'advance', 'to', 'is', 'are', 'must', 'be', 'first',
-    'a', 'an', 'the', 'and', 'or', 'of', 'in', 'with', 'set',
-    'required', 'human', 'confirm', 'intent', 'before', 'advancing',
-  ])
-  return hardBlockMessage
-    .toLowerCase()
-    // Strip all punctuation (colons, parens, brackets, etc.)
-    .replace(/[^a-z0-9\s]/g, ' ')
-    .split(/\s+/)
-    .filter(w => w.length > 2 && !stopWords.has(w))
+  const terms: string[] = []
+
+  // Pick up camelCase identifiers (e.g. confirmedBy, domainOperation, testNames)
+  const camelCaseRe = /\b[a-z]+[A-Z][a-zA-Z]+\b/g
+  const camelMatches = hardBlockMessage.match(camelCaseRe) ?? []
+  terms.push(...camelMatches.map(t => t.toLowerCase()))
+
+  // Pick up "open question" as a domain concept phrase (case-insensitive)
+  if (/open question/i.test(hardBlockMessage)) {
+    terms.push('open question')
+  }
+
+  return [...new Set(terms)]
 }
 
 // ---------------------------------------------------------------------------

@@ -49,4 +49,25 @@ describe('Action trace and error reporting', () => {
     await assert.traceContains({ kind: 'action', name: 'setup', status: 'pass' })
     await assert.traceContains({ kind: 'assertion', name: 'verify', status: 'fail' })
   })
+
+  test('records categorized trace with given/when/then', async ({ given, when, then }) => {
+    await given.defineDomain({
+      name: 'CategoryTrace',
+      actions: ['setup', 'trigger'],
+      queries: [],
+      assertions: ['verify'],
+    })
+    await given.implementDomain()
+    await given.registerAdapter()
+    await given.createSuite()
+
+    await when.executeAction({ name: 'setup' })
+    await when.executeAction({ name: 'trigger' })
+    await when.executeAssertion({ name: 'verify' })
+
+    await then.traceHasLength({ length: 3 })
+    await then.traceContains({ kind: 'action', name: 'setup', status: 'pass' })
+    await then.traceContains({ kind: 'action', name: 'trigger', status: 'pass' })
+    await then.traceContains({ kind: 'assertion', name: 'verify', status: 'pass' })
+  })
 })

@@ -166,4 +166,20 @@ describe('buildApprovalHook', () => {
       expect(promptUser).toHaveBeenCalled()
     })
   })
+
+  describe('human-only tools', () => {
+    it('denies confirm_scenario MCP tool at all permission levels', async () => {
+      for (const level of ['read_only', 'edit', 'full'] as const) {
+        const hook = buildApprovalHook(level, async () => false)
+        for (const toolName of ['mcp__aver__confirm_scenario', 'confirm_scenario']) {
+          const result = await hook(
+            { hook_event_name: 'PreToolUse', tool_name: toolName, tool_input: {}, session_id: '', transcript_path: '', cwd: '/' },
+            undefined,
+            { signal: new AbortController().signal },
+          )
+          expect(result.hookSpecificOutput?.permissionDecision).toBe('deny')
+        }
+      }
+    })
+  })
 })

@@ -31,6 +31,11 @@ export type HookFn = (
 const READ_TOOLS = new Set(['Read', 'Glob', 'Grep', 'WebFetch', 'WebSearch'])
 const WRITE_TOOLS = new Set(['Edit', 'Write', 'NotebookEdit'])
 
+// Human-only gate tools — denied at ALL permission levels.
+// confirm_scenario is the human checkpoint for characterized->mapped advancement.
+// It must never be callable by agent workers, even in full mode.
+const HUMAN_ONLY_TOOLS = new Set(['confirm_scenario'])
+
 // --- Sensitive Bash patterns (always require user approval) ---
 
 const SENSITIVE_PATTERNS: RegExp[] = [
@@ -82,6 +87,11 @@ export function buildApprovalHook(level: PermissionLevel, promptUser: PromptUser
     // Read tools are always allowed at every level
     if (READ_TOOLS.has(tool_name)) {
       return allow(`${tool_name} is a read tool`)
+    }
+
+    // Human-only tools are denied at every permission level
+    if (HUMAN_ONLY_TOOLS.has(tool_name) || HUMAN_ONLY_TOOLS.has(tool_name.replace(/^mcp__\w+__/, ''))) {
+      return deny(`${tool_name} is a human-only gate — not available to agent workers`)
     }
 
     // Write tools: allowed for edit and full, denied for read_only

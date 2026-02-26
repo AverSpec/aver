@@ -6,6 +6,7 @@ export default defineConfig([
       index: 'src/index.ts',
       internals: 'src/internals.ts',
       reporter: 'src/reporter/junit.ts',
+      scaffold: 'src/cli/scaffold.ts',
     },
     format: ['esm', 'cjs'],
     dts: true,

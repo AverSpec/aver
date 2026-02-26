@@ -53,6 +53,16 @@
         "types": "./dist/reporter.d.cts",
         "default": "./dist/reporter.cjs"
       }
+    },
+    "./scaffold": {
+      "import": {
+        "types": "./dist/scaffold.d.ts",
+        "default": "./dist/scaffold.js"
+      },
+      "require": {
+        "types": "./dist/scaffold.d.cts",
+        "default": "./dist/scaffold.cjs"
+      }
     }
   },
   "files": [

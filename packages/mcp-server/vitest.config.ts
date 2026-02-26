@@ -8,6 +8,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@aver/workspace': resolve(__dirname, '../workspace/src/index.ts'),
+      '@aver/core/scaffold': resolve(__dirname, '../core/src/cli/scaffold.ts'),
     },
   },
 })

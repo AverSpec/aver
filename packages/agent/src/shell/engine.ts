@@ -1,4 +1,4 @@
-import { WorkspaceStore, WorkspaceOps, nextStage, type Scenario } from '@aver/workspace'
+import { WorkspaceStore, WorkspaceOps, type Scenario } from '@aver/workspace'
 import { verifyAdvancement } from './verification.js'
 import { ContextCurator } from '../memory/curator.js'
 import { SessionStore } from '../memory/session.js'
@@ -13,6 +13,7 @@ import type {
   SupervisorInput,
   WorkerDispatch,
   WorkerResult,
+  FailedWorker,
   AgentEvent,
   ArtifactContent,
 } from '../types.js'

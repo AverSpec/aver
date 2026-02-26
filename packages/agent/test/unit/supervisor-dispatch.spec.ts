@@ -170,6 +170,48 @@ describe('dispatchSupervisor', () => {
       }),
     )
   })
+
+  it('throws a timeout error when the query hangs longer than supervisorCallMs', async () => {
+    // Mock a query that never yields — simulates a completely hung SDK call
+    mockQuery.mockReturnValue(createHangingQuery())
+
+    const fastConfig: AgentConfig = {
+      ...config,
+      timeouts: { supervisorCallMs: 50 },
+    }
+
+    await expect(dispatchSupervisor(baseInput, fastConfig)).rejects.toThrow(
+      /timed out/i,
+    )
+  }, 3_000)
+
+  it('succeeds normally when query resolves before the timeout', async () => {
+    mockQuery.mockReturnValue(createMockQuery([
+      assistantMessage('{"action":{"type":"stop","reason":"done"}}'),
+      successResult(100, 50),
+    ]))
+
+    const generousConfig: AgentConfig = {
+      ...config,
+      timeouts: { supervisorCallMs: 5_000 },
+    }
+
+    const result = await dispatchSupervisor(baseInput, generousConfig)
+    expect(result.decision.action.type).toBe('stop')
+  })
+
+  it('uses default 2-minute timeout when timeouts config is absent', async () => {
+    // We cannot wait 2 minutes in a test, so we verify that a fast-resolving
+    // query completes successfully when no timeout config is provided —
+    // confirming the default does not cause immediate cancellation.
+    mockQuery.mockReturnValue(createMockQuery([
+      assistantMessage('{"action":{"type":"stop","reason":"done"}}'),
+      successResult(100, 50),
+    ]))
+
+    const result = await dispatchSupervisor(baseInput, config) // config has no timeouts
+    expect(result.decision.action.type).toBe('stop')
+  })
 })
 
 // --- Helpers ---
@@ -213,6 +255,34 @@ function createMockQuery(messages: any[]): any {
     for (const msg of messages) yield msg
   })()
   // Stub methods that the Query interface requires
+  gen.interrupt = async () => {}
+  gen.setPermissionMode = async () => {}
+  gen.setModel = async () => {}
+  gen.setMaxThinkingTokens = async () => {}
+  gen.initializationResult = async () => ({})
+  gen.supportedCommands = async () => []
+  gen.supportedModels = async () => []
+  gen.mcpServerStatus = async () => []
+  gen.accountInfo = async () => ({})
+  gen.rewindFiles = async () => ({ canRewind: false })
+  gen.reconnectMcpServer = async () => {}
+  gen.toggleMcpServer = async () => {}
+  gen.setMcpServers = async () => ({ added: [], removed: [], errors: {} })
+  gen.streamInput = async () => {}
+  gen.stopTask = async () => {}
+  gen.close = () => {}
+  return gen
+}
+
+/**
+ * Returns a mock query whose async iterator never resolves — simulating a
+ * completely hung SDK call (e.g., network stall before the first byte).
+ */
+function createHangingQuery(): any {
+  const gen = (async function* () {
+    // Yield nothing; block indefinitely on a promise that never settles.
+    await new Promise<never>(() => {})
+  })()
   gen.interrupt = async () => {}
   gen.setPermissionMode = async () => {}
   gen.setModel = async () => {}

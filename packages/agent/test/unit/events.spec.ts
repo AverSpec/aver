@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, spyOn } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mkdtemp, rm, readdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -112,7 +112,7 @@ describe('EventLog', () => {
     const badLine = '{"incomplete": '
     await writeFile(eventPath, badLine + '\n', 'utf-8')
 
-    const consoleSpy = spyOn(console, 'error').mockImplementation(() => {})
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     try {
       await log.readAll()
       expect(consoleSpy).toHaveBeenCalledWith(
@@ -126,7 +126,7 @@ describe('EventLog', () => {
   })
 
   it('logs rotation error to console.error when rename fails', async () => {
-    const consoleSpy = spyOn(console, 'error').mockImplementation(() => {})
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     // Write enough to trigger rotation
     const bigData = 'x'.repeat(1024) // 1KB payload

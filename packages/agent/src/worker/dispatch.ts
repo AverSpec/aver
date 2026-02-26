@@ -18,7 +18,7 @@ const DEFAULT_WORKER_TURN_MS = 180_000
 const DEFAULT_WORKER_TOTAL_MS = 1_800_000
 
 /**
- * Legacy dispatch function used by CycleEngine.
+ * Dispatch a worker via the SDK.
  * Builds prompts via buildWorkerPrompts, dispatches via SDK, and returns raw text as summary.
  * Workers no longer return structured JSON — the Observer compresses output into observations.
  */

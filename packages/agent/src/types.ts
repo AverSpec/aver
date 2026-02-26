@@ -113,21 +113,25 @@ export interface ArtifactContent extends ArtifactEntry {
 // --- Events ---
 
 export type EventType =
-  | 'cycle:start'
-  | 'cycle:end'
-  | 'worker:dispatch'
-  | 'worker:result'
-  | 'user:message'
-  | 'user:answer'
-  | 'decision'
-  | 'checkpoint'
+  | 'session:start'
+  | 'session:stop'
+  | 'supervisor:decision'
+  | 'worker:created'
+  | 'worker:goal_assigned'
+  | 'worker:terminated'
+  | 'worker:complete'
+  | 'worker:error'
+  | 'human:answer'
+  | 'scenario:advanced'
+  | 'scenario:update_requested'
   | 'advancement:blocked'
   | 'advancement:warning'
+  | 'error'
 
 export interface AgentEvent {
   timestamp: string
   type: EventType
-  cycleId: string
+  agentId?: string
   data: Record<string, unknown>
 }
 
@@ -162,17 +166,6 @@ export interface WorkerDispatch {
   scenarioId?: string
 }
 
-export interface SupervisorDecision {
-  action:
-    | { type: 'dispatch_worker'; worker: WorkerDispatch }
-    | { type: 'dispatch_workers'; workers: WorkerDispatch[] }
-    | { type: 'ask_user'; question: string; options?: string[] }
-    | { type: 'checkpoint'; summary: string }
-    | { type: 'complete_story'; scenarioId: string; summary: string; projectConstraints?: string[] }
-    | { type: 'update_workspace'; updates: ScenarioUpdate[] }
-    | { type: 'stop'; reason: string }
-  messageToUser?: string
-}
 
 export interface ScenarioUpdate {
   scenarioId: string

@@ -61,11 +61,10 @@ export async function readEvents(agentPath: string): Promise<AgentEvent[]> {
     const store = new EventStore(db)
     const events = await store.getEvents()
 
-    // Map v2 AgentEvent (db) to legacy AgentEvent (types.ts)
     return events.map((e) => ({
       timestamp: e.createdAt,
       type: e.type as AgentEvent['type'],
-      cycleId: e.agentId ?? '',
+      agentId: e.agentId,
       data: e.data,
     }))
   } finally {

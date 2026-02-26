@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type {
   SupervisorInput,
-  SupervisorDecision,
   WorkerDispatch,
   WorkerInput,
   WorkerResult,
@@ -11,6 +10,7 @@ import type {
   AgentSession,
   AgentConfig,
 } from '../../src/types.js'
+import type { SupervisorDecision } from '../../src/network/agent-network.js'
 
 describe('protocol types', () => {
   it('SupervisorInput has all required fields', () => {
@@ -26,33 +26,22 @@ describe('protocol types', () => {
     expect(input.trigger).toBe('startup')
   })
 
-  it('SupervisorDecision dispatch_worker action', () => {
+  it('SupervisorDecision create_worker action', () => {
     const decision: SupervisorDecision = {
-      action: {
-        type: 'dispatch_worker',
-        worker: {
-          goal: 'investigate auth',
-          artifacts: [],
-          skill: 'investigation',
-          allowUserQuestions: true,
-          permissionLevel: 'read_only',
-        },
-      },
+      action: 'create_worker',
+      goal: 'investigate auth',
+      skill: 'investigation',
+      permission: 'read_only',
     }
-    expect(decision.action.type).toBe('dispatch_worker')
+    expect(decision.action).toBe('create_worker')
   })
 
-  it('SupervisorDecision dispatch_workers action', () => {
+  it('SupervisorDecision ask_human action', () => {
     const decision: SupervisorDecision = {
-      action: {
-        type: 'dispatch_workers',
-        workers: [
-          { goal: 'investigate auth', artifacts: [], skill: 'investigation', allowUserQuestions: false, permissionLevel: 'read_only' },
-          { goal: 'investigate checkout', artifacts: [], skill: 'investigation', allowUserQuestions: false, permissionLevel: 'read_only' },
-        ],
-      },
+      action: 'ask_human',
+      question: 'Which auth method should we use?',
     }
-    expect(decision.action.type).toBe('dispatch_workers')
+    expect(decision.action).toBe('ask_human')
   })
 
   it('WorkerResult has all required fields', () => {
@@ -66,11 +55,11 @@ describe('protocol types', () => {
   it('AgentEvent has timestamp and type', () => {
     const event: AgentEvent = {
       timestamp: '2026-02-19T00:00:00Z',
-      type: 'cycle:start',
-      cycleId: 'cycle-001',
+      type: 'session:start',
+      agentId: 'agent-001',
       data: {},
     }
-    expect(event.type).toBe('cycle:start')
+    expect(event.type).toBe('session:start')
   })
 
   it('AgentSession tracks session metadata', () => {

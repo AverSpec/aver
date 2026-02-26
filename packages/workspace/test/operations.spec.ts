@@ -120,6 +120,18 @@ describe('WorkspaceOps', () => {
         .rejects.toThrow('confirmedBy is required')
     })
 
+    it('confirms a scenario via confirmScenario', async () => {
+      const scenario = await ops.captureScenario({ behavior: 'test' })
+      await ops.advanceScenario(scenario.id, { rationale: 'characterized', promotedBy: 'dev' })
+      await ops.confirmScenario(scenario.id, 'business-user')
+      const updated = await ops.getScenario(scenario.id)
+      expect(updated!.confirmedBy).toBe('business-user')
+    })
+
+    it('throws when confirming a non-existent scenario', async () => {
+      await expect(ops.confirmScenario('nonexistent', 'user')).rejects.toThrow('Scenario not found')
+    })
+
     it('advances mapped to specified', async () => {
       const scenario = await ops.captureScenario({ behavior: 'test' })
       await advanceToStage(scenario.id, 'mapped')

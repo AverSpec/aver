@@ -252,6 +252,16 @@ export class WorkspaceOps {
     })
   }
 
+  async confirmScenario(id: string, confirmer: string): Promise<void> {
+    await this.store.mutate(ws => {
+      const scenario = ws.scenarios.find(s => s.id === id)
+      if (!scenario) throw new Error('Scenario not found: ' + id)
+      scenario.confirmedBy = confirmer
+      scenario.updatedAt = new Date().toISOString()
+      return ws
+    })
+  }
+
   async getScenario(id: string): Promise<Scenario | undefined> {
     const ws = await this.store.load()
     return ws.scenarios.find(s => s.id === id)

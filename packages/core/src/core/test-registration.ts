@@ -58,61 +58,32 @@ export function buildTestApi<D extends Domain>(
   globalSkipImpl?: any,
   calledOps?: CalledOps,
 ): any {
-  const api: any = makeTestFn(testImpl, domain, getEffectiveAdapters, globalSkipImpl, calledOps)
+  const base = makeTestFn(testImpl, domain, getEffectiveAdapters, globalSkipImpl, calledOps)
 
-  if (!testImpl) return api
+  if (!testImpl) return base
 
-  if (typeof testImpl.only === 'function') {
-    api.only = makeTestFn(testImpl.only, domain, getEffectiveAdapters, globalSkipImpl, calledOps)
-  }
-  if (typeof testImpl.skip === 'function') {
-    api.skip = makeTestFn(testImpl.skip, domain, getEffectiveAdapters, globalSkipImpl, calledOps)
-  }
+  return new Proxy(base, {
+    get(_, prop) {
+      const child = testImpl[prop]
+      if (child === undefined) return undefined
 
-  if (typeof testImpl.todo === 'function') {
-    api.todo = (name: string, fn?: (ctx: TestContext<D>) => Promise<void>) => {
-      return (testImpl.todo as any)(name, fn)
-    }
-  }
+      // todo is pass-through — no test body to wrap
+      if (prop === 'todo') return child.bind(testImpl)
 
-  if (typeof testImpl.concurrent === 'function') {
-    const concurrentApi: any = makeTestFn(testImpl.concurrent, domain, getEffectiveAdapters, globalSkipImpl, calledOps)
-    if (typeof testImpl.concurrent.only === 'function') {
-      concurrentApi.only = makeTestFn(testImpl.concurrent.only, domain, getEffectiveAdapters, globalSkipImpl, calledOps)
-    }
-    if (typeof testImpl.concurrent.skip === 'function') {
-      concurrentApi.skip = makeTestFn(testImpl.concurrent.skip, domain, getEffectiveAdapters, globalSkipImpl, calledOps)
-    }
-    api.concurrent = concurrentApi
-  }
-
-  if (typeof testImpl.each === 'function') {
-    api.each = (...args: any[]) => {
-      const eachImpl = testImpl.each(...args)
-      const eachApi: any = makeTestFn(eachImpl, domain, getEffectiveAdapters, globalSkipImpl, calledOps)
-      if (typeof eachImpl.only === 'function') {
-        eachApi.only = makeTestFn(eachImpl.only, domain, getEffectiveAdapters, globalSkipImpl, calledOps)
+      // each is a factory — wrap the *result* of calling it
+      if (prop === 'each') {
+        return (...args: any[]) =>
+          buildTestApi(testImpl.each(...args), domain, getEffectiveAdapters, globalSkipImpl, calledOps)
       }
-      if (typeof eachImpl.skip === 'function') {
-        eachApi.skip = makeTestFn(eachImpl.skip, domain, getEffectiveAdapters, globalSkipImpl, calledOps)
-      }
-      return eachApi
-    }
-    if (typeof testImpl.each.only === 'function') {
-      api.each.only = (...args: any[]) => {
-        const eachImpl = testImpl.each.only(...args)
-        return makeTestFn(eachImpl, domain, getEffectiveAdapters, globalSkipImpl, calledOps)
-      }
-    }
-    if (typeof testImpl.each.skip === 'function') {
-      api.each.skip = (...args: any[]) => {
-        const eachImpl = testImpl.each.skip(...args)
-        return makeTestFn(eachImpl, domain, getEffectiveAdapters, globalSkipImpl, calledOps)
-      }
-    }
-  }
 
-  return api
+      // Everything else: recursively wrap (handles only, skip, concurrent, etc.)
+      if (typeof child === 'function') {
+        return buildTestApi(child, domain, getEffectiveAdapters, globalSkipImpl, calledOps)
+      }
+
+      return child
+    },
+  })
 }
 
 function makeTestFn<D extends Domain>(

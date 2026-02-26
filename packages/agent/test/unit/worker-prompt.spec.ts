@@ -1,154 +1,142 @@
 import { describe, it, expect } from 'vitest'
-import { buildWorkerPrompt } from '../../src/worker/prompt.js'
-import type { WorkerInput } from '../../src/types.js'
+import { buildWorkerPrompts, type WorkerPromptInput } from '../../src/worker/prompt.js'
 
-describe('buildWorkerPrompt', () => {
-  it('includes the goal', () => {
-    const { system, user } = buildWorkerPrompt(
-      { goal: 'Investigate auth module', artifacts: [] },
-      'investigation',
-    )
-    expect(user).toContain('Investigate auth module')
+describe('buildWorkerPrompts', () => {
+  const baseInput: WorkerPromptInput = {
+    goal: 'Investigate auth module',
+    observationBlock: '',
+    permissionLevel: 'read_only',
+    skill: 'investigation',
+  }
+
+  it('includes the goal in user prompt', () => {
+    const { userPrompt } = buildWorkerPrompts(baseInput)
+    expect(userPrompt).toContain('Investigate auth module')
   })
 
   it('includes skill content when provided', () => {
-    const { system } = buildWorkerPrompt(
-      { goal: 'Implement feature', artifacts: [] },
-      'implementation',
-      '## TDD Loop\n\nMake the test pass.',
-    )
-    expect(system).toContain('TDD Loop')
-    expect(system).toContain('Make the test pass.')
+    const { systemPrompt } = buildWorkerPrompts(baseInput, '## TDD Loop\n\nMake the test pass.')
+    expect(systemPrompt).toContain('TDD Loop')
+    expect(systemPrompt).toContain('Make the test pass.')
   })
 
   it('omits skill section when skillContent is undefined', () => {
-    const { system } = buildWorkerPrompt(
-      { goal: 'Implement feature', artifacts: [] },
-      'implementation',
-    )
-    expect(system).toContain('worker agent for Aver')
-    expect(system).not.toContain('TDD')
+    const { systemPrompt } = buildWorkerPrompts(baseInput)
+    expect(systemPrompt).toContain('focused execution agent')
+    expect(systemPrompt).not.toContain('TDD')
   })
 
-  it('includes artifact contents', () => {
-    const { user } = buildWorkerPrompt(
-      {
-        goal: 'Implement auth',
-        artifacts: [{ name: 'inv-auth', type: 'investigation', summary: 'auth inv', content: 'Found 3 seams', createdAt: '' }],
-      },
-      'implementation',
-    )
-    expect(user).toContain('Found 3 seams')
+  it('includes observation block in user prompt', () => {
+    const input: WorkerPromptInput = {
+      ...baseInput,
+      observationBlock: 'Found 3 seams in auth module',
+    }
+    const { userPrompt } = buildWorkerPrompts(input)
+    expect(userPrompt).toContain('Found 3 seams')
+    expect(userPrompt).toContain('## Observations')
+  })
+
+  it('omits observations section when block is empty', () => {
+    const { userPrompt } = buildWorkerPrompts(baseInput)
+    expect(userPrompt).not.toContain('## Observations')
   })
 
   it('includes scenario detail', () => {
-    const { user } = buildWorkerPrompt(
-      {
-        goal: 'Implement',
-        artifacts: [],
-        scenarioDetail: {
-          id: 'sc-1',
-          stage: 'specified',
-          behavior: 'user can cancel task',
-          rules: ['must confirm first'],
-          examples: [],
-          questions: [],
-          constraints: [],
-          seams: ['TaskService.update'],
-          createdAt: '',
-          updatedAt: '',
-        },
+    const input: WorkerPromptInput = {
+      ...baseInput,
+      scenarioDetail: {
+        id: 'sc-1',
+        name: 'user can cancel task',
+        stage: 'specified',
       },
-      'implementation',
-    )
-    expect(user).toContain('user can cancel task')
-    expect(user).toContain('TaskService.update')
+    }
+    const { userPrompt } = buildWorkerPrompts(input)
+    expect(userPrompt).toContain('user can cancel task')
+    expect(userPrompt).toContain('sc-1')
+    expect(userPrompt).toContain('specified')
   })
 
-  it('includes output format instructions', () => {
-    const { system } = buildWorkerPrompt(
-      { goal: 'test', artifacts: [] },
-      'investigation',
-    )
-    expect(system).toContain('summary')
-    expect(system).toContain('artifacts')
+  it('includes scenario questions and notes', () => {
+    const input: WorkerPromptInput = {
+      ...baseInput,
+      scenarioDetail: {
+        id: 'sc-2',
+        name: 'user logs in',
+        stage: 'characterized',
+        questions: ['What about SSO?', 'Timeout policy?'],
+        notes: 'Auth service uses OAuth2',
+      },
+    }
+    const { userPrompt } = buildWorkerPrompts(input)
+    expect(userPrompt).toContain('What about SSO?')
+    expect(userPrompt).toContain('Timeout policy?')
+    expect(userPrompt).toContain('Auth service uses OAuth2')
+  })
+
+  it('includes STATUS signal instructions in system prompt', () => {
+    const { systemPrompt } = buildWorkerPrompts(baseInput)
+    expect(systemPrompt).toContain('STATUS: complete')
+    expect(systemPrompt).toContain('STATUS: stuck')
+    expect(systemPrompt).toContain('STATUS: continue')
+  })
+
+  it('does not include JSON output format', () => {
+    const { systemPrompt } = buildWorkerPrompts(baseInput)
+    expect(systemPrompt).not.toContain('```json')
+    expect(systemPrompt).not.toContain('"summary"')
+    expect(systemPrompt).not.toContain('"artifacts"')
+  })
+
+  it('describes observations as memory', () => {
+    const { systemPrompt } = buildWorkerPrompts(baseInput)
+    expect(systemPrompt).toContain('observations are your memory')
   })
 
   it('shows read-only tools when permissionLevel is read_only', () => {
-    const { system } = buildWorkerPrompt(
-      { goal: 'Investigate', artifacts: [], permissionLevel: 'read_only' },
-      'investigation',
-    )
-    expect(system).toContain('READ-ONLY')
-    expect(system).toContain('Read')
-    expect(system).toContain('Glob')
-    expect(system).toContain('Grep')
-    expect(system).not.toContain('Edit')
-    expect(system).not.toContain('Bash')
+    const { systemPrompt } = buildWorkerPrompts(baseInput)
+    expect(systemPrompt).toContain('READ-ONLY')
+    expect(systemPrompt).toContain('Read')
+    expect(systemPrompt).toContain('Glob')
+    expect(systemPrompt).toContain('Grep')
+    expect(systemPrompt).not.toContain('Available tools: Read, Edit')
+    expect(systemPrompt).not.toContain('Bash')
   })
 
   it('shows edit tools when permissionLevel is edit', () => {
-    const { system } = buildWorkerPrompt(
-      { goal: 'Implement', artifacts: [], permissionLevel: 'edit' },
-      'implementation',
-    )
-    expect(system).toContain('Edit')
-    expect(system).toContain('Write')
-    expect(system).toContain('Bash')
+    const input: WorkerPromptInput = { ...baseInput, permissionLevel: 'edit', skill: 'implementation' }
+    const { systemPrompt } = buildWorkerPrompts(input)
+    expect(systemPrompt).toContain('Edit')
+    expect(systemPrompt).toContain('Write')
+    expect(systemPrompt).toContain('Bash')
   })
 
-  it('defaults to read_only when permissionLevel is omitted', () => {
-    const { system } = buildWorkerPrompt(
-      { goal: 'Investigate', artifacts: [] },
-      'investigation',
-    )
-    expect(system).toContain('READ-ONLY')
+  it('shows full tools when permissionLevel is full', () => {
+    const input: WorkerPromptInput = { ...baseInput, permissionLevel: 'full' }
+    const { systemPrompt } = buildWorkerPrompts(input)
+    expect(systemPrompt).toContain('full access')
+    expect(systemPrompt).toContain('Task')
   })
 
-  it('includes project context when provided', () => {
-    const { user } = buildWorkerPrompt(
-      { goal: 'Implement', artifacts: [], projectContext: 'All APIs use REST' },
-      'implementation',
-    )
-    expect(user).toContain('All APIs use REST')
-    expect(user).toContain('Project Context')
+  it('defaults to read_only when permissionLevel is unknown', () => {
+    const input: WorkerPromptInput = { ...baseInput, permissionLevel: 'unknown' }
+    const { systemPrompt } = buildWorkerPrompts(input)
+    expect(systemPrompt).toContain('READ-ONLY')
   })
 
-  it('includes examples in scenario detail', () => {
-    const { user } = buildWorkerPrompt(
-      {
-        goal: 'Implement',
-        artifacts: [],
-        scenarioDetail: {
-          id: 'sc-1',
-          stage: 'specified',
-          behavior: 'user can cancel task',
-          mode: 'intended',
-          rules: ['must confirm first'],
-          examples: [{ description: 'cancel pending task', expectedOutcome: 'task is cancelled' }],
-          questions: [
-            { id: 'q1', text: 'What about in-progress?', answer: 'Block cancellation' },
-            { id: 'q2', text: 'Timeout behavior?' },
-          ],
-          constraints: [],
-          seams: [],
-          createdAt: '',
-          updatedAt: '',
-        },
-      },
-      'implementation',
-    )
-    expect(user).toContain('cancel pending task')
-    expect(user).toContain('task is cancelled')
-    expect(user).toContain('**Mode:** intended')
-    expect(user).toContain('**Open questions:** 1')
+  it('includes permission level in user prompt', () => {
+    const { userPrompt } = buildWorkerPrompts(baseInput)
+    expect(userPrompt).toContain('## Permission Level')
+    expect(userPrompt).toContain('read_only')
   })
 
-  it('uses "complete" or "stuck" in output format (not pipe)', () => {
-    const { system } = buildWorkerPrompt(
-      { goal: 'test', artifacts: [] },
-      'investigation',
-    )
-    expect(system).not.toContain('"complete | stuck"')
+  it('includes skill name in system prompt', () => {
+    const { systemPrompt } = buildWorkerPrompts(baseInput)
+    expect(systemPrompt).toContain('investigation')
+  })
+
+  it('mentions plain text output (no JSON needed)', () => {
+    const { systemPrompt } = buildWorkerPrompts(baseInput)
+    expect(systemPrompt).toContain('plain text')
+    expect(systemPrompt).toContain('No JSON')
   })
 })

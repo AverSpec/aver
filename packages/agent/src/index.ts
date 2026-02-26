@@ -29,7 +29,8 @@ export type { Dispatchers, EngineOptions } from './shell/engine.js'
 
 // ── Dispatcher result types (needed to implement custom Dispatchers) ─
 export type { SupervisorResult } from './supervisor/dispatch.js'
-export type { WorkerDispatchResult } from './worker/dispatch.js'
+export type { WorkerDispatchResult, WorkerPromptInput } from './worker/dispatch.js'
+export { buildWorkerPrompts } from './worker/dispatch.js'
 export { DecisionParseError } from './supervisor/decisions.js'
 
 // ── CLI (consumed by @aver/core) ────────────────────────────────────

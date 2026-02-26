@@ -1,20 +1,20 @@
-import type { WorkerInput, ArtifactContent } from '../types.js'
-import type { Scenario } from '@aver/workspace'
-
-interface PromptParts {
-  system: string
-  user: string
+export interface WorkerPromptInput {
+  goal: string
+  observationBlock: string
+  scenarioDetail?: { id: string; name: string; stage: string; questions?: string[]; notes?: string }
+  permissionLevel: string
+  skill: string
 }
 
-export function buildWorkerPrompt(input: WorkerInput, skill: string, skillContent?: string): PromptParts {
-  const system = buildSystemPrompt(skill, skillContent, input.permissionLevel)
-  const user = buildUserPrompt(input)
-  return { system, user }
+export function buildWorkerPrompts(input: WorkerPromptInput, skillContent?: string): { systemPrompt: string; userPrompt: string } {
+  const systemPrompt = buildSystemPrompt(input.skill, input.permissionLevel, skillContent)
+  const userPrompt = buildUserPrompt(input)
+  return { systemPrompt, userPrompt }
 }
 
-function buildSystemPrompt(skill: string, skillContent?: string, permissionLevel?: string): string {
+function buildSystemPrompt(skill: string, permissionLevel: string, skillContent?: string): string {
   const parts: string[] = []
-  const level = permissionLevel ?? 'read_only'
+  const level = permissionLevel || 'read_only'
 
   let toolGuidance: string
   switch (level) {
@@ -31,33 +31,26 @@ function buildSystemPrompt(skill: string, skillContent?: string, permissionLevel
       toolGuidance = 'You have READ-ONLY access. Available tools: Read, Glob, Grep. You cannot modify files or run commands.'
   }
 
-  parts.push(`You are a worker agent for Aver, a domain-driven development platform.
+  parts.push(`You are a focused execution agent with accumulated knowledge.
 
-You have been dispatched to complete a specific goal. ${toolGuidance}
+Your observations are your memory — read them carefully for context from previous work. You have been assigned a specific goal by the supervisor. Your skill focus is: ${skill}.
 
-## Output Format
+${toolGuidance}
 
-When you are done, your final message MUST include a JSON block with your results:
+## How to Work
 
-\`\`\`json
-{
-  "summary": "What you did and what you learned",
-  "artifacts": [
-    {
-      "type": "investigation | seam-analysis | test-snapshot | decision-log",
-      "name": "artifact-name",
-      "summary": "One-line summary",
-      "content": "Full content of the artifact"
-    }
-  ],
-  "scenarioUpdates": [
-    { "scenarioId": "sc-1", "stage": "characterized", "rationale": "reason" }
-  ],
-  "suggestedNext": "What should happen next",
-  "filesChanged": ["path/to/file.ts"],
-  "status": "complete or stuck"
-}
-\`\`\``)
+- Read your observations first to understand what has already been discovered or done.
+- When you discover something important, make it clear in your output.
+- Signal completion or being stuck explicitly in your final message.
+- Write plain text with your findings, decisions, and progress. No JSON structure is needed — the system will compress your output into observations.
+
+## Status Signal
+
+At the end of your work, clearly state one of these on its own line:
+
+  STATUS: complete — you finished your goal
+  STATUS: stuck — you cannot make progress and need help
+  STATUS: continue — you have more work to do`)
 
   if (skillContent) {
     parts.push(skillContent)
@@ -66,50 +59,33 @@ When you are done, your final message MUST include a JSON block with your result
   return parts.join('\n\n')
 }
 
-function buildUserPrompt(input: WorkerInput): string {
+function buildUserPrompt(input: WorkerPromptInput): string {
   const sections: string[] = []
 
   sections.push(`## Goal\n\n${input.goal}`)
 
-  if (input.projectContext) {
-    sections.push(`## Project Context\n\n${input.projectContext}`)
+  if (input.observationBlock) {
+    sections.push(`## Observations\n\n${input.observationBlock}`)
   }
 
   if (input.scenarioDetail) {
-    sections.push(`## Scenario\n\n${formatScenario(input.scenarioDetail)}`)
+    sections.push(`## Scenario\n\n${formatScenarioDetail(input.scenarioDetail)}`)
   }
 
-  if (input.domainVocabulary) {
-    sections.push(`## Domain Vocabulary\n\n${input.domainVocabulary}`)
-  }
-
-  if (input.artifacts.length) {
-    sections.push(`## Context Artifacts\n\n${input.artifacts.map(formatArtifact).join('\n\n---\n\n')}`)
-  }
+  sections.push(`## Permission Level\n\n${input.permissionLevel || 'read_only'}`)
 
   return sections.join('\n\n')
 }
 
-function formatScenario(scenario: Scenario): string {
+function formatScenarioDetail(detail: NonNullable<WorkerPromptInput['scenarioDetail']>): string {
   const parts = [
-    `**Behavior:** ${scenario.behavior}`,
-    `**Stage:** ${scenario.stage}`,
-    `**ID:** ${scenario.id}`,
+    `**ID:** ${detail.id}`,
+    `**Name:** ${detail.name}`,
+    `**Stage:** ${detail.stage}`,
   ]
-  if (scenario.mode) parts.push(`**Mode:** ${scenario.mode}`)
-  if (scenario.context) parts.push(`**Context:** ${scenario.context}`)
-  if (scenario.story) parts.push(`**Story:** ${scenario.story}`)
-  if (scenario.rules.length) parts.push(`**Rules:**\n${scenario.rules.map((r) => `- ${r}`).join('\n')}`)
-  if (scenario.examples.length) {
-    parts.push(`**Examples:**\n${scenario.examples.map((e) => `- ${e.description} → ${e.expectedOutcome}${e.given ? ` (given: ${e.given})` : ''}`).join('\n')}`)
+  if (detail.notes) parts.push(`**Notes:** ${detail.notes}`)
+  if (detail.questions && detail.questions.length > 0) {
+    parts.push(`**Open Questions:**\n${detail.questions.map((q) => `- ${q}`).join('\n')}`)
   }
-  if (scenario.seams.length) parts.push(`**Seams:**\n${scenario.seams.map((s) => `- ${s}`).join('\n')}`)
-  if (scenario.constraints.length) parts.push(`**Constraints:**\n${scenario.constraints.map((c) => `- ${c}`).join('\n')}`)
-  const openQs = scenario.questions.filter((q) => !q.answer).length
-  if (openQs > 0) parts.push(`**Open questions:** ${openQs}`)
   return parts.join('\n')
-}
-
-function formatArtifact(artifact: ArtifactContent): string {
-  return `### ${artifact.name} (${artifact.type})\n\n${artifact.content}`
 }

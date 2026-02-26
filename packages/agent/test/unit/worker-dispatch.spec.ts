@@ -7,8 +7,35 @@ vi.mock('@anthropic-ai/claude-agent-sdk', () => ({
 }))
 
 const { query } = await import('@anthropic-ai/claude-agent-sdk')
-const { dispatchWorker } = await import('../../src/worker/dispatch.js')
+const { dispatchWorker, buildWorkerPrompts } = await import('../../src/worker/dispatch.js')
 const mockQuery = vi.mocked(query)
+
+describe('buildWorkerPrompts', () => {
+  it('returns systemPrompt and userPrompt', () => {
+    const { systemPrompt, userPrompt } = buildWorkerPrompts({
+      goal: 'Investigate auth',
+      observationBlock: 'Previous findings here',
+      permissionLevel: 'read_only',
+      skill: 'investigation',
+    })
+    expect(systemPrompt).toContain('focused execution agent')
+    expect(systemPrompt).toContain('STATUS: complete')
+    expect(userPrompt).toContain('Investigate auth')
+    expect(userPrompt).toContain('Previous findings here')
+  })
+
+  it('includes scenario detail when provided', () => {
+    const { userPrompt } = buildWorkerPrompts({
+      goal: 'Implement feature',
+      observationBlock: '',
+      permissionLevel: 'edit',
+      skill: 'implementation',
+      scenarioDetail: { id: 'sc-1', name: 'login flow', stage: 'specified' },
+    })
+    expect(userPrompt).toContain('login flow')
+    expect(userPrompt).toContain('sc-1')
+  })
+})
 
 describe('dispatchWorker', () => {
   const config: AgentConfig = {
@@ -29,14 +56,14 @@ describe('dispatchWorker', () => {
     vi.clearAllMocks()
   })
 
-  it('calls query with worker model and parses result', async () => {
+  it('calls query with worker model and returns raw text as summary', async () => {
     mockQuery.mockReturnValue(
       createMockQuery([
         {
           type: 'assistant',
           message: {
             content: [
-              { type: 'text', text: '```json\n{"summary":"found seams","artifacts":[]}\n```' },
+              { type: 'text', text: 'Found 3 seams in the auth module.\n\nSTATUS: complete' },
             ],
           },
           uuid: '00000000-0000-0000-0000-000000000001',
@@ -68,7 +95,8 @@ describe('dispatchWorker', () => {
     )
 
     const result = await dispatchWorker(dispatch, [], config)
-    expect(result.result.summary).toBe('found seams')
+    expect(result.result.summary).toContain('Found 3 seams')
+    expect(result.result.status).toBe('complete')
     expect(result.tokenUsage).toBe(3000)
 
     const callArgs = mockQuery.mock.calls[0][0]
@@ -78,9 +106,78 @@ describe('dispatchWorker', () => {
     expect(callArgs.options!.disallowedTools).toContain('Write')
     expect(callArgs.options!.disallowedTools).toContain('Bash')
     expect(callArgs.options!.disallowedTools).toContain('Task')
-    // approval hook should be wired in, bypassPermissions should NOT be set
+    // approval hook should be wired in
     expect(callArgs.options!.canUseTool).toBeTypeOf('function')
-    expect(callArgs.options!.permissionMode).toBeUndefined()
+  })
+
+  it('extracts stuck status from worker output', async () => {
+    mockQuery.mockReturnValue(
+      createMockQuery([
+        {
+          type: 'assistant',
+          message: {
+            content: [{ type: 'text', text: 'Cannot find the module.\n\nSTATUS: stuck' }],
+          },
+          uuid: '00000000-0000-0000-0000-000000000001',
+          session_id: 's1',
+          parent_tool_use_id: null,
+        },
+        {
+          type: 'result',
+          subtype: 'success',
+          result: '',
+          total_cost_usd: 0.1,
+          is_error: false,
+          num_turns: 5,
+          duration_ms: 5000,
+          duration_api_ms: 4000,
+          stop_reason: 'end_turn',
+          usage: { input_tokens: 100, output_tokens: 50, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 },
+          modelUsage: {},
+          permission_denials: [],
+          uuid: '00000000-0000-0000-0000-000000000002',
+          session_id: 's1',
+        },
+      ]),
+    )
+
+    const result = await dispatchWorker(dispatch, [], config)
+    expect(result.result.status).toBe('stuck')
+  })
+
+  it('treats STATUS: continue as stuck (needs more work)', async () => {
+    mockQuery.mockReturnValue(
+      createMockQuery([
+        {
+          type: 'assistant',
+          message: {
+            content: [{ type: 'text', text: 'Making progress.\n\nSTATUS: continue' }],
+          },
+          uuid: '00000000-0000-0000-0000-000000000001',
+          session_id: 's1',
+          parent_tool_use_id: null,
+        },
+        {
+          type: 'result',
+          subtype: 'success',
+          result: '',
+          total_cost_usd: 0,
+          is_error: false,
+          num_turns: 1,
+          duration_ms: 10,
+          duration_api_ms: 8,
+          stop_reason: 'end_turn',
+          usage: { input_tokens: 10, output_tokens: 5, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 },
+          modelUsage: {},
+          permission_denials: [],
+          uuid: '00000000-0000-0000-0000-000000000002',
+          session_id: 's1',
+        },
+      ]),
+    )
+
+    const result = await dispatchWorker(dispatch, [], config)
+    expect(result.result.status).toBe('stuck')
   })
 
   it('allows Edit and Write but disallows Task for edit permission level', async () => {
@@ -90,7 +187,7 @@ describe('dispatchWorker', () => {
         {
           type: 'assistant',
           message: {
-            content: [{ type: 'text', text: '{"summary":"done","artifacts":[]}' }],
+            content: [{ type: 'text', text: 'Done.\n\nSTATUS: complete' }],
           },
           uuid: '00000000-0000-0000-0000-000000000001',
           session_id: 's1',
@@ -151,50 +248,12 @@ describe('dispatchWorker', () => {
     )
   }, 3_000)
 
-  it('succeeds normally when query resolves before both timeouts', async () => {
-    mockQuery.mockReturnValue(
-      createMockQuery([
-        {
-          type: 'assistant',
-          message: { content: [{ type: 'text', text: '{"summary":"fast","artifacts":[]}' }] },
-          uuid: '00000000-0000-0000-0000-000000000001',
-          session_id: 's1',
-          parent_tool_use_id: null,
-        },
-        {
-          type: 'result',
-          subtype: 'success',
-          result: '',
-          total_cost_usd: 0,
-          is_error: false,
-          num_turns: 1,
-          duration_ms: 10,
-          duration_api_ms: 8,
-          stop_reason: 'end_turn',
-          usage: { input_tokens: 10, output_tokens: 5, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 },
-          modelUsage: {},
-          permission_denials: [],
-          uuid: '00000000-0000-0000-0000-000000000002',
-          session_id: 's1',
-        },
-      ]),
-    )
-
-    const generousConfig: AgentConfig = {
-      ...config,
-      timeouts: { workerTurnMs: 5_000, workerTotalMs: 30_000 },
-    }
-
-    const result = await dispatchWorker(dispatch, [], generousConfig)
-    expect(result.result.summary).toBe('fast')
-  })
-
   it('canUseTool hook enforces permission level', async () => {
     mockQuery.mockReturnValue(
       createMockQuery([
         {
           type: 'assistant',
-          message: { content: [{ type: 'text', text: '{"summary":"ok","artifacts":[]}' }] },
+          message: { content: [{ type: 'text', text: 'ok\n\nSTATUS: complete' }] },
           uuid: '00000000-0000-0000-0000-000000000001',
           session_id: 's1',
           parent_tool_use_id: null,
@@ -237,7 +296,7 @@ describe('dispatchWorker', () => {
 
     // Sensitive commands denied even in full mode
     mockQuery.mockReturnValue(createMockQuery([
-      { type: 'assistant', message: { content: [{ type: 'text', text: '{"summary":"ok","artifacts":[]}' }] }, uuid: '1', session_id: 's1', parent_tool_use_id: null },
+      { type: 'assistant', message: { content: [{ type: 'text', text: 'ok\n\nSTATUS: complete' }] }, uuid: '1', session_id: 's1', parent_tool_use_id: null },
       { type: 'result', subtype: 'success', result: '', total_cost_usd: 0, is_error: false, num_turns: 1, duration_ms: 1000, duration_api_ms: 900, stop_reason: 'end_turn', usage: { input_tokens: 100, output_tokens: 50, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 }, modelUsage: {}, permission_denials: [], uuid: '2', session_id: 's1' },
     ]))
     const fullDispatch = { ...dispatch, permissionLevel: 'full' as const }

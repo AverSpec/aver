@@ -1,4 +1,4 @@
-import { WorkspaceStore, WorkspaceOps, type Scenario } from '@aver/workspace'
+import { WorkspaceStore, WorkspaceOps, nextStage, type Scenario } from '@aver/workspace'
 import { verifyAdvancement } from './verification.js'
 import { ContextCurator } from '../memory/curator.js'
 import { SessionStore } from '../memory/session.js'
@@ -186,12 +186,26 @@ export class CycleEngine {
           if (update.stage) {
             const scenario = scenarios.find((s) => s.id === update.scenarioId)
             if (!scenario) continue
-            const verification = verifyAdvancement(scenario, scenario.stage, update.stage)
-            if (verification.blocked) {
+
+            // Advancement always moves one stage at a time. Reject non-adjacent
+            // transitions so the supervisor cannot skip stages and bypass hard blocks.
+            const adjacent = nextStage(scenario.stage)
+            if (adjacent === null || update.stage !== adjacent) {
               await this.logEvent('advancement:blocked', {
                 scenarioId: update.scenarioId,
                 from: scenario.stage,
                 to: update.stage,
+                reason: `Non-adjacent stage transition rejected: ${scenario.stage} -> ${update.stage} (next valid stage is ${adjacent ?? 'none — already implemented'})`,
+              })
+              continue
+            }
+
+            const verification = verifyAdvancement(scenario, scenario.stage, adjacent)
+            if (verification.blocked) {
+              await this.logEvent('advancement:blocked', {
+                scenarioId: update.scenarioId,
+                from: scenario.stage,
+                to: adjacent,
                 reason: verification.hardBlocks[0],
               })
               continue
@@ -200,7 +214,7 @@ export class CycleEngine {
               await this.logEvent('advancement:warning', {
                 scenarioId: update.scenarioId,
                 from: scenario.stage,
-                to: update.stage,
+                to: adjacent,
                 warning,
               })
             }
@@ -213,7 +227,7 @@ export class CycleEngine {
               await this.logEvent('advancement:blocked', {
                 scenarioId: update.scenarioId,
                 from: scenario.stage,
-                to: update.stage,
+                to: adjacent,
                 reason: err instanceof Error ? err.message : String(err),
               })
             }

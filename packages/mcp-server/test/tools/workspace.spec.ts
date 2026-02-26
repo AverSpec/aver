@@ -11,6 +11,7 @@ import {
   addQuestionHandler,
   resolveQuestionHandler,
   linkToDomainHandler,
+  confirmScenarioHandler,
   getWorkflowPhaseHandler,
   getAdvanceCandidatesHandler,
   exportScenariosHandler,
@@ -196,6 +197,17 @@ describe('workspace tool handlers', () => {
       const scenarios = await getScenariosHandler({}, dir, projectId)
       expect(scenarios[0].domainOperation).toBe('Cart.addItem')
       expect(scenarios[0].testNames).toEqual(['adds item to cart'])
+    })
+  })
+
+  describe('confirm_scenario', () => {
+    it('confirms a scenario via confirmScenarioHandler', async () => {
+      const scenario = await captureScenarioHandler({ behavior: 'a' }, dir, projectId)
+      await advanceScenarioHandler({ id: scenario.id, rationale: 'step 1', promotedBy: 'dev' }, dir, projectId)
+      await confirmScenarioHandler({ id: scenario.id, confirmer: 'business-user' }, dir, projectId)
+      const ops = new WorkspaceOps(new WorkspaceStore(dir, projectId))
+      const updated = await ops.getScenario(scenario.id)
+      expect(updated!.confirmedBy).toBe('business-user')
     })
   })
 

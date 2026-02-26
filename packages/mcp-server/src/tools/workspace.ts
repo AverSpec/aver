@@ -143,6 +143,14 @@ export async function linkToDomainHandler(
   await createOps(basePath, projectId).linkToDomain(scenarioId, links)
 }
 
+export async function confirmScenarioHandler(
+  input: { id: string; confirmer: string },
+  basePath: string,
+  projectId: string,
+): Promise<void> {
+  await createOps(basePath, projectId).confirmScenario(input.id, input.confirmer)
+}
+
 export async function getWorkflowPhaseHandler(
   basePath: string,
   projectId: string,
@@ -319,6 +327,21 @@ export function registerWorkspaceTools(server: McpServer, config?: ToolsConfig):
     async (input) => {
       await linkToDomainHandler(input, resolveBasePath(), resolveProjectId())
       return { content: [{ type: 'text' as const, text: JSON.stringify({ success: true }, null, 2) }] }
+    },
+  )
+
+  server.registerTool(
+    'confirm_scenario',
+    {
+      description: 'Confirm a scenario as validated by a human. This is a human-only gate — it sets confirmedBy which is required before advancing from characterized to mapped.',
+      inputSchema: {
+        id: z.string().describe('The ID of the scenario to confirm'),
+        confirmer: z.string().describe('Who is confirming (e.g., "product-owner", "business-analyst")'),
+      },
+    },
+    async (input) => {
+      await confirmScenarioHandler(input, resolveBasePath(), resolveProjectId())
+      return { content: [{ type: 'text' as const, text: JSON.stringify({ confirmed: input.id, by: input.confirmer }) }] }
     },
   )
 

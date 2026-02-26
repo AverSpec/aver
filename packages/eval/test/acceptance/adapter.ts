@@ -1,46 +1,49 @@
-// TODO: rewrite adapter to use AgentNetwork (Task 21)
-// CycleEngine was deleted in Task 16 — this adapter is temporarily stubbed.
-
-import { mkdtempSync } from 'node:fs'
-import { join } from 'node:path'
-import { tmpdir } from 'node:os'
 import { implement, unit } from '@aver/core'
+import { createClient, type Client } from '@libsql/client'
 import { agentEval } from '../../src/domain.js'
 import type { WorkerResult } from '@aver/agent'
-import { WorkspaceStore, WorkspaceOps } from '@aver/workspace'
+import { WorkspaceStore, WorkspaceOps, initWorkspaceSchema } from '@aver/workspace'
 import type { Stage } from '@aver/workspace'
 import { judge } from '../../src/judge.js'
 
 const STAGE_ORDER: Stage[] = ['captured', 'characterized', 'mapped', 'specified', 'implemented']
 
+interface QueuedWorkerResult {
+  result: WorkerResult
+  tokenUsage: number
+}
+
 interface EvalTestContext {
-  dir: string
+  wsClient: Client
   workspaceOps: WorkspaceOps
-  supervisorQueue: unknown[]
-  workerQueue: unknown[]
+  workerQueue: QueuedWorkerResult[]
   lastWorkerResult: WorkerResult | undefined
   totalTokens: number
   seededScenarioId: string | undefined
 }
 
 export const agentEvalAdapter = implement(agentEval, {
-  protocol: unit<EvalTestContext>(() => {
-    const dir = mkdtempSync(join(tmpdir(), 'aver-eval-test-'))
-    const workspacePath = join(dir, 'workspace')
+  protocol: {
+    name: 'unit',
+    async setup(): Promise<EvalTestContext> {
+      const wsClient = createClient({ url: ':memory:' })
+      await initWorkspaceSchema(wsClient)
+      const store = new WorkspaceStore(wsClient, 'test')
+      const workspaceOps = new WorkspaceOps(store)
 
-    const store = new WorkspaceStore(workspacePath, 'test')
-    const workspaceOps = new WorkspaceOps(store)
-
-    return {
-      dir,
-      workspaceOps,
-      supervisorQueue: [],
-      workerQueue: [],
-      lastWorkerResult: undefined,
-      totalTokens: 0,
-      seededScenarioId: undefined,
-    }
-  }),
+      return {
+        wsClient,
+        workspaceOps,
+        workerQueue: [],
+        lastWorkerResult: undefined,
+        totalTokens: 0,
+        seededScenarioId: undefined,
+      }
+    },
+    async teardown(ctx: EvalTestContext) {
+      ctx.wsClient.close()
+    },
+  },
 
   actions: {
     seedScenario: async (ctx, { behavior, stage, context, rules, seams }) => {
@@ -93,14 +96,19 @@ export const agentEvalAdapter = implement(agentEval, {
       })
     },
 
-    runWorker: async (_ctx, { skill: _skill, goal: _goal }) => {
-      // TODO: wire to AgentNetwork (Task 21)
-      throw new Error('TODO: wire to AgentNetwork (Task 21)')
+    runWorker: async (ctx, { skill: _skill, goal: _goal }) => {
+      // Pop the next queued result — simulates a worker dispatch
+      const queued = ctx.workerQueue.shift()
+      if (!queued) {
+        throw new Error('No queued worker result — call queueWorkerResult first')
+      }
+      ctx.lastWorkerResult = queued.result
+      ctx.totalTokens += queued.tokenUsage
     },
 
     runPipeline: async (_ctx, { goal: _goal }) => {
-      // TODO: wire to AgentNetwork (Task 21)
-      throw new Error('TODO: wire to AgentNetwork (Task 21)')
+      // Full pipeline simulation not yet implemented
+      throw new Error('runPipeline not implemented in eval acceptance adapter')
     },
   },
 

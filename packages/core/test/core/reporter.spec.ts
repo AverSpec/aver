@@ -42,7 +42,7 @@ describe('generateJUnitXml', () => {
               time: 0.01,
               failure: {
                 message: 'expected true to be false',
-                body: 'expected true to be false\n\nAction trace:\n  [PASS] AverInit.initProject({"dir":"/tmp/x"})\n  [FAIL] AverInit.initDomain({"dir":"/tmp/x","name":"task"})',
+                body: 'expected true to be false\n\nAction trace:\n  [PASS] ACT    AverInit.initProject({"dir":"/tmp/x"})\n  [FAIL] ACT    AverInit.initDomain({"dir":"/tmp/x","name":"task"})',
               },
             },
           ],
@@ -52,8 +52,10 @@ describe('generateJUnitXml', () => {
 
     expect(xml).toContain('<failure message="expected true to be false">')
     expect(xml).toContain('Action trace:')
-    expect(xml).toContain('[PASS] AverInit.initProject')
-    expect(xml).toContain('[FAIL] AverInit.initDomain')
+    expect(xml).toContain('[PASS] ACT')
+    expect(xml).toContain('AverInit.initProject')
+    expect(xml).toContain('[FAIL] ACT')
+    expect(xml).toContain('AverInit.initDomain')
   })
 
   it('escapes XML special characters', () => {

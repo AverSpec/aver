@@ -154,15 +154,16 @@ import { shoppingCart } from '../domains/shopping-cart'
 
 const { test } = suite(shoppingCart)
 
-test('add item to cart', async ({ given, when, then }) => {
+test('add item to cart', async ({ when, then }) => {
   await when.addItem({ name: 'Widget', qty: 2 })
   await then.hasItems({ count: 1 })
 })
 
 test('calculate total', async ({ given, when, query }) => {
-  await when.addItem({ name: 'Widget', qty: 2 })
+  await given.addItem({ name: 'Widget', qty: 1 })
+  await when.addItem({ name: 'Gadget', qty: 2 })
   const total = await query.cartTotal()
-  expect(total).toBe(19.98)
+  expect(total).toBe(29.97)
 })
 ```
 

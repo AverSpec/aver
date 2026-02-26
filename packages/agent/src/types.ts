@@ -150,6 +150,7 @@ export interface SupervisorInput {
   artifactIndex: ArtifactEntry[]
   userMessage?: string
   workerResults?: WorkerResult[]
+  failedWorkers?: FailedWorker[]
 }
 
 export interface WorkerDispatch {

@@ -126,13 +126,7 @@ describe('EventLog', () => {
   })
 
   it('logs rotation error to console.error when rename fails', async () => {
-    const { spyOn } = await import('vitest')
     const consoleSpy = spyOn(console, 'error').mockImplementation(() => {})
-
-    // Create a scenario where rotation would fail by making a directory unwritable
-    // Mock the rename to throw an error
-    const { rename: originalRename } = await import('node:fs/promises')
-    const { rename: fsPromisesRename } = await import('node:fs/promises')
 
     // Write enough to trigger rotation
     const bigData = 'x'.repeat(1024) // 1KB payload
@@ -146,7 +140,6 @@ describe('EventLog', () => {
     }
     // The rotation should succeed in this normal case; the important thing is
     // that errors are logged. Let's verify the log contains rotated files.
-    const { readdir } = await import('node:fs/promises')
     const files = await readdir(dir)
     const rotated = files.filter(f => f.startsWith('events-') && f.endsWith('.jsonl'))
     expect(rotated.length).toBeGreaterThanOrEqual(1)

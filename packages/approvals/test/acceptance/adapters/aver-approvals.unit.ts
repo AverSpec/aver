@@ -76,10 +76,18 @@ export const averApprovalsAdapter = implement(averApprovals, {
       session.lastError = undefined
       session.lastApprovalName = name ?? 'approval'
       try {
-        await approve(value, {
-          name,
-          filePath: join(session.workDir, 'tests', 'test.spec.ts'),
+        const context = {
           testName: 'approval-test',
+          domainName: 'AverApprovals',
+          protocolName: 'unit',
+          trace: session.trace,
+        }
+        await runWithTestContext(context, async () => {
+          await approve(value, {
+            name,
+            filePath: join(session.workDir, 'tests', 'test.spec.ts'),
+            testName: 'approval-test',
+          })
         })
       } catch (e: any) {
         session.lastError = e

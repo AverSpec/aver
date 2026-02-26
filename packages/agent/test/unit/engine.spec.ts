@@ -242,7 +242,7 @@ describe('CycleEngine', () => {
       decision: {
         action: {
           type: 'dispatch_worker',
-          worker: { goal: 'work', artifacts: [], skill: 'tdd-loop', allowUserQuestions: false, permissionLevel: 'edit' },
+          worker: { goal: 'work', artifacts: [], skill: 'implementation', allowUserQuestions: false, permissionLevel: 'edit' },
         },
       },
       tokenUsage: 150,
@@ -357,7 +357,7 @@ describe('CycleEngine', () => {
       decision: {
         action: {
           type: 'dispatch_worker',
-          worker: { goal: 'work', artifacts: [], skill: 'tdd-loop', allowUserQuestions: false, permissionLevel: 'edit' },
+          worker: { goal: 'work', artifacts: [], skill: 'implementation', allowUserQuestions: false, permissionLevel: 'edit' },
         },
       },
       tokenUsage: 100,
@@ -526,7 +526,7 @@ describe('CycleEngine', () => {
           worker: {
             goal: 'implement feature',
             artifacts: [],
-            skill: 'tdd-loop',
+            skill: 'implementation',
             allowUserQuestions: false,
             permissionLevel: 'edit',
             scenarioId: scenario.id,

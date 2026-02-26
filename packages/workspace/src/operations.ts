@@ -2,9 +2,9 @@ import { randomUUID } from 'node:crypto'
 import { createScenario, type Scenario, type Stage, type Question } from './types.js'
 import type { WorkspaceStore } from './storage.js'
 
-const STAGE_ORDER: Stage[] = ['captured', 'characterized', 'mapped', 'specified', 'implemented']
+export const STAGE_ORDER: Stage[] = ['captured', 'characterized', 'mapped', 'specified', 'implemented']
 
-function nextStage(current: Stage): Stage | null {
+export function nextStage(current: Stage): Stage | null {
   const idx = STAGE_ORDER.indexOf(current)
   return idx < STAGE_ORDER.length - 1 ? STAGE_ORDER[idx + 1] : null
 }

@@ -218,22 +218,6 @@ describe('Scenario Pipeline', () => {
     })
 
     test('implemented without domain link stays in implementation phase', async ({ given, when, then, query }) => {
-      await given.captureScenario({ behavior: 'no link yet' })
-      const id = await query.lastCapturedId()
-      await given.advanceScenario({ id, rationale: 'r', promotedBy: 'p' })
-      await given.setConfirmedBy({ id, confirmer: 'user' })
-      await given.advanceScenario({ id, rationale: 'r', promotedBy: 'p' })
-      await given.advanceScenario({ id, rationale: 'r', promotedBy: 'p' })
-      await given.linkToDomain({ scenarioId: id, domainOperation: 'Test.op' })
-      await given.advanceScenario({ id, rationale: 'r', promotedBy: 'p' })
-      // Now remove link to test the implementation phase detection
-      // Actually we can't remove a link. But the domainOperation is set, so it's in verification.
-      // Let's test with a scenario that has no domainOperation set
-      // The advanceToStage helper sets it. So let's just test a different scenario.
-      await then.workflowPhaseIs({ phase: 'verification' })
-    })
-
-    test('implemented without domain link stays in implementation phase', async ({ given, when, then, query }) => {
       // Scenario: A scenario at "specified" stage (not yet implemented) still needs domain links.
       // This tests the "implementation" phase detection which includes both specified and
       // implemented-without-links scenarios (though the latter is technically impossible due to

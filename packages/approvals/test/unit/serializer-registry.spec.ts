@@ -84,4 +84,49 @@ describe('serializer registry', () => {
     expect(s.normalize).toBeDefined()
     expect(s.normalize!('  hello  ')).toBe('hello')
   })
+
+  it('json serializer throws with descriptive error for circular references', () => {
+    const obj: Record<string, unknown> = { a: 1 }
+    obj.self = obj // Create circular reference
+
+    const s = resolveSerializer('json')
+    expect(() => s.serialize(obj)).toThrow(
+      'Cannot serialize: circular reference detected',
+    )
+  })
+
+  it('json serializer throws with descriptive error for BigInt values', () => {
+    const obj = { value: BigInt(12345) }
+
+    const s = resolveSerializer('json')
+    expect(() => s.serialize(obj)).toThrow(
+      'Cannot serialize: BigInt values are not supported',
+    )
+  })
+
+  it('json serializer handles nested circular references', () => {
+    const inner: Record<string, unknown> = { b: 2 }
+    const outer: Record<string, unknown> = { a: inner }
+    inner.parent = outer // Create circular reference
+
+    const s = resolveSerializer('json')
+    expect(() => s.serialize(outer)).toThrow(
+      'Cannot serialize: circular reference detected',
+    )
+  })
+
+  it('json serializer handles BigInt in nested objects', () => {
+    const obj = {
+      data: {
+        nested: {
+          value: BigInt(999),
+        },
+      },
+    }
+
+    const s = resolveSerializer('json')
+    expect(() => s.serialize(obj)).toThrow(
+      'Cannot serialize: BigInt values are not supported',
+    )
+  })
 })

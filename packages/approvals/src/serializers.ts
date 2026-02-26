@@ -48,18 +48,39 @@ export function resolveSerializer(name: SerializerName): Serializer {
 }
 
 function stableStringify(value: unknown): string {
-  return JSON.stringify(sortValue(value), null, 2) + '\n'
+  try {
+    return JSON.stringify(sortValue(value), null, 2) + '\n'
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    if (message.includes('circular') || message.includes('Converting circular')) {
+      throw new Error('Cannot serialize: circular reference detected')
+    }
+    throw error
+  }
 }
 
-function sortValue(value: unknown): unknown {
+function sortValue(value: unknown, seen = new WeakSet<object>()): unknown {
+  // Check for BigInt
+  if (typeof value === 'bigint') {
+    throw new Error('Cannot serialize: BigInt values are not supported')
+  }
+
+  // Check for circular references
+  if (value && typeof value === 'object') {
+    if (seen.has(value)) {
+      throw new Error('Cannot serialize: circular reference detected')
+    }
+    seen.add(value)
+  }
+
   if (Array.isArray(value)) {
-    return value.map(sortValue)
+    return value.map((item) => sortValue(item, seen))
   }
   if (value && typeof value === 'object') {
     const obj = value as Record<string, unknown>
     const result: Record<string, unknown> = {}
     for (const key of Object.keys(obj).sort()) {
-      result[key] = sortValue(obj[key])
+      result[key] = sortValue(obj[key], seen)
     }
     return result
   }

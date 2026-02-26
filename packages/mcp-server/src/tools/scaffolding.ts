@@ -28,13 +28,6 @@ function toCamelCase(str: string): string {
     .replace(/[^a-z0-9]+(.)/g, (_, chr) => chr.toUpperCase())
 }
 
-function toKebabCase(str: string): string {
-  return str
-    .replace(/([a-z])([A-Z])/g, '$1-$2')
-    .replace(/([A-Z])([A-Z][a-z])/g, '$1-$2')
-    .toLowerCase()
-}
-
 export function describeDomainStructureHandler(description: string): DomainStructure {
   const suggestedName = toCamelCase(description)
 

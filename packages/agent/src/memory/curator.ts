@@ -9,6 +9,7 @@ import type {
   SupervisorInput,
   WorkspaceSnapshot,
   WorkerResult,
+  FailedWorker,
   ArtifactContent,
   NewArtifact,
   AgentEvent,
@@ -24,6 +25,7 @@ interface BuildInputOptions {
   workspace: WorkspaceSnapshot
   userMessage?: string
   workerResults?: WorkerResult[]
+  failedWorkers?: FailedWorker[]
 }
 
 export class ContextCurator {
@@ -83,6 +85,7 @@ export class ContextCurator {
       artifactIndex,
       userMessage: options.userMessage,
       workerResults: options.workerResults,
+      failedWorkers: options.failedWorkers,
     }
   }
 

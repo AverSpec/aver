@@ -53,7 +53,7 @@ describe('extractJson', () => {
         worker: {
           goal: 'Fix the {config} parser in src/{utils}.ts',
           artifacts: [],
-          skill: 'tdd-loop',
+          skill: 'implementation',
         },
       },
       messageToUser: 'Working on {issue #42}',

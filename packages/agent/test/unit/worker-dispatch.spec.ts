@@ -84,7 +84,7 @@ describe('dispatchWorker', () => {
   })
 
   it('allows Edit and Write but disallows Task for edit permission level', async () => {
-    const editDispatch = { ...dispatch, permissionLevel: 'edit' as const, skill: 'tdd-loop' }
+    const editDispatch = { ...dispatch, permissionLevel: 'edit' as const, skill: 'implementation' }
     mockQuery.mockReturnValue(
       createMockQuery([
         {

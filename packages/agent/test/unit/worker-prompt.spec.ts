@@ -14,7 +14,7 @@ describe('buildWorkerPrompt', () => {
   it('includes skill content when provided', () => {
     const { system } = buildWorkerPrompt(
       { goal: 'Implement feature', artifacts: [] },
-      'tdd-loop',
+      'implementation',
       '## TDD Loop\n\nMake the test pass.',
     )
     expect(system).toContain('TDD Loop')
@@ -24,7 +24,7 @@ describe('buildWorkerPrompt', () => {
   it('omits skill section when skillContent is undefined', () => {
     const { system } = buildWorkerPrompt(
       { goal: 'Implement feature', artifacts: [] },
-      'tdd-loop',
+      'implementation',
     )
     expect(system).toContain('worker agent for Aver')
     expect(system).not.toContain('TDD')
@@ -36,7 +36,7 @@ describe('buildWorkerPrompt', () => {
         goal: 'Implement auth',
         artifacts: [{ name: 'inv-auth', type: 'investigation', summary: 'auth inv', content: 'Found 3 seams', createdAt: '' }],
       },
-      'tdd-loop',
+      'implementation',
     )
     expect(user).toContain('Found 3 seams')
   })
@@ -59,7 +59,7 @@ describe('buildWorkerPrompt', () => {
           updatedAt: '',
         },
       },
-      'tdd-loop',
+      'implementation',
     )
     expect(user).toContain('user can cancel task')
     expect(user).toContain('TaskService.update')
@@ -90,7 +90,7 @@ describe('buildWorkerPrompt', () => {
   it('shows edit tools when permissionLevel is edit', () => {
     const { system } = buildWorkerPrompt(
       { goal: 'Implement', artifacts: [], permissionLevel: 'edit' },
-      'tdd-loop',
+      'implementation',
     )
     expect(system).toContain('Edit')
     expect(system).toContain('Write')
@@ -108,7 +108,7 @@ describe('buildWorkerPrompt', () => {
   it('includes project context when provided', () => {
     const { user } = buildWorkerPrompt(
       { goal: 'Implement', artifacts: [], projectContext: 'All APIs use REST' },
-      'tdd-loop',
+      'implementation',
     )
     expect(user).toContain('All APIs use REST')
     expect(user).toContain('Project Context')
@@ -136,7 +136,7 @@ describe('buildWorkerPrompt', () => {
           updatedAt: '',
         },
       },
-      'tdd-loop',
+      'implementation',
     )
     expect(user).toContain('cancel pending task')
     expect(user).toContain('task is cancelled')

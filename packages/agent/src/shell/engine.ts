@@ -1,4 +1,4 @@
-import { WorkspaceStore, WorkspaceOps, type Scenario } from '@aver/workspace'
+import { WorkspaceStore, WorkspaceOps, nextStage, type Scenario } from '@aver/workspace'
 import { verifyAdvancement } from './verification.js'
 import { ContextCurator } from '../memory/curator.js'
 import { SessionStore } from '../memory/session.js'
@@ -44,6 +44,7 @@ export class CycleEngine {
   private readonly onMessage: (message: string) => void
   private readonly onQuestion?: (question: string, options?: string[]) => Promise<string>
   private readonly maxCycleDepth: number
+  private cachedCycleCount: number = 0
 
   constructor(options: EngineOptions) {
     this.sessionStore = new SessionStore(options.agentPath)
@@ -62,11 +63,16 @@ export class CycleEngine {
   }
 
   async start(goal: string): Promise<void> {
-    await this.sessionStore.create(goal)
+    const session = await this.sessionStore.create(goal)
+    this.cachedCycleCount = session.cycleCount
     await this.runCycle('startup', goal, undefined, 0)
   }
 
   async resume(userMessage: string): Promise<void> {
+    const session = await this.sessionStore.load()
+    if (session) {
+      this.cachedCycleCount = session.cycleCount
+    }
     await this.runCycle('user_message', userMessage, undefined, 0)
   }
 
@@ -122,6 +128,7 @@ export class CycleEngine {
     }
 
     await this.sessionStore.recordCycleCompletion(tokenUsage)
+    this.cachedCycleCount += 1
 
     if (decision.messageToUser) {
       this.onMessage(decision.messageToUser)
@@ -316,11 +323,10 @@ export class CycleEngine {
   }
 
   private async logEvent(type: AgentEvent['type'], data: Record<string, unknown>): Promise<void> {
-    const session = await this.sessionStore.load()
     await this.curator.logEvent({
       timestamp: new Date().toISOString(),
       type,
-      cycleId: `cycle-${session?.cycleCount ?? 0}`,
+      cycleId: `cycle-${this.cachedCycleCount}`,
       data,
     })
   }

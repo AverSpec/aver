@@ -4,20 +4,20 @@ import { averTuiAdapter } from './tui-adapter.js'
 
 const { test } = suite(AverTui, averTuiAdapter)
 
-test('starts in awaiting_goal phase', async ({ assert }) => {
-  await assert.phaseIs({ phase: 'awaiting_goal' })
-  await assert.hasNoPendingQuestion()
+test('starts in awaiting_goal phase', async ({ then }) => {
+  await then.phaseIs({ phase: 'awaiting_goal' })
+  await then.hasNoPendingQuestion()
 })
 
-test('transitions phase from awaiting_goal to running to stopped', async ({ act, assert }) => {
+test('transitions phase from awaiting_goal to running to stopped', async ({ act, then }) => {
   await act.changePhase({ phase: 'running' })
-  await assert.phaseIs({ phase: 'running' })
+  await then.phaseIs({ phase: 'running' })
 
   await act.changePhase({ phase: 'stopped' })
-  await assert.phaseIs({ phase: 'stopped' })
+  await then.phaseIs({ phase: 'stopped' })
 })
 
-test('worker:dispatch event creates a running worker', async ({ act, assert }) => {
+test('worker:dispatch event creates a running worker', async ({ act, then }) => {
   await act.dispatchEvent({
     event: {
       timestamp: '2026-01-01T00:00:00Z',
@@ -26,11 +26,11 @@ test('worker:dispatch event creates a running worker', async ({ act, assert }) =
       data: { goal: 'Investigate auth', skill: 'investigation', permissionLevel: 'read_only' },
     },
   })
-  await assert.hasWorkerWithGoal({ goal: 'Investigate auth' })
-  await assert.workerStatusIs({ goal: 'Investigate auth', status: 'running' })
+  await then.hasWorkerWithGoal({ goal: 'Investigate auth' })
+  await then.workerStatusIs({ goal: 'Investigate auth', status: 'running' })
 })
 
-test('worker:result event completes a running worker', async ({ act, query, assert }) => {
+test('worker:result event completes a running worker', async ({ act, query, then }) => {
   await act.dispatchEvent({
     event: {
       timestamp: '2026-01-01T00:00:00Z',
@@ -47,12 +47,12 @@ test('worker:result event completes a running worker', async ({ act, query, asse
       data: { summary: 'Found 3 rules', status: 'complete' },
     },
   })
-  await assert.workerStatusIs({ goal: 'Map rules', status: 'complete' })
+  await then.workerStatusIs({ goal: 'Map rules', status: 'complete' })
   const running = await query.workersWithStatus({ status: 'running' })
   expect(running).toHaveLength(0)
 })
 
-test('worker:result with stuck status marks worker as stuck', async ({ act, assert }) => {
+test('worker:result with stuck status marks worker as stuck', async ({ act, then }) => {
   await act.dispatchEvent({
     event: {
       timestamp: '2026-01-01T00:00:00Z',
@@ -69,7 +69,7 @@ test('worker:result with stuck status marks worker as stuck', async ({ act, asse
       data: { summary: 'Blocked on missing context', status: 'stuck' },
     },
   })
-  await assert.workerStatusIs({ goal: 'Trace boundaries', status: 'stuck' })
+  await then.workerStatusIs({ goal: 'Trace boundaries', status: 'stuck' })
 })
 
 test('tracks multiple workers with mixed statuses', async ({ act, query }) => {
@@ -114,7 +114,7 @@ test('tracks multiple workers with mixed statuses', async ({ act, query }) => {
   expect(complete).toHaveLength(2)
 })
 
-test('syncs scenarios with progress counts', async ({ act, query, assert }) => {
+test('syncs scenarios with progress counts', async ({ act, query, then }) => {
   await act.updateScenarios({
     scenarios: [
       { id: 'sc-1', stage: 'captured', behavior: 'user login' },
@@ -123,34 +123,34 @@ test('syncs scenarios with progress counts', async ({ act, query, assert }) => {
     ],
   })
 
-  await assert.scenarioCountIs({ count: 3 })
+  await then.scenarioCountIs({ count: 3 })
   const implemented = await query.implementedCount()
   expect(implemented).toBe(1)
 })
 
-test('shows pending question when received', async ({ act, assert }) => {
+test('shows pending question when received', async ({ act, then }) => {
   await act.receiveQuestion({ id: 'q-1', question: 'Which module?', options: ['auth', 'payments'] })
-  await assert.questionTextIs({ text: 'Which module?' })
+  await then.questionTextIs({ text: 'Which module?' })
 })
 
-test('clears pending question when answered', async ({ act, assert }) => {
+test('clears pending question when answered', async ({ act, then }) => {
   await act.receiveQuestion({ id: 'q-1', question: 'Split auth?' })
-  await assert.questionTextIs({ text: 'Split auth?' })
+  await then.questionTextIs({ text: 'Split auth?' })
 
   await act.answerQuestion({ questionId: 'q-1' })
-  await assert.hasNoPendingQuestion()
+  await then.hasNoPendingQuestion()
 })
 
-test('promotes queued question after answering current', async ({ act, query, assert }) => {
+test('promotes queued question after answering current', async ({ act, query, then }) => {
   await act.receiveQuestion({ id: 'q-1', question: 'First question?' })
   await act.receiveQuestion({ id: 'q-2', question: 'Second question?' })
 
-  await assert.questionTextIs({ text: 'First question?' })
+  await then.questionTextIs({ text: 'First question?' })
   const queueLen = await query.questionQueueLength()
   expect(queueLen).toBe(1)
 
   await act.answerQuestion({ questionId: 'q-1' })
-  await assert.questionTextIs({ text: 'Second question?' })
+  await then.questionTextIs({ text: 'Second question?' })
   const afterLen = await query.questionQueueLength()
   expect(afterLen).toBe(0)
 })

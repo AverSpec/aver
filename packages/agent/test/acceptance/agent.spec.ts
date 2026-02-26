@@ -2,18 +2,18 @@ import { suite } from '@aver/core'
 import { AverAgent } from '../../src/domain.js'
 import { averAgentAdapter } from './adapter.js'
 
-const { test, act, query, assert } = suite(AverAgent, averAgentAdapter)
+const { test, act, query, then } = suite(AverAgent, averAgentAdapter)
 
-test('stops immediately when supervisor says stop', async ({ act, query, assert }) => {
+test('stops immediately when supervisor says stop', async ({ act, query, then }) => {
   await act.queueSupervisorDecision({
     decision: { action: { type: 'stop', reason: 'nothing to do' } },
     tokenUsage: 100,
   })
   await act.startSession({ goal: 'investigate auth' })
-  await assert.sessionStopped()
+  await then.sessionStopped()
 })
 
-test('records session goal', async ({ act, query, assert }) => {
+test('records session goal', async ({ act, query, then }) => {
   await act.queueSupervisorDecision({
     decision: { action: { type: 'stop', reason: 'done' } },
     tokenUsage: 0,
@@ -23,7 +23,7 @@ test('records session goal', async ({ act, query, assert }) => {
   expect(goal).toBe('refactor login flow')
 })
 
-test('dispatches single worker and persists artifact', async ({ act, query, assert }) => {
+test('dispatches single worker and persists artifact', async ({ act, query, then }) => {
   await act.queueSupervisorDecision({
     decision: {
       action: {
@@ -57,11 +57,11 @@ test('dispatches single worker and persists artifact', async ({ act, query, asse
     tokenUsage: 50,
   })
   await act.startSession({ goal: 'investigate auth' })
-  await assert.sessionStopped()
-  await assert.artifactExists({ name: 'findings' })
+  await then.sessionStopped()
+  await then.artifactExists({ name: 'findings' })
 })
 
-test('dispatches parallel workers', async ({ act, query, assert }) => {
+test('dispatches parallel workers', async ({ act, query, then }) => {
   await act.queueSupervisorDecision({
     decision: {
       action: {
@@ -99,12 +99,12 @@ test('dispatches parallel workers', async ({ act, query, assert }) => {
     tokenUsage: 50,
   })
   await act.startSession({ goal: 'parallel investigation' })
-  await assert.sessionStopped()
+  await then.sessionStopped()
   const workers = await query.workerCount()
   expect(workers).toBe(2)
 })
 
-test('pauses on ask_user without onQuestion', async ({ act, query, assert }) => {
+test('pauses on ask_user without onQuestion', async ({ act, query, then }) => {
   await act.queueSupervisorDecision({
     decision: {
       action: {
@@ -116,10 +116,10 @@ test('pauses on ask_user without onQuestion', async ({ act, query, assert }) => 
     tokenUsage: 80,
   })
   await act.startSession({ goal: 'investigate system' })
-  await assert.sessionPaused()
+  await then.sessionPaused()
 })
 
-test('resumes from paused state', async ({ act, query, assert }) => {
+test('resumes from paused state', async ({ act, query, then }) => {
   await act.queueSupervisorDecision({
     decision: {
       action: {
@@ -130,17 +130,17 @@ test('resumes from paused state', async ({ act, query, assert }) => {
     tokenUsage: 80,
   })
   await act.startSession({ goal: 'investigate system' })
-  await assert.sessionPaused()
+  await then.sessionPaused()
 
   await act.queueSupervisorDecision({
     decision: { action: { type: 'stop', reason: 'user answered' } },
     tokenUsage: 50,
   })
   await act.resumeSession({ answer: 'auth module' })
-  await assert.sessionStopped()
+  await then.sessionStopped()
 })
 
-test('handles checkpoint and continues', async ({ act, query, assert }) => {
+test('handles checkpoint and continues', async ({ act, query, then }) => {
   await act.queueSupervisorDecision({
     decision: {
       action: {
@@ -155,10 +155,10 @@ test('handles checkpoint and continues', async ({ act, query, assert }) => {
     tokenUsage: 50,
   })
   await act.startSession({ goal: 'deep investigation' })
-  await assert.sessionStopped()
+  await then.sessionStopped()
 })
 
-test('handles complete_story and continues', async ({ act, query, assert }) => {
+test('handles complete_story and continues', async ({ act, query, then }) => {
   await act.queueSupervisorDecision({
     decision: {
       action: {
@@ -175,10 +175,10 @@ test('handles complete_story and continues', async ({ act, query, assert }) => {
     tokenUsage: 50,
   })
   await act.startSession({ goal: 'complete auth story' })
-  await assert.sessionStopped()
+  await then.sessionStopped()
 })
 
-test('accumulates supervisor token usage across cycles', async ({ act, query, assert }) => {
+test('accumulates supervisor token usage across cycles', async ({ act, query, then }) => {
   await act.queueSupervisorDecision({
     decision: {
       action: {
@@ -207,7 +207,7 @@ test('accumulates supervisor token usage across cycles', async ({ act, query, as
   expect(usage.supervisor).toBe(250)
 })
 
-test('accumulates worker token usage', async ({ act, query, assert }) => {
+test('accumulates worker token usage', async ({ act, query, then }) => {
   await act.queueSupervisorDecision({
     decision: {
       action: {
@@ -236,7 +236,7 @@ test('accumulates worker token usage', async ({ act, query, assert }) => {
   expect(usage.worker).toBe(800)
 })
 
-test('delivers messageToUser via onMessage', async ({ act, query, assert }) => {
+test('delivers messageToUser via onMessage', async ({ act, query, then }) => {
   await act.queueSupervisorDecision({
     decision: {
       action: { type: 'stop', reason: 'done' },
@@ -245,10 +245,10 @@ test('delivers messageToUser via onMessage', async ({ act, query, assert }) => {
     tokenUsage: 100,
   })
   await act.startSession({ goal: 'messaging test' })
-  await assert.messageReceived({ text: 'Progress update' })
+  await then.messageReceived({ text: 'Progress update' })
 })
 
-test('persists artifact content readable via query', async ({ act, query, assert }) => {
+test('persists artifact content readable via query', async ({ act, query, then }) => {
   await act.queueSupervisorDecision({
     decision: {
       action: {
@@ -286,7 +286,7 @@ test('persists artifact content readable via query', async ({ act, query, assert
   expect(content).toBe('# Auth Investigation\n\nOAuth2 flow has a bug.')
 })
 
-test('records correct cycle and worker counts', async ({ act, query, assert }) => {
+test('records correct cycle and worker counts', async ({ act, query, then }) => {
   await act.queueSupervisorDecision({
     decision: {
       action: {

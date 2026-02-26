@@ -14,8 +14,8 @@
 import { describe, it, expect } from 'vitest'
 import { verifyAdvancement } from '../../src/shell/verification.js'
 import { buildSupervisorPrompt } from '../../src/supervisor/prompt.js'
+import type { SupervisorPromptInput } from '../../src/supervisor/prompt.js'
 import type { Scenario } from '@aver/workspace'
-import type { SupervisorInput } from '../../src/types.js'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -38,14 +38,12 @@ function makeScenario(overrides: Partial<Scenario> = {}): Scenario {
   }
 }
 
-const baseInput: SupervisorInput = {
-  trigger: 'startup',
+const baseInput: SupervisorPromptInput = {
   projectContext: '',
-  workspace: { projectId: 'sync-test', scenarios: [], createdAt: '', updatedAt: '' },
-  checkpointChain: [],
-  recentEvents: [],
-  storySummaries: [],
-  artifactIndex: [],
+  observations: '',
+  scenarios: [],
+  activeWorkers: [],
+  triggers: [{ type: 'session:start' as const, timestamp: new Date().toISOString() }],
 }
 
 /**

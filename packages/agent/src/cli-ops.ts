@@ -1,22 +1,17 @@
-import { SessionStore } from './memory/session.js'
-import { EventLog } from './memory/events.js'
+// TODO: wire to AgentNetwork — old memory/session and memory/events deleted in Task 16
 import type { AgentSession, AgentEvent } from './types.js'
 
-export async function loadSession(agentPath: string): Promise<AgentSession | undefined> {
-  const store = new SessionStore(agentPath)
-  return store.load()
+export async function loadSession(_agentPath: string): Promise<AgentSession | undefined> {
+  // TODO: wire to AgentNetwork (Task 19) — use db/session-store via database client
+  return undefined
 }
 
-export async function readEvents(agentPath: string): Promise<AgentEvent[]> {
-  const log = new EventLog(agentPath)
-  return log.readAll()
+export async function readEvents(_agentPath: string): Promise<AgentEvent[]> {
+  // TODO: wire to AgentNetwork (Task 19) — use db/event-store via database client
+  return []
 }
 
-export async function requestStop(agentPath: string): Promise<void> {
-  const store = new SessionStore(agentPath)
-  const session = await store.load()
-  if (!session) {
-    throw new Error('No active session to stop')
-  }
-  await store.updateStatus('stopped')
+export async function requestStop(_agentPath: string): Promise<void> {
+  // TODO: wire to AgentNetwork (Task 19) — use db/session-store via database client
+  throw new Error('Not yet wired to AgentNetwork')
 }

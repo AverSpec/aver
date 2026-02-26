@@ -23,10 +23,6 @@ export type {
 
 export { DEFAULT_CONFIG } from './types.js'
 
-// ── Engine (main entry point) ───────────────────────────────────────
-export { CycleEngine } from './shell/engine.js'
-export type { Dispatchers, EngineOptions } from './shell/engine.js'
-
 // ── Dispatcher result types (needed to implement custom Dispatchers) ─
 export type { SupervisorResult, SupervisorPromptInput, ActiveWorkerInfo } from './supervisor/dispatch.js'
 export { buildPrompts as buildSupervisorPrompts } from './supervisor/dispatch.js'

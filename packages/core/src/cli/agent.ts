@@ -65,89 +65,9 @@ async function runStart(goal?: string): Promise<void> {
     process.exit(1)
   }
 
-  const { CycleEngine } = await import('@aver/agent')
-  const { createInterface } = await import('node:readline')
-
-  const isInteractive = process.stdin.isTTY === true
-  const rl = isInteractive
-    ? createInterface({ input: process.stdin, output: process.stdout })
-    : undefined
-
-  const onQuestion = async (question: string, options?: string[]): Promise<string> => {
-    if (!rl) {
-      const answer = options?.length ? options[0] : 'proceed'
-      console.log(`\n[non-interactive] ${question} -> auto: ${answer}`)
-      return answer
-    }
-    let prompt = `\n${question}\n`
-    if (options?.length) {
-      options.forEach((opt, i) => {
-        prompt += `  ${i + 1}. ${opt}\n`
-      })
-      prompt += 'Your choice (number or text): '
-    } else {
-      prompt += 'Your answer: '
-    }
-    return new Promise((resolve) => {
-      rl.question(prompt, (answer) => {
-        if (options?.length) {
-          const idx = parseInt(answer, 10)
-          if (idx >= 1 && idx <= options.length) {
-            resolve(options[idx - 1])
-            return
-          }
-        }
-        resolve(answer)
-      })
-    })
-  }
-
-  const engine = new CycleEngine({
-    agentPath,
-    workspacePath,
-    projectId,
-    config,
-    onMessage: (message: string) => {
-      console.log(`\n${message}`)
-    },
-    onQuestion,
-  })
-
-  process.on('SIGINT', async () => {
-    console.log('\n\nGracefully stopping agent...')
-    const { requestStop } = await import('@aver/agent')
-    try {
-      await requestStop(agentPath)
-    } catch {
-      // Session may already be stopped
-    }
-    rl?.close()
-    process.exit(0)
-  })
-
-  console.log(`Starting aver agent...`)
-  console.log(`  Goal: ${goal}`)
-  console.log(`  Supervisor: ${config.model.supervisor}`)
-  console.log(`  Worker: ${config.model.worker}`)
-  console.log(`  Project: ${projectId}`)
-  console.log()
-
-  try {
-    await engine.start(goal)
-    const session = await engine.getSession()
-    console.log(`\nAgent session complete.`)
-    if (session) {
-      console.log(`  Status: ${session.status}`)
-      console.log(`  Cycles: ${session.cycleCount}`)
-      console.log(`  Workers: ${session.workerCount}`)
-      console.log(`  Tokens: supervisor=${session.tokenUsage.supervisor}, worker=${session.tokenUsage.worker}`)
-    }
-  } catch (err) {
-    console.error(`\nAgent error: ${err instanceof Error ? err.message : String(err)}`)
-    process.exit(1)
-  } finally {
-    rl?.close()
-  }
+  // TODO: wire to AgentNetwork (Task 19) — CycleEngine deleted in Task 16
+  console.error('Plain-text agent mode not yet wired to AgentNetwork. Use TUI mode or wait for Task 19.')
+  process.exit(1)
 }
 
 async function runStop(): Promise<void> {

@@ -68,7 +68,7 @@ export class SessionStore {
     fields: Partial<Pick<Session, 'status' | 'tokenUsage'>>,
   ): Promise<void> {
     const updates: string[] = []
-    const args: unknown[] = []
+    const args: string[] = []
 
     if (fields.status !== undefined) {
       updates.push('status = ?')

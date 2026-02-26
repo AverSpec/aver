@@ -5,25 +5,17 @@ import { join } from 'node:path'
 import type { AgentConfig } from '../../src/types.js'
 import { WorkspaceStore, WorkspaceOps } from '@aver/workspace'
 import { EventLog } from '../../src/memory/events.js'
-
-// Mock dispatch functions
-vi.mock('../../src/supervisor/dispatch.js', () => ({
-  dispatchSupervisor: vi.fn(),
-}))
-vi.mock('../../src/worker/dispatch.js', () => ({
-  dispatchWorker: vi.fn(),
-}))
-
 import { CycleEngine } from '../../src/shell/engine.js'
-import { dispatchSupervisor } from '../../src/supervisor/dispatch.js'
-import { dispatchWorker } from '../../src/worker/dispatch.js'
-
-const mockSupervisor = vi.mocked(dispatchSupervisor)
-const mockWorker = vi.mocked(dispatchWorker)
+import type { Dispatchers } from '../../src/shell/engine.js'
 
 describe('CycleEngine', () => {
   let dir: string
   let config: AgentConfig
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let mockSupervisor: ReturnType<typeof vi.fn<any[], any>>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let mockWorker: ReturnType<typeof vi.fn<any[], any>>
+  let dispatchers: Dispatchers
 
   beforeEach(async () => {
     dir = await mkdtemp(join(tmpdir(), 'aver-engine-'))
@@ -32,11 +24,16 @@ describe('CycleEngine', () => {
       cycles: { checkpointInterval: 10, rollupThreshold: 3, maxWorkerIterations: 15 },
       dashboard: { port: 4700 },
     }
+    mockSupervisor = vi.fn()
+    mockWorker = vi.fn()
+    dispatchers = {
+      supervisor: mockSupervisor as unknown as Dispatchers['supervisor'],
+      worker: mockWorker as unknown as Dispatchers['worker'],
+    }
   })
 
   afterEach(async () => {
     await rm(dir, { recursive: true, force: true })
-    vi.clearAllMocks()
   })
 
   it('runs a startup cycle that stops immediately', async () => {
@@ -50,6 +47,7 @@ describe('CycleEngine', () => {
       workspacePath: dir,
       projectId: 'test',
       config,
+      dispatchers,
     })
 
     await engine.start('test goal')
@@ -93,6 +91,7 @@ describe('CycleEngine', () => {
       workspacePath: dir,
       projectId: 'test',
       config,
+      dispatchers,
     })
 
     await engine.start('investigate auth')
@@ -113,6 +112,7 @@ describe('CycleEngine', () => {
       workspacePath: dir,
       projectId: 'test',
       config,
+      dispatchers,
     })
 
     await engine.start('add database')
@@ -141,6 +141,7 @@ describe('CycleEngine', () => {
       workspacePath: dir,
       projectId: 'test',
       config,
+      dispatchers,
       onQuestion,
     })
 
@@ -177,6 +178,7 @@ describe('CycleEngine', () => {
       workspacePath: dir,
       projectId: 'test',
       config,
+      dispatchers,
     })
 
     await engine.start('parallel work')
@@ -202,6 +204,7 @@ describe('CycleEngine', () => {
       workspacePath: dir,
       projectId: 'test',
       config,
+      dispatchers,
     })
 
     await engine.start('long task')
@@ -231,6 +234,7 @@ describe('CycleEngine', () => {
       workspacePath: dir,
       projectId: 'test',
       config,
+      dispatchers,
     })
 
     await engine.start('implement stories')
@@ -263,6 +267,7 @@ describe('CycleEngine', () => {
       workspacePath: dir,
       projectId: 'test',
       config,
+      dispatchers,
     })
 
     await engine.start('token tracking')
@@ -289,6 +294,7 @@ describe('CycleEngine', () => {
       workspacePath: dir,
       projectId: 'test',
       config,
+      dispatchers,
       onMessage,
     })
 
@@ -326,6 +332,7 @@ describe('CycleEngine', () => {
       workspacePath: dir,
       projectId: 'test',
       config,
+      dispatchers,
     })
 
     await engine.start('artifact test')
@@ -344,6 +351,7 @@ describe('CycleEngine', () => {
       workspacePath: dir,
       projectId: 'test',
       config,
+      dispatchers,
     })
 
     await engine.start('will fail')
@@ -370,6 +378,7 @@ describe('CycleEngine', () => {
       workspacePath: dir,
       projectId: 'test',
       config,
+      dispatchers,
     })
 
     await engine.start('worker will fail')
@@ -401,6 +410,7 @@ describe('CycleEngine', () => {
       workspacePath: dir,
       projectId: 'test',
       config,
+      dispatchers,
     })
 
     await engine.start('all workers fail')
@@ -438,6 +448,7 @@ describe('CycleEngine', () => {
       workspacePath: dir,
       projectId: 'test',
       config,
+      dispatchers,
     })
 
     await engine.start('partial failure')
@@ -445,6 +456,123 @@ describe('CycleEngine', () => {
     expect(session!.status).toBe('stopped')
     // Engine continued with the one successful result
     expect(mockSupervisor).toHaveBeenCalledTimes(2)
+  })
+
+  it('surfaces failed worker goal and error to supervisor input when some workers fail', async () => {
+    mockSupervisor.mockResolvedValueOnce({
+      decision: {
+        action: {
+          type: 'dispatch_workers',
+          workers: [
+            { goal: 'investigate auth', artifacts: [], skill: 'investigation', allowUserQuestions: false, permissionLevel: 'read_only' },
+            { goal: 'investigate payments', artifacts: [], skill: 'investigation', allowUserQuestions: false, permissionLevel: 'read_only' },
+          ],
+        },
+      },
+      tokenUsage: 100,
+    })
+
+    mockWorker
+      .mockResolvedValueOnce({ result: { summary: 'auth done', artifacts: [], status: 'complete' }, tokenUsage: 200 })
+      .mockRejectedValueOnce(new Error('Rate limit exceeded'))
+
+    mockSupervisor.mockResolvedValueOnce({
+      decision: { action: { type: 'stop', reason: 'done' } },
+      tokenUsage: 50,
+    })
+
+    const engine = new CycleEngine({
+      agentPath: dir,
+      workspacePath: dir,
+      projectId: 'test',
+      config,
+      dispatchers,
+    })
+
+    await engine.start('mixed failure test')
+
+    // Inspect the second supervisor call's input for failedWorkers
+    const secondCall = mockSupervisor.mock.calls[1]
+    const supervisorInput = secondCall[0]
+    expect(supervisorInput.failedWorkers).toHaveLength(1)
+    expect(supervisorInput.failedWorkers![0].goal).toBe('investigate payments')
+    expect(supervisorInput.failedWorkers![0].error).toBe('Rate limit exceeded')
+    // Successful result is also present
+    expect(supervisorInput.workerResults).toHaveLength(1)
+    expect(supervisorInput.workerResults![0].summary).toBe('auth done')
+  })
+
+  it('does not include failedWorkers in supervisor input when all parallel workers succeed', async () => {
+    mockSupervisor.mockResolvedValueOnce({
+      decision: {
+        action: {
+          type: 'dispatch_workers',
+          workers: [
+            { goal: 'task A', artifacts: [], skill: 'investigation', allowUserQuestions: false, permissionLevel: 'read_only' },
+            { goal: 'task B', artifacts: [], skill: 'investigation', allowUserQuestions: false, permissionLevel: 'read_only' },
+          ],
+        },
+      },
+      tokenUsage: 100,
+    })
+
+    mockWorker
+      .mockResolvedValueOnce({ result: { summary: 'A done', artifacts: [], status: 'complete' }, tokenUsage: 200 })
+      .mockResolvedValueOnce({ result: { summary: 'B done', artifacts: [], status: 'complete' }, tokenUsage: 300 })
+
+    mockSupervisor.mockResolvedValueOnce({
+      decision: { action: { type: 'stop', reason: 'all done' } },
+      tokenUsage: 50,
+    })
+
+    const engine = new CycleEngine({
+      agentPath: dir,
+      workspacePath: dir,
+      projectId: 'test',
+      config,
+      dispatchers,
+    })
+
+    await engine.start('all succeed')
+
+    const secondCall = mockSupervisor.mock.calls[1]
+    const supervisorInput = secondCall[0]
+    expect(supervisorInput.failedWorkers).toBeUndefined()
+  })
+
+  it('includes failed worker goal and error in all-failed error message', async () => {
+    mockSupervisor.mockResolvedValueOnce({
+      decision: {
+        action: {
+          type: 'dispatch_workers',
+          workers: [
+            { goal: 'task A', artifacts: [], skill: 'investigation', allowUserQuestions: false, permissionLevel: 'read_only' },
+            { goal: 'task B', artifacts: [], skill: 'investigation', allowUserQuestions: false, permissionLevel: 'read_only' },
+          ],
+        },
+      },
+      tokenUsage: 100,
+    })
+
+    mockWorker
+      .mockRejectedValueOnce(new Error('timeout'))
+      .mockRejectedValueOnce(new Error('rate limit'))
+
+    const engine = new CycleEngine({
+      agentPath: dir,
+      workspacePath: dir,
+      projectId: 'test',
+      config,
+      dispatchers,
+    })
+
+    await engine.start('all fail with details')
+    const session = await engine.getSession()
+    expect(session!.status).toBe('error')
+    // Error message should include worker goal and error details
+    expect(session!.lastError).toContain('All workers failed')
+    expect(session!.lastError).toContain('task A')
+    expect(session!.lastError).toContain('task B')
   })
 
   it('enforces cycle depth limit', async () => {
@@ -470,6 +598,7 @@ describe('CycleEngine', () => {
       workspacePath: dir,
       projectId: 'test',
       config: limitedConfig,
+      dispatchers,
     })
 
     await engine.start('deep recursion')
@@ -494,6 +623,7 @@ describe('CycleEngine', () => {
       workspacePath: dir,
       projectId: 'test',
       config,
+      dispatchers,
     })
 
     await engine.start('build UI')
@@ -551,6 +681,7 @@ describe('CycleEngine', () => {
       workspacePath: dir,
       projectId: 'test',
       config,
+      dispatchers,
     })
 
     await engine.start('test scenario passthrough')
@@ -602,6 +733,7 @@ describe('CycleEngine', () => {
       workspacePath: dir,
       projectId: 'test',
       config,
+      dispatchers,
     })
 
     await engine.start('test verification')
@@ -641,6 +773,7 @@ describe('CycleEngine', () => {
       workspacePath: dir,
       projectId: 'test',
       config,
+      dispatchers,
     })
 
     await engine.start('test warning path')
@@ -663,9 +796,9 @@ describe('CycleEngine', () => {
     expect(updated!.stage).toBe('characterized')
   })
 
-  it('catches advanceScenario errors and logs them as advancement:blocked', async () => {
-    // Seed a scenario at implemented stage — advanceScenario will throw
-    // "Cannot advance beyond implemented" since there is no next stage
+  it('blocks already-implemented scenario advancement via non-adjacent check', async () => {
+    // Seed a scenario at implemented stage — nextStage returns null so the
+    // non-adjacent check blocks before advanceScenario is ever called.
     const store = new WorkspaceStore(dir, 'test')
     const ops = new WorkspaceOps(store)
     const scenario = await ops.captureScenario({ behavior: 'fully done', mode: 'intended' })
@@ -677,8 +810,8 @@ describe('CycleEngine', () => {
       return ws
     })
 
-    // Supervisor requests advancement (engine verifyAdvancement won't block,
-    // but WorkspaceOps.advanceScenario will throw "Cannot advance beyond implemented")
+    // Supervisor requests advancement on an already-implemented scenario.
+    // The non-adjacent check catches this (nextStage('implemented') === null).
     mockSupervisor.mockResolvedValueOnce({
       decision: {
         action: {
@@ -689,7 +822,7 @@ describe('CycleEngine', () => {
       tokenUsage: 100,
     })
 
-    // After the failed advance, supervisor stops
+    // After the blocked advance, supervisor stops
     mockSupervisor.mockResolvedValueOnce({
       decision: { action: { type: 'stop', reason: 'done' } },
       tokenUsage: 50,
@@ -700,18 +833,19 @@ describe('CycleEngine', () => {
       workspacePath: dir,
       projectId: 'test',
       config,
+      dispatchers,
     })
 
     await engine.start('test catch path')
 
-    // Read back events and verify the error was caught and logged
+    // Read back events and verify the non-adjacent block was logged
     const eventLog = new EventLog(dir)
     const events = await eventLog.readAll()
     const blockedEvents = events.filter(e =>
       e.type === 'advancement:blocked' && e.data.scenarioId === scenario.id
     )
     expect(blockedEvents).toHaveLength(1)
-    expect(blockedEvents[0].data.reason).toContain('Cannot advance beyond implemented')
+    expect(blockedEvents[0].data.reason).toContain('Non-adjacent stage transition rejected')
 
     // Verify engine did NOT crash — it continued and stopped normally
     const session = await engine.getSession()

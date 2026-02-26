@@ -243,20 +243,20 @@ export const averApprovalsAdapter = implement(averApprovals, {
     },
 
     attachmentsRecorded: async (session, { minCount }) => {
-      const dir = join(session.workDir, 'tests', '__approvals__', 'approval-test')
-      const received = existsSync(join(dir, `${safeName(session.lastApprovalName)}.received.json`))
-      const diff = existsSync(join(dir, `${safeName(session.lastApprovalName)}.diff.txt`))
-      if (!received && !diff)
-        throw new Error('Expected at least one attachment (received or diff) to exist')
+      const trace = session.trace ?? []
+      const entries = trace.filter(
+        (e: TraceEntry) => e.kind === 'test' && e.attachments && e.attachments.length > 0,
+      )
+      const totalAttachments = entries.reduce((sum, e: TraceEntry) => sum + (e.attachments?.length ?? 0), 0)
+      if (totalAttachments < minCount)
+        throw new Error(`Expected at least ${minCount} attachments but found ${totalAttachments}`)
     },
 
     traceEntryHasStatus: async (session, { name, status }) => {
-      if (status === 'fail') {
-        if (!session.lastError) throw new Error('Expected an error for fail status')
-      } else {
-        if (session.lastError)
-          throw new Error(`Expected no error but got: ${session.lastError.message}`)
-      }
+      const trace = session.trace ?? []
+      const entry = trace.find((e: TraceEntry) => e.kind === 'test' && e.name === name && e.status === status)
+      if (!entry)
+        throw new Error(`Expected trace to contain entry with name "${name}" and status "${status}"`)
     },
 
     noError: async (session) => {

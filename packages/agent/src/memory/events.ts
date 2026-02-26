@@ -43,8 +43,9 @@ export class EventLog {
           const rotatedPath = join(dirname(this.filePath), `events-${ts}.jsonl`)
           await rename(this.filePath, rotatedPath)
         }
-      } catch {
-        // stat can fail if file was removed externally; ignore
+      } catch (err) {
+        // Log rotation failure instead of silently ignoring
+        console.error('[EventLog] Rotation failed:', err instanceof Error ? err.message : String(err))
       }
     })
   }
@@ -52,6 +53,7 @@ export class EventLog {
   /**
    * Reads all events from the current (non-rotated) event file only.
    * Rotated events are archived separately and not included.
+   * Malformed JSON lines are skipped with a warning logged.
    */
   async readAll(): Promise<AgentEvent[]> {
     if (!existsSync(this.filePath)) return []
@@ -59,7 +61,15 @@ export class EventLog {
     return content
       .split('\n')
       .filter(Boolean)
-      .map((line) => JSON.parse(line) as AgentEvent)
+      .map((line) => {
+        try {
+          return JSON.parse(line) as AgentEvent
+        } catch (err) {
+          console.error('[EventLog] Skipping malformed line:', line.substring(0, 100), err instanceof Error ? err.message : String(err))
+          return null
+        }
+      })
+      .filter((e) => e !== null) as AgentEvent[]
   }
 
   /**
@@ -74,7 +84,18 @@ export class EventLog {
     await withLock(this.lockKey, async () => {
       if (!existsSync(this.filePath)) return
       const content = await readFile(this.filePath, 'utf-8')
-      const all = content.split('\n').filter(Boolean).map(line => JSON.parse(line) as AgentEvent)
+      const all = content
+        .split('\n')
+        .filter(Boolean)
+        .map((line) => {
+          try {
+            return JSON.parse(line) as AgentEvent
+          } catch (err) {
+            console.error('[EventLog] Skipping malformed line in truncateBefore:', line.substring(0, 100), err instanceof Error ? err.message : String(err))
+            return null
+          }
+        })
+        .filter((e) => e !== null) as AgentEvent[]
       const remaining = all.filter(e => e.timestamp >= timestamp)
       const output = remaining.map(e => JSON.stringify(e)).join('\n') + (remaining.length ? '\n' : '')
       await atomicWriteFile(this.filePath, output)

@@ -33,7 +33,7 @@ Respond with a single JSON object matching one of these action types:
     "worker": {
       "goal": "string — clear description of what the worker should accomplish",
       "artifacts": ["artifact-name-1", "artifact-name-2"],
-      "skill": "investigation | tdd-loop | characterization | scenario-mapping | specification",
+      "skill": "investigation | implementation | characterization | scenario-mapping | specification",
       "allowUserQuestions": true,
       "permissionLevel": "read_only | edit | full",
       "scenarioId": "optional — scope to a specific scenario"
@@ -129,7 +129,7 @@ Each scenario moves through stages. Choose skills and actions based on the scena
 - Advance when: vocabulary named, human approved, adapter structure reviewed
 
 ### specified scenarios
-- Dispatch \`tdd-loop\` skill (edit permission) → write domain, tests, adapters
+- Dispatch \`implementation\` skill (edit permission) → write domain, tests, adapters
 - 🚫 HARD BLOCK: \`domainOperation\` or \`testNames\` must be linked before advancing to implemented
 - Advance when: all tests GREEN, domain linked, no regressions
 
@@ -142,7 +142,7 @@ For legacy/existing code: use \`characterization\` skill to lock current behavio
 
 - Each worker should have a focused, clear goal
 - Use read_only permission for investigation, scenario-mapping, and specification
-- Use edit permission for tdd-loop and characterization
+- Use edit permission for implementation and characterization
 - Create checkpoints every few worker cycles to preserve progress
 - Ask the user when there's genuine ambiguity — don't guess at business requirements
 - Per-stage success criteria are listed above. The session succeeds when all scenarios reach implemented and all tests pass.

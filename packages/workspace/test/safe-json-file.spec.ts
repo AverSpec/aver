@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { mkdtemp, rm, writeFile, readFile } from 'node:fs/promises'
-import { existsSync } from 'node:fs'
+import { existsSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { SafeJsonFile, atomicWriteFile, atomicWriteFileSync, withLock, _testLockMapSize } from '../src/safe-json-file'
+import { SafeJsonFile, atomicWriteFile, atomicWriteFileSync, withLock, _testLockMapSize, acquirePidLock, releasePidLock } from '../src/safe-json-file'
 
 describe('SafeJsonFile', () => {
   let dir: string

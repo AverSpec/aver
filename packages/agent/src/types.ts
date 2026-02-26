@@ -31,6 +31,27 @@ export interface AgentConfig {
     maxWorkerIterations: number
     maxCycleDepth?: number
   }
+  /**
+   * Timeout configuration for LLM API calls.
+   * Prevents hung SDK calls from blocking the engine indefinitely.
+   */
+  timeouts?: {
+    /**
+     * Maximum time in milliseconds for a single supervisor `query()` call.
+     * Defaults to 120_000 (2 minutes).
+     */
+    supervisorCallMs?: number
+    /**
+     * Maximum time in milliseconds per turn for a worker `query()` call.
+     * Defaults to 180_000 (3 minutes).
+     */
+    workerTurnMs?: number
+    /**
+     * Maximum total time in milliseconds for an entire worker dispatch,
+     * spanning all turns. Defaults to 1_800_000 (30 minutes).
+     */
+    workerTotalMs?: number
+  }
   dashboard: {
     port: number
   }
@@ -47,6 +68,11 @@ export const DEFAULT_CONFIG: AgentConfig = {
     checkpointInterval: 10,
     rollupThreshold: 3,
     maxWorkerIterations: 15,
+  },
+  timeouts: {
+    supervisorCallMs: 120_000,
+    workerTurnMs: 180_000,
+    workerTotalMs: 1_800_000,
   },
   dashboard: {
     port: 4700,

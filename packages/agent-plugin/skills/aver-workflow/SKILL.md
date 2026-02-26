@@ -55,11 +55,11 @@ This skill orchestrates. It does NOT own:
 
 | Concern | Delegate To |
 |---------|-------------|
-| TDD inner loop (red/green/refactor) | `tdd-loop.md` in this directory |
+| Implementation (red/green/refactor) | `implementation.md` in this directory |
 | Characterization testing | `characterization.md` in this directory |
 | Code review and refactoring | Standard agent capabilities |
 
-When a scenario reaches `specified`, load `tdd-loop.md` for the ATDD double loop. When investigating legacy code, load `characterization.md` for locking existing behavior.
+When a scenario reaches `specified`, load `implementation.md` for the ATDD double loop. When investigating legacy code, load `characterization.md` for locking existing behavior.
 
 ## Subagent Dispatch Model
 

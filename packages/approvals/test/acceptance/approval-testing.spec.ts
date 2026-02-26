@@ -78,7 +78,20 @@ describe('Approval testing', () => {
     test('records attachments on approval failure', async ({ when, then }) => {
       await when.approveValue({ value: { data: 1 } })
       await then.mismatchDetected()
-      await then.attachmentsRecorded({ minCount: 2 })
+      await then.attachmentsRecorded({ minCount: 1 })
+    })
+
+    test('enforces minCount for attachmentsRecorded', async ({ when, then }) => {
+      await when.approveValue({ value: { data: 1 } })
+      await then.mismatchDetected()
+      // Should fail because we expect at least 100 attachments but only have 1-2
+      let failed = false
+      try {
+        await then.attachmentsRecorded({ minCount: 100 })
+      } catch (e: any) {
+        failed = true
+      }
+      if (!failed) throw new Error('Expected attachmentsRecorded to fail with minCount: 100')
     })
 
     test('records pass status when baseline created', async ({ given, when, then }) => {
@@ -90,6 +103,21 @@ describe('Approval testing', () => {
     test('records fail status on mismatch', async ({ when, then }) => {
       await when.approveValue({ value: { data: 3 } })
       await then.traceEntryHasStatus({ name: 'approval-artifacts', status: 'fail' })
+    })
+
+    test('traceEntryHasStatus actually inspects trace entries', async ({ given, when, then }) => {
+      await given.setApproveMode()
+      await when.approveValue({ value: { data: 4 } })
+      // Should find pass status in trace even though no error occurred
+      await then.traceEntryHasStatus({ name: 'approval-artifacts', status: 'pass' })
+      // Should fail when looking for fail status
+      let failed = false
+      try {
+        await then.traceEntryHasStatus({ name: 'approval-artifacts', status: 'fail' })
+      } catch (e: any) {
+        failed = true
+      }
+      if (!failed) throw new Error('Expected traceEntryHasStatus to fail when status does not match')
     })
   })
 

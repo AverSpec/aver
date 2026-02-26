@@ -10,14 +10,14 @@ describe('tuiReducer', () => {
     expect(initialState.pendingQuestion).toBeUndefined()
   })
 
-  it('adds a worker on worker:dispatch event', () => {
+  it('adds a worker on worker:created event', () => {
     const action: TuiAction = {
       type: 'event',
       event: {
-        timestamp: '2026-01-01T00:00:00Z',
-        type: 'worker:dispatch',
-        cycleId: 'cycle-1',
-        data: { goal: 'Investigate auth', skill: 'investigation', permissionLevel: 'read_only' },
+        id: 'evt-1',
+        type: 'worker:created',
+        data: { agentId: 'w-1', goal: 'Investigate auth', skill: 'investigation', permission: 'read_only' },
+        createdAt: '2026-01-01T00:00:00Z',
       },
     }
     const state = tuiReducer(initialState, action)
@@ -26,27 +26,50 @@ describe('tuiReducer', () => {
     expect(state.workers[0].status).toBe('running')
   })
 
-  it('updates worker on worker:result event', () => {
+  it('updates worker on worker:complete event', () => {
     const dispatched = tuiReducer(initialState, {
       type: 'event',
       event: {
-        timestamp: '2026-01-01T00:00:00Z',
-        type: 'worker:dispatch',
-        cycleId: 'cycle-1',
-        data: { goal: 'Investigate auth', skill: 'investigation' },
+        id: 'evt-1',
+        type: 'worker:created',
+        data: { agentId: 'w-1', goal: 'Investigate auth', skill: 'investigation' },
+        createdAt: '2026-01-01T00:00:00Z',
       },
     })
     const state = tuiReducer(dispatched, {
       type: 'event',
       event: {
-        timestamp: '2026-01-01T00:00:01Z',
-        type: 'worker:result',
-        cycleId: 'cycle-1',
-        data: { summary: 'Found 3 seams', status: 'complete' },
+        id: 'evt-2',
+        type: 'worker:complete',
+        data: { agentId: 'w-1', summary: 'Found 3 seams' },
+        createdAt: '2026-01-01T00:00:01Z',
       },
     })
     expect(state.workers[0].status).toBe('complete')
     expect(state.workers[0].result?.summary).toBe('Found 3 seams')
+  })
+
+  it('syncs events from events_sync action', () => {
+    const events = [
+      { id: 'evt-1', type: 'session:start', data: { goal: 'test' }, createdAt: '2026-01-01T00:00:00Z' },
+      { id: 'evt-2', type: 'worker:created', data: { agentId: 'w-1' }, createdAt: '2026-01-01T00:00:01Z' },
+    ]
+    const state = tuiReducer(initialState, { type: 'events_sync', events })
+    expect(state.events).toHaveLength(2)
+  })
+
+  it('syncs workers from workers_sync action', () => {
+    const agents = [
+      {
+        id: 'w-1', role: 'worker' as const, status: 'active' as const,
+        goal: 'Investigate auth', skill: 'investigation', permission: 'read_only',
+        createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
+      },
+    ]
+    const state = tuiReducer(initialState, { type: 'workers_sync', agents })
+    expect(state.workers).toHaveLength(1)
+    expect(state.workers[0].goal).toBe('Investigate auth')
+    expect(state.workers[0].status).toBe('running')
   })
 
   it('sets scenarios on scenarios_updated', () => {

@@ -1,7 +1,7 @@
 import React from 'react'
 import { Box, Text } from 'ink'
 import { Spinner } from '@inkjs/ui'
-import type { AgentEvent } from '../../types.js'
+import type { AgentEvent } from '../../db/event-store.js'
 
 interface Props {
   events: AgentEvent[]
@@ -22,14 +22,14 @@ export function EventPanel({ events, phase }: Props): React.ReactElement {
         <Spinner label="Supervisor analyzing..." />
       )}
       {visible.map((event) => (
-        <EventLine key={`${event.timestamp}-${event.type}`} event={event} />
+        <EventLine key={`${event.createdAt}-${event.type}`} event={event} />
       ))}
     </Box>
   )
 }
 
 function EventLine({ event }: { event: AgentEvent }): React.ReactElement {
-  const time = new Date(event.timestamp).toLocaleTimeString('en-US', { hour12: false })
+  const time = new Date(event.createdAt).toLocaleTimeString('en-US', { hour12: false })
   const dataStr = formatEventData(event)
 
   return (
@@ -42,27 +42,38 @@ function EventLine({ event }: { event: AgentEvent }): React.ReactElement {
 
 function eventColor(type: string): string {
   if (type.startsWith('worker:')) return 'cyan'
-  if (type.startsWith('cycle:')) return 'blue'
-  if (type.startsWith('advancement:')) return 'yellow'
-  if (type === 'decision') return 'magenta'
+  if (type.startsWith('session:')) return 'blue'
+  if (type.startsWith('advancement:') || type.startsWith('scenario:')) return 'yellow'
+  if (type.startsWith('supervisor:')) return 'magenta'
+  if (type.startsWith('human:')) return 'green'
   return 'white'
 }
 
 function formatEventData(event: AgentEvent): string {
   const d = event.data
   switch (event.type) {
-    case 'worker:dispatch':
+    case 'worker:created':
       return `goal="${d.goal}"`
-    case 'worker:result':
-      return `${d.status} — "${d.summary}"`
-    case 'decision':
+    case 'worker:complete':
+      return `agent=${d.agentId}`
+    case 'worker:error':
+      return `agent=${d.agentId}: ${d.error}`
+    case 'worker:terminated':
+      return `agent=${d.agentId}`
+    case 'supervisor:decision':
       return `${d.action}`
-    case 'cycle:start':
-      return `trigger=${d.trigger}`
+    case 'session:start':
+      return `goal="${d.goal}"`
+    case 'session:stop':
+      return `reason=${d.reason}`
+    case 'scenario:advanced':
+      return `${d.scenarioId} -> ${d.stage}`
     case 'advancement:blocked':
-      return `${d.scenarioId} → ${d.to}: ${d.reason}`
+      return `${d.scenarioId}: ${d.reason}`
     case 'advancement:warning':
       return `${d.scenarioId}: ${d.warning}`
+    case 'human:answer':
+      return `"${d.answer}"`
     default:
       return Object.keys(d).length > 0 ? JSON.stringify(d) : ''
   }

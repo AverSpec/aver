@@ -164,7 +164,7 @@ describe('buildSupervisorPrompt', () => {
   it('lists all 5 skills in dispatch_worker format', () => {
     const { system } = buildSupervisorPrompt(baseInput)
     expect(system).toContain('investigation')
-    expect(system).toContain('tdd-loop')
+    expect(system).toContain('implementation')
     expect(system).toContain('characterization')
     expect(system).toContain('scenario-mapping')
     expect(system).toContain('specification')

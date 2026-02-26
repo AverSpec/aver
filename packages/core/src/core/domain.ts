@@ -48,6 +48,33 @@ function makeDomain<
     vocabulary: vocab,
     parent,
     extend(childName, extension) {
+      // Check for name collisions in actions
+      const extActionKeys = Object.keys(extension.actions ?? {})
+      const collisionActions = extActionKeys.filter(key => key in vocab.actions)
+      if (collisionActions.length > 0) {
+        throw new Error(
+          `Domain extension collision: action(s) '${collisionActions.join("', '")}' already exist in parent domain '${name}'`
+        )
+      }
+
+      // Check for name collisions in queries
+      const extQueryKeys = Object.keys(extension.queries ?? {})
+      const collisionQueries = extQueryKeys.filter(key => key in vocab.queries)
+      if (collisionQueries.length > 0) {
+        throw new Error(
+          `Domain extension collision: query(s) '${collisionQueries.join("', '")}' already exist in parent domain '${name}'`
+        )
+      }
+
+      // Check for name collisions in assertions
+      const extAssertionKeys = Object.keys(extension.assertions ?? {})
+      const collisionAssertions = extAssertionKeys.filter(key => key in vocab.assertions)
+      if (collisionAssertions.length > 0) {
+        throw new Error(
+          `Domain extension collision: assertion(s) '${collisionAssertions.join("', '")}' already exist in parent domain '${name}'`
+        )
+      }
+
       return makeDomain(
         childName,
         {

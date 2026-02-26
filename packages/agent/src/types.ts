@@ -199,3 +199,8 @@ export interface WorkerResult {
   status?: 'complete' | 'stuck'
   tokenUsage?: number
 }
+
+export interface FailedWorker {
+  goal: string
+  error: string
+}

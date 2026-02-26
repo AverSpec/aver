@@ -9,8 +9,8 @@ describe('loadSkill', () => {
     expect(result.content).toContain('Seam Types')
   })
 
-  it('loads tdd-loop skill', async () => {
-    const result = await loadSkill('tdd-loop')
+  it('loads implementation skill', async () => {
+    const result = await loadSkill('implementation')
     expect(result.content).toBeDefined()
     expect(result.content).toContain('Inner Loop')
     expect(result.content).toContain('Double Loop')

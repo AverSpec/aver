@@ -1,8 +1,9 @@
 import { existsSync } from 'node:fs'
 import { dirname, relative, resolve } from 'node:path'
 import { getAdapters, getDomains, getDomain } from '@aver/core'
+import { toKebabCase } from '@aver/core/scaffold'
 import { getConfigPath, getProjectRoot } from '../config.js'
-import { scanAdapterFiles, matchDomainByKebab, getDomainFilePaths, toKebabCase as discoveryToKebab } from '../discovery.js'
+import { scanAdapterFiles, matchDomainByKebab, getDomainFilePaths } from '../discovery.js'
 
 export interface DomainStructure {
   suggestedName: string

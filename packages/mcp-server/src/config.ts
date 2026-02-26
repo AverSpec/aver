@@ -67,12 +67,7 @@ export async function reloadConfig(loader?: () => Promise<void>): Promise<void> 
     resetRegistry()
     // Cache-bust the ESM import by appending a unique query param
     const url = pathToFileURL(storedConfigPath).href + `?t=${Date.now()}`
-    try {
-      await import(url)
-    } catch (err) {
-      log('warn', 'config reload failed, falling back to discovery', { error: (err as Error).message })
-      if (projectRoot) await discoverAndRegister(projectRoot)
-    }
+    await import(url)
     return
   }
 

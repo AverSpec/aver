@@ -132,4 +132,99 @@ describe('domain.extend()', () => {
     const extended = base.extend('CartEmpty', {})
     expect(extended.vocabulary.actions.addItem).toEqual({ kind: 'action' })
   })
+
+  it('throws error when extension duplicates parent action name', () => {
+    const base = defineDomain({
+      name: 'Cart',
+      actions: { addItem: action() },
+      queries: {},
+      assertions: {},
+    })
+
+    expect(() => {
+      base.extend('CartDuplicate', {
+        actions: { addItem: action() },
+      })
+    }).toThrow(
+      "Domain extension collision: action(s) 'addItem' already exist in parent domain 'Cart'"
+    )
+  })
+
+  it('throws error when extension duplicates parent query name', () => {
+    const base = defineDomain({
+      name: 'Cart',
+      actions: {},
+      queries: { total: query<number>() },
+      assertions: {},
+    })
+
+    expect(() => {
+      base.extend('CartDuplicate', {
+        queries: { total: query<number>() },
+      })
+    }).toThrow(
+      "Domain extension collision: query(s) 'total' already exist in parent domain 'Cart'"
+    )
+  })
+
+  it('throws error when extension duplicates parent assertion name', () => {
+    const base = defineDomain({
+      name: 'Cart',
+      actions: {},
+      queries: {},
+      assertions: { isEmpty: assertion() },
+    })
+
+    expect(() => {
+      base.extend('CartDuplicate', {
+        assertions: { isEmpty: assertion() },
+      })
+    }).toThrow(
+      "Domain extension collision: assertion(s) 'isEmpty' already exist in parent domain 'Cart'"
+    )
+  })
+
+  it('throws error when extension duplicates multiple parent vocabulary items', () => {
+    const base = defineDomain({
+      name: 'Cart',
+      actions: { addItem: action(), removeItem: action() },
+      queries: { total: query<number>() },
+      assertions: { isEmpty: assertion() },
+    })
+
+    expect(() => {
+      base.extend('CartDuplicate', {
+        actions: { addItem: action(), newAction: action() },
+        queries: { total: query<number>() },
+        assertions: { isEmpty: assertion() },
+      })
+    }).toThrow()
+
+    // Verify it detects actions first
+    try {
+      base.extend('CartDuplicate', {
+        actions: { addItem: action() },
+      })
+      expect.fail('Should have thrown')
+    } catch (e) {
+      expect((e as Error).message).toContain('addItem')
+    }
+  })
+
+  it('allows extending with new names even when parent has same names in different vocabulary sections', () => {
+    const base = defineDomain({
+      name: 'Cart',
+      actions: { process: action() },
+      queries: {},
+      assertions: {},
+    })
+
+    // This should succeed - extending with a query named 'process' doesn't collide
+    const extended = base.extend('CartExtended', {
+      queries: { process: query<number>() },
+    })
+
+    expect(extended.vocabulary.actions.process).toEqual({ kind: 'action' })
+    expect(extended.vocabulary.queries.process).toEqual({ kind: 'query' })
+  })
 })

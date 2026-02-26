@@ -136,7 +136,7 @@ The outer loop stays thin. It reads scenario state, decides what work to dispatc
 | `investigation.md` | Legacy characterization path (characterized stage) |
 | `scenario-mapping.md` | Facilitating an Example Mapping session (mapped stage) |
 | `specification.md` | Domain vocabulary and adapter interface design (specified stage) |
-| `tdd-loop.md` | Inner loop: ATDD double loop, TDD, refactoring (implemented stage) |
+| `implementation.md` | Inner loop: ATDD double loop, TDD, refactoring (implemented stage) |
 | `characterization.md` | Lock existing behavior before changes |
 
 ## Conventions

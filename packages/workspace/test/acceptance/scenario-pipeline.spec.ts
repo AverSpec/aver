@@ -233,6 +233,22 @@ describe('Scenario Pipeline', () => {
       await then.workflowPhaseIs({ phase: 'verification' })
     })
 
+    test('implemented without domain link stays in implementation phase', async ({ given, when, then, query }) => {
+      // Scenario: A scenario at "specified" stage (not yet implemented) still needs domain links.
+      // This tests the "implementation" phase detection which includes both specified and
+      // implemented-without-links scenarios (though the latter is technically impossible due to
+      // advancement validation, the phase detection includes this check for safety).
+      await given.captureScenario({ behavior: 'awaiting implementation' })
+      const id = await query.lastCapturedId()
+      await given.advanceScenario({ id, rationale: 'r', promotedBy: 'p' })
+      await given.setConfirmedBy({ id, confirmer: 'user' })
+      await given.advanceScenario({ id, rationale: 'r', promotedBy: 'p' })
+      await when.advanceScenario({ id, rationale: 'r', promotedBy: 'p' })
+      // Now at "specified", not yet implemented (no domain link)
+      await then.scenarioHasStage({ id, stage: 'specified' })
+      await then.workflowPhaseIs({ phase: 'implementation' })
+    })
+
     test('mixed captured and implemented detects discovery phase', async ({ given, when, then, query }) => {
       await given.captureScenario({ behavior: 'fully done' })
       const id1 = await query.lastCapturedId()

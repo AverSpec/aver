@@ -12,12 +12,7 @@ const configPath = resolveConfigPath(process.argv.slice(2))
 if (configPath) {
   log('info', 'loading config', { configPath })
   setProjectRoot(cwd)
-  try {
-    await loadConfig(configPath)
-  } catch (err) {
-    log('warn', 'config import failed, falling back to discovery', { error: (err as Error).message })
-    await discoverAndRegister(cwd)
-  }
+  await loadConfig(configPath)
 } else {
   log('info', 'no config file found, using auto-discovery')
   setProjectRoot(cwd)

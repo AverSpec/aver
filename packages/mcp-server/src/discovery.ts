@@ -2,17 +2,11 @@ import { readdir, stat } from 'node:fs/promises'
 import { join, parse as parsePath } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { registerDomain, getDomains } from '@aver/core'
+import { toKebabCase } from '@aver/core/scaffold'
 import type { Domain } from '@aver/core'
 import { log } from './logger.js'
 
 const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', 'coverage', '.aver', '.worktrees'])
-
-export function toKebabCase(str: string): string {
-  return str
-    .replace(/([a-z])([A-Z])/g, '$1-$2')
-    .replace(/([A-Z])([A-Z][a-z])/g, '$1-$2')
-    .toLowerCase()
-}
 
 export function isDomain(value: unknown): value is Domain {
   if (!value || typeof value !== 'object') return false

@@ -63,12 +63,7 @@ export const averWorkspaceAdapter = implement(averWorkspace, {
     setConfirmedBy: async (session, { id, confirmer }) => {
       try {
         session.lastError = undefined
-        await session.store.mutate(ws => {
-          const s = ws.scenarios.find(s => s.id === id)
-          if (!s) throw new Error('Scenario not found: ' + id)
-          s.confirmedBy = confirmer
-          return ws
-        })
+        await session.ops.confirmScenario(id, confirmer)
       } catch (e: any) {
         session.lastError = e
       }

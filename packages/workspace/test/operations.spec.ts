@@ -34,7 +34,7 @@ describe('WorkspaceOps', () => {
 
       // Set confirmedBy before characterized -> mapped
       if (from === 'characterized' && to === 'mapped') {
-        await setConfirmedBy(id, 'test-confirmer')
+        await ops.confirmScenario(id, 'test-confirmer')
       }
       // Set domain links before specified -> implemented
       if (from === 'specified' && to === 'implemented') {
@@ -43,16 +43,6 @@ describe('WorkspaceOps', () => {
 
       await ops.advanceScenario(id, { rationale: `advance to ${to}`, promotedBy: 'dev' })
     }
-  }
-
-  /** Helper: set confirmedBy field via store mutation */
-  async function setConfirmedBy(id: string, confirmer: string) {
-    const store = new WorkspaceStore(dir, 'test-project')
-    await store.mutate(ws => {
-      const s = ws.scenarios.find(s => s.id === id)
-      if (s) s.confirmedBy = confirmer
-      return ws
-    })
   }
 
   describe('captureScenario', () => {
@@ -108,7 +98,7 @@ describe('WorkspaceOps', () => {
     it('advances characterized to mapped when confirmedBy is set', async () => {
       const scenario = await ops.captureScenario({ behavior: 'test' })
       await ops.advanceScenario(scenario.id, { rationale: 'characterized', promotedBy: 'dev' })
-      await setConfirmedBy(scenario.id, 'business-user')
+      await ops.confirmScenario(scenario.id, 'business-user')
       const { scenario: advanced } = await ops.advanceScenario(scenario.id, { rationale: 'confirmed', promotedBy: 'business' })
       expect(advanced.stage).toBe('mapped')
     })
@@ -200,7 +190,7 @@ describe('WorkspaceOps', () => {
     it('warns when advancing to mapped with no rules or examples', async () => {
       const scenario = await ops.captureScenario({ behavior: 'test' })
       await ops.advanceScenario(scenario.id, { rationale: 'a', promotedBy: 'dev' })
-      await setConfirmedBy(scenario.id, 'user')
+      await ops.confirmScenario(scenario.id, 'user')
       // Now at characterized, advance to mapped
       const { warnings } = await ops.advanceScenario(scenario.id, { rationale: 'b', promotedBy: 'dev' })
       expect(warnings).toHaveLength(1)
@@ -236,7 +226,7 @@ describe('WorkspaceOps', () => {
     it('persists the rationale on the scenario', async () => {
       const scenario = await ops.captureScenario({ behavior: 'test' })
       await ops.advanceScenario(scenario.id, { rationale: 'a', promotedBy: 'dev' })
-      await setConfirmedBy(scenario.id, 'user')
+      await ops.confirmScenario(scenario.id, 'user')
       await ops.advanceScenario(scenario.id, { rationale: 'b', promotedBy: 'dev' })
 
       await ops.revisitScenario(scenario.id, {

@@ -22,15 +22,6 @@ describe('detectPhase', () => {
     rmSync(dir, { recursive: true, force: true })
   })
 
-  /** Helper: set confirmedBy on a scenario */
-  async function setConfirmedBy(id: string, confirmer: string) {
-    await store.mutate(ws => {
-      const s = ws.scenarios.find(s => s.id === id)
-      if (s) s.confirmedBy = confirmer
-      return ws
-    })
-  }
-
   /** Helper: advance a scenario through stages with required prerequisites */
   async function advanceToStage(id: string, targetStage: Stage) {
     const stages: Stage[] = ['captured', 'characterized', 'mapped', 'specified', 'implemented']
@@ -43,7 +34,7 @@ describe('detectPhase', () => {
       const from = stages[i]
       const to = stages[i + 1]
       if (from === 'characterized' && to === 'mapped') {
-        await setConfirmedBy(id, 'business')
+        await ops.confirmScenario(id, 'business')
       }
       if (from === 'specified' && to === 'implemented') {
         await ops.linkToDomain(id, { domainOperation: 'test.op' })

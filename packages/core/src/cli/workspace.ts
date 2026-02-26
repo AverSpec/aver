@@ -38,6 +38,7 @@ interface WorkspaceModule {
     captureScenario(input: { behavior: string; context?: string; story?: string; mode?: 'observed' | 'intended' }): Promise<any>
     advanceScenario(id: string, opts: { rationale: string; promotedBy: string }): Promise<{ scenario: any; warnings: string[] }>
     revisitScenario(id: string, opts: { targetStage: string; rationale: string }): Promise<any>
+    confirmScenario(id: string, confirmer: string): Promise<void>
     getScenarios(filter: { stage?: string; keyword?: string }): Promise<ScenarioRow[]>
   }
   WorkspaceStore: {
@@ -170,6 +171,27 @@ async function revisitCommand(store: any, ws: WorkspaceModule, args: string[]): 
   console.log(`  Behavior: ${scenario.behavior}`)
 }
 
+async function confirmCommand(store: any, ws: WorkspaceModule, args: string[]): Promise<void> {
+  const { values, positionals } = parseArgs({
+    args,
+    options: {
+      by: { type: 'string' },
+    },
+    strict: true,
+    allowPositionals: true,
+  })
+
+  const id = positionals[0]
+  if (!id || !values.by) {
+    console.error('Usage: aver workspace confirm <id> --by "<confirmer>"')
+    process.exit(1)
+  }
+
+  const ops = new ws.WorkspaceOps(store)
+  await ops.confirmScenario(id, values.by)
+  console.log(`Confirmed: ${id} (by ${values.by})`)
+}
+
 async function scenariosCommand(store: any, ws: WorkspaceModule, args: string[]): Promise<void> {
   const { values } = parseArgs({
     args,
@@ -240,6 +262,7 @@ Commands:
   capture "<behavior>"                Capture a new scenario
   advance <id>                        Advance a scenario to the next stage
   revisit <id>                        Revisit a scenario by moving to an earlier stage
+  confirm <id>                        Confirm a scenario (human checkpoint)
   scenarios                           List scenarios
   export                              Export scenarios
   import <file>                       Import scenarios from JSON file
@@ -303,6 +326,9 @@ export async function runWorkspace(rawArgs: string[]): Promise<void> {
       break
     case 'revisit':
       await revisitCommand(store, ws, subArgs)
+      break
+    case 'confirm':
+      await confirmCommand(store, ws, subArgs)
       break
     case 'scenarios':
       await scenariosCommand(store, ws, subArgs)

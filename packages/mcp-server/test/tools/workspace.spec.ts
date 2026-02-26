@@ -16,7 +16,7 @@ import {
   exportScenariosHandler,
   importScenariosHandler,
 } from '../../src/tools/workspace'
-import { WorkspaceStore } from '@aver/workspace'
+import { WorkspaceStore, WorkspaceOps } from '@aver/workspace'
 
 describe('workspace tool handlers', () => {
   let dir: string
@@ -29,16 +29,6 @@ describe('workspace tool handlers', () => {
   afterEach(() => {
     rmSync(dir, { recursive: true, force: true })
   })
-
-  /** Helper: set confirmedBy on a scenario via store mutation */
-  async function setConfirmedBy(id: string, confirmer: string) {
-    const store = new WorkspaceStore(dir, projectId)
-    await store.mutate(ws => {
-      const s = ws.scenarios.find(s => s.id === id)
-      if (s) s.confirmedBy = confirmer
-      return ws
-    })
-  }
 
   describe('capture_scenario', () => {
     it('creates a captured scenario with observed mode', async () => {
@@ -131,7 +121,8 @@ describe('workspace tool handlers', () => {
     it('advances characterized to mapped when confirmedBy is set', async () => {
       const scenario = await captureScenarioHandler({ behavior: 'a' }, dir, projectId)
       await advanceScenarioHandler({ id: scenario.id, rationale: 'step 1', promotedBy: 'dev' }, dir, projectId)
-      await setConfirmedBy(scenario.id, 'business-user')
+      const ops = new WorkspaceOps(new WorkspaceStore(dir, projectId))
+      await ops.confirmScenario(scenario.id, 'business-user')
       const { scenario: advanced } = await advanceScenarioHandler({ id: scenario.id, rationale: 'step 2', promotedBy: 'dev' }, dir, projectId)
       expect(advanced.stage).toBe('mapped')
     })

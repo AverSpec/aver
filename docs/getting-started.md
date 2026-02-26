@@ -154,19 +154,19 @@ import { shoppingCart } from '../domains/shopping-cart'
 
 const { test } = suite(shoppingCart)
 
-test('add item to cart', async ({ act, assert }) => {
-  await act.addItem({ name: 'Widget', qty: 2 })
-  await assert.hasItems({ count: 1 })
+test('add item to cart', async ({ given, when, then }) => {
+  await when.addItem({ name: 'Widget', qty: 2 })
+  await then.hasItems({ count: 1 })
 })
 
-test('calculate total', async ({ act, query }) => {
-  await act.addItem({ name: 'Widget', qty: 2 })
+test('calculate total', async ({ given, when, query }) => {
+  await when.addItem({ name: 'Widget', qty: 2 })
   const total = await query.cartTotal()
   expect(total).toBe(19.98)
 })
 ```
 
-The `{ act, query, assert }` callback provides typed proxies for each vocabulary category. Actions, queries, and assertions are separate namespaces.
+The callback provides typed proxies for each vocabulary category. Use `given` for setup, `when` for the action under test, and `then` for verification. The raw `act`, `query`, and `assert` names are also available — `given`/`when` delegate to `act`, and `then` delegates to `assert`.
 
 ## 6. Run Tests
 

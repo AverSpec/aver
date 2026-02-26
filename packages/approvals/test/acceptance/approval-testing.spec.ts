@@ -20,235 +20,235 @@ describe('Approval testing', () => {
   })
 
   describe('baseline management', () => {
-    test('fails when baseline is missing', async ({ act, assert }) => {
-      await act.approveValue({ value: { count: 1 } })
-      await assert.mismatchDetected()
-      await assert.baselineMissing()
-      await assert.diffContains({ text: 'Baseline missing' })
+    test('fails when baseline is missing', async ({ when, then }) => {
+      await when.approveValue({ value: { count: 1 } })
+      await then.mismatchDetected()
+      await then.baselineMissing()
+      await then.diffContains({ text: 'Baseline missing' })
     })
 
-    test('creates baseline when approve mode is on', async ({ act, assert }) => {
-      await act.setApproveMode()
-      await act.approveValue({ value: { count: 2 } })
-      await assert.noError()
-      await assert.baselineCreated()
+    test('creates baseline when approve mode is on', async ({ given, when, then }) => {
+      await given.setApproveMode()
+      await when.approveValue({ value: { count: 2 } })
+      await then.noError()
+      await then.baselineCreated()
     })
 
-    test('passes when approved matches received', async ({ act, assert }) => {
-      await act.setApproveMode()
-      await act.approveValue({ value: { count: 3 } })
-      await act.clearApproveMode()
-      await act.approveValue({ value: { count: 3 } })
-      await assert.matchPassed()
-      await assert.noError()
+    test('passes when approved matches received', async ({ given, when, then }) => {
+      await given.setApproveMode()
+      await when.approveValue({ value: { count: 3 } })
+      await given.clearApproveMode()
+      await when.approveValue({ value: { count: 3 } })
+      await then.matchPassed()
+      await then.noError()
     })
   })
 
   describe('mismatch detection', () => {
-    test('detects mismatch and generates diff', async ({ act, assert }) => {
-      await act.setApproveMode()
-      await act.approveValue({ value: { count: 5 } })
-      await act.clearApproveMode()
-      await act.approveValue({ value: { count: 99 } })
-      await assert.mismatchDetected()
-      await assert.diffContains({ text: '+' })
-      await assert.diffContains({ text: '-' })
+    test('detects mismatch and generates diff', async ({ given, when, then }) => {
+      await given.setApproveMode()
+      await when.approveValue({ value: { count: 5 } })
+      await given.clearApproveMode()
+      await when.approveValue({ value: { count: 99 } })
+      await then.mismatchDetected()
+      await then.diffContains({ text: '+' })
+      await then.diffContains({ text: '-' })
     })
 
-    test('updates baseline when approve mode is on after mismatch', async ({ act, assert }) => {
-      await act.setApproveMode()
-      await act.approveValue({ value: { old: true } })
-      await act.approveValue({ value: { new: true } })
-      await assert.noError()
-      await assert.baselineCreated()
+    test('updates baseline when approve mode is on after mismatch', async ({ given, when, then }) => {
+      await given.setApproveMode()
+      await when.approveValue({ value: { old: true } })
+      await when.approveValue({ value: { new: true } })
+      await then.noError()
+      await then.baselineCreated()
     })
   })
 
   describe('multiple approvals in one test', () => {
-    test('handles multiple named approvals independently', async ({ act, assert }) => {
-      await act.setApproveMode()
-      await act.approveValue({ value: 'first', name: 'alpha' })
-      await act.approveValue({ value: 'second', name: 'beta' })
-      await assert.noError()
-      await assert.baselineCreated()
+    test('handles multiple named approvals independently', async ({ given, when, then }) => {
+      await given.setApproveMode()
+      await when.approveValue({ value: 'first', name: 'alpha' })
+      await when.approveValue({ value: 'second', name: 'beta' })
+      await then.noError()
+      await then.baselineCreated()
     })
   })
 
   describe('trace integration', () => {
-    test('records attachments on approval failure', async ({ act, assert }) => {
-      await act.approveValue({ value: { data: 1 } })
-      await assert.mismatchDetected()
-      await assert.attachmentsRecorded({ minCount: 2 })
+    test('records attachments on approval failure', async ({ when, then }) => {
+      await when.approveValue({ value: { data: 1 } })
+      await then.mismatchDetected()
+      await then.attachmentsRecorded({ minCount: 2 })
     })
 
-    test('records pass status when baseline created', async ({ act, assert }) => {
-      await act.setApproveMode()
-      await act.approveValue({ value: { data: 2 } })
-      await assert.traceEntryHasStatus({ name: 'approval-artifacts', status: 'pass' })
+    test('records pass status when baseline created', async ({ given, when, then }) => {
+      await given.setApproveMode()
+      await when.approveValue({ value: { data: 2 } })
+      await then.traceEntryHasStatus({ name: 'approval-artifacts', status: 'pass' })
     })
 
-    test('records fail status on mismatch', async ({ act, assert }) => {
-      await act.approveValue({ value: { data: 3 } })
-      await assert.traceEntryHasStatus({ name: 'approval-artifacts', status: 'fail' })
+    test('records fail status on mismatch', async ({ when, then }) => {
+      await when.approveValue({ value: { data: 3 } })
+      await then.traceEntryHasStatus({ name: 'approval-artifacts', status: 'fail' })
     })
   })
 
   describe('serializers', () => {
-    test('auto-detects json for objects', async ({ act, assert }) => {
-      await act.setApproveMode()
-      await act.approveValue({ value: { key: 'val' } })
-      await assert.noError()
-      await assert.baselineCreated()
+    test('auto-detects json for objects', async ({ given, when, then }) => {
+      await given.setApproveMode()
+      await when.approveValue({ value: { key: 'val' } })
+      await then.noError()
+      await then.baselineCreated()
     })
 
-    test('auto-detects text for strings', async ({ act, assert }) => {
-      await act.setApproveMode()
-      await act.approveValue({ value: 'plain text' })
-      await assert.noError()
-      await assert.baselineCreated()
+    test('auto-detects text for strings', async ({ given, when, then }) => {
+      await given.setApproveMode()
+      await when.approveValue({ value: 'plain text' })
+      await then.noError()
+      await then.baselineCreated()
     })
   })
 
   // --- Serializer auto-detection ---
 
   describe('serializer auto-detection', () => {
-    test('null values use text serializer', async ({ act, assert }) => {
-      await act.setApproveMode()
-      await act.approveValue({ value: null, name: 'null-value' })
-      await assert.baselineCreated()
-      await assert.noError()
-      await act.clearApproveMode()
+    test('null values use text serializer', async ({ given, when, then }) => {
+      await given.setApproveMode()
+      await when.approveValue({ value: null, name: 'null-value' })
+      await then.baselineCreated()
+      await then.noError()
+      await given.clearApproveMode()
     })
 
-    test('arrays use JSON serializer', async ({ act, assert }) => {
-      await act.setApproveMode()
-      await act.approveValue({ value: [1, 2, 3], name: 'array-value' })
-      await assert.baselineCreated()
-      await assert.noError()
-      await act.clearApproveMode()
+    test('arrays use JSON serializer', async ({ given, when, then }) => {
+      await given.setApproveMode()
+      await when.approveValue({ value: [1, 2, 3], name: 'array-value' })
+      await then.baselineCreated()
+      await then.noError()
+      await given.clearApproveMode()
     })
 
-    test('primitive numbers use text serializer', async ({ act, assert }) => {
-      await act.setApproveMode()
-      await act.approveValue({ value: 42, name: 'number-value' })
-      await assert.baselineCreated()
-      await assert.noError()
-      await act.clearApproveMode()
+    test('primitive numbers use text serializer', async ({ given, when, then }) => {
+      await given.setApproveMode()
+      await when.approveValue({ value: 42, name: 'number-value' })
+      await then.baselineCreated()
+      await then.noError()
+      await given.clearApproveMode()
     })
 
-    test('primitive strings use text serializer', async ({ act, assert }) => {
-      await act.setApproveMode()
-      await act.approveValue({ value: 'hello world', name: 'string-value' })
-      await assert.baselineCreated()
-      await assert.noError()
-      await act.clearApproveMode()
+    test('primitive strings use text serializer', async ({ given, when, then }) => {
+      await given.setApproveMode()
+      await when.approveValue({ value: 'hello world', name: 'string-value' })
+      await then.baselineCreated()
+      await then.noError()
+      await given.clearApproveMode()
     })
   })
 
   // --- AVER_APPROVE='true' variant ---
 
   describe('approve mode variants', () => {
-    test('AVER_APPROVE=true (string) creates baseline', async ({ act, assert }) => {
-      await act.setApproveModeTrue()
-      await act.approveValue({ value: { key: 'value' }, name: 'true-variant' })
-      await assert.baselineCreated()
-      await assert.noError()
-      await act.clearApproveMode()
+    test('AVER_APPROVE=true (string) creates baseline', async ({ given, when, then }) => {
+      await given.setApproveModeTrue()
+      await when.approveValue({ value: { key: 'value' }, name: 'true-variant' })
+      await then.baselineCreated()
+      await then.noError()
+      await given.clearApproveMode()
     })
 
-    test('approve mode with matching content is a no-op', async ({ act, assert, query }) => {
+    test('approve mode with matching content is a no-op', async ({ given, when, then }) => {
       // First: create a baseline
-      await act.setApproveMode()
-      await act.approveValue({ value: { key: 'same' }, name: 'match-fast-path' })
-      await assert.baselineCreated()
+      await given.setApproveMode()
+      await when.approveValue({ value: { key: 'same' }, name: 'match-fast-path' })
+      await then.baselineCreated()
 
       // Second: approve same value again — should be a no-op (no error, no file write)
-      await act.approveValue({ value: { key: 'same' }, name: 'match-fast-path' })
-      await assert.noError()
-      await act.clearApproveMode()
+      await when.approveValue({ value: { key: 'same' }, name: 'match-fast-path' })
+      await then.noError()
+      await given.clearApproveMode()
     })
   })
 
   // --- safeName edge cases ---
 
   describe('safeName edge cases', () => {
-    test('approval with very long name truncates the filename', async ({ act, assert }) => {
+    test('approval with very long name truncates the filename', async ({ given, when, then }) => {
       const longName = 'a'.repeat(100)
-      await act.setApproveMode()
-      await act.approveValue({ value: 'data', name: longName })
-      await assert.baselineCreated()
-      await assert.noError()
-      await act.clearApproveMode()
+      await given.setApproveMode()
+      await when.approveValue({ value: 'data', name: longName })
+      await then.baselineCreated()
+      await then.noError()
+      await given.clearApproveMode()
     })
 
-    test('approval with special characters in name produces safe filename', async ({ act, assert }) => {
-      await act.setApproveMode()
-      await act.approveValue({ value: 'data', name: 'test@#$%^&*()!' })
-      await assert.baselineCreated()
-      await assert.noError()
-      await act.clearApproveMode()
+    test('approval with special characters in name produces safe filename', async ({ given, when, then }) => {
+      await given.setApproveMode()
+      await when.approveValue({ value: 'data', name: 'test@#$%^&*()!' })
+      await then.baselineCreated()
+      await then.noError()
+      await given.clearApproveMode()
     })
   })
 
   describe('visual approvals', () => {
-    test('fails when visual baseline is missing', async ({ act, assert }) => {
-      await act.provideScreenshotter({ behavior: 'match' })
-      await act.approveVisual({ name: 'screenshot' })
-      await assert.visualBaselineMissing()
-      await assert.mismatchDetected()
+    test('fails when visual baseline is missing', async ({ given, when, then }) => {
+      await given.provideScreenshotter({ behavior: 'match' })
+      await when.approveVisual({ name: 'screenshot' })
+      await then.visualBaselineMissing()
+      await then.mismatchDetected()
     })
 
-    test('creates visual baseline when approve mode is on', async ({ act, assert }) => {
-      await act.provideScreenshotter({ behavior: 'match' })
-      await act.setApproveMode()
-      await act.approveVisual({ name: 'screenshot' })
-      await assert.noError()
-      await assert.visualBaselineCreated()
+    test('creates visual baseline when approve mode is on', async ({ given, when, then }) => {
+      await given.provideScreenshotter({ behavior: 'match' })
+      await given.setApproveMode()
+      await when.approveVisual({ name: 'screenshot' })
+      await then.noError()
+      await then.visualBaselineCreated()
     })
 
-    test('passes when visual baseline matches', async ({ act, assert }) => {
-      await act.provideScreenshotter({ behavior: 'match' })
-      await act.setApproveMode()
-      await act.approveVisual({ name: 'screenshot' })
-      await act.clearApproveMode()
-      await act.approveVisual({ name: 'screenshot' })
-      await assert.visualMatchPassed()
-      await assert.noError()
+    test('passes when visual baseline matches', async ({ given, when, then }) => {
+      await given.provideScreenshotter({ behavior: 'match' })
+      await given.setApproveMode()
+      await when.approveVisual({ name: 'screenshot' })
+      await given.clearApproveMode()
+      await when.approveVisual({ name: 'screenshot' })
+      await then.visualMatchPassed()
+      await then.noError()
     })
 
-    test('detects visual mismatch and generates diff', async ({ act, assert }) => {
-      await act.provideScreenshotter({ behavior: 'differ' })
-      await act.setApproveMode()
-      await act.approveVisual({ name: 'screenshot' })
-      await act.clearApproveMode()
-      await act.approveVisual({ name: 'screenshot' })
-      await assert.visualMismatchDetected()
-      await assert.visualDiffGenerated()
+    test('detects visual mismatch and generates diff', async ({ given, when, then }) => {
+      await given.provideScreenshotter({ behavior: 'differ' })
+      await given.setApproveMode()
+      await when.approveVisual({ name: 'screenshot' })
+      await given.clearApproveMode()
+      await when.approveVisual({ name: 'screenshot' })
+      await then.visualMismatchDetected()
+      await then.visualDiffGenerated()
     })
 
-    test('handles different image dimensions', async ({ act, assert }) => {
-      await act.provideScreenshotter({ behavior: 'dimension-mismatch' })
-      await act.setApproveMode()
-      await act.approveVisual({ name: 'screenshot' })
-      await act.clearApproveMode()
-      await act.approveVisual({ name: 'screenshot' })
-      await assert.visualMismatchDetected()
-      await assert.visualDiffGenerated()
+    test('handles different image dimensions', async ({ given, when, then }) => {
+      await given.provideScreenshotter({ behavior: 'dimension-mismatch' })
+      await given.setApproveMode()
+      await when.approveVisual({ name: 'screenshot' })
+      await given.clearApproveMode()
+      await when.approveVisual({ name: 'screenshot' })
+      await then.visualMismatchDetected()
+      await then.visualDiffGenerated()
     })
 
-    test('skips with warning when no screenshotter available', async ({ act, assert }) => {
-      await act.removeScreenshotter()
-      await act.approveVisual({ name: 'screenshot' })
-      await assert.screenshotterSkipWarned()
-      await assert.noError()
+    test('skips with warning when no screenshotter available', async ({ given, when, then }) => {
+      await given.removeScreenshotter()
+      await when.approveVisual({ name: 'screenshot' })
+      await then.screenshotterSkipWarned()
+      await then.noError()
     })
 
-    test('supports region-based visual approval', async ({ act, assert }) => {
-      await act.provideScreenshotter({ behavior: 'match' })
-      await act.setApproveMode()
-      await act.approveVisual({ name: 'header-region', region: 'header' })
-      await assert.noError()
-      await assert.visualBaselineCreated()
+    test('supports region-based visual approval', async ({ given, when, then }) => {
+      await given.provideScreenshotter({ behavior: 'match' })
+      await given.setApproveMode()
+      await when.approveVisual({ name: 'header-region', region: 'header' })
+      await then.noError()
+      await then.visualBaselineCreated()
     })
   })
 })

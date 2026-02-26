@@ -4,3 +4,12 @@ export {
   type TriggerType,
   type TriggerCallback,
 } from './triggers.js'
+
+export {
+  AgentNetwork,
+  type SupervisorDecision,
+  type Dispatchers,
+  type DispatchResult,
+  type AgentNetworkConfig,
+  type AgentNetworkCallbacks,
+} from './agent-network.js'

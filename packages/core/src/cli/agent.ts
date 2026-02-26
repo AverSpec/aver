@@ -65,9 +65,63 @@ async function runStart(goal?: string): Promise<void> {
     process.exit(1)
   }
 
-  // TODO: wire to AgentNetwork (Task 19) — CycleEngine deleted in Task 16
-  console.error('Plain-text agent mode not yet wired to AgentNetwork. Use TUI mode or wait for Task 19.')
-  process.exit(1)
+  const { mkdirSync } = await import('node:fs')
+  mkdirSync(agentPath, { recursive: true })
+
+  const { createDatabase, closeDatabase, AgentNetwork } = await import('@aver/agent')
+  const { WorkspaceStore, WorkspaceOps } = await import('@aver/workspace')
+
+  const dbFilePath = resolve(agentPath, 'aver-agent.db')
+  const db = await createDatabase(dbFilePath)
+  const store = WorkspaceStore.fromPath(workspacePath, projectId)
+  const workspaceOps = new WorkspaceOps(store)
+
+  // Stub dispatchers — real SDK integration is separate work
+  const dispatchers = {
+    supervisorDispatch: async (_sys: string, _user: string) => {
+      return { response: '{"action":"stop","reason":"stub dispatcher — real SDK not yet wired"}', tokenUsage: 0 }
+    },
+    workerDispatch: async (_sys: string, _user: string) => {
+      return { response: 'stub worker response', tokenUsage: 0 }
+    },
+  }
+
+  const network = new AgentNetwork(db, dispatchers, workspaceOps, {
+    supervisorModel: config.model.supervisor,
+    workerModel: config.model.worker,
+    maxCycleDepth: config.cycles.maxCycleDepth,
+    claudeExecutablePath: config.claudeExecutablePath,
+  }, {
+    onMessage: (msg) => console.log(`[agent] ${msg}`),
+    onQuestion: async (question) => {
+      console.log(`[agent] Question: ${question}`)
+      // Non-interactive: auto-answer
+      if (!process.stdin.isTTY) return 'continue'
+      // Interactive: read from stdin
+      const { createInterface } = await import('node:readline')
+      const rl = createInterface({ input: process.stdin, output: process.stdout })
+      return new Promise<string>((res) => {
+        rl.question('> ', (answer) => {
+          rl.close()
+          res(answer)
+        })
+      })
+    },
+  })
+
+  console.log(`Starting agent session for: ${goal}`)
+
+  try {
+    await network.start(goal)
+    // The network runs asynchronously via trigger queue.
+    // In plain-text mode, we wait briefly then report status.
+    // The session will keep running in the trigger queue callbacks.
+    console.log('Agent session started. Use "aver agent status" to check progress.')
+  } catch (err) {
+    console.error(`Agent failed: ${err instanceof Error ? err.message : String(err)}`)
+    closeDatabase(db)
+    process.exit(1)
+  }
 }
 
 async function runStop(): Promise<void> {

@@ -17,34 +17,34 @@ test('transitions phase from awaiting_goal to running to stopped', async ({ act,
   await then.phaseIs({ phase: 'stopped' })
 })
 
-test('worker:dispatch event creates a running worker', async ({ act, then }) => {
+test('worker:created event creates a running worker', async ({ act, then }) => {
   await act.dispatchEvent({
     event: {
-      timestamp: '2026-01-01T00:00:00Z',
-      type: 'worker:dispatch',
-      cycleId: 'cycle-1',
-      data: { goal: 'Investigate auth', skill: 'investigation', permissionLevel: 'read_only' },
+      id: 'evt-1',
+      type: 'worker:created',
+      data: { agentId: 'w-1', goal: 'Investigate auth', skill: 'investigation' },
+      createdAt: '2026-01-01T00:00:00Z',
     },
   })
   await then.hasWorkerWithGoal({ goal: 'Investigate auth' })
   await then.workerStatusIs({ goal: 'Investigate auth', status: 'running' })
 })
 
-test('worker:result event completes a running worker', async ({ act, query, then }) => {
+test('worker:complete event completes a running worker', async ({ act, query, then }) => {
   await act.dispatchEvent({
     event: {
-      timestamp: '2026-01-01T00:00:00Z',
-      type: 'worker:dispatch',
-      cycleId: 'cycle-1',
-      data: { goal: 'Map rules', skill: 'scenario-mapping' },
+      id: 'evt-1',
+      type: 'worker:created',
+      data: { agentId: 'w-1', goal: 'Map rules', skill: 'scenario-mapping' },
+      createdAt: '2026-01-01T00:00:00Z',
     },
   })
   await act.dispatchEvent({
     event: {
-      timestamp: '2026-01-01T00:00:01Z',
-      type: 'worker:result',
-      cycleId: 'cycle-1',
-      data: { summary: 'Found 3 rules', status: 'complete' },
+      id: 'evt-2',
+      type: 'worker:complete',
+      data: { agentId: 'w-1', summary: 'Found 3 rules' },
+      createdAt: '2026-01-01T00:00:01Z',
     },
   })
   await then.workerStatusIs({ goal: 'Map rules', status: 'complete' })
@@ -52,54 +52,68 @@ test('worker:result event completes a running worker', async ({ act, query, then
   expect(running).toHaveLength(0)
 })
 
-test('worker:result with stuck status marks worker as stuck', async ({ act, then }) => {
+test('worker:error event marks worker as error', async ({ act, then }) => {
   await act.dispatchEvent({
     event: {
-      timestamp: '2026-01-01T00:00:00Z',
-      type: 'worker:dispatch',
-      cycleId: 'cycle-1',
-      data: { goal: 'Trace boundaries', skill: 'investigation' },
+      id: 'evt-1',
+      type: 'worker:created',
+      data: { agentId: 'w-1', goal: 'Trace boundaries', skill: 'investigation' },
+      createdAt: '2026-01-01T00:00:00Z',
     },
   })
   await act.dispatchEvent({
     event: {
-      timestamp: '2026-01-01T00:00:01Z',
-      type: 'worker:result',
-      cycleId: 'cycle-1',
-      data: { summary: 'Blocked on missing context', status: 'stuck' },
+      id: 'evt-2',
+      type: 'worker:error',
+      data: { agentId: 'w-1', error: 'Blocked on missing context' },
+      createdAt: '2026-01-01T00:00:01Z',
     },
   })
-  await then.workerStatusIs({ goal: 'Trace boundaries', status: 'stuck' })
+  await then.workerStatusIs({ goal: 'Trace boundaries', status: 'error' })
 })
 
 test('tracks multiple workers with mixed statuses', async ({ act, query }) => {
-  // Dispatch 3 workers
-  for (const goal of ['Worker A', 'Worker B', 'Worker C']) {
-    await act.dispatchEvent({
-      event: {
-        timestamp: new Date().toISOString(),
-        type: 'worker:dispatch',
-        cycleId: 'cycle-1',
-        data: { goal, skill: 'investigation' },
-      },
-    })
-  }
-
-  // Complete last two (LIFO: C first, then B)
+  // Create 3 workers
   await act.dispatchEvent({
     event: {
-      timestamp: new Date().toISOString(),
-      type: 'worker:result',
-      cycleId: 'cycle-1',
-      data: { summary: 'C done', status: 'complete' },
+      id: 'evt-1',
+      type: 'worker:created',
+      data: { agentId: 'w-a', goal: 'Worker A', skill: 'investigation' },
+      createdAt: new Date().toISOString(),
     },
   })
   await act.dispatchEvent({
     event: {
-      timestamp: new Date().toISOString(),
-      type: 'worker:result',
-      cycleId: 'cycle-1',
-      data: { summary: 'B done', status: 'complete' },
+      id: 'evt-2',
+      type: 'worker:created',
+      data: { agentId: 'w-b', goal: 'Worker B', skill: 'investigation' },
+      createdAt: new Date().toISOString(),
+    },
+  })
+  await act.dispatchEvent({
+    event: {
+      id: 'evt-3',
+      type: 'worker:created',
+      data: { agentId: 'w-c', goal: 'Worker C', skill: 'investigation' },
+      createdAt: new Date().toISOString(),
+    },
+  })
+
+  // Complete C and B
+  await act.dispatchEvent({
+    event: {
+      id: 'evt-4',
+      type: 'worker:complete',
+      data: { agentId: 'w-c', summary: 'C done' },
+      createdAt: new Date().toISOString(),
+    },
+  })
+  await act.dispatchEvent({
+    event: {
+      id: 'evt-5',
+      type: 'worker:complete',
+      data: { agentId: 'w-b', summary: 'B done' },
+      createdAt: new Date().toISOString(),
     },
   })
 

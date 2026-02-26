@@ -302,8 +302,17 @@ export class CycleEngine {
   }
 
   private async handleError(message: string): Promise<void> {
-    await this.logEvent('cycle:end', { error: message })
-    await this.sessionStore.updateStatus('error', message)
+    try {
+      await this.logEvent('cycle:end', { error: message })
+    } catch (err) {
+      console.error(`Failed to log error event: ${err instanceof Error ? err.message : String(err)}`)
+    }
+
+    try {
+      await this.sessionStore.updateStatus('error', message)
+    } catch (err) {
+      console.error(`Failed to update session status: ${err instanceof Error ? err.message : String(err)}`)
+    }
   }
 
   private async logEvent(type: AgentEvent['type'], data: Record<string, unknown>): Promise<void> {

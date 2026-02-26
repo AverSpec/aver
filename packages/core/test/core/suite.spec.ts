@@ -90,9 +90,9 @@ describe('suite() — programmatic API', () => {
 
     const trace = s.getTrace()
     expect(trace).toHaveLength(3)
-    expect(trace[0]).toMatchObject({ kind: 'action', name: 'addItem', payload: { name: 'A' }, status: 'pass' })
-    expect(trace[1]).toMatchObject({ kind: 'query', name: 'total', payload: undefined, status: 'pass', result: 42 })
-    expect(trace[2]).toMatchObject({ kind: 'assertion', name: 'isEmpty', payload: undefined, status: 'pass' })
+    expect(trace[0]).toMatchObject({ kind: 'action', category: 'act', name: 'addItem', payload: { name: 'A' }, status: 'pass' })
+    expect(trace[1]).toMatchObject({ kind: 'query', category: 'query', name: 'total', payload: undefined, status: 'pass', result: 42 })
+    expect(trace[2]).toMatchObject({ kind: 'assertion', category: 'assert', name: 'isEmpty', payload: undefined, status: 'pass' })
 
     await s.teardown()
   })
@@ -221,8 +221,8 @@ describe('suite().test() — callback API', () => {
     await query.total()
     const t = trace()
     expect(t).toHaveLength(2)
-    expect(t[0]).toMatchObject({ kind: 'action', name: 'addItem', status: 'pass' })
-    expect(t[1]).toMatchObject({ kind: 'query', name: 'total', status: 'pass' })
+    expect(t[0]).toMatchObject({ kind: 'action', category: 'act', name: 'addItem', status: 'pass' })
+    expect(t[1]).toMatchObject({ kind: 'query', category: 'query', name: 'total', status: 'pass' })
   })
 
   suiteTest('given/when/then aliases dispatch through correct handlers with categories', async ({ given, when, then, assert, trace }) => {

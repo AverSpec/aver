@@ -2,7 +2,7 @@ import { suite } from '@aver/core'
 import { AverAgent } from '../../src/domain.js'
 import { averAgentAdapter } from './adapter.js'
 
-const { test, act, query, then } = suite(AverAgent, averAgentAdapter)
+const { test } = suite(AverAgent, averAgentAdapter)
 
 test('stops immediately when supervisor says stop', async ({ act, query, then }) => {
   await act.queueSupervisorDecision({

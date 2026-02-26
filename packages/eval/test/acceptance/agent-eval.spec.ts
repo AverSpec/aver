@@ -3,7 +3,7 @@ import { agentEval } from '../../src/domain.js'
 import { setDefaultProvider, resetDefaultProvider, mockProvider } from '../../src/index.js'
 import { agentEvalAdapter } from './adapter.js'
 
-const { test, given, when, query, then } = suite(agentEval, agentEvalAdapter)
+const { test } = suite(agentEval, agentEvalAdapter)
 
 beforeAll(() => {
   setDefaultProvider(mockProvider([

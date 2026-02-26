@@ -39,7 +39,7 @@ let cachedStoreKey: string | undefined
 function getCachedStore(basePath: string, projectId: string): WorkspaceStore {
   const key = `${basePath}\0${projectId}`
   if (cachedStore && cachedStoreKey === key) return cachedStore
-  cachedStore = new WorkspaceStore(basePath, projectId)
+  cachedStore = WorkspaceStore.fromPath(basePath, projectId)
   cachedStoreKey = key
   return cachedStore
 }

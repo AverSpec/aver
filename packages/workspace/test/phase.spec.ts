@@ -1,25 +1,19 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { mkdtempSync, rmSync } from 'node:fs'
-import { join } from 'node:path'
-import { tmpdir } from 'node:os'
+import { describe, it, expect, beforeEach } from 'vitest'
+import { createClient, type Client } from '@libsql/client'
 import { WorkspaceOps } from '../src/operations'
 import { WorkspaceStore } from '../src/storage'
 import { detectPhase } from '../src/phase'
 import type { Stage } from '../src/types'
 
 describe('detectPhase', () => {
-  let dir: string
+  let client: Client
   let ops: WorkspaceOps
   let store: WorkspaceStore
 
   beforeEach(() => {
-    dir = mkdtempSync(join(tmpdir(), 'aver-workspace-'))
-    store = new WorkspaceStore(dir, 'test-project')
+    client = createClient({ url: ':memory:' })
+    store = new WorkspaceStore(client, 'test-project')
     ops = new WorkspaceOps(store)
-  })
-
-  afterEach(() => {
-    rmSync(dir, { recursive: true, force: true })
   })
 
   /** Helper: advance a scenario through stages with required prerequisites */

@@ -52,7 +52,7 @@ export class CycleEngine {
       basePath: options.agentPath,
       rollupThreshold: options.config.cycles.rollupThreshold,
     })
-    const store = new WorkspaceStore(options.workspacePath, options.projectId)
+    const store = WorkspaceStore.fromPath(options.workspacePath, options.projectId)
     this.workspaceOps = new WorkspaceOps(store)
     this.config = options.config
     this.dispatchSupervisorFn = options.dispatchers?.supervisor ?? dispatchSupervisor

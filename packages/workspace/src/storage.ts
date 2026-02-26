@@ -1,63 +1,102 @@
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { homedir } from 'node:os'
-import { SafeJsonFile } from './safe-json-file.js'
-import type { Workspace } from './types.js'
-
-type Migration = (data: any) => any
+import { createClient, type Client } from '@libsql/client'
+import type { Workspace, Scenario } from './types.js'
 
 const CURRENT_VERSION = '1.0.0'
 
-const migrations: Record<string, Migration> = {
-  // Example: '0.9.0': (data) => ({ ...data, schemaVersion: '1.0.0', newField: 'default' })
+const SCHEMA_SQL = `CREATE TABLE IF NOT EXISTS scenarios (
+  id TEXT PRIMARY KEY,
+  data TEXT NOT NULL
+)`
+
+const META_SQL = `CREATE TABLE IF NOT EXISTS workspace_meta (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+)`
+
+export async function initWorkspaceSchema(client: Client): Promise<void> {
+  await client.execute(SCHEMA_SQL)
+  await client.execute(META_SQL)
 }
 
 export class WorkspaceStore {
-  readonly filePath: string
-  private readonly file: SafeJsonFile<Workspace>
+  private initialized = false
 
-  constructor(basePath: string, projectId: string) {
+  constructor(
+    private readonly client: Client,
+    private readonly projectId: string,
+  ) {}
+
+  /**
+   * Create a WorkspaceStore backed by a SQLite file at `basePath/projectId/workspace.db`.
+   */
+  static fromPath(basePath: string, projectId: string): WorkspaceStore {
     const projectDir = join(basePath, projectId)
     mkdirSync(projectDir, { recursive: true })
-    this.filePath = join(projectDir, 'workspace.json')
-    this.file = new SafeJsonFile(this.filePath, () => {
-      const now = new Date().toISOString()
-      return {
-        schemaVersion: CURRENT_VERSION,
-        projectId,
-        scenarios: [],
-        createdAt: now,
-        updatedAt: now,
-      }
-    })
+    const dbPath = join(projectDir, 'workspace.db')
+    const client = createClient({ url: `file:${dbPath}` })
+    return new WorkspaceStore(client, projectId)
   }
 
+  /**
+   * Create a WorkspaceStore at the default location: `~/.aver/workspaces/<projectId>/workspace.db`.
+   */
   static withDefaults(projectId: string): WorkspaceStore {
     const basePath = join(homedir(), '.aver', 'workspaces')
-    return new WorkspaceStore(basePath, projectId)
+    return WorkspaceStore.fromPath(basePath, projectId)
+  }
+
+  private async ensureSchema(): Promise<void> {
+    if (this.initialized) return
+    await initWorkspaceSchema(this.client)
+    this.initialized = true
   }
 
   async load(): Promise<Workspace> {
-    const data = await this.file.read()
-    return this.migrate(data)
+    await this.ensureSchema()
+    const result = await this.client.execute('SELECT data FROM scenarios ORDER BY rowid')
+    const scenarios: Scenario[] = result.rows.map(row => JSON.parse(row.data as string))
+
+    const metaResult = await this.client.execute(
+      "SELECT value FROM workspace_meta WHERE key = 'created_at'"
+    )
+    const createdAt = metaResult.rows.length > 0
+      ? metaResult.rows[0].value as string
+      : new Date().toISOString()
+
+    return {
+      schemaVersion: CURRENT_VERSION,
+      projectId: this.projectId,
+      scenarios,
+      createdAt,
+      updatedAt: new Date().toISOString(),
+    }
   }
 
   async mutate(fn: (ws: Workspace) => Workspace): Promise<Workspace> {
-    return this.file.mutate(ws => {
-      const updated = fn(ws)
-      updated.updatedAt = new Date().toISOString()
-      return updated
-    })
-  }
+    await this.ensureSchema()
 
-  private migrate(data: Workspace): Workspace {
-    if (!data.schemaVersion) {
-      // Pre-versioning data — treat as 1.0.0
-      data.schemaVersion = CURRENT_VERSION
+    const ws = await this.load()
+    const updated = fn(ws)
+    updated.updatedAt = new Date().toISOString()
+
+    // Rebuild scenarios table from the mutated workspace
+    await this.client.execute('DELETE FROM scenarios')
+    for (const scenario of updated.scenarios) {
+      await this.client.execute({
+        sql: 'INSERT INTO scenarios (id, data) VALUES (?, ?)',
+        args: [scenario.id, JSON.stringify(scenario)],
+      })
     }
-    // When adding the first real migration, iterate the `migrations` record
-    // in version order: while (data.schemaVersion !== CURRENT_VERSION) apply
-    // migrations[data.schemaVersion], then update data.schemaVersion.
-    return data
+
+    // Store metadata
+    await this.client.execute({
+      sql: "INSERT OR REPLACE INTO workspace_meta (key, value) VALUES ('created_at', ?)",
+      args: [updated.createdAt],
+    })
+
+    return updated
   }
 }

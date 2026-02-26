@@ -1,6 +1,4 @@
-import { mkdtempSync } from 'node:fs'
-import { join } from 'node:path'
-import { tmpdir } from 'node:os'
+import { createClient, type Client } from '@libsql/client'
 import { implement, unit } from '@aver/core'
 import { averWorkspace } from '../domains/aver-workspace'
 import {
@@ -14,7 +12,7 @@ import {
 import type { Scenario, Question } from '../../../src/index'
 
 interface WorkspaceTestSession {
-  basePath: string
+  client: Client
   store: WorkspaceStore
   ops: WorkspaceOps
   lastCapturedId: string
@@ -25,10 +23,10 @@ interface WorkspaceTestSession {
 
 export const averWorkspaceAdapter = implement(averWorkspace, {
   protocol: unit<WorkspaceTestSession>(() => {
-    const basePath = mkdtempSync(join(tmpdir(), 'aver-workspace-'))
-    const store = new WorkspaceStore(basePath, 'test')
+    const client = createClient({ url: ':memory:' })
+    const store = new WorkspaceStore(client, 'test')
     const ops = new WorkspaceOps(store)
-    return { basePath, store, ops, lastCapturedId: '', lastQuestionId: '' }
+    return { client, store, ops, lastCapturedId: '', lastQuestionId: '' }
   }),
 
   actions: {
@@ -116,8 +114,8 @@ export const averWorkspaceAdapter = implement(averWorkspace, {
     },
 
     reloadFromDisk: async (session) => {
-      // Create a fresh store and ops from the same base path, proving disk persistence
-      const newStore = new WorkspaceStore(session.basePath, 'test')
+      // Create a fresh store and ops from the same client, proving persistence
+      const newStore = new WorkspaceStore(session.client, 'test')
       session.store = newStore
       session.ops = new WorkspaceOps(newStore)
     },

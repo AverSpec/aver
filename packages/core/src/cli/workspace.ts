@@ -42,7 +42,7 @@ interface WorkspaceModule {
     getScenarios(filter: { stage?: string; keyword?: string }): Promise<ScenarioRow[]>
   }
   WorkspaceStore: {
-    new (basePath: string, projectId: string): { load(): Promise<any> }
+    fromPath(basePath: string, projectId: string): { load(): Promise<any> }
     withDefaults(projectId: string): { load(): Promise<any> }
   }
   detectPhase(workspace: any): Phase
@@ -309,7 +309,7 @@ export async function runWorkspace(rawArgs: string[]): Promise<void> {
 
   const projectId = basename(process.cwd())
   const store = workspacePath
-    ? new ws.WorkspaceStore(resolve(workspacePath), projectId)
+    ? ws.WorkspaceStore.fromPath(resolve(workspacePath), projectId)
     : ws.WorkspaceStore.withDefaults(projectId)
 
   const [subcommand, ...subArgs] = remainingArgs

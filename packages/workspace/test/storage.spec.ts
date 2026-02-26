@@ -1,21 +1,15 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { mkdtempSync, rmSync } from 'node:fs'
-import { join } from 'node:path'
-import { tmpdir } from 'node:os'
+import { describe, it, expect, beforeEach } from 'vitest'
+import { createClient, type Client } from '@libsql/client'
 import { WorkspaceStore } from '../src/storage'
 import { createScenario } from '../src/types'
 
 describe('WorkspaceStore', () => {
-  let dir: string
+  let client: Client
   let store: WorkspaceStore
 
   beforeEach(() => {
-    dir = mkdtempSync(join(tmpdir(), 'aver-workspace-'))
-    store = new WorkspaceStore(dir, 'test-project')
-  })
-
-  afterEach(() => {
-    rmSync(dir, { recursive: true, force: true })
+    client = createClient({ url: ':memory:' })
+    store = new WorkspaceStore(client, 'test-project')
   })
 
   it('creates workspace on first access', async () => {
@@ -34,19 +28,6 @@ describe('WorkspaceStore', () => {
     const reloaded = await store.load()
     expect(reloaded.scenarios).toHaveLength(1)
     expect(reloaded.scenarios[0].behavior).toBe('test behavior')
-  })
-
-  it('uses project-specific subdirectory', async () => {
-    await store.mutate(ws => ws) // trigger file creation
-    const storePath = store.filePath
-    expect(storePath).toContain('test-project')
-  })
-
-  it('resolves default path to ~/.aver/workspaces/', () => {
-    const defaultStore = WorkspaceStore.withDefaults('my-project')
-    expect(defaultStore.filePath).toContain('.aver')
-    expect(defaultStore.filePath).toContain('workspaces')
-    expect(defaultStore.filePath).toContain('my-project')
   })
 
   it('serializes concurrent mutate calls', async () => {

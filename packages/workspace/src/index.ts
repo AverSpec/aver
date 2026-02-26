@@ -1,7 +1,7 @@
 // @aver/workspace — Scenario workspace for the Aver workflow
 export { createScenario, createExample } from './types.js'
 export type { Scenario, Workspace, Example, Question, Stage, Transition } from './types.js'
-export { WorkspaceStore } from './storage.js'
+export { WorkspaceStore, initWorkspaceSchema } from './storage.js'
 export { WorkspaceOps, verifyAdvancement, nextStage, STAGE_ORDER } from './operations.js'
 export type { AdvanceInput, AdvanceResult, RevisitInput, AdvancementVerification, ScenarioFilter, ScenarioSummary } from './operations.js'
 export { exportMarkdown, exportJson, importJson } from './export.js'

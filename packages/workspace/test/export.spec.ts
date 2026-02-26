@@ -1,24 +1,18 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { mkdtempSync, rmSync } from 'node:fs'
-import { join } from 'node:path'
-import { tmpdir } from 'node:os'
+import { describe, it, expect, beforeEach } from 'vitest'
+import { createClient, type Client } from '@libsql/client'
 import { WorkspaceOps } from '../src/operations'
 import { WorkspaceStore } from '../src/storage'
 import { exportMarkdown, exportJson, importJson } from '../src/export'
 
 describe('export', () => {
-  let dir: string
+  let client: Client
   let ops: WorkspaceOps
   let store: WorkspaceStore
 
   beforeEach(() => {
-    dir = mkdtempSync(join(tmpdir(), 'aver-workspace-'))
-    store = new WorkspaceStore(dir, 'test-project')
+    client = createClient({ url: ':memory:' })
+    store = new WorkspaceStore(client, 'test-project')
     ops = new WorkspaceOps(store)
-  })
-
-  afterEach(() => {
-    rmSync(dir, { recursive: true, force: true })
   })
 
   describe('exportMarkdown', () => {
@@ -55,15 +49,13 @@ describe('export', () => {
       expect(parsed.scenarios).toHaveLength(2)
 
       // Import into a fresh store
-      const dir2 = mkdtempSync(join(tmpdir(), 'aver-workspace-'))
-      const store2 = new WorkspaceStore(dir2, 'other-project')
+      const client2 = createClient({ url: ':memory:' })
+      const store2 = new WorkspaceStore(client2, 'other-project')
       const ops2 = new WorkspaceOps(store2)
 
       const imported = await importJson(store2, json)
       expect(imported.added).toBe(2)
       expect(await ops2.getScenarios()).toHaveLength(2)
-
-      rmSync(dir2, { recursive: true, force: true })
     })
 
     it('skips duplicate scenarios on import', async () => {

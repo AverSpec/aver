@@ -644,7 +644,7 @@ describe('CycleEngine', () => {
 
   it('passes scenarioDetail to worker when scenarioId is provided', async () => {
     // Seed a scenario in the workspace
-    const store = new WorkspaceStore(dir, 'test')
+    const store = WorkspaceStore.fromPath(dir, 'test')
     const ops = new WorkspaceOps(store)
     const scenario = await ops.captureScenario({ behavior: 'test behavior', mode: 'intended' })
 
@@ -696,7 +696,7 @@ describe('CycleEngine', () => {
 
   it('blocks advancement when verification fails (open questions)', async () => {
     // Seed a mapped scenario with an open question
-    const store = new WorkspaceStore(dir, 'test')
+    const store = WorkspaceStore.fromPath(dir, 'test')
     const ops = new WorkspaceOps(store)
 
     // Create and advance a scenario to 'mapped'
@@ -743,7 +743,7 @@ describe('CycleEngine', () => {
   it('logs advancement warnings when verifyAdvancement returns warnings', async () => {
     // Seed an observed scenario at captured stage with no seams/constraints
     // verifyAdvancement(captured -> characterized) warns for observed mode without evidence
-    const store = new WorkspaceStore(dir, 'test')
+    const store = WorkspaceStore.fromPath(dir, 'test')
     const ops = new WorkspaceOps(store)
     const scenario = await ops.captureScenario({ behavior: 'observed behavior', mode: 'observed' })
 
@@ -795,7 +795,7 @@ describe('CycleEngine', () => {
   it('blocks already-implemented scenario advancement via non-adjacent check', async () => {
     // Seed a scenario at implemented stage — nextStage returns null so the
     // non-adjacent check blocks before advanceScenario is ever called.
-    const store = new WorkspaceStore(dir, 'test')
+    const store = WorkspaceStore.fromPath(dir, 'test')
     const ops = new WorkspaceOps(store)
     const scenario = await ops.captureScenario({ behavior: 'fully done', mode: 'intended' })
 
@@ -850,7 +850,7 @@ describe('CycleEngine', () => {
 
   it('blocks non-adjacent stage transition (captured -> mapped skipping characterized)', async () => {
     // Seed a scenario at captured stage
-    const store = new WorkspaceStore(dir, 'test')
+    const store = WorkspaceStore.fromPath(dir, 'test')
     const ops = new WorkspaceOps(store)
     const scenario = await ops.captureScenario({ behavior: 'auth login', mode: 'intended' })
 
@@ -898,7 +898,7 @@ describe('CycleEngine', () => {
 
   it('allows adjacent stage transition (captured -> characterized)', async () => {
     // Seed an intended scenario at captured
-    const store = new WorkspaceStore(dir, 'test')
+    const store = WorkspaceStore.fromPath(dir, 'test')
     const ops = new WorkspaceOps(store)
     const scenario = await ops.captureScenario({ behavior: 'user login', mode: 'intended' })
 
@@ -936,7 +936,7 @@ describe('CycleEngine', () => {
 
   it('blocks characterized -> specified (non-adjacent, skips mapped)', async () => {
     // Seed and advance a scenario to characterized
-    const store = new WorkspaceStore(dir, 'test')
+    const store = WorkspaceStore.fromPath(dir, 'test')
     const ops = new WorkspaceOps(store)
     const scenario = await ops.captureScenario({ behavior: 'order cancel', mode: 'intended' })
     await ops.advanceScenario(scenario.id, { rationale: 'test', promotedBy: 'test' })
@@ -984,7 +984,7 @@ describe('CycleEngine', () => {
 
   it('blocks adjacent transition when hard block exists (characterized -> mapped without confirmedBy)', async () => {
     // Seed and advance to characterized
-    const store = new WorkspaceStore(dir, 'test')
+    const store = WorkspaceStore.fromPath(dir, 'test')
     const ops = new WorkspaceOps(store)
     const scenario = await ops.captureScenario({ behavior: 'cart checkout', mode: 'intended' })
     await ops.advanceScenario(scenario.id, { rationale: 'test', promotedBy: 'test' })

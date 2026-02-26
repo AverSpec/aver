@@ -16,14 +16,15 @@ import {
   getAdvanceCandidatesHandler,
   exportScenariosHandler,
   importScenariosHandler,
+  clearWorkspaceCache,
 } from '../../src/tools/workspace'
-import { WorkspaceStore, WorkspaceOps } from '@aver/workspace'
 
 describe('workspace tool handlers', () => {
   let dir: string
   const projectId = 'test'
 
   beforeEach(() => {
+    clearWorkspaceCache()
     dir = mkdtempSync(join(tmpdir(), 'aver-mcp-workspace-'))
   })
 
@@ -122,8 +123,7 @@ describe('workspace tool handlers', () => {
     it('advances characterized to mapped when confirmedBy is set', async () => {
       const scenario = await captureScenarioHandler({ behavior: 'a' }, dir, projectId)
       await advanceScenarioHandler({ id: scenario.id, rationale: 'step 1', promotedBy: 'dev' }, dir, projectId)
-      const ops = new WorkspaceOps(new WorkspaceStore(dir, projectId))
-      await ops.confirmScenario(scenario.id, 'business-user')
+      await confirmScenarioHandler({ id: scenario.id, confirmer: 'business-user' }, dir, projectId)
       const { scenario: advanced } = await advanceScenarioHandler({ id: scenario.id, rationale: 'step 2', promotedBy: 'dev' }, dir, projectId)
       expect(advanced.stage).toBe('mapped')
     })
@@ -205,9 +205,8 @@ describe('workspace tool handlers', () => {
       const scenario = await captureScenarioHandler({ behavior: 'a' }, dir, projectId)
       await advanceScenarioHandler({ id: scenario.id, rationale: 'step 1', promotedBy: 'dev' }, dir, projectId)
       await confirmScenarioHandler({ id: scenario.id, confirmer: 'business-user' }, dir, projectId)
-      const ops = new WorkspaceOps(new WorkspaceStore(dir, projectId))
-      const updated = await ops.getScenario(scenario.id)
-      expect(updated!.confirmedBy).toBe('business-user')
+      const scenarios = await getScenariosHandler({}, dir, projectId)
+      expect(scenarios[0].confirmedBy).toBe('business-user')
     })
   })
 

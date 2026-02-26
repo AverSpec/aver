@@ -70,12 +70,12 @@ Tests declare their domain dependency via `suite()`. They speak only domain lang
 ```typescript
 const { test } = suite(shoppingCart)
 
-test('full checkout flow', async ({ act, query, assert }) => {
-  await act.addItem({ name: 'Widget', qty: 2 })
-  await assert.hasItems({ count: 1 })
+test('full checkout flow', async ({ given, when, then, query }) => {
+  await given.addItem({ name: 'Widget', qty: 2 })
+  await then.hasItems({ count: 1 })
   const total = await query.cartTotal()
   expect(total).toBe(19.98)
-  await act.checkout()
+  await when.checkout()
 })
 ```
 
@@ -97,6 +97,27 @@ Assertions could technically be expressed as query + expect, but they earn their
 - They express intent in domain language
 - They enable protocol-optimized checks (Playwright's auto-waiting `toHaveText` vs manual poll-and-compare)
 - They produce better action traces on failure
+
+## Given/When/Then Aliases
+
+Tests can use `given`, `when`, and `then` as narrative aliases for `act` and `assert`:
+
+| Alias | Delegates to | Purpose |
+|:------|:-------------|:--------|
+| `given` | `act` | Setup — establish preconditions |
+| `when` | `act` | Trigger — perform the action under test |
+| `then` | `assert` | Verify — check outcomes |
+
+These aliases produce distinct labels in the action trace:
+
+```
+Action trace (unit):
+  [PASS] GIVEN  ShoppingCart.addItem({"name":"Widget","qty":2})  12ms
+  [PASS] WHEN   ShoppingCart.checkout()  45ms
+  [PASS] THEN   ShoppingCart.totalCharged({"amount":35})  2ms
+```
+
+The raw `act`, `query`, and `assert` names remain available for tests where the Given/When/Then framing doesn't fit. All six accessors (`act`, `given`, `when`, `query`, `assert`, `then`) call the same adapter handlers — the difference is purely in trace labeling.
 
 ## Protocols
 
@@ -174,10 +195,10 @@ On failure, Aver shows the action trace — every domain operation leading to th
 FAIL  shopping-cart.spec.ts > full checkout flow [unit]
 
 Action trace (unit):
-  [PASS] ShoppingCart.addItem({"name":"Widget","qty":2})
-  [PASS] ShoppingCart.hasItems({"count":1})
-  [PASS] ShoppingCart.cartTotal()
-  [FAIL] ShoppingCart.checkout() — Expected order to be confirmed
+  [PASS] GIVEN  ShoppingCart.addItem({"name":"Widget","qty":2})  12ms
+  [PASS] THEN   ShoppingCart.hasItems({"count":1})  1ms
+  [PASS] QUERY  ShoppingCart.cartTotal()  0ms
+  [FAIL] WHEN   ShoppingCart.checkout() — Expected order to be confirmed  45ms
 
   Expected order to be confirmed
 ```

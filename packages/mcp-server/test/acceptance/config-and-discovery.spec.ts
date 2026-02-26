@@ -14,22 +14,22 @@ describe('MCP Config and Discovery (acceptance)', () => {
     resetRegistry()
   })
 
-  test('reloadConfig re-registers domains from injected loader', async ({ act, assert }) => {
-    await act.reloadConfig({ domainNames: ['ReloadedDomain'] })
-    await assert.domainIsRegistered({ name: 'ReloadedDomain' })
+  test('reloadConfig re-registers domains from injected loader', async ({ when, then }) => {
+    await when.reloadConfig({ domainNames: ['ReloadedDomain'] })
+    await then.domainIsRegistered({ name: 'ReloadedDomain' })
   })
 
-  test('reloadConfig clears previously registered domains', async ({ act, query }) => {
-    await act.registerTestDomain({ name: 'First', actions: [], queries: [], assertions: [] })
-    await act.reloadConfig({ domainNames: ['Second'] })
+  test('reloadConfig clears previously registered domains', async ({ given, when, query }) => {
+    await given.registerTestDomain({ name: 'First', actions: [], queries: [], assertions: [] })
+    await when.reloadConfig({ domainNames: ['Second'] })
     const count = await query.registeredDomainCount()
     // After reload, only 'Second' + the outer test adapter's domain should exist
     // The reloadConfig resets registry, so 'First' should be gone
     expect(count).toBeGreaterThanOrEqual(1)
   })
 
-  test('discoverDomains registers domains found on disk', async ({ act, assert }) => {
-    await act.discoverDomains({ domainNames: ['DiscoveredDomain'] })
-    await assert.domainIsRegistered({ name: 'DiscoveredDomain' })
+  test('discoverDomains registers domains found on disk', async ({ when, then }) => {
+    await when.discoverDomains({ domainNames: ['DiscoveredDomain'] })
+    await then.domainIsRegistered({ name: 'DiscoveredDomain' })
   })
 })

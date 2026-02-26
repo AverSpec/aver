@@ -14,8 +14,8 @@ describe('MCP Domain Exploration (acceptance)', () => {
     resetRegistry()
   })
 
-  test('lists registered domains with vocabulary summaries', async ({ act, query }) => {
-    await act.registerTestDomain({
+  test('lists registered domains with vocabulary summaries', async ({ given, query }) => {
+    await given.registerTestDomain({
       name: 'Cart',
       actions: ['addItem', 'checkout'],
       queries: ['total'],
@@ -29,8 +29,8 @@ describe('MCP Domain Exploration (acceptance)', () => {
     expect(domains[0].queryCount).toBe(1)
   })
 
-  test('gets vocabulary for a specific domain', async ({ act, query }) => {
-    await act.registerTestDomain({
+  test('gets vocabulary for a specific domain', async ({ given, query }) => {
+    await given.registerTestDomain({
       name: 'Auth',
       actions: ['login', 'logout'],
       queries: ['currentUser'],
@@ -46,11 +46,12 @@ describe('MCP Domain Exploration (acceptance)', () => {
 
   test('returns null for unknown domain vocabulary', async ({ query }) => {
     const result = await query.domainVocabulary({ name: 'NonExistent' })
+    // TODO: consider adding domain assertion for null vocabulary
     expect(result).toBeNull()
   })
 
-  test('lists all registered adapters', async ({ act, query }) => {
-    await act.registerTestDomain({
+  test('lists all registered adapters', async ({ given, query }) => {
+    await given.registerTestDomain({
       name: 'Cart',
       actions: ['addItem'],
       queries: [],
@@ -59,11 +60,13 @@ describe('MCP Domain Exploration (acceptance)', () => {
 
     const adapters = await query.adapterList()
     const cartAdapter = adapters.find(a => a.domainName === 'Cart')
+    // TODO: consider adding domain assertion for adapter definition
     expect(cartAdapter).toBeDefined()
   })
 
   test('returns null for project context when no config loaded', async ({ query }) => {
     const result = await query.projectContext()
+    // TODO: consider adding domain assertion for null project context
     expect(result).toBeNull()
   })
 })

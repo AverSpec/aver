@@ -14,8 +14,8 @@ describe('MCP Test Execution (acceptance)', () => {
     resetRegistry()
   })
 
-  test('retrieves failure details after saving a run with failures', async ({ act, query }) => {
-    await act.saveTestRun({
+  test('retrieves failure details after saving a run with failures', async ({ given, query }) => {
+    await given.saveTestRun({
       results: [
         { testName: 'passes', domain: 'Cart', status: 'pass', trace: [] },
         { testName: 'fails', domain: 'Cart', status: 'fail', trace: [
@@ -25,12 +25,13 @@ describe('MCP Test Execution (acceptance)', () => {
     })
 
     const details = await query.failureDetails()
+    // TODO: consider adding domain assertion for failure details
     expect(details.failures[0].testName).toBe('fails')
     expect(details.failures[0].domain).toBe('Cart')
   })
 
-  test('retrieves test trace by name', async ({ act, query }) => {
-    await act.saveTestRun({
+  test('retrieves test trace by name', async ({ given, query }) => {
+    await given.saveTestRun({
       results: [
         { testName: 'my-test', domain: 'Cart', status: 'pass', trace: [
           { kind: 'action', name: 'addItem', status: 'pass' },
@@ -40,27 +41,29 @@ describe('MCP Test Execution (acceptance)', () => {
     })
 
     const trace = await query.testTrace({ testName: 'my-test' })
+    // TODO: consider adding domain assertion for test trace retrieval
     expect(trace).not.toBeNull()
     expect(trace!.testName).toBe('my-test')
     expect(trace!.status).toBe('pass')
   })
 
-  test('returns null trace for unknown test', async ({ act, query }) => {
-    await act.saveTestRun({ results: [] })
+  test('returns null trace for unknown test', async ({ given, query }) => {
+    await given.saveTestRun({ results: [] })
 
     const trace = await query.testTrace({ testName: 'nonexistent' })
+    // TODO: consider adding domain assertion for null trace
     expect(trace).toBeNull()
   })
 
   // --- RunStore retention ---
 
-  test('enforces 10-run retention limit', async ({ act, assert }) => {
-    await act.saveMultipleRuns({ count: 12 })
-    await assert.runCountIs({ count: 10 })
+  test('enforces 10-run retention limit', async ({ given, then }) => {
+    await given.saveMultipleRuns({ count: 12 })
+    await then.runCountIs({ count: 10 })
   })
 
-  test('retains latest runs when pruning', async ({ act, assert }) => {
-    await act.saveMultipleRuns({ count: 5 })
-    await assert.runCountIs({ count: 5 })
+  test('retains latest runs when pruning', async ({ given, then }) => {
+    await given.saveMultipleRuns({ count: 5 })
+    await then.runCountIs({ count: 5 })
   })
 })

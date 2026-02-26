@@ -1,5 +1,4 @@
 import { WorkspaceStore, WorkspaceOps, nextStage, type Scenario } from '@aver/workspace'
-import { verifyAdvancement } from './verification.js'
 import { ContextCurator } from '../memory/curator.js'
 import { SessionStore } from '../memory/session.js'
 import { dispatchSupervisor } from '../supervisor/dispatch.js'
@@ -202,29 +201,21 @@ export class CycleEngine {
               continue
             }
 
-            const verification = verifyAdvancement(scenario, scenario.stage, adjacent)
-            if (verification.blocked) {
-              await this.logEvent('advancement:blocked', {
-                scenarioId: update.scenarioId,
-                from: scenario.stage,
-                to: adjacent,
-                reason: verification.hardBlocks[0],
-              })
-              continue
-            }
-            for (const warning of verification.warnings) {
-              await this.logEvent('advancement:warning', {
-                scenarioId: update.scenarioId,
-                from: scenario.stage,
-                to: adjacent,
-                warning,
-              })
-            }
+            // Trust advanceScenario to enforce its own invariants (verifyAdvancement
+            // is called internally). Capture warnings from the result for event logging.
             try {
-              await this.workspaceOps.advanceScenario(update.scenarioId, {
+              const { warnings } = await this.workspaceOps.advanceScenario(update.scenarioId, {
                 rationale: update.rationale ?? '',
                 promotedBy: 'aver-agent',
               })
+              for (const warning of warnings) {
+                await this.logEvent('advancement:warning', {
+                  scenarioId: update.scenarioId,
+                  from: scenario.stage,
+                  to: adjacent,
+                  warning,
+                })
+              }
             } catch (err) {
               await this.logEvent('advancement:blocked', {
                 scenarioId: update.scenarioId,

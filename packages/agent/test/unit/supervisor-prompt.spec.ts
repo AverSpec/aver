@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { buildSupervisorPrompt } from '../../src/supervisor/prompt.js'
-import type { SupervisorInput } from '../../src/types.js'
+import { buildSupervisorPrompt, type SupervisorPromptInput, type ActiveWorkerInfo } from '../../src/supervisor/prompt.js'
 import type { Scenario } from '@aver/workspace'
+import type { Trigger } from '../../src/network/triggers.js'
 
 function makeScenario(overrides: Partial<Scenario> = {}): Scenario {
   return {
@@ -19,28 +19,31 @@ function makeScenario(overrides: Partial<Scenario> = {}): Scenario {
   }
 }
 
+function makeTrigger(overrides: Partial<Trigger> = {}): Trigger {
+  return {
+    type: overrides.type ?? 'session:start',
+    timestamp: overrides.timestamp ?? '2026-01-01T00:00:00Z',
+    ...overrides,
+  }
+}
+
 describe('buildSupervisorPrompt', () => {
-  const baseInput: SupervisorInput = {
-    trigger: 'startup',
+  const baseInput: SupervisorPromptInput = {
     projectContext: '',
-    workspace: { projectId: 'my-app', scenarios: [], createdAt: '', updatedAt: '' },
-    checkpointChain: [],
-    recentEvents: [],
-    storySummaries: [],
-    artifactIndex: [],
+    observations: '',
+    scenarios: [],
+    activeWorkers: [],
+    triggers: [makeTrigger({ type: 'session:start', data: { goal: 'test goal' } })],
   }
 
-  function makeInput(scenarios: Scenario[]): SupervisorInput {
-    return {
-      ...baseInput,
-      workspace: { ...baseInput.workspace, scenarios },
-    }
+  function makeInput(scenarios: Scenario[]): SupervisorPromptInput {
+    return { ...baseInput, scenarios }
   }
 
   it('includes system role description', () => {
     const { system } = buildSupervisorPrompt(baseInput)
     expect(system).toContain('supervisor')
-    expect(system).toContain('domain-driven development')
+    expect(system).toContain('domain-driven acceptance testing')
   })
 
   it('includes project context when present', () => {
@@ -50,60 +53,92 @@ describe('buildSupervisorPrompt', () => {
   })
 
   it('includes workspace snapshot', () => {
-    const input = {
+    const input: SupervisorPromptInput = {
       ...baseInput,
-      workspace: {
-        ...baseInput.workspace,
-        scenarios: [
-          { id: 'sc-1', stage: 'captured' as const, behavior: 'user can login', rules: [], examples: [], questions: [], constraints: [], seams: [], createdAt: '', updatedAt: '' },
-        ],
-      },
+      scenarios: [makeScenario({ id: 'sc-1', behavior: 'user can login' })],
     }
     const { user } = buildSupervisorPrompt(input)
     expect(user).toContain('user can login')
     expect(user).toContain('captured')
   })
 
-  it('includes checkpoint chain', () => {
-    const input = { ...baseInput, checkpointChain: ['Checkpoint: investigated auth'] }
-    const { user } = buildSupervisorPrompt(input)
-    expect(user).toContain('investigated auth')
-  })
-
-  it('includes artifact index', () => {
-    const input = {
+  it('includes triggers section', () => {
+    const input: SupervisorPromptInput = {
       ...baseInput,
-      artifactIndex: [
-        { name: 'inv-auth', type: 'investigation' as const, summary: 'auth module exploration', createdAt: '' },
-      ],
+      triggers: [makeTrigger({ type: 'worker:goal_complete', agentId: 'w-1', data: { summary: 'found seams' } })],
     }
     const { user } = buildSupervisorPrompt(input)
-    expect(user).toContain('inv-auth')
-    expect(user).toContain('auth module exploration')
+    expect(user).toContain('Triggers')
+    expect(user).toContain('worker:goal_complete')
+    expect(user).toContain('w-1')
   })
 
-  it('includes user message when present', () => {
-    const input = { ...baseInput, trigger: 'user_message' as const, userMessage: 'focus on checkout next' }
+  it('includes observations section when present', () => {
+    const input: SupervisorPromptInput = {
+      ...baseInput,
+      observations: 'Auth module has 3 seams identified',
+    }
+    const { user } = buildSupervisorPrompt(input)
+    expect(user).toContain('Observations')
+    expect(user).toContain('Auth module has 3 seams identified')
+  })
+
+  it('omits observations section when empty', () => {
+    const { user } = buildSupervisorPrompt(baseInput)
+    expect(user).not.toContain('## Observations')
+  })
+
+  it('includes human message when present', () => {
+    const input: SupervisorPromptInput = {
+      ...baseInput,
+      humanMessage: 'focus on checkout next',
+    }
     const { user } = buildSupervisorPrompt(input)
     expect(user).toContain('focus on checkout next')
   })
 
-  it('formats worker results when present', () => {
-    const input = {
-      ...baseInput,
-      trigger: 'workers_complete' as const,
-      workerResults: [{ summary: 'Found 3 seams in auth', artifacts: [], status: 'complete' as const }],
-    }
+  it('includes active workers section', () => {
+    const workers: ActiveWorkerInfo[] = [
+      { id: 'w-1', goal: 'investigate auth', skill: 'investigation', status: 'active' },
+      { id: 'w-2', goal: 'implement payments', skill: 'implementation', status: 'idle' },
+    ]
+    const input: SupervisorPromptInput = { ...baseInput, activeWorkers: workers }
     const { user } = buildSupervisorPrompt(input)
-    expect(user).toContain('Found 3 seams in auth')
+    expect(user).toContain('Active Workers')
+    expect(user).toContain('w-1')
+    expect(user).toContain('investigate auth')
+    expect(user).toContain('w-2')
+    expect(user).toContain('implement payments')
   })
 
-  it('returns expected JSON output format instruction', () => {
+  it('shows "No active workers" when none exist', () => {
+    const { user } = buildSupervisorPrompt(baseInput)
+    expect(user).toContain('No active workers')
+  })
+
+  it('returns expected JSON output format instruction with new action types', () => {
     const { system } = buildSupervisorPrompt(baseInput)
-    expect(system).toContain('dispatch_worker')
-    expect(system).toContain('ask_user')
-    expect(system).toContain('checkpoint')
+    expect(system).toContain('create_worker')
+    expect(system).toContain('assign_goal')
+    expect(system).toContain('terminate_worker')
+    expect(system).toContain('advance_scenario')
+    expect(system).toContain('ask_human')
+    expect(system).toContain('update_scenario')
     expect(system).toContain('stop')
+  })
+
+  it('does not contain old v1 action types', () => {
+    const { system } = buildSupervisorPrompt(baseInput)
+    expect(system).not.toContain('dispatch_worker')
+    expect(system).not.toContain('dispatch_workers')
+    expect(system).not.toContain('checkpoint')
+    expect(system).not.toContain('complete_story')
+    expect(system).not.toContain('update_workspace')
+  })
+
+  it('describes trigger-driven wake model', () => {
+    const { system } = buildSupervisorPrompt(baseInput)
+    expect(system).toContain('woken by triggers')
   })
 
   it('includes mode in scenario line', () => {
@@ -161,7 +196,7 @@ describe('buildSupervisorPrompt', () => {
     expect(system).toContain('implemented scenarios')
   })
 
-  it('lists all 5 skills in dispatch_worker format', () => {
+  it('lists all 5 skills', () => {
     const { system } = buildSupervisorPrompt(baseInput)
     expect(system).toContain('investigation')
     expect(system).toContain('implementation')
@@ -170,35 +205,17 @@ describe('buildSupervisorPrompt', () => {
     expect(system).toContain('specification')
   })
 
-  it('does not contain flat success criteria', () => {
-    const { system } = buildSupervisorPrompt(baseInput)
-    expect(system).not.toContain('The success criteria is always')
-  })
-
   it('includes hard block prerequisites in stage-aware workflow', () => {
     const { system } = buildSupervisorPrompt(baseInput)
-    // P0: must match verifyAdvancement() hard blocks
     expect(system).toContain('confirmedBy')
     expect(system).toContain('open questions must be resolved')
     expect(system).toContain('domainOperation')
-  })
-
-  it('clarifies update_workspace is only for stage transitions', () => {
-    const { system } = buildSupervisorPrompt(baseInput)
-    expect(system).toContain('ONLY for stage transitions')
   })
 
   it('includes error recovery guidance', () => {
     const { system } = buildSupervisorPrompt(baseInput)
     expect(system).toContain('Error Recovery')
     expect(system).toContain('stuck')
-    expect(system).toContain('error_max_turns')
-  })
-
-  it('includes concrete dispatch_workers example', () => {
-    const { system } = buildSupervisorPrompt(baseInput)
-    // Should have a real example, not a placeholder comment
-    expect(system).not.toContain('/* array of worker objects')
   })
 
   it('formats open questions with spaces', () => {
@@ -215,56 +232,26 @@ describe('buildSupervisorPrompt', () => {
     expect(user).not.toContain('questions:1open')
   })
 
-  it('renders failed workers in the Worker Results section', () => {
-    const input = {
+  it('renders worker scenarioId when present', () => {
+    const workers: ActiveWorkerInfo[] = [
+      { id: 'w-1', goal: 'investigate auth', status: 'active', scenarioId: 'sc-42' },
+    ]
+    const input: SupervisorPromptInput = { ...baseInput, activeWorkers: workers }
+    const { user } = buildSupervisorPrompt(input)
+    expect(user).toContain('scenario:sc-42')
+  })
+
+  it('renders multiple triggers in the same section', () => {
+    const input: SupervisorPromptInput = {
       ...baseInput,
-      trigger: 'workers_complete' as const,
-      failedWorkers: [
-        { goal: 'investigate auth', error: 'error_max_turns' },
-        { goal: 'investigate payments', error: 'JSON parse error' },
+      triggers: [
+        makeTrigger({ type: 'worker:goal_complete', agentId: 'w-1' }),
+        makeTrigger({ type: 'worker:stuck', agentId: 'w-2', data: { error: 'timeout' } }),
       ],
     }
     const { user } = buildSupervisorPrompt(input)
-    expect(user).toContain('Worker Results')
-    expect(user).toContain('investigate auth')
-    expect(user).toContain('error_max_turns')
-    expect(user).toContain('investigate payments')
-    expect(user).toContain('JSON parse error')
-    expect(user).toContain('2 workers failed')
-  })
-
-  it('renders both successful and failed workers in the same section', () => {
-    const input = {
-      ...baseInput,
-      trigger: 'workers_complete' as const,
-      workerResults: [{ summary: 'auth seams found', artifacts: [], status: 'complete' as const }],
-      failedWorkers: [{ goal: 'investigate payments', error: 'timeout' }],
-    }
-    const { user } = buildSupervisorPrompt(input)
-    expect(user).toContain('auth seams found')
-    expect(user).toContain('investigate payments')
+    expect(user).toContain('worker:goal_complete')
+    expect(user).toContain('worker:stuck')
     expect(user).toContain('timeout')
-    // Only one Worker Results section header
-    const occurrences = (user.match(/## Worker Results/g) ?? []).length
-    expect(occurrences).toBe(1)
-  })
-
-  it('renders only failed workers when there are no successes', () => {
-    const input = {
-      ...baseInput,
-      trigger: 'workers_complete' as const,
-      failedWorkers: [{ goal: 'investigate auth', error: 'rate limit' }],
-    }
-    const { user } = buildSupervisorPrompt(input)
-    expect(user).toContain('Worker Results')
-    expect(user).toContain('investigate auth')
-    expect(user).toContain('rate limit')
-    expect(user).toContain('1 worker failed')
-  })
-
-  it('omits Worker Results section when neither successes nor failures exist', () => {
-    const input = { ...baseInput }
-    const { user } = buildSupervisorPrompt(input)
-    expect(user).not.toContain('Worker Results')
   })
 })

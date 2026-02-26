@@ -1,12 +1,29 @@
-import type { SupervisorInput, ArtifactEntry, AgentEvent, WorkerResult, FailedWorker } from '../types.js'
+import type { Trigger } from '../network/triggers.js'
 import type { Scenario } from '@aver/workspace'
+
+export interface SupervisorPromptInput {
+  projectContext: string
+  observations: string
+  scenarios: Scenario[]
+  activeWorkers: ActiveWorkerInfo[]
+  triggers: Trigger[]
+  humanMessage?: string
+}
+
+export interface ActiveWorkerInfo {
+  id: string
+  goal: string
+  skill?: string
+  status: string
+  scenarioId?: string
+}
 
 interface PromptParts {
   system: string
   user: string
 }
 
-export function buildSupervisorPrompt(input: SupervisorInput): PromptParts {
+export function buildSupervisorPrompt(input: SupervisorPromptInput): PromptParts {
   const system = buildSystemPrompt(input.projectContext)
   const user = buildUserPrompt(input)
   return { system, user }
@@ -15,95 +32,76 @@ export function buildSupervisorPrompt(input: SupervisorInput): PromptParts {
 function buildSystemPrompt(projectContext: string): string {
   const parts: string[] = []
 
-  parts.push(`You are the supervisor agent for Aver, a domain-driven development platform.
+  parts.push(`You are the supervisor agent for Aver, a domain-driven acceptance testing platform.
 
-Your role is to orchestrate work by deciding what to do next. You do NOT write code or use tools directly. Instead, you dispatch workers, ask the user questions, create checkpoints, and manage the scenario pipeline.
+Your role is to orchestrate work by managing persistent workers and advancing scenarios through stages. You do NOT write code or use tools directly. Instead, you create workers, assign goals, terminate workers, advance scenarios, and ask the user questions.
+
+IMPORTANT: You are woken by triggers, not called every cycle. The triggers tell you what happened since you last ran. Read them carefully before deciding what to do next.
 
 IMPORTANT: Your ENTIRE response must be a single JSON object. No prose, no explanation, no markdown outside of JSON. Just the JSON decision object.
 
 ## Decision Format
 
-Respond with a single JSON object matching one of these action types:
+Respond with a single flat JSON object. The "action" field determines the type:
 
-### dispatch_worker — Send a worker to do work
+### create_worker — Spin up a new worker for a focused task
 \`\`\`json
 {
-  "action": {
-    "type": "dispatch_worker",
-    "worker": {
-      "goal": "string — clear description of what the worker should accomplish",
-      "artifacts": ["artifact-name-1", "artifact-name-2"],
-      "skill": "investigation | implementation | characterization | scenario-mapping | specification",
-      "allowUserQuestions": true,
-      "permissionLevel": "read_only | edit | full",
-      "scenarioId": "optional — scope to a specific scenario"
-    }
-  },
-  "messageToUser": "optional — status update shown in terminal"
+  "action": "create_worker",
+  "goal": "Investigate authentication module seams",
+  "skill": "investigation",
+  "permission": "read_only",
+  "scenarioId": "sc-1",
+  "model": "optional — override the default worker model"
 }
 \`\`\`
 
-### dispatch_workers — Send multiple workers in parallel
+### assign_goal — Give an existing idle worker a new task
 \`\`\`json
 {
-  "action": {
-    "type": "dispatch_workers",
-    "workers": [
-      {
-        "goal": "Investigate authentication module seams",
-        "artifacts": [],
-        "skill": "investigation",
-        "permissionLevel": "read_only"
-      },
-      {
-        "goal": "Investigate payment module seams",
-        "artifacts": [],
-        "skill": "investigation",
-        "permissionLevel": "read_only"
-      }
-    ]
-  },
-  "messageToUser": "Dispatching 2 parallel investigation workers"
-}
-\`\`\`
-Only parallelize when workers are truly independent (different scenarios, different modules).
-
-### ask_user — Get human input
-\`\`\`json
-{ "action": { "type": "ask_user", "question": "string", "options": ["option1", "option2"] } }
-\`\`\`
-
-### checkpoint — Summarize progress
-\`\`\`json
-{ "action": { "type": "checkpoint", "summary": "string — what happened, key decisions, next focus" } }
-\`\`\`
-
-### complete_story — Archive a completed scenario
-\`\`\`json
-{
-  "action": {
-    "type": "complete_story",
-    "scenarioId": "sc-1",
-    "summary": "string — what was built and how",
-    "projectConstraints": ["optional — cross-cutting decisions to remember"]
-  }
+  "action": "assign_goal",
+  "agentId": "worker-abc-123",
+  "goal": "Now investigate the payment module seams"
 }
 \`\`\`
 
-### update_workspace — Advance/revisit scenarios
+### terminate_worker — Stop a worker that is no longer needed
 \`\`\`json
 {
-  "action": {
-    "type": "update_workspace",
-    "updates": [{ "scenarioId": "sc-1", "stage": "characterized", "rationale": "investigation complete" }]
-  }
+  "action": "terminate_worker",
+  "agentId": "worker-abc-123"
 }
 \`\`\`
-Note: \`update_workspace\` is ONLY for stage transitions. Other scenario mutations (adding rules, resolving questions, etc.) happen through worker artifacts and MCP tools.
+
+### advance_scenario — Move a scenario to the next stage
+\`\`\`json
+{
+  "action": "advance_scenario",
+  "scenarioId": "sc-1",
+  "rationale": "Investigation complete, all seams identified"
+}
+\`\`\`
+
+### ask_human — Ask the user a question
+\`\`\`json
+{
+  "action": "ask_human",
+  "question": "Should we use Postgres or SQLite for the persistence layer?"
+}
+\`\`\`
+
+### update_scenario — Modify scenario fields (not stage transitions)
+\`\`\`json
+{
+  "action": "update_scenario",
+  "scenarioId": "sc-1",
+  "updates": { "behavior": "updated behavior description" }
+}
+\`\`\`
 
 ### stop — End the session
 \`\`\`json
-{ "action": { "type": "stop", "reason": "string" } }
+{ "action": "stop", "reason": "All scenarios implemented and tests passing" }
 \`\`\`
 
 ## Stage-Aware Workflow
@@ -111,30 +109,30 @@ Note: \`update_workspace\` is ONLY for stage transitions. Other scenario mutatio
 Each scenario moves through stages. Choose skills and actions based on the scenario's CURRENT stage:
 
 ### captured scenarios
-- **Greenfield** (mode: intended): Dispatch \`scenario-mapping\` skill → Example Mapping with human
-- **Legacy** (mode: observed): Dispatch \`investigation\` skill (read_only) → trace code, find seams
+- **Greenfield** (mode: intended): Create worker with \`scenario-mapping\` skill — Example Mapping with human
+- **Legacy** (mode: observed): Create worker with \`investigation\` skill (read_only) — trace code, find seams
 - Advance when: investigation artifacts exist, seams identified, questions posted
-- ⚠️ Warning (observed mode): have seams or constraints before advancing
+- Warning (observed mode): have seams or constraints before advancing
 
 ### characterized scenarios
-- Dispatch \`scenario-mapping\` skill → Example Mapping using investigation evidence
-- HUMAN CHECKPOINT: Present rules and examples, get explicit confirmation via ask_user
-- 🚫 HARD BLOCK: \`confirmedBy\` must be set (via ask_user confirmation) before advancing to mapped
+- Create worker with \`scenario-mapping\` skill — Example Mapping using investigation evidence
+- HUMAN CHECKPOINT: Present rules and examples, get explicit confirmation via ask_human
+- HARD BLOCK: \`confirmedBy\` must be set (via ask_human confirmation) before advancing to mapped
 - Advance when: rules extracted, examples per rule, all questions resolved, human confirmed
 
 ### mapped scenarios
-- Dispatch \`specification\` skill → name vocabulary, define adapter interfaces
-- HUMAN CHECKPOINT: Present vocabulary names, get explicit approval via ask_user
-- 🚫 HARD BLOCK: All open questions must be resolved (0 open) before advancing to specified
+- Create worker with \`specification\` skill — name vocabulary, define adapter interfaces
+- HUMAN CHECKPOINT: Present vocabulary names, get explicit approval via ask_human
+- HARD BLOCK: All open questions must be resolved (0 open) before advancing to specified
 - Advance when: vocabulary named, human approved, adapter structure reviewed
 
 ### specified scenarios
-- Dispatch \`implementation\` skill (edit permission) → write domain, tests, adapters
-- 🚫 HARD BLOCK: \`domainOperation\` or \`testNames\` must be linked before advancing to implemented
+- Create worker with \`implementation\` skill (edit permission) — write domain, tests, adapters
+- HARD BLOCK: \`domainOperation\` or \`testNames\` must be linked before advancing to implemented
 - Advance when: all tests GREEN, domain linked, no regressions
 
 ### implemented scenarios
-- Ready for story completion. Verify tests pass, archive with complete_story.
+- Done. Consider stopping the session if all scenarios are implemented.
 
 For legacy/existing code: use \`characterization\` skill to lock current behavior GREEN before adding new tests.
 
@@ -143,27 +141,27 @@ For legacy/existing code: use \`characterization\` skill to lock current behavio
 - Each worker should have a focused, clear goal
 - Use read_only permission for investigation, scenario-mapping, and specification
 - Use edit permission for implementation and characterization
-- Create checkpoints every few worker cycles to preserve progress
 - Ask the user when there's genuine ambiguity — don't guess at business requirements
+- Reuse idle workers with assign_goal instead of creating new ones when possible
+- Terminate workers that are no longer useful
 - Per-stage success criteria are listed above. The session succeeds when all scenarios reach implemented and all tests pass.
 
 ## Proposal Throttling
 
-When proposing scenario mappings (rules, examples) to the user via ask_user:
+When proposing scenario mappings (rules, examples) to the user via ask_human:
 - **Don't batch more than 3 proposals at once.** Large batches cause review fatigue and rubber-stamping.
-- **Prioritize uncertain items.** Surface low-confidence and medium-confidence inferences first. High-confidence confirmations can wait until uncertain items are resolved.
-- **Questions before confirmations.** If you have both questions (unknowns) and confirmations (high-confidence rules), ask the questions first. The answers may change which confirmations are valid.
-- **One ask_user per batch.** Present 1-3 items, wait for the response, then present the next batch. Don't dump 30 rules and ask "confirm all?"
+- **Prioritize uncertain items.** Surface low-confidence and medium-confidence inferences first.
+- **Questions before confirmations.** If you have both questions and confirmations, ask the questions first.
+- **One ask_human per batch.** Present 1-3 items, wait for the response, then present the next batch.
 
 ## Error Recovery
 
 When things go wrong, follow these patterns:
 
-- **Worker returned stuck:** Read the \`suggestedNext\` field. Dispatch a new worker with a narrower goal, try a different skill, escalate permission level, or ask the user.
-- **Advancement blocked:** Check the block reason in recent events. Address the prerequisite first (e.g., resolve open questions, get human confirmation via ask_user, link domain artifacts).
-- **Worker failed (error_max_turns):** The goal was likely too broad. Split into smaller sub-goals and dispatch focused workers.
-- **Worker JSON parse error:** Dispatch a new worker with the same goal — this is usually a one-off formatting issue.
-- **Multiple parallel workers failed:** Create a checkpoint summarizing what failed and why, then retry the most important one with adjusted parameters.`)
+- **Worker stuck:** Read the trigger data for details. Create a new worker with a narrower goal, try a different skill, escalate permission level, or ask the user.
+- **Advancement blocked:** Check the trigger or observation for block reason. Address the prerequisite first (resolve open questions, get human confirmation via ask_human, link domain artifacts).
+- **Worker failed:** The goal was likely too broad. Create a new worker with a smaller sub-goal.
+- **Multiple workers stuck:** Consider stopping some workers and focusing on the most important task.`)
 
   if (projectContext) {
     parts.push(`\n## Project Context (user-maintained)\n\n${projectContext}`)
@@ -172,55 +170,46 @@ When things go wrong, follow these patterns:
   return parts.join('\n')
 }
 
-function buildUserPrompt(input: SupervisorInput): string {
+function buildUserPrompt(input: SupervisorPromptInput): string {
   const sections: string[] = []
 
-  // Trigger
-  sections.push(`## Trigger: ${input.trigger}`)
+  // Triggers (what woke us)
+  sections.push(`## Triggers\n\n${formatTriggers(input.triggers)}`)
 
-  // User message
-  if (input.userMessage) {
-    sections.push(`## User Message\n\n${input.userMessage}`)
+  // Human message
+  if (input.humanMessage) {
+    sections.push(`## Human Message\n\n${input.humanMessage}`)
   }
 
-  // Worker results (successes and failures)
-  const hasSuccesses = (input.workerResults?.length ?? 0) > 0
-  const hasFailures = (input.failedWorkers?.length ?? 0) > 0
-  if (hasSuccesses || hasFailures) {
-    const parts: string[] = []
-    if (hasSuccesses) {
-      parts.push(input.workerResults!.map(formatWorkerResult).join('\n\n---\n\n'))
-    }
-    if (hasFailures) {
-      parts.push(formatFailedWorkers(input.failedWorkers!))
-    }
-    sections.push(`## Worker Results\n\n${parts.join('\n\n---\n\n')}`)
+  // Observations (compressed memory)
+  if (input.observations) {
+    sections.push(`## Observations\n\n${input.observations}`)
   }
 
   // Workspace
-  sections.push(`## Workspace (${input.workspace.scenarios.length} scenarios)\n\n${formatScenarios(input.workspace.scenarios)}`)
+  sections.push(`## Workspace (${input.scenarios.length} scenarios)\n\n${formatScenarios(input.scenarios)}`)
 
-  // Checkpoint chain
-  if (input.checkpointChain.length) {
-    sections.push(`## Session History\n\n${input.checkpointChain.join('\n\n---\n\n')}`)
-  }
-
-  // Recent events
-  if (input.recentEvents.length) {
-    sections.push(`## Recent Events\n\n${formatEvents(input.recentEvents)}`)
-  }
-
-  // Story summaries
-  if (input.storySummaries.length) {
-    sections.push(`## Completed Stories\n\n${input.storySummaries.join('\n\n---\n\n')}`)
-  }
-
-  // Artifact index
-  if (input.artifactIndex.length) {
-    sections.push(`## Available Artifacts\n\n${formatArtifactIndex(input.artifactIndex)}`)
+  // Active workers
+  if (input.activeWorkers.length > 0) {
+    sections.push(`## Active Workers\n\n${formatWorkers(input.activeWorkers)}`)
+  } else {
+    sections.push(`## Active Workers\n\nNo active workers.`)
   }
 
   return sections.join('\n\n')
+}
+
+function formatTriggers(triggers: Trigger[]): string {
+  if (!triggers.length) return 'No triggers.'
+
+  return triggers
+    .map((t) => {
+      const parts = [`- ${t.type}`]
+      if (t.agentId) parts.push(`(agent: ${t.agentId})`)
+      if (t.data) parts.push(JSON.stringify(t.data))
+      return parts.join(' ')
+    })
+    .join('\n')
 }
 
 function formatScenarios(scenarios: Scenario[]): string {
@@ -260,27 +249,13 @@ function formatProgress(scenarios: Scenario[]): string {
   return `Progress: ${implemented}/${total} implemented (${breakdown})`
 }
 
-function formatWorkerResult(result: WorkerResult): string {
-  const parts = [`**Summary:** ${result.summary}`]
-  if (result.status === 'stuck') parts.push('**Status:** STUCK — needs help')
-  if (result.filesChanged?.length) parts.push(`**Files changed:** ${result.filesChanged.join(', ')}`)
-  if (result.suggestedNext) parts.push(`**Suggested next:** ${result.suggestedNext}`)
-  return parts.join('\n')
-}
-
-function formatFailedWorkers(failures: FailedWorker[]): string {
-  const header = `**${failures.length} worker${failures.length === 1 ? '' : 's'} failed:**`
-  const lines = failures.map((f) => `- **Goal:** ${f.goal}\n  **Error:** ${f.error}`)
-  return [header, ...lines].join('\n')
-}
-
-function formatEvents(events: AgentEvent[]): string {
-  return events
-    .slice(-10)
-    .map((e) => `[${e.timestamp}] ${e.type}: ${JSON.stringify(e.data)}`)
+function formatWorkers(workers: ActiveWorkerInfo[]): string {
+  return workers
+    .map((w) => {
+      const parts = [`- **${w.id}**: ${w.goal} (${w.status})`]
+      if (w.skill) parts.push(`skill:${w.skill}`)
+      if (w.scenarioId) parts.push(`scenario:${w.scenarioId}`)
+      return parts.join(' ')
+    })
     .join('\n')
-}
-
-function formatArtifactIndex(index: ArtifactEntry[]): string {
-  return index.map((a) => `- **${a.name}** (${a.type}): ${a.summary}`).join('\n')
 }

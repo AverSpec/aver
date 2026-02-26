@@ -1,13 +1,13 @@
-import type { SupervisorDecision } from '../types.js'
+import type { SupervisorDecision } from '../network/agent-network.js'
 import { extractJson } from '../parsing.js'
 
-const VALID_ACTION_TYPES = new Set([
-  'dispatch_worker',
-  'dispatch_workers',
-  'ask_user',
-  'checkpoint',
-  'complete_story',
-  'update_workspace',
+const VALID_ACTIONS = new Set([
+  'create_worker',
+  'assign_goal',
+  'terminate_worker',
+  'advance_scenario',
+  'ask_human',
+  'update_scenario',
   'stop',
 ])
 
@@ -28,34 +28,6 @@ export class DecisionParseError extends Error {
   }
 }
 
-function validateWorkerDispatch(worker: unknown, label: string): void {
-  if (!worker || typeof worker !== 'object') {
-    throw new DecisionParseError({
-      type: 'missing_field',
-      message: `${label} must have a "worker" object`,
-      field: 'worker',
-      actionType: 'dispatch_worker',
-    })
-  }
-  const w = worker as Record<string, unknown>
-  if (typeof w.skill !== 'string' || w.skill.length === 0) {
-    throw new DecisionParseError({
-      type: 'missing_field',
-      message: `${label} worker must have a "skill" string`,
-      field: 'worker.skill',
-      actionType: 'dispatch_worker',
-    })
-  }
-  if (typeof w.goal !== 'string' || w.goal.length === 0) {
-    throw new DecisionParseError({
-      type: 'missing_field',
-      message: `${label} worker must have a "goal" string`,
-      field: 'worker.goal',
-      actionType: 'dispatch_worker',
-    })
-  }
-}
-
 export function parseDecision(text: string): SupervisorDecision {
   const json = extractJson(text)
   let parsed: unknown
@@ -68,111 +40,123 @@ export function parseDecision(text: string): SupervisorDecision {
     })
   }
 
-  if (!parsed || typeof parsed !== 'object' || !('action' in parsed)) {
+  if (!parsed || typeof parsed !== 'object') {
     throw new DecisionParseError({
       type: 'missing_field',
-      message: 'Supervisor decision must have an "action" field',
+      message: 'Supervisor decision must be a JSON object',
       field: 'action',
     })
   }
 
-  const decision = parsed as Record<string, any>
-  if (!decision.action || typeof decision.action.type !== 'string') {
+  const decision = parsed as Record<string, unknown>
+  const action = decision.action
+
+  if (typeof action !== 'string') {
     throw new DecisionParseError({
       type: 'missing_field',
-      message: 'Supervisor decision action must have a "type" field',
-      field: 'action.type',
+      message: 'Supervisor decision must have an "action" string field',
+      field: 'action',
     })
   }
 
-  const actionType = decision.action.type
-  if (!VALID_ACTION_TYPES.has(actionType)) {
+  if (!VALID_ACTIONS.has(action)) {
     throw new DecisionParseError({
       type: 'unknown_action',
-      message: `Unknown action type: ${actionType}`,
-      actionType,
+      message: `Unknown action type: ${action}`,
+      actionType: action,
     })
   }
 
   // Semantic validation per action type
-  switch (actionType) {
-    case 'dispatch_worker':
-      validateWorkerDispatch(decision.action.worker, 'dispatch_worker')
-      break
-    case 'dispatch_workers': {
-      const workers = decision.action.workers
-      if (!Array.isArray(workers) || workers.length === 0) {
+  switch (action) {
+    case 'create_worker':
+      if (typeof decision.goal !== 'string' || decision.goal.length === 0) {
         throw new DecisionParseError({
           type: 'missing_field',
-          message: 'dispatch_workers must have a non-empty "workers" array',
-          field: 'workers',
-          actionType: 'dispatch_workers',
+          message: 'create_worker must have a "goal" string',
+          field: 'goal',
+          actionType: 'create_worker',
         })
       }
-      for (let i = 0; i < workers.length; i++) {
-        validateWorkerDispatch(workers[i], `dispatch_workers[${i}]`)
-      }
-      break
-    }
-    case 'ask_user':
-      if (typeof decision.action.question !== 'string' || decision.action.question.length === 0) {
+      if (typeof decision.skill !== 'string' || decision.skill.length === 0) {
         throw new DecisionParseError({
           type: 'missing_field',
-          message: 'ask_user must have a "question" string',
-          field: 'question',
-          actionType: 'ask_user',
+          message: 'create_worker must have a "skill" string',
+          field: 'skill',
+          actionType: 'create_worker',
         })
       }
       break
-    case 'update_workspace':
-      if (!Array.isArray(decision.action.updates)) {
+    case 'assign_goal':
+      if (typeof decision.agentId !== 'string' || decision.agentId.length === 0) {
         throw new DecisionParseError({
           type: 'missing_field',
-          message: 'update_workspace must have an "updates" array',
-          field: 'updates',
-          actionType: 'update_workspace',
+          message: 'assign_goal must have an "agentId" string',
+          field: 'agentId',
+          actionType: 'assign_goal',
+        })
+      }
+      if (typeof decision.goal !== 'string' || decision.goal.length === 0) {
+        throw new DecisionParseError({
+          type: 'missing_field',
+          message: 'assign_goal must have a "goal" string',
+          field: 'goal',
+          actionType: 'assign_goal',
         })
       }
       break
-    case 'checkpoint':
-      if (typeof decision.action.summary !== 'string' || decision.action.summary.length === 0) {
+    case 'terminate_worker':
+      if (typeof decision.agentId !== 'string' || decision.agentId.length === 0) {
         throw new DecisionParseError({
           type: 'missing_field',
-          message: 'checkpoint must have a "summary" string',
-          field: 'summary',
-          actionType: 'checkpoint',
+          message: 'terminate_worker must have an "agentId" string',
+          field: 'agentId',
+          actionType: 'terminate_worker',
         })
       }
       break
-    case 'complete_story':
-      if (typeof decision.action.scenarioId !== 'string' || decision.action.scenarioId.length === 0) {
+    case 'advance_scenario':
+      if (typeof decision.scenarioId !== 'string' || decision.scenarioId.length === 0) {
         throw new DecisionParseError({
           type: 'missing_field',
-          message: 'complete_story must have a "scenarioId" string',
+          message: 'advance_scenario must have a "scenarioId" string',
           field: 'scenarioId',
-          actionType: 'complete_story',
+          actionType: 'advance_scenario',
         })
       }
-      if (typeof decision.action.summary !== 'string' || decision.action.summary.length === 0) {
+      break
+    case 'ask_human':
+      if (typeof decision.question !== 'string' || decision.question.length === 0) {
         throw new DecisionParseError({
           type: 'missing_field',
-          message: 'complete_story must have a "summary" string',
-          field: 'summary',
-          actionType: 'complete_story',
+          message: 'ask_human must have a "question" string',
+          field: 'question',
+          actionType: 'ask_human',
+        })
+      }
+      break
+    case 'update_scenario':
+      if (typeof decision.scenarioId !== 'string' || decision.scenarioId.length === 0) {
+        throw new DecisionParseError({
+          type: 'missing_field',
+          message: 'update_scenario must have a "scenarioId" string',
+          field: 'scenarioId',
+          actionType: 'update_scenario',
+        })
+      }
+      if (!decision.updates || typeof decision.updates !== 'object') {
+        throw new DecisionParseError({
+          type: 'missing_field',
+          message: 'update_scenario must have an "updates" object',
+          field: 'updates',
+          actionType: 'update_scenario',
         })
       }
       break
     case 'stop':
-      if (typeof decision.action.reason !== 'string' || decision.action.reason.length === 0) {
-        throw new DecisionParseError({
-          type: 'missing_field',
-          message: 'stop must have a "reason" string',
-          field: 'reason',
-          actionType: 'stop',
-        })
-      }
+      // reason is optional in the type
       break
   }
 
-  return decision as SupervisorDecision
+  return decision as unknown as SupervisorDecision
 }

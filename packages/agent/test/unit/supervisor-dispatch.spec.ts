@@ -1,303 +1,167 @@
-import { describe, it, expect, vi, afterEach } from 'vitest'
-import type { SupervisorInput, AgentConfig } from '../../src/types.js'
+import { describe, it, expect, vi } from 'vitest'
+import { dispatchSupervisor, buildPrompts, type SupervisorPromptInput } from '../../src/supervisor/dispatch.js'
+import type { Trigger } from '../../src/network/triggers.js'
 
-// Mock the Agent SDK before importing dispatch
-vi.mock('@anthropic-ai/claude-agent-sdk', () => ({
-  query: vi.fn(),
-}))
+function makeTrigger(overrides: Partial<Trigger> = {}): Trigger {
+  return {
+    type: overrides.type ?? 'session:start',
+    timestamp: '2026-01-01T00:00:00Z',
+    ...overrides,
+  }
+}
 
-// Import after mock
-const { query } = await import('@anthropic-ai/claude-agent-sdk')
-const { dispatchSupervisor } = await import('../../src/supervisor/dispatch.js')
-const mockQuery = vi.mocked(query)
-
-describe('dispatchSupervisor', () => {
-  const baseInput: SupervisorInput = {
-    trigger: 'startup',
+describe('buildPrompts', () => {
+  const baseInput: SupervisorPromptInput = {
     projectContext: '',
-    workspace: { projectId: 'test', scenarios: [], createdAt: '', updatedAt: '' },
-    checkpointChain: [],
-    recentEvents: [],
-    storySummaries: [],
-    artifactIndex: [],
+    observations: '',
+    scenarios: [],
+    activeWorkers: [],
+    triggers: [makeTrigger({ data: { goal: 'test' } })],
   }
 
-  const config: AgentConfig = {
-    model: { supervisor: 'claude-sonnet-4-5-20250929', worker: 'claude-opus-4-6' },
-    cycles: { checkpointInterval: 10, rollupThreshold: 3, maxWorkerIterations: 15 },
-    dashboard: { port: 4700 },
-  }
-
-  afterEach(() => {
-    vi.clearAllMocks()
+  it('returns system and user prompt strings', () => {
+    const { system, user } = buildPrompts(baseInput)
+    expect(typeof system).toBe('string')
+    expect(typeof user).toBe('string')
+    expect(system).toContain('supervisor')
+    expect(user).toContain('Triggers')
   })
 
-  it('calls query with correct model and system prompt', async () => {
-    mockQuery.mockReturnValue(createMockQuery([
-      assistantMessage('{"action":{"type":"stop","reason":"no scenarios"}}'),
-      successResult(100, 50),
-    ]))
-
-    await dispatchSupervisor(baseInput, config)
-
-    expect(mockQuery).toHaveBeenCalledWith(
-      expect.objectContaining({
-        options: expect.objectContaining({
-          model: 'claude-sonnet-4-5-20250929',
-          allowedTools: [],
-          maxTurns: 1,
-          permissionMode: 'bypassPermissions',
-          allowDangerouslySkipPermissions: true,
-          persistSession: false,
-        }),
-      }),
-    )
-  })
-
-  it('passes supervisor prompt as systemPrompt and user prompt as prompt', async () => {
-    mockQuery.mockReturnValue(createMockQuery([
-      assistantMessage('{"action":{"type":"stop","reason":"done"}}'),
-      successResult(100, 50),
-    ]))
-
-    await dispatchSupervisor(baseInput, config)
-
-    const call = mockQuery.mock.calls[0][0]
-    expect(call.prompt).toContain('Trigger: startup')
-    expect(call.options?.systemPrompt).toContain('supervisor')
-  })
-
-  it('parses stop decision from assistant response', async () => {
-    mockQuery.mockReturnValue(createMockQuery([
-      assistantMessage('{"action":{"type":"stop","reason":"no scenarios"}}'),
-      successResult(100, 50),
-    ]))
-
-    const result = await dispatchSupervisor(baseInput, config)
-    expect(result.decision.action.type).toBe('stop')
-  })
-
-  it('parses dispatch_worker decision', async () => {
-    const decision = JSON.stringify({
-      action: {
-        type: 'dispatch_worker',
-        worker: {
-          goal: 'investigate auth module',
-          artifacts: [],
-          skill: 'investigation',
-          allowUserQuestions: true,
-          permissionLevel: 'read_only',
-        },
-      },
-      messageToUser: 'Starting investigation',
-    })
-    mockQuery.mockReturnValue(createMockQuery([
-      assistantMessage(decision),
-      successResult(200, 100),
-    ]))
-
-    const result = await dispatchSupervisor(baseInput, config)
-    expect(result.decision.action.type).toBe('dispatch_worker')
-    expect(result.decision.messageToUser).toBe('Starting investigation')
-  })
-
-  it('sums input and output tokens for tokenUsage', async () => {
-    mockQuery.mockReturnValue(createMockQuery([
-      assistantMessage('{"action":{"type":"stop","reason":"done"}}'),
-      successResult(250, 75),
-    ]))
-
-    const result = await dispatchSupervisor(baseInput, config)
-    expect(result.tokenUsage).toBe(325)
-  })
-
-  it('concatenates text from multiple content blocks', async () => {
-    mockQuery.mockReturnValue(createMockQuery([
-      {
-        type: 'assistant' as const,
-        message: {
-          content: [
-            { type: 'text' as const, text: '{"action":{"type":"stop",' },
-            { type: 'text' as const, text: '"reason":"multi-block"}}' },
-          ],
-        },
-        uuid: '00000000-0000-0000-0000-000000000001',
-        session_id: 's1',
-        parent_tool_use_id: null,
-      },
-      successResult(100, 50),
-    ]))
-
-    const result = await dispatchSupervisor(baseInput, config)
-    expect(result.decision.action.type).toBe('stop')
-  })
-
-  it('reports zero tokens when no result message arrives', async () => {
-    mockQuery.mockReturnValue(createMockQuery([
-      assistantMessage('{"action":{"type":"stop","reason":"no result"}}'),
-    ]))
-
-    const result = await dispatchSupervisor(baseInput, config)
-    expect(result.tokenUsage).toBe(0)
-  })
-
-  it('throws when assistant text is not valid decision JSON', async () => {
-    mockQuery.mockReturnValue(createMockQuery([
-      assistantMessage('I am not sure what to do'),
-      successResult(100, 50),
-    ]))
-
-    await expect(dispatchSupervisor(baseInput, config)).rejects.toThrow()
-  })
-
-  it('uses different model when config changes', async () => {
-    const altConfig: AgentConfig = {
-      ...config,
-      model: { supervisor: 'claude-opus-4-6', worker: 'claude-opus-4-6' },
+  it('includes scenarios in user prompt', () => {
+    const input: SupervisorPromptInput = {
+      ...baseInput,
+      scenarios: [{
+        id: 'sc-1',
+        stage: 'captured',
+        behavior: 'user can login',
+        rules: [],
+        examples: [],
+        questions: [],
+        constraints: [],
+        seams: [],
+        createdAt: '',
+        updatedAt: '',
+      }],
     }
-    mockQuery.mockReturnValue(createMockQuery([
-      assistantMessage('{"action":{"type":"stop","reason":"done"}}'),
-      successResult(100, 50),
-    ]))
-
-    await dispatchSupervisor(baseInput, altConfig)
-
-    expect(mockQuery).toHaveBeenCalledWith(
-      expect.objectContaining({
-        options: expect.objectContaining({
-          model: 'claude-opus-4-6',
-        }),
-      }),
-    )
+    const { user } = buildPrompts(input)
+    expect(user).toContain('user can login')
   })
 
-  it('throws a timeout error when the query hangs longer than supervisorCallMs', async () => {
-    // Mock a query that never yields — simulates a completely hung SDK call
-    mockQuery.mockReturnValue(createHangingQuery())
-
-    const fastConfig: AgentConfig = {
-      ...config,
-      timeouts: { supervisorCallMs: 50 },
+  it('includes observations in user prompt', () => {
+    const input: SupervisorPromptInput = {
+      ...baseInput,
+      observations: 'Found 3 seams in auth module',
     }
-
-    await expect(dispatchSupervisor(baseInput, fastConfig)).rejects.toThrow(
-      /timed out/i,
-    )
-  }, 3_000)
-
-  it('succeeds normally when query resolves before the timeout', async () => {
-    mockQuery.mockReturnValue(createMockQuery([
-      assistantMessage('{"action":{"type":"stop","reason":"done"}}'),
-      successResult(100, 50),
-    ]))
-
-    const generousConfig: AgentConfig = {
-      ...config,
-      timeouts: { supervisorCallMs: 5_000 },
-    }
-
-    const result = await dispatchSupervisor(baseInput, generousConfig)
-    expect(result.decision.action.type).toBe('stop')
+    const { user } = buildPrompts(input)
+    expect(user).toContain('Found 3 seams')
   })
 
-  it('uses default 2-minute timeout when timeouts config is absent', async () => {
-    // We cannot wait 2 minutes in a test, so we verify that a fast-resolving
-    // query completes successfully when no timeout config is provided —
-    // confirming the default does not cause immediate cancellation.
-    mockQuery.mockReturnValue(createMockQuery([
-      assistantMessage('{"action":{"type":"stop","reason":"done"}}'),
-      successResult(100, 50),
-    ]))
-
-    const result = await dispatchSupervisor(baseInput, config) // config has no timeouts
-    expect(result.decision.action.type).toBe('stop')
+  it('includes active workers in user prompt', () => {
+    const input: SupervisorPromptInput = {
+      ...baseInput,
+      activeWorkers: [{ id: 'w-1', goal: 'investigate auth', status: 'active' }],
+    }
+    const { user } = buildPrompts(input)
+    expect(user).toContain('w-1')
+    expect(user).toContain('investigate auth')
   })
 })
 
-// --- Helpers ---
-
-function assistantMessage(text: string): any {
-  return {
-    type: 'assistant',
-    message: { content: [{ type: 'text', text }] },
-    uuid: '00000000-0000-0000-0000-000000000001',
-    session_id: 's1',
-    parent_tool_use_id: null,
+describe('dispatchSupervisor', () => {
+  const baseInput: SupervisorPromptInput = {
+    projectContext: '',
+    observations: '',
+    scenarios: [],
+    activeWorkers: [],
+    triggers: [makeTrigger({ data: { goal: 'test' } })],
   }
-}
 
-function successResult(inputTokens: number, outputTokens: number): any {
-  return {
-    type: 'result',
-    subtype: 'success',
-    result: '',
-    total_cost_usd: 0.001,
-    is_error: false,
-    num_turns: 1,
-    duration_ms: 100,
-    duration_api_ms: 80,
-    stop_reason: 'end_turn',
-    usage: {
-      input_tokens: inputTokens,
-      output_tokens: outputTokens,
-      cache_creation_input_tokens: 0,
-      cache_read_input_tokens: 0,
-    },
-    modelUsage: {},
-    permission_denials: [],
-    uuid: '00000000-0000-0000-0000-000000000002',
-    session_id: 's1',
-  }
-}
+  it('calls dispatch with system and user prompts', async () => {
+    const dispatch = vi.fn().mockResolvedValue({
+      response: '{"action":"stop","reason":"no scenarios"}',
+      tokenUsage: 150,
+    })
 
-function createMockQuery(messages: any[]): any {
-  const gen = (async function* () {
-    for (const msg of messages) yield msg
-  })()
-  // Stub methods that the Query interface requires
-  gen.interrupt = async () => {}
-  gen.setPermissionMode = async () => {}
-  gen.setModel = async () => {}
-  gen.setMaxThinkingTokens = async () => {}
-  gen.initializationResult = async () => ({})
-  gen.supportedCommands = async () => []
-  gen.supportedModels = async () => []
-  gen.mcpServerStatus = async () => []
-  gen.accountInfo = async () => ({})
-  gen.rewindFiles = async () => ({ canRewind: false })
-  gen.reconnectMcpServer = async () => {}
-  gen.toggleMcpServer = async () => {}
-  gen.setMcpServers = async () => ({ added: [], removed: [], errors: {} })
-  gen.streamInput = async () => {}
-  gen.stopTask = async () => {}
-  gen.close = () => {}
-  return gen
-}
+    await dispatchSupervisor(baseInput, { dispatch })
 
-/**
- * Returns a mock query whose async iterator never resolves — simulating a
- * completely hung SDK call (e.g., network stall before the first byte).
- */
-function createHangingQuery(): any {
-  const gen = (async function* () {
-    // Yield nothing; block indefinitely on a promise that never settles.
-    await new Promise<never>(() => {})
-  })()
-  gen.interrupt = async () => {}
-  gen.setPermissionMode = async () => {}
-  gen.setModel = async () => {}
-  gen.setMaxThinkingTokens = async () => {}
-  gen.initializationResult = async () => ({})
-  gen.supportedCommands = async () => []
-  gen.supportedModels = async () => []
-  gen.mcpServerStatus = async () => []
-  gen.accountInfo = async () => ({})
-  gen.rewindFiles = async () => ({ canRewind: false })
-  gen.reconnectMcpServer = async () => {}
-  gen.toggleMcpServer = async () => {}
-  gen.setMcpServers = async () => ({ added: [], removed: [], errors: {} })
-  gen.streamInput = async () => {}
-  gen.stopTask = async () => {}
-  gen.close = () => {}
-  return gen
-}
+    expect(dispatch).toHaveBeenCalledOnce()
+    const [system, user] = dispatch.mock.calls[0]
+    expect(system).toContain('supervisor')
+    expect(user).toContain('Triggers')
+  })
+
+  it('parses stop decision from response', async () => {
+    const dispatch = vi.fn().mockResolvedValue({
+      response: '{"action":"stop","reason":"done"}',
+      tokenUsage: 100,
+    })
+
+    const result = await dispatchSupervisor(baseInput, { dispatch })
+    expect(result.decision.action).toBe('stop')
+    expect(result.tokenUsage).toBe(100)
+  })
+
+  it('parses create_worker decision from response', async () => {
+    const dispatch = vi.fn().mockResolvedValue({
+      response: JSON.stringify({
+        action: 'create_worker',
+        goal: 'investigate auth module',
+        skill: 'investigation',
+        permission: 'read_only',
+      }),
+      tokenUsage: 200,
+    })
+
+    const result = await dispatchSupervisor(baseInput, { dispatch })
+    expect(result.decision.action).toBe('create_worker')
+  })
+
+  it('returns token usage from dispatch', async () => {
+    const dispatch = vi.fn().mockResolvedValue({
+      response: '{"action":"stop","reason":"done"}',
+      tokenUsage: 325,
+    })
+
+    const result = await dispatchSupervisor(baseInput, { dispatch })
+    expect(result.tokenUsage).toBe(325)
+  })
+
+  it('throws when response is not valid decision JSON', async () => {
+    const dispatch = vi.fn().mockResolvedValue({
+      response: 'I am not sure what to do',
+      tokenUsage: 100,
+    })
+
+    await expect(dispatchSupervisor(baseInput, { dispatch })).rejects.toThrow()
+  })
+
+  it('throws when dispatch rejects', async () => {
+    const dispatch = vi.fn().mockRejectedValue(new Error('LLM timeout'))
+
+    await expect(dispatchSupervisor(baseInput, { dispatch })).rejects.toThrow('LLM timeout')
+  })
+
+  it('parses ask_human decision', async () => {
+    const dispatch = vi.fn().mockResolvedValue({
+      response: JSON.stringify({ action: 'ask_human', question: 'Which DB?' }),
+      tokenUsage: 80,
+    })
+
+    const result = await dispatchSupervisor(baseInput, { dispatch })
+    expect(result.decision.action).toBe('ask_human')
+  })
+
+  it('parses advance_scenario decision', async () => {
+    const dispatch = vi.fn().mockResolvedValue({
+      response: JSON.stringify({
+        action: 'advance_scenario',
+        scenarioId: 'sc-1',
+        rationale: 'criteria met',
+      }),
+      tokenUsage: 90,
+    })
+
+    const result = await dispatchSupervisor(baseInput, { dispatch })
+    expect(result.decision.action).toBe('advance_scenario')
+  })
+})

@@ -2,55 +2,84 @@ import { describe, it, expect } from 'vitest'
 import { parseDecision, DecisionParseError } from '../../src/supervisor/decisions.js'
 
 describe('parseDecision', () => {
-  it('parses dispatch_worker action', () => {
+  it('parses create_worker action', () => {
     const json = JSON.stringify({
-      action: {
-        type: 'dispatch_worker',
-        worker: {
-          goal: 'investigate auth',
-          artifacts: ['inv-auth'],
-          skill: 'investigation',
-          allowUserQuestions: true,
-          permissionLevel: 'read_only',
-        },
-      },
-      messageToUser: 'Starting investigation',
+      action: 'create_worker',
+      goal: 'investigate auth',
+      skill: 'investigation',
+      permission: 'read_only',
+      scenarioId: 'sc-1',
     })
     const result = parseDecision(json)
-    expect(result.action.type).toBe('dispatch_worker')
-    expect(result.messageToUser).toBe('Starting investigation')
+    expect(result.action).toBe('create_worker')
+    expect((result as any).goal).toBe('investigate auth')
+    expect((result as any).skill).toBe('investigation')
   })
 
-  it('parses dispatch_workers action', () => {
+  it('parses assign_goal action', () => {
     const json = JSON.stringify({
-      action: {
-        type: 'dispatch_workers',
-        workers: [
-          { goal: 'a', artifacts: [], skill: 'investigation', allowUserQuestions: false, permissionLevel: 'read_only' },
-          { goal: 'b', artifacts: [], skill: 'investigation', allowUserQuestions: false, permissionLevel: 'read_only' },
-        ],
-      },
+      action: 'assign_goal',
+      agentId: 'worker-abc',
+      goal: 'investigate payments',
     })
     const result = parseDecision(json)
-    expect(result.action.type).toBe('dispatch_workers')
+    expect(result.action).toBe('assign_goal')
   })
 
-  it('parses ask_user action', () => {
-    const json = JSON.stringify({ action: { type: 'ask_user', question: 'Which DB?', options: ['Postgres', 'SQLite'] } })
+  it('parses terminate_worker action', () => {
+    const json = JSON.stringify({
+      action: 'terminate_worker',
+      agentId: 'worker-abc',
+    })
     const result = parseDecision(json)
-    expect(result.action.type).toBe('ask_user')
+    expect(result.action).toBe('terminate_worker')
+  })
+
+  it('parses advance_scenario action', () => {
+    const json = JSON.stringify({
+      action: 'advance_scenario',
+      scenarioId: 'sc-1',
+      rationale: 'All criteria met',
+    })
+    const result = parseDecision(json)
+    expect(result.action).toBe('advance_scenario')
+  })
+
+  it('parses ask_human action', () => {
+    const json = JSON.stringify({
+      action: 'ask_human',
+      question: 'Which DB?',
+    })
+    const result = parseDecision(json)
+    expect(result.action).toBe('ask_human')
+  })
+
+  it('parses update_scenario action', () => {
+    const json = JSON.stringify({
+      action: 'update_scenario',
+      scenarioId: 'sc-1',
+      updates: { behavior: 'updated' },
+    })
+    const result = parseDecision(json)
+    expect(result.action).toBe('update_scenario')
   })
 
   it('parses stop action', () => {
-    const json = JSON.stringify({ action: { type: 'stop', reason: 'All done' } })
+    const json = JSON.stringify({ action: 'stop', reason: 'All done' })
     const result = parseDecision(json)
-    expect(result.action.type).toBe('stop')
+    expect(result.action).toBe('stop')
+  })
+
+  it('parses stop action without reason (optional)', () => {
+    const json = JSON.stringify({ action: 'stop' })
+    const result = parseDecision(json)
+    expect(result.action).toBe('stop')
   })
 
   it('extracts JSON from markdown code block', () => {
-    const text = 'Here is my decision:\n\n```json\n{"action":{"type":"stop","reason":"done"}}\n```'
+    const text = 'Here is my decision:\n\n```json\n{"action":"stop","reason":"done"}\n```'
     const result = parseDecision(text)
-    expect(result.action.type).toBe('stop')
+    expect(result.action).toBe('stop')
   })
 
   it('throws on invalid JSON', () => {
@@ -58,182 +87,169 @@ describe('parseDecision', () => {
   })
 
   it('throws on unknown action type', () => {
-    const json = JSON.stringify({ action: { type: 'unknown' } })
+    const json = JSON.stringify({ action: 'unknown' })
     expect(() => parseDecision(json)).toThrow(DecisionParseError)
   })
 
-  // --- Semantic validation ---
-
-  describe('dispatch_worker semantic validation', () => {
-    it('rejects missing worker object', () => {
-      const json = JSON.stringify({ action: { type: 'dispatch_worker' } })
-      expect(() => parseDecision(json)).toThrow(DecisionParseError)
-      try {
-        parseDecision(json)
-      } catch (e) {
-        const err = e as DecisionParseError
-        expect(err.details.field).toBe('worker')
-        expect(err.details.actionType).toBe('dispatch_worker')
-      }
-    })
-
-    it('rejects worker without skill', () => {
-      const json = JSON.stringify({
-        action: {
-          type: 'dispatch_worker',
-          worker: { goal: 'do stuff', artifacts: [] },
-        },
-      })
-      expect(() => parseDecision(json)).toThrow(DecisionParseError)
-      try {
-        parseDecision(json)
-      } catch (e) {
-        const err = e as DecisionParseError
-        expect(err.details.field).toBe('worker.skill')
-      }
-    })
-
-    it('rejects worker without goal', () => {
-      const json = JSON.stringify({
-        action: {
-          type: 'dispatch_worker',
-          worker: { skill: 'investigation', artifacts: [] },
-        },
-      })
-      expect(() => parseDecision(json)).toThrow(DecisionParseError)
-      try {
-        parseDecision(json)
-      } catch (e) {
-        const err = e as DecisionParseError
-        expect(err.details.field).toBe('worker.goal')
-      }
-    })
+  it('throws on missing action field', () => {
+    const json = JSON.stringify({ goal: 'investigate' })
+    expect(() => parseDecision(json)).toThrow(DecisionParseError)
   })
 
-  describe('dispatch_workers semantic validation', () => {
-    it('rejects missing workers array', () => {
-      const json = JSON.stringify({ action: { type: 'dispatch_workers' } })
+  // --- Semantic validation: create_worker ---
+
+  describe('create_worker semantic validation', () => {
+    it('rejects missing goal', () => {
+      const json = JSON.stringify({ action: 'create_worker', skill: 'investigation' })
       expect(() => parseDecision(json)).toThrow(DecisionParseError)
       try {
         parseDecision(json)
       } catch (e) {
         const err = e as DecisionParseError
-        expect(err.details.field).toBe('workers')
+        expect(err.details.field).toBe('goal')
+        expect(err.details.actionType).toBe('create_worker')
       }
     })
 
-    it('rejects empty workers array', () => {
-      const json = JSON.stringify({ action: { type: 'dispatch_workers', workers: [] } })
-      expect(() => parseDecision(json)).toThrow(DecisionParseError)
-    })
-
-    it('rejects worker in array without skill', () => {
-      const json = JSON.stringify({
-        action: {
-          type: 'dispatch_workers',
-          workers: [{ goal: 'a', artifacts: [] }],
-        },
-      })
+    it('rejects missing skill', () => {
+      const json = JSON.stringify({ action: 'create_worker', goal: 'investigate' })
       expect(() => parseDecision(json)).toThrow(DecisionParseError)
       try {
         parseDecision(json)
       } catch (e) {
         const err = e as DecisionParseError
-        expect(err.details.field).toBe('worker.skill')
+        expect(err.details.field).toBe('skill')
+        expect(err.details.actionType).toBe('create_worker')
       }
     })
-  })
 
-  describe('ask_user semantic validation', () => {
-    it('rejects missing question', () => {
-      const json = JSON.stringify({ action: { type: 'ask_user' } })
+    it('rejects empty goal', () => {
+      const json = JSON.stringify({ action: 'create_worker', goal: '', skill: 'investigation' })
       expect(() => parseDecision(json)).toThrow(DecisionParseError)
-      try {
-        parseDecision(json)
-      } catch (e) {
-        const err = e as DecisionParseError
-        expect(err.details.field).toBe('question')
-        expect(err.details.actionType).toBe('ask_user')
-      }
     })
 
-    it('rejects empty question', () => {
-      const json = JSON.stringify({ action: { type: 'ask_user', question: '' } })
+    it('rejects empty skill', () => {
+      const json = JSON.stringify({ action: 'create_worker', goal: 'investigate', skill: '' })
       expect(() => parseDecision(json)).toThrow(DecisionParseError)
     })
   })
 
-  describe('update_workspace semantic validation', () => {
-    it('rejects missing updates array', () => {
-      const json = JSON.stringify({ action: { type: 'update_workspace' } })
+  // --- Semantic validation: assign_goal ---
+
+  describe('assign_goal semantic validation', () => {
+    it('rejects missing agentId', () => {
+      const json = JSON.stringify({ action: 'assign_goal', goal: 'do stuff' })
       expect(() => parseDecision(json)).toThrow(DecisionParseError)
       try {
         parseDecision(json)
       } catch (e) {
         const err = e as DecisionParseError
-        expect(err.details.field).toBe('updates')
-        expect(err.details.actionType).toBe('update_workspace')
+        expect(err.details.field).toBe('agentId')
+        expect(err.details.actionType).toBe('assign_goal')
       }
     })
 
-    it('accepts empty updates array', () => {
-      const json = JSON.stringify({ action: { type: 'update_workspace', updates: [] } })
-      const result = parseDecision(json)
-      expect(result.action.type).toBe('update_workspace')
-    })
-  })
-
-  describe('checkpoint semantic validation', () => {
-    it('rejects missing summary', () => {
-      const json = JSON.stringify({ action: { type: 'checkpoint' } })
+    it('rejects missing goal', () => {
+      const json = JSON.stringify({ action: 'assign_goal', agentId: 'worker-1' })
       expect(() => parseDecision(json)).toThrow(DecisionParseError)
       try {
         parseDecision(json)
       } catch (e) {
         const err = e as DecisionParseError
-        expect(err.details.field).toBe('summary')
-        expect(err.details.actionType).toBe('checkpoint')
+        expect(err.details.field).toBe('goal')
+        expect(err.details.actionType).toBe('assign_goal')
       }
     })
   })
 
-  describe('complete_story semantic validation', () => {
+  // --- Semantic validation: terminate_worker ---
+
+  describe('terminate_worker semantic validation', () => {
+    it('rejects missing agentId', () => {
+      const json = JSON.stringify({ action: 'terminate_worker' })
+      expect(() => parseDecision(json)).toThrow(DecisionParseError)
+      try {
+        parseDecision(json)
+      } catch (e) {
+        const err = e as DecisionParseError
+        expect(err.details.field).toBe('agentId')
+        expect(err.details.actionType).toBe('terminate_worker')
+      }
+    })
+  })
+
+  // --- Semantic validation: advance_scenario ---
+
+  describe('advance_scenario semantic validation', () => {
     it('rejects missing scenarioId', () => {
-      const json = JSON.stringify({ action: { type: 'complete_story', summary: 'done' } })
+      const json = JSON.stringify({ action: 'advance_scenario' })
       expect(() => parseDecision(json)).toThrow(DecisionParseError)
       try {
         parseDecision(json)
       } catch (e) {
         const err = e as DecisionParseError
         expect(err.details.field).toBe('scenarioId')
+        expect(err.details.actionType).toBe('advance_scenario')
       }
     })
 
-    it('rejects missing summary', () => {
-      const json = JSON.stringify({ action: { type: 'complete_story', scenarioId: 's-1' } })
+    it('accepts advance_scenario without rationale (optional)', () => {
+      const json = JSON.stringify({ action: 'advance_scenario', scenarioId: 'sc-1' })
+      const result = parseDecision(json)
+      expect(result.action).toBe('advance_scenario')
+    })
+  })
+
+  // --- Semantic validation: ask_human ---
+
+  describe('ask_human semantic validation', () => {
+    it('rejects missing question', () => {
+      const json = JSON.stringify({ action: 'ask_human' })
       expect(() => parseDecision(json)).toThrow(DecisionParseError)
       try {
         parseDecision(json)
       } catch (e) {
         const err = e as DecisionParseError
-        expect(err.details.field).toBe('summary')
+        expect(err.details.field).toBe('question')
+        expect(err.details.actionType).toBe('ask_human')
       }
+    })
+
+    it('rejects empty question', () => {
+      const json = JSON.stringify({ action: 'ask_human', question: '' })
+      expect(() => parseDecision(json)).toThrow(DecisionParseError)
     })
   })
 
-  describe('stop semantic validation', () => {
-    it('rejects missing reason', () => {
-      const json = JSON.stringify({ action: { type: 'stop' } })
+  // --- Semantic validation: update_scenario ---
+
+  describe('update_scenario semantic validation', () => {
+    it('rejects missing scenarioId', () => {
+      const json = JSON.stringify({ action: 'update_scenario', updates: {} })
       expect(() => parseDecision(json)).toThrow(DecisionParseError)
       try {
         parseDecision(json)
       } catch (e) {
         const err = e as DecisionParseError
-        expect(err.details.field).toBe('reason')
-        expect(err.details.actionType).toBe('stop')
+        expect(err.details.field).toBe('scenarioId')
+        expect(err.details.actionType).toBe('update_scenario')
+      }
+    })
+
+    it('rejects missing updates object', () => {
+      const json = JSON.stringify({ action: 'update_scenario', scenarioId: 'sc-1' })
+      expect(() => parseDecision(json)).toThrow(DecisionParseError)
+      try {
+        parseDecision(json)
+      } catch (e) {
+        const err = e as DecisionParseError
+        expect(err.details.field).toBe('updates')
+        expect(err.details.actionType).toBe('update_scenario')
       }
     })
   })
+
+  // --- DecisionParseError details ---
 
   describe('DecisionParseError details', () => {
     it('includes typed error details for parse failures', () => {
@@ -247,7 +263,7 @@ describe('parseDecision', () => {
     })
 
     it('includes typed error details for unknown action', () => {
-      const json = JSON.stringify({ action: { type: 'explode' } })
+      const json = JSON.stringify({ action: 'explode' })
       try {
         parseDecision(json)
       } catch (e) {
@@ -255,6 +271,18 @@ describe('parseDecision', () => {
         expect(err.details.type).toBe('unknown_action')
         expect(err.details.actionType).toBe('explode')
       }
+    })
+  })
+
+  // --- Rejects old nested format ---
+
+  describe('rejects old v1 format', () => {
+    it('rejects nested action object (old format)', () => {
+      const json = JSON.stringify({
+        action: { type: 'dispatch_worker', worker: { goal: 'x', skill: 'y' } },
+      })
+      // action is an object, not a string — should fail
+      expect(() => parseDecision(json)).toThrow(DecisionParseError)
     })
   })
 })

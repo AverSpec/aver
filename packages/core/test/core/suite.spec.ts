@@ -225,15 +225,15 @@ describe('suite().test() — callback API', () => {
     expect(t[1]).toMatchObject({ kind: 'query', name: 'total', status: 'pass' })
   })
 
-  suiteTest('given/when aliases dispatch through same action handlers', async ({ given, when, assert, trace }) => {
+  suiteTest('given/when/then aliases dispatch through correct handlers with categories', async ({ given, when, then, assert, trace }) => {
     await given.addItem({ name: 'Setup' })
     await when.addItem({ name: 'Trigger' })
-    await assert.isEmpty()
+    await then.isEmpty()
     const t = trace()
     expect(t).toHaveLength(3)
-    expect(t[0]).toMatchObject({ kind: 'action', name: 'addItem', payload: { name: 'Setup' } })
-    expect(t[1]).toMatchObject({ kind: 'action', name: 'addItem', payload: { name: 'Trigger' } })
-    expect(t[2]).toMatchObject({ kind: 'assertion', name: 'isEmpty' })
+    expect(t[0]).toMatchObject({ kind: 'action', category: 'given', name: 'addItem', payload: { name: 'Setup' } })
+    expect(t[1]).toMatchObject({ kind: 'action', category: 'when', name: 'addItem', payload: { name: 'Trigger' } })
+    expect(t[2]).toMatchObject({ kind: 'assertion', category: 'then', name: 'isEmpty' })
   })
 
   it('exposes alias helpers and modifiers', async () => {

@@ -8,6 +8,8 @@ export interface CalledOps {
   assertions: Set<string>
 }
 
+export type StepCategory = 'given' | 'when' | 'act' | 'query' | 'then' | 'assert'
+
 export type ActProxy<D extends Domain> = {
   [K in keyof D['vocabulary']['actions']]:
     D['vocabulary']['actions'][K] extends { __payload?: infer P }
@@ -37,9 +39,60 @@ export interface Proxies<D extends Domain> {
   when: ActProxy<D>
   query: QueryProxy<D>
   assert: AssertProxy<D>
+  /** Alias for `assert` — narrative clarity for verification steps. */
+  then: AssertProxy<D>
 }
 
 export type Clock = () => number
+
+function buildKindProxy(
+  kind: 'action' | 'query' | 'assertion',
+  category: StepCategory,
+  names: string[],
+  getCtx: () => any,
+  getAdapter: () => Adapter,
+  trace: TraceEntry[],
+  calledOps: CalledOps | undefined,
+  correlationId: string | undefined,
+  clock: Clock,
+): any {
+  const proxy: any = {}
+
+  for (const name of names) {
+    proxy[name] = async (payload?: any) => {
+      if (kind === 'action') calledOps?.actions.add(name)
+      else if (kind === 'query') calledOps?.queries.add(name)
+      else calledOps?.assertions.add(name)
+
+      const handlers = kind === 'action'
+        ? getAdapter().handlers.actions
+        : kind === 'query'
+          ? getAdapter().handlers.queries
+          : getAdapter().handlers.assertions
+
+      const handler = (handlers as any)[name]
+      const entry: TraceEntry = { kind, category, name, payload, status: 'pass', startAt: clock(), correlationId }
+
+      try {
+        const result = await handler(getCtx(), payload)
+        if (kind === 'query') {
+          entry.result = result
+          return result
+        }
+      } catch (error) {
+        entry.status = 'fail'
+        entry.error = error
+        throw error
+      } finally {
+        entry.endAt = clock()
+        if (entry.startAt !== undefined) entry.durationMs = entry.endAt - entry.startAt
+        trace.push(entry)
+      }
+    }
+  }
+
+  return proxy
+}
 
 export function createProxies<D extends Domain>(
   domain: D,
@@ -50,68 +103,18 @@ export function createProxies<D extends Domain>(
   correlationId?: string,
   clock: Clock = Date.now,
 ): Proxies<D> {
-  const act: any = {}
-  const query: any = {}
-  const assert: any = {}
+  const actionNames = Object.keys(domain.vocabulary.actions)
+  const queryNames = Object.keys(domain.vocabulary.queries)
+  const assertionNames = Object.keys(domain.vocabulary.assertions)
 
-  for (const name of Object.keys(domain.vocabulary.actions)) {
-    act[name] = async (payload?: any) => {
-      calledOps?.actions.add(name)
-      const handler = (getAdapter().handlers.actions as any)[name]
-      const entry: TraceEntry = { kind: 'action', name, payload, status: 'pass', startAt: clock(), correlationId }
-      try {
-        await handler(getCtx(), payload)
-      } catch (error) {
-        entry.status = 'fail'
-        entry.error = error
-        throw error
-      } finally {
-        entry.endAt = clock()
-        if (entry.startAt !== undefined) entry.durationMs = entry.endAt - entry.startAt
-        trace.push(entry)
-      }
-    }
-  }
+  const args = [getCtx, getAdapter, trace, calledOps, correlationId, clock] as const
 
-  for (const name of Object.keys(domain.vocabulary.queries)) {
-    query[name] = async (payload?: any) => {
-      calledOps?.queries.add(name)
-      const handler = (getAdapter().handlers.queries as any)[name]
-      const entry: TraceEntry = { kind: 'query', name, payload, status: 'pass', startAt: clock(), correlationId }
-      try {
-        const result = await handler(getCtx(), payload)
-        entry.result = result
-        return result
-      } catch (error) {
-        entry.status = 'fail'
-        entry.error = error
-        throw error
-      } finally {
-        entry.endAt = clock()
-        if (entry.startAt !== undefined) entry.durationMs = entry.endAt - entry.startAt
-        trace.push(entry)
-      }
-    }
-  }
+  const act = buildKindProxy('action', 'act', actionNames, ...args)
+  const given = buildKindProxy('action', 'given', actionNames, ...args)
+  const when = buildKindProxy('action', 'when', actionNames, ...args)
+  const queryProxy = buildKindProxy('query', 'query', queryNames, ...args)
+  const assert = buildKindProxy('assertion', 'assert', assertionNames, ...args)
+  const then = buildKindProxy('assertion', 'then', assertionNames, ...args)
 
-  for (const name of Object.keys(domain.vocabulary.assertions)) {
-    assert[name] = async (payload?: any) => {
-      calledOps?.assertions.add(name)
-      const handler = (getAdapter().handlers.assertions as any)[name]
-      const entry: TraceEntry = { kind: 'assertion', name, payload, status: 'pass', startAt: clock(), correlationId }
-      try {
-        await handler(getCtx(), payload)
-      } catch (error) {
-        entry.status = 'fail'
-        entry.error = error
-        throw error
-      } finally {
-        entry.endAt = clock()
-        if (entry.startAt !== undefined) entry.durationMs = entry.endAt - entry.startAt
-        trace.push(entry)
-      }
-    }
-  }
-
-  return { act, given: act, when: act, query, assert }
+  return { act, given, when, query: queryProxy, assert, then }
 }

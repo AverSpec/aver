@@ -13,7 +13,7 @@ const testDomain = defineDomain({
 })
 
 describe('given/when proxy aliases', () => {
-  it('given and when are the same object as act', () => {
+  it('given and when are distinct objects from act (stamp different categories)', () => {
     const adapter = implement(testDomain, {
       protocol: { name: 'unit', async setup() { return null }, async teardown() {} },
       actions: { doSomething: async () => {} },
@@ -29,11 +29,15 @@ describe('given/when proxy aliases', () => {
       trace,
     )
 
-    expect(proxies.given).toBe(proxies.act)
-    expect(proxies.when).toBe(proxies.act)
+    // They are now distinct objects (stamp different categories)
+    expect(proxies.given).not.toBe(proxies.act)
+    expect(proxies.when).not.toBe(proxies.act)
+    // But they have the same keys
+    expect(Object.keys(proxies.given)).toEqual(Object.keys(proxies.act))
+    expect(Object.keys(proxies.when)).toEqual(Object.keys(proxies.act))
   })
 
-  it('given and when route to the same handlers as act', async () => {
+  it('given and when route to the same handlers as act with distinct categories', async () => {
     const calls: string[] = []
     const adapter = implement(testDomain, {
       protocol: { name: 'unit', async setup() { return null }, async teardown() {} },
@@ -56,7 +60,32 @@ describe('given/when proxy aliases', () => {
 
     expect(calls).toEqual(['called', 'called', 'called'])
     expect(trace).toHaveLength(3)
-    expect(trace.every(e => e.kind === 'action' && e.name === 'doSomething')).toBe(true)
+    expect(trace[0]).toMatchObject({ kind: 'action', category: 'given', name: 'doSomething' })
+    expect(trace[1]).toMatchObject({ kind: 'action', category: 'when', name: 'doSomething' })
+    expect(trace[2]).toMatchObject({ kind: 'action', category: 'act', name: 'doSomething' })
+  })
+
+  it('then alias stamps assertion traces with then category', async () => {
+    const adapter = implement(testDomain, {
+      protocol: { name: 'unit', async setup() { return null }, async teardown() {} },
+      actions: { doSomething: async () => {} },
+      queries: { getValue: async () => 42 },
+      assertions: { check: async () => {} },
+    })
+
+    const trace: TraceEntry[] = []
+    const proxies = createProxies(
+      testDomain,
+      () => null,
+      () => adapter,
+      trace,
+    )
+
+    await proxies.then.check()
+    await proxies.assert.check()
+    expect(trace).toHaveLength(2)
+    expect(trace[0]).toMatchObject({ kind: 'assertion', category: 'then', name: 'check' })
+    expect(trace[1]).toMatchObject({ kind: 'assertion', category: 'assert', name: 'check' })
   })
 })
 

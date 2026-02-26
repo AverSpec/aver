@@ -6,6 +6,7 @@ export interface TraceAttachment {
 
 export interface TraceEntry {
   kind: 'action' | 'query' | 'assertion' | 'test'
+  category?: 'given' | 'when' | 'act' | 'query' | 'then' | 'assert'
   name: string
   payload: unknown
   status: 'pass' | 'fail'

@@ -19,6 +19,8 @@ export interface TestContext<D extends Domain> {
   when: ActProxy<D>
   query: QueryProxy<D>
   assert: AssertProxy<D>
+  /** Alias for `assert` — narrative clarity for verification steps. */
+  then: AssertProxy<D>
   trace: () => TraceEntry[]
 }
 

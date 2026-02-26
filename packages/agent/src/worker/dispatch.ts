@@ -211,6 +211,8 @@ async function* withAbort<T>(
       yield result.value
     }
   } finally {
-    await it.return?.()
+    // Best-effort cleanup — fire-and-forget so a stuck generator does not
+    // block the caller after either timeout fires.
+    it.return?.()
   }
 }

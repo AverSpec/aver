@@ -125,6 +125,70 @@ describe('dispatchWorker', () => {
     expect(callArgs.options!.disallowedTools).toEqual(['Task'])
   })
 
+  it('throws when total timeout elapses before query completes', async () => {
+    mockQuery.mockReturnValue(createHangingQuery())
+
+    const fastConfig: AgentConfig = {
+      ...config,
+      timeouts: { workerTurnMs: 5_000, workerTotalMs: 50 },
+    }
+
+    await expect(dispatchWorker(dispatch, [], fastConfig)).rejects.toThrow(
+      /timed?\s*out/i,
+    )
+  }, 3_000)
+
+  it('throws when per-turn timeout elapses on a stalled turn', async () => {
+    mockQuery.mockReturnValue(createHangingQuery())
+
+    const fastConfig: AgentConfig = {
+      ...config,
+      timeouts: { workerTurnMs: 50, workerTotalMs: 10_000 },
+    }
+
+    await expect(dispatchWorker(dispatch, [], fastConfig)).rejects.toThrow(
+      /timed?\s*out/i,
+    )
+  }, 3_000)
+
+  it('succeeds normally when query resolves before both timeouts', async () => {
+    mockQuery.mockReturnValue(
+      createMockQuery([
+        {
+          type: 'assistant',
+          message: { content: [{ type: 'text', text: '{"summary":"fast","artifacts":[]}' }] },
+          uuid: '00000000-0000-0000-0000-000000000001',
+          session_id: 's1',
+          parent_tool_use_id: null,
+        },
+        {
+          type: 'result',
+          subtype: 'success',
+          result: '',
+          total_cost_usd: 0,
+          is_error: false,
+          num_turns: 1,
+          duration_ms: 10,
+          duration_api_ms: 8,
+          stop_reason: 'end_turn',
+          usage: { input_tokens: 10, output_tokens: 5, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 },
+          modelUsage: {},
+          permission_denials: [],
+          uuid: '00000000-0000-0000-0000-000000000002',
+          session_id: 's1',
+        },
+      ]),
+    )
+
+    const generousConfig: AgentConfig = {
+      ...config,
+      timeouts: { workerTurnMs: 5_000, workerTotalMs: 30_000 },
+    }
+
+    const result = await dispatchWorker(dispatch, [], generousConfig)
+    expect(result.result.summary).toBe('fast')
+  })
+
   it('canUseTool hook enforces permission level', async () => {
     mockQuery.mockReturnValue(
       createMockQuery([
@@ -191,6 +255,33 @@ describe('dispatchWorker', () => {
 function createMockQuery(messages: any[]): any {
   const gen = (async function* () {
     for (const msg of messages) yield msg
+  })()
+  gen.interrupt = async () => {}
+  gen.setPermissionMode = async () => {}
+  gen.setModel = async () => {}
+  gen.setMaxThinkingTokens = async () => {}
+  gen.initializationResult = async () => ({})
+  gen.supportedCommands = async () => []
+  gen.supportedModels = async () => []
+  gen.mcpServerStatus = async () => []
+  gen.accountInfo = async () => ({})
+  gen.rewindFiles = async () => ({ canRewind: false })
+  gen.reconnectMcpServer = async () => {}
+  gen.toggleMcpServer = async () => {}
+  gen.setMcpServers = async () => ({ added: [], removed: [], errors: {} })
+  gen.streamInput = async () => {}
+  gen.stopTask = async () => {}
+  gen.close = () => {}
+  return gen
+}
+
+/**
+ * Returns a mock query whose async iterator never resolves — simulating a
+ * completely hung SDK call (e.g., network stall before the first byte).
+ */
+function createHangingQuery(): any {
+  const gen = (async function* () {
+    await new Promise<never>(() => {})
   })()
   gen.interrupt = async () => {}
   gen.setPermissionMode = async () => {}

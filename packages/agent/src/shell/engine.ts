@@ -90,6 +90,7 @@ export class CycleEngine {
     userMessage?: string,
     workerResults?: WorkerResult[],
     depth?: number,
+    failedWorkers?: FailedWorker[],
   ): Promise<void> {
     const currentDepth = depth ?? 0
 
@@ -111,6 +112,7 @@ export class CycleEngine {
       },
       userMessage,
       workerResults,
+      failedWorkers,
     })
 
     await this.logEvent('cycle:start', { trigger })
@@ -277,7 +279,7 @@ export class CycleEngine {
 
   private async runWorkersParallel(dispatches: WorkerDispatch[], depth: number): Promise<void> {
     const results: WorkerResult[] = []
-    const errors: string[] = []
+    const failedWorkers: FailedWorker[] = []
 
     // Pre-load scenarios and project context once for all workers
     const scenarios = await this.workspaceOps.getScenarios()
@@ -297,9 +299,10 @@ export class CycleEngine {
         result = response.result
         tokenUsage = response.tokenUsage
       } catch (err) {
-        const msg = `Worker "${dispatch.goal}" failed: ${err instanceof Error ? err.message : String(err)}`
-        errors.push(msg)
-        await this.logEvent('worker:result', { summary: msg, status: 'error' })
+        const errorMsg = err instanceof Error ? err.message : String(err)
+        const summary = `Worker "${dispatch.goal}" failed: ${errorMsg}`
+        failedWorkers.push({ goal: dispatch.goal, error: errorMsg })
+        await this.logEvent('worker:result', { summary, status: 'error' })
         return
       }
 
@@ -315,12 +318,20 @@ export class CycleEngine {
 
     await Promise.all(promises)
 
-    if (results.length === 0 && errors.length > 0) {
-      await this.handleError(`All workers failed: ${errors.join('; ')}`)
+    if (results.length === 0 && failedWorkers.length > 0) {
+      await this.handleError(
+        `All workers failed: ${failedWorkers.map((f) => `"${f.goal}": ${f.error}`).join('; ')}`,
+      )
       return
     }
 
-    await this.runCycle('workers_complete', undefined, results, depth + 1)
+    await this.runCycle(
+      'workers_complete',
+      undefined,
+      results,
+      depth + 1,
+      failedWorkers.length > 0 ? failedWorkers : undefined,
+    )
   }
 
   private async handleError(message: string): Promise<void> {

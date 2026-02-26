@@ -851,4 +851,186 @@ describe('CycleEngine', () => {
     const session = await engine.getSession()
     expect(session!.status).toBe('stopped')
   })
+
+  it('blocks non-adjacent stage transition (captured -> mapped skipping characterized)', async () => {
+    // Seed a scenario at captured stage
+    const store = new WorkspaceStore(dir, 'test')
+    const ops = new WorkspaceOps(store)
+    const scenario = await ops.captureScenario({ behavior: 'auth login', mode: 'intended' })
+
+    // Supervisor tries to skip captured -> characterized, jumping to mapped
+    mockSupervisor.mockResolvedValueOnce({
+      decision: {
+        action: {
+          type: 'update_workspace',
+          updates: [{ scenarioId: scenario.id, stage: 'mapped', rationale: 'skip ahead' }],
+        },
+      },
+      tokenUsage: 100,
+    })
+
+    mockSupervisor.mockResolvedValueOnce({
+      decision: { action: { type: 'stop', reason: 'done' } },
+      tokenUsage: 50,
+    })
+
+    const engine = new CycleEngine({
+      agentPath: dir,
+      workspacePath: dir,
+      projectId: 'test',
+      config,
+      dispatchers,
+    })
+
+    await engine.start('test non-adjacent rejection')
+
+    // Scenario must remain at captured — the jump was rejected
+    const scenarios = await ops.getScenarios()
+    const updated = scenarios.find(s => s.id === scenario.id)
+    expect(updated!.stage).toBe('captured')
+
+    // An advancement:blocked event must have been logged
+    const eventLog = new EventLog(dir)
+    const events = await eventLog.readAll()
+    const blockedEvents = events.filter(e =>
+      e.type === 'advancement:blocked' && e.data.scenarioId === scenario.id
+    )
+    expect(blockedEvents).toHaveLength(1)
+    expect(blockedEvents[0].data.reason).toContain('Non-adjacent stage transition rejected')
+    expect(blockedEvents[0].data.reason).toContain('captured -> mapped')
+  })
+
+  it('allows adjacent stage transition (captured -> characterized)', async () => {
+    // Seed an intended scenario at captured
+    const store = new WorkspaceStore(dir, 'test')
+    const ops = new WorkspaceOps(store)
+    const scenario = await ops.captureScenario({ behavior: 'user login', mode: 'intended' })
+
+    // Supervisor requests the correct next stage
+    mockSupervisor.mockResolvedValueOnce({
+      decision: {
+        action: {
+          type: 'update_workspace',
+          updates: [{ scenarioId: scenario.id, stage: 'characterized', rationale: 'investigated' }],
+        },
+      },
+      tokenUsage: 100,
+    })
+
+    mockSupervisor.mockResolvedValueOnce({
+      decision: { action: { type: 'stop', reason: 'done' } },
+      tokenUsage: 50,
+    })
+
+    const engine = new CycleEngine({
+      agentPath: dir,
+      workspacePath: dir,
+      projectId: 'test',
+      config,
+      dispatchers,
+    })
+
+    await engine.start('test adjacent advance')
+
+    // Scenario must have advanced to characterized
+    const scenarios = await ops.getScenarios()
+    const updated = scenarios.find(s => s.id === scenario.id)
+    expect(updated!.stage).toBe('characterized')
+  })
+
+  it('blocks characterized -> specified (non-adjacent, skips mapped)', async () => {
+    // Seed and advance a scenario to characterized
+    const store = new WorkspaceStore(dir, 'test')
+    const ops = new WorkspaceOps(store)
+    const scenario = await ops.captureScenario({ behavior: 'order cancel', mode: 'intended' })
+    await ops.advanceScenario(scenario.id, { rationale: 'test', promotedBy: 'test' })
+    // scenario is now characterized
+
+    // Supervisor tries to skip mapped and jump to specified
+    mockSupervisor.mockResolvedValueOnce({
+      decision: {
+        action: {
+          type: 'update_workspace',
+          updates: [{ scenarioId: scenario.id, stage: 'specified', rationale: 'skip mapped' }],
+        },
+      },
+      tokenUsage: 100,
+    })
+
+    mockSupervisor.mockResolvedValueOnce({
+      decision: { action: { type: 'stop', reason: 'done' } },
+      tokenUsage: 50,
+    })
+
+    const engine = new CycleEngine({
+      agentPath: dir,
+      workspacePath: dir,
+      projectId: 'test',
+      config,
+      dispatchers,
+    })
+
+    await engine.start('test skip mapped')
+
+    // Scenario must remain at characterized
+    const scenarios = await ops.getScenarios()
+    const updated = scenarios.find(s => s.id === scenario.id)
+    expect(updated!.stage).toBe('characterized')
+
+    const eventLog = new EventLog(dir)
+    const events = await eventLog.readAll()
+    const blockedEvents = events.filter(e =>
+      e.type === 'advancement:blocked' && e.data.scenarioId === scenario.id
+    )
+    expect(blockedEvents).toHaveLength(1)
+    expect(blockedEvents[0].data.reason).toContain('characterized -> specified')
+  })
+
+  it('blocks adjacent transition when hard block exists (characterized -> mapped without confirmedBy)', async () => {
+    // Seed and advance to characterized
+    const store = new WorkspaceStore(dir, 'test')
+    const ops = new WorkspaceOps(store)
+    const scenario = await ops.captureScenario({ behavior: 'cart checkout', mode: 'intended' })
+    await ops.advanceScenario(scenario.id, { rationale: 'test', promotedBy: 'test' })
+    // No confirmedBy set
+
+    // Supervisor correctly requests the adjacent stage (mapped), but confirmedBy is missing
+    mockSupervisor.mockResolvedValueOnce({
+      decision: {
+        action: {
+          type: 'update_workspace',
+          updates: [{ scenarioId: scenario.id, stage: 'mapped', rationale: 'ready' }],
+        },
+      },
+      tokenUsage: 100,
+    })
+
+    mockSupervisor.mockResolvedValueOnce({
+      decision: { action: { type: 'stop', reason: 'done' } },
+      tokenUsage: 50,
+    })
+
+    const engine = new CycleEngine({
+      agentPath: dir,
+      workspacePath: dir,
+      projectId: 'test',
+      config,
+      dispatchers,
+    })
+
+    await engine.start('test hard block on adjacent')
+
+    // Scenario must remain at characterized
+    const scenarios = await ops.getScenarios()
+    const updated = scenarios.find(s => s.id === scenario.id)
+    expect(updated!.stage).toBe('characterized')
+
+    const eventLog = new EventLog(dir)
+    const events = await eventLog.readAll()
+    const blockedEvents = events.filter(e =>
+      e.type === 'advancement:blocked' && e.data.scenarioId === scenario.id
+    )
+    expect(blockedEvents).toHaveLength(1)
+    expect(blockedEvents[0].data.reason).toContain('confirmedBy')
+  })
 })

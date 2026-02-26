@@ -102,7 +102,8 @@ async function* withAbort<T>(
       yield result.value
     }
   } finally {
-    // Best-effort cleanup — the iterator may or may not support return()
-    await it.return?.()
+    // Best-effort cleanup — fire-and-forget so a stuck generator does not
+    // block the caller after the abort signal fires.
+    it.return?.()
   }
 }

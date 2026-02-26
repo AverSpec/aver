@@ -1,4 +1,4 @@
-import type { SupervisorInput, ArtifactEntry, AgentEvent, WorkerResult } from '../types.js'
+import type { SupervisorInput, ArtifactEntry, AgentEvent, WorkerResult, FailedWorker } from '../types.js'
 import type { Scenario } from '@aver/workspace'
 
 interface PromptParts {
@@ -183,9 +183,18 @@ function buildUserPrompt(input: SupervisorInput): string {
     sections.push(`## User Message\n\n${input.userMessage}`)
   }
 
-  // Worker results
-  if (input.workerResults?.length) {
-    sections.push(`## Worker Results\n\n${input.workerResults.map(formatWorkerResult).join('\n\n---\n\n')}`)
+  // Worker results (successes and failures)
+  const hasSuccesses = (input.workerResults?.length ?? 0) > 0
+  const hasFailures = (input.failedWorkers?.length ?? 0) > 0
+  if (hasSuccesses || hasFailures) {
+    const parts: string[] = []
+    if (hasSuccesses) {
+      parts.push(input.workerResults!.map(formatWorkerResult).join('\n\n---\n\n'))
+    }
+    if (hasFailures) {
+      parts.push(formatFailedWorkers(input.failedWorkers!))
+    }
+    sections.push(`## Worker Results\n\n${parts.join('\n\n---\n\n')}`)
   }
 
   // Workspace
@@ -257,6 +266,12 @@ function formatWorkerResult(result: WorkerResult): string {
   if (result.filesChanged?.length) parts.push(`**Files changed:** ${result.filesChanged.join(', ')}`)
   if (result.suggestedNext) parts.push(`**Suggested next:** ${result.suggestedNext}`)
   return parts.join('\n')
+}
+
+function formatFailedWorkers(failures: FailedWorker[]): string {
+  const header = `**${failures.length} worker${failures.length === 1 ? '' : 's'} failed:**`
+  const lines = failures.map((f) => `- **Goal:** ${f.goal}\n  **Error:** ${f.error}`)
+  return [header, ...lines].join('\n')
 }
 
 function formatEvents(events: AgentEvent[]): string {

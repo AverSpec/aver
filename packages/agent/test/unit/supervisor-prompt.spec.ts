@@ -214,4 +214,57 @@ describe('buildSupervisorPrompt', () => {
     expect(user).toContain('questions: 1 open')
     expect(user).not.toContain('questions:1open')
   })
+
+  it('renders failed workers in the Worker Results section', () => {
+    const input = {
+      ...baseInput,
+      trigger: 'workers_complete' as const,
+      failedWorkers: [
+        { goal: 'investigate auth', error: 'error_max_turns' },
+        { goal: 'investigate payments', error: 'JSON parse error' },
+      ],
+    }
+    const { user } = buildSupervisorPrompt(input)
+    expect(user).toContain('Worker Results')
+    expect(user).toContain('investigate auth')
+    expect(user).toContain('error_max_turns')
+    expect(user).toContain('investigate payments')
+    expect(user).toContain('JSON parse error')
+    expect(user).toContain('2 workers failed')
+  })
+
+  it('renders both successful and failed workers in the same section', () => {
+    const input = {
+      ...baseInput,
+      trigger: 'workers_complete' as const,
+      workerResults: [{ summary: 'auth seams found', artifacts: [], status: 'complete' as const }],
+      failedWorkers: [{ goal: 'investigate payments', error: 'timeout' }],
+    }
+    const { user } = buildSupervisorPrompt(input)
+    expect(user).toContain('auth seams found')
+    expect(user).toContain('investigate payments')
+    expect(user).toContain('timeout')
+    // Only one Worker Results section header
+    const occurrences = (user.match(/## Worker Results/g) ?? []).length
+    expect(occurrences).toBe(1)
+  })
+
+  it('renders only failed workers when there are no successes', () => {
+    const input = {
+      ...baseInput,
+      trigger: 'workers_complete' as const,
+      failedWorkers: [{ goal: 'investigate auth', error: 'rate limit' }],
+    }
+    const { user } = buildSupervisorPrompt(input)
+    expect(user).toContain('Worker Results')
+    expect(user).toContain('investigate auth')
+    expect(user).toContain('rate limit')
+    expect(user).toContain('1 worker failed')
+  })
+
+  it('omits Worker Results section when neither successes nor failures exist', () => {
+    const input = { ...baseInput }
+    const { user } = buildSupervisorPrompt(input)
+    expect(user).not.toContain('Worker Results')
+  })
 })

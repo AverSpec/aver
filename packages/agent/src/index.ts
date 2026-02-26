@@ -17,6 +17,7 @@ export type {
   WorkerDispatch,
   WorkerInput,
   WorkerResult,
+  FailedWorker,
   ScenarioUpdate,
 } from './types.js'
 

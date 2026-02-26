@@ -11,43 +11,43 @@ describe('Action trace and error reporting', () => {
     resetRegistry()
   })
 
-  test('records a complete action trace across multiple operations', async ({ act, assert }) => {
-    await act.defineDomain({
+  test('records a complete action trace across multiple operations', async ({ given, when, then }) => {
+    await given.defineDomain({
       name: 'TraceTest',
       actions: ['doA'],
       queries: [{ name: 'getB', returnType: 'string' }],
       assertions: ['checkC'],
     })
-    await act.implementDomain()
-    await act.registerAdapter()
-    await act.createSuite()
+    await given.implementDomain()
+    await given.registerAdapter()
+    await given.createSuite()
 
-    await act.executeAction({ name: 'doA' })
-    await act.executeQuery({ name: 'getB' })
-    await act.executeAssertion({ name: 'checkC' })
+    await when.executeAction({ name: 'doA' })
+    await when.executeQuery({ name: 'getB' })
+    await when.executeAssertion({ name: 'checkC' })
 
-    await assert.traceHasLength({ length: 3 })
-    await assert.traceContains({ kind: 'action', name: 'doA', status: 'pass' })
-    await assert.traceContains({ kind: 'query', name: 'getB', status: 'pass' })
-    await assert.traceContains({ kind: 'assertion', name: 'checkC', status: 'pass' })
+    await then.traceHasLength({ length: 3 })
+    await then.traceContains({ kind: 'action', name: 'doA', status: 'pass' })
+    await then.traceContains({ kind: 'query', name: 'getB', status: 'pass' })
+    await then.traceContains({ kind: 'assertion', name: 'checkC', status: 'pass' })
   })
 
-  test('records failure status in trace when assertion fails', async ({ act, assert }) => {
-    await act.defineDomain({
+  test('records failure status in trace when assertion fails', async ({ given, when, then }) => {
+    await given.defineDomain({
       name: 'FailTrace',
       actions: ['setup'],
       queries: [],
       assertions: ['verify'],
     })
-    await act.implementDomain()
-    await act.registerAdapter()
-    await act.createSuite()
+    await given.implementDomain()
+    await given.registerAdapter()
+    await given.createSuite()
 
-    await act.executeAction({ name: 'setup' })
-    await act.executeFailingAssertion({ name: 'verify' })
+    await when.executeAction({ name: 'setup' })
+    await when.executeFailingAssertion({ name: 'verify' })
 
-    await assert.traceContains({ kind: 'action', name: 'setup', status: 'pass' })
-    await assert.traceContains({ kind: 'assertion', name: 'verify', status: 'fail' })
+    await then.traceContains({ kind: 'action', name: 'setup', status: 'pass' })
+    await then.traceContains({ kind: 'assertion', name: 'verify', status: 'fail' })
   })
 
   test('records categorized trace with given/when/then', async ({ given, when, then }) => {

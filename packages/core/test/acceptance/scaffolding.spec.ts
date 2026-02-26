@@ -13,126 +13,126 @@ describe('Scaffolding', () => {
   })
 
   describe('project init', () => {
-    test('creates project directory structure', async ({ act, assert, query }) => {
+    test('creates project directory structure', async ({ given, when, then, query }) => {
       const dir = await query.sessionDir()
-      await act.initProject({ dir })
+      await when.initProject({ dir })
 
-      await assert.fileExists({ path: join(dir, 'domains') })
-      await assert.fileExists({ path: join(dir, 'adapters') })
-      await assert.fileExists({ path: join(dir, 'tests') })
-      await assert.fileExists({ path: join(dir, 'aver.config.ts') })
-      await assert.fileExists({ path: join(dir, 'vitest.config.ts') })
+      await then.fileExists({ path: join(dir, 'domains') })
+      await then.fileExists({ path: join(dir, 'adapters') })
+      await then.fileExists({ path: join(dir, 'tests') })
+      await then.fileExists({ path: join(dir, 'aver.config.ts') })
+      await then.fileExists({ path: join(dir, 'vitest.config.ts') })
     })
 
-    test('generates valid aver.config.ts', async ({ act, query }) => {
+    test('generates valid aver.config.ts', async ({ when, query }) => {
       const dir = await query.sessionDir()
-      await act.initProject({ dir })
+      await when.initProject({ dir })
 
       await query.fileContents({ path: join(dir, 'aver.config.ts') })
     })
   })
 
   describe('domain init', () => {
-    test('generates domain file with correct structure', async ({ act, assert, query }) => {
+    test('generates domain file with correct structure', async ({ given, when, then, query }) => {
       const dir = await query.sessionDir()
-      await act.initProject({ dir })
-      await act.initDomain({ dir, name: 'taskBoard', protocol: 'unit' })
+      await given.initProject({ dir })
+      await when.initDomain({ dir, name: 'taskBoard', protocol: 'unit' })
 
-      await assert.fileExists({ path: join(dir, 'domains', 'task-board.ts') })
-      await assert.fileContains({
+      await then.fileExists({ path: join(dir, 'domains', 'task-board.ts') })
+      await then.fileContains({
         path: join(dir, 'domains', 'task-board.ts'),
         content: 'defineDomain',
       })
-      await assert.fileContains({
+      await then.fileContains({
         path: join(dir, 'domains', 'task-board.ts'),
         content: "name: 'task-board'",
       })
-      await assert.fileContains({
+      await then.fileContains({
         path: join(dir, 'domains', 'task-board.ts'),
         content: 'create: action',
       })
     })
 
-    test('generates adapter file for chosen protocol', async ({ act, assert, query }) => {
+    test('generates adapter file for chosen protocol', async ({ given, when, then, query }) => {
       const dir = await query.sessionDir()
-      await act.initProject({ dir })
-      await act.initDomain({ dir, name: 'taskBoard', protocol: 'unit' })
+      await given.initProject({ dir })
+      await when.initDomain({ dir, name: 'taskBoard', protocol: 'unit' })
 
-      await assert.fileExists({ path: join(dir, 'adapters', 'task-board.unit.ts') })
-      await assert.fileContains({
+      await then.fileExists({ path: join(dir, 'adapters', 'task-board.unit.ts') })
+      await then.fileContains({
         path: join(dir, 'adapters', 'task-board.unit.ts'),
         content: 'implement',
       })
-      await assert.fileContains({
+      await then.fileContains({
         path: join(dir, 'adapters', 'task-board.unit.ts'),
         content: 'unit(',
       })
-      await assert.fileContains({
+      await then.fileContains({
         path: join(dir, 'adapters', 'task-board.unit.ts'),
         content: 'create: async',
       })
     })
 
-    test('generates test file with suite and test boilerplate', async ({ act, assert, query }) => {
+    test('generates test file with suite and test boilerplate', async ({ given, when, then, query }) => {
       const dir = await query.sessionDir()
-      await act.initProject({ dir })
-      await act.initDomain({ dir, name: 'taskBoard', protocol: 'unit' })
+      await given.initProject({ dir })
+      await when.initDomain({ dir, name: 'taskBoard', protocol: 'unit' })
 
-      await assert.fileExists({ path: join(dir, 'tests', 'task-board.spec.ts') })
-      await assert.fileContains({
+      await then.fileExists({ path: join(dir, 'tests', 'task-board.spec.ts') })
+      await then.fileContains({
         path: join(dir, 'tests', 'task-board.spec.ts'),
         content: 'suite(taskBoard)',
       })
-      await assert.fileContains({
+      await then.fileContains({
         path: join(dir, 'tests', 'task-board.spec.ts'),
         content: 'act, query, assert',
       })
-      await assert.fileContains({
+      await then.fileContains({
         path: join(dir, 'tests', 'task-board.spec.ts'),
         content: "import '../aver.config'",
         shouldContain: false,
       })
-      await assert.fileContains({
+      await then.fileContains({
         path: join(dir, 'tests', 'task-board.spec.ts'),
         content: 'act.create',
       })
     })
 
-    test('updates aver.config.ts with new adapter import', async ({ act, assert, query }) => {
+    test('updates aver.config.ts with new adapter import', async ({ given, when, then, query }) => {
       const dir = await query.sessionDir()
-      await act.initProject({ dir })
-      await act.initDomain({ dir, name: 'taskBoard', protocol: 'unit' })
+      await given.initProject({ dir })
+      await when.initDomain({ dir, name: 'taskBoard', protocol: 'unit' })
 
-      await assert.configRegistersAdapter({
+      await then.configRegistersAdapter({
         dir,
         adapterImport: './adapters/task-board.unit',
       })
     })
 
-    test('kebab-cases domain name for filenames', async ({ act, assert, query }) => {
+    test('kebab-cases domain name for filenames', async ({ given, when, then, query }) => {
       const dir = await query.sessionDir()
-      await act.initProject({ dir })
-      await act.initDomain({ dir, name: 'shoppingCart', protocol: 'unit' })
+      await given.initProject({ dir })
+      await when.initDomain({ dir, name: 'shoppingCart', protocol: 'unit' })
 
-      await assert.fileExists({ path: join(dir, 'domains', 'shopping-cart.ts') })
-      await assert.fileExists({ path: join(dir, 'adapters', 'shopping-cart.unit.ts') })
-      await assert.fileExists({ path: join(dir, 'tests', 'shopping-cart.spec.ts') })
+      await then.fileExists({ path: join(dir, 'domains', 'shopping-cart.ts') })
+      await then.fileExists({ path: join(dir, 'adapters', 'shopping-cart.unit.ts') })
+      await then.fileExists({ path: join(dir, 'tests', 'shopping-cart.spec.ts') })
     })
 
-    test('errors when aver.config.ts does not exist', async ({ act, assert, query }) => {
+    test('errors when aver.config.ts does not exist', async ({ when, then, query }) => {
       const dir = await query.sessionDir()
-      await act.initDomain({ dir, name: 'taskBoard', protocol: 'unit' })
+      await when.initDomain({ dir, name: 'taskBoard', protocol: 'unit' })
 
-      await assert.throwsError({ message: 'aver.config.ts' })
+      await then.throwsError({ message: 'aver.config.ts' })
     })
 
-    test('errors when domain file already exists', async ({ act, assert, query }) => {
+    test('errors when domain file already exists', async ({ given, when, then, query }) => {
       const dir = await query.sessionDir()
-      await act.initProject({ dir })
-      await act.initDomain({ dir, name: 'taskBoard', protocol: 'unit' })
-      await act.initDomain({ dir, name: 'taskBoard', protocol: 'unit' })
+      await given.initProject({ dir })
+      await when.initDomain({ dir, name: 'taskBoard', protocol: 'unit' })
+      await when.initDomain({ dir, name: 'taskBoard', protocol: 'unit' })
 
-      await assert.throwsError({ message: 'already exists' })
+      await then.throwsError({ message: 'already exists' })
     })
   })
 })

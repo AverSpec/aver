@@ -6,8 +6,8 @@ import { averReporterAdapter } from './adapters/aver-reporter.unit'
 describe('JUnit Reporter (acceptance)', () => {
   const { test } = suite(averReporter, averReporterAdapter)
 
-  test('generates valid XML with passing tests', async ({ act, assert }) => {
-    await act.generateReport({
+  test('generates valid XML with passing tests', async ({ when, then }) => {
+    await when.generateReport({
       name: 'my-suite',
       suites: [{
         name: 'test-file.spec.ts',
@@ -21,14 +21,14 @@ describe('JUnit Reporter (acceptance)', () => {
       }],
     })
 
-    await assert.xmlContains({ text: '<?xml version="1.0"' })
-    await assert.xmlContains({ text: 'name="my-suite"' })
-    await assert.hasTestCount({ count: 2 })
-    await assert.hasFailureCount({ count: 0 })
+    await then.xmlContains({ text: '<?xml version="1.0"' })
+    await then.xmlContains({ text: 'name="my-suite"' })
+    await then.hasTestCount({ count: 2 })
+    await then.hasFailureCount({ count: 0 })
   })
 
-  test('includes failure details in XML', async ({ act, assert }) => {
-    await act.generateReport({
+  test('includes failure details in XML', async ({ when, then }) => {
+    await when.generateReport({
       name: 'failing-suite',
       suites: [{
         name: 'fail.spec.ts',
@@ -44,12 +44,12 @@ describe('JUnit Reporter (acceptance)', () => {
       }],
     })
 
-    await assert.xmlContains({ text: '<failure message="Expected true to be false">' })
-    await assert.hasFailureCount({ count: 1 })
+    await then.xmlContains({ text: '<failure message="Expected true to be false">' })
+    await then.hasFailureCount({ count: 1 })
   })
 
-  test('escapes XML special characters', async ({ act, assert }) => {
-    await act.generateReport({
+  test('escapes XML special characters', async ({ when, then }) => {
+    await when.generateReport({
       name: 'escape-test',
       suites: [{
         name: 'xml.spec.ts',
@@ -65,13 +65,13 @@ describe('JUnit Reporter (acceptance)', () => {
       }],
     })
 
-    await assert.xmlContains({ text: '&lt;special&gt;' })
-    await assert.xmlContains({ text: '&amp;' })
-    await assert.xmlContains({ text: '&quot;chars&quot;' })
+    await then.xmlContains({ text: '&lt;special&gt;' })
+    await then.xmlContains({ text: '&amp;' })
+    await then.xmlContains({ text: '&quot;chars&quot;' })
   })
 
-  test('aggregates counts across multiple suites', async ({ act, assert }) => {
-    await act.generateReport({
+  test('aggregates counts across multiple suites', async ({ when, then }) => {
+    await when.generateReport({
       name: 'multi-suite',
       suites: [
         {
@@ -98,7 +98,7 @@ describe('JUnit Reporter (acceptance)', () => {
       ],
     })
 
-    await assert.hasTestCount({ count: 5 })
-    await assert.hasFailureCount({ count: 1 })
+    await then.hasTestCount({ count: 5 })
+    await then.hasFailureCount({ count: 1 })
   })
 })

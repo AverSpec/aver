@@ -52,7 +52,8 @@
   },
   "dependencies": {
     "@aver/skills": "workspace:^",
-    "@aver/workspace": "workspace:^"
+    "@aver/workspace": "workspace:^",
+    "@libsql/client": "^0.17.0"
   },
   "peerDependencies": {
     "@anthropic-ai/claude-agent-sdk": ">=0.2.0",
@@ -62,10 +63,18 @@
     "react": ">=19.0.0"
   },
   "peerDependenciesMeta": {
-    "@anthropic-ai/claude-agent-sdk": { "optional": true },
-    "ink": { "optional": true },
-    "react": { "optional": true },
-    "@types/react": { "optional": true }
+    "@anthropic-ai/claude-agent-sdk": {
+      "optional": true
+    },
+    "ink": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "@types/react": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.2.0",

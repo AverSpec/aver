@@ -21,7 +21,9 @@
       }
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "prepublishOnly": "pnpm run build",
@@ -39,12 +41,23 @@
   },
   "homepage": "https://github.com/njackson/aver",
   "bugs": "https://github.com/njackson/aver/issues",
-  "keywords": ["testing", "bdd", "aver", "workspace", "scenario-management"],
-  "publishConfig": { "access": "public" },
+  "keywords": [
+    "testing",
+    "bdd",
+    "aver",
+    "workspace",
+    "scenario-management"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "devDependencies": {
     "@types/node": "^22.0.0",
     "tsup": "^8.0.0",
     "typescript": "^5.7.0",
     "vitest": "^3.0.0"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.17.0"
   }
 }

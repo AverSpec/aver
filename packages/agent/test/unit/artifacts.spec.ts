@@ -2,19 +2,24 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import type { Client } from '@libsql/client'
+import { createDatabase, closeDatabase } from '../../src/db/database.js'
 import { ArtifactStore } from '../../src/memory/artifacts.js'
 import type { NewArtifact } from '../../src/types.js'
 
 describe('ArtifactStore', () => {
   let dir: string
+  let db: Client
   let store: ArtifactStore
 
   beforeEach(async () => {
     dir = await mkdtemp(join(tmpdir(), 'aver-artifacts-'))
-    store = new ArtifactStore(dir)
+    db = await createDatabase(':memory:')
+    store = new ArtifactStore(dir, db)
   })
 
   afterEach(async () => {
+    closeDatabase(db)
     await rm(dir, { recursive: true, force: true })
   })
 

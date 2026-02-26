@@ -61,4 +61,12 @@ export const SCHEMA_STATEMENTS = [
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
   )`,
+
+  `CREATE TABLE IF NOT EXISTS artifacts (
+    name TEXT PRIMARY KEY,
+    type TEXT NOT NULL,
+    summary TEXT NOT NULL DEFAULT '',
+    scenario_id TEXT,
+    created_at TEXT NOT NULL
+  )`,
 ] as const

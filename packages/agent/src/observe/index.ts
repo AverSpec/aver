@@ -8,3 +8,5 @@ export {
   COMPRESSION_LEVEL_PROMPTS,
   buildReflectorUserPrompt,
 } from './reflector-prompt.js'
+export { ObservationBuffer } from './buffer.js'
+export type { BufferConfig } from './buffer.js'

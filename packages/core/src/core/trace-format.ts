@@ -1,9 +1,21 @@
 import type { Domain } from './domain'
 import type { TraceEntry } from './trace'
 
+function categoryLabel(entry: TraceEntry): string {
+  if (entry.category) return entry.category.toUpperCase().padEnd(6)
+  // Fallback for entries without category (backward compat, 'test' kind)
+  switch (entry.kind) {
+    case 'action': return 'ACT   '
+    case 'query': return 'QUERY '
+    case 'assertion': return 'ASSERT'
+    default: return entry.kind.toUpperCase().padEnd(6)
+  }
+}
+
 export function formatTrace(trace: TraceEntry[], domainName: string): string {
   return trace
     .map(e => {
+      const label = categoryLabel(e)
       const icon = e.status === 'pass' ? '[PASS]' : '[FAIL]'
       let payloadStr = ''
       if (e.payload !== undefined) {
@@ -14,10 +26,11 @@ export function formatTrace(trace: TraceEntry[], domainName: string): string {
           payloadStr = '[unserializable]'
         }
       }
+      const durationStr = e.durationMs !== undefined ? `  ${e.durationMs}ms` : ''
       const errorStr = e.status === 'fail' && e.error
         ? ` — ${(e.error as Error).message ?? e.error}`
         : ''
-      return `  ${icon} ${domainName}.${e.name}(${payloadStr})${errorStr}`
+      return `  ${icon} ${label} ${domainName}.${e.name}(${payloadStr})${durationStr}${errorStr}`
     })
     .join('\n')
 }

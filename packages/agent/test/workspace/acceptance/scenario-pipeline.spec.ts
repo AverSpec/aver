@@ -217,11 +217,9 @@ describe('Scenario Pipeline', () => {
       await then.workflowPhaseIs({ phase: 'verification' })
     })
 
-    test('implemented without domain link stays in implementation phase', async ({ given, when, then, query }) => {
-      // Scenario: A scenario at "specified" stage (not yet implemented) still needs domain links.
-      // This tests the "implementation" phase detection which includes both specified and
-      // implemented-without-links scenarios (though the latter is technically impossible due to
-      // advancement validation, the phase detection includes this check for safety).
+    test('specified scenario without domain link stays in implementation phase', async ({ given, when, then, query }) => {
+      // A scenario at "specified" stage cannot advance to "implemented" without domain links
+      // (verifyAdvancement blocks it), so it stays in the implementation phase.
       await given.captureScenario({ behavior: 'awaiting implementation' })
       const id = await query.lastCapturedId()
       await given.advanceScenario({ id, rationale: 'r', promotedBy: 'p' })

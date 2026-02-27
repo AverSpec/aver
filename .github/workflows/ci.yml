@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -30,20 +30,39 @@ jobs:
           pnpm --filter @aver/protocol-playwright run build
           pnpm --filter @aver/example-task-board run build
 
-      - name: Get Playwright version
-        id: pw-version
-        run: echo "version=$(pnpm exec playwright --version)" >> $GITHUB_OUTPUT
-
-      - name: Cache Playwright browsers
-        id: playwright-cache
-        uses: actions/cache@v4
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
         with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ steps.pw-version.outputs.version }}
-          restore-keys: playwright-${{ runner.os }}-
+          name: build-artifacts
+          path: |
+            packages/core/dist
+            packages/approvals/dist
+            packages/agent/dist
+            packages/mcp-server/dist
+            packages/protocol-http/dist
+            packages/protocol-playwright/dist
+            examples/task-board/dist
+          retention-days: 1
 
-      - name: Install Playwright
-        run: pnpm exec playwright install --with-deps chromium
+  test-fast:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
 
       - name: Test core
         run: pnpm exec vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/aver.xml
@@ -64,8 +83,50 @@ jobs:
         run: pnpm exec vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/mcp-server.xml
         working-directory: packages/mcp-server
 
-      - name: Test protocol-http
+      - name: Upload fast test results
         if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-fast
+          path: test-results/
+          retention-days: 1
+
+  test-slow:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+
+      - name: Get Playwright version
+        id: pw-version
+        run: echo "version=$(pnpm exec playwright --version)" >> $GITHUB_OUTPUT
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw-version.outputs.version }}
+          restore-keys: playwright-${{ runner.os }}-
+
+      - name: Install Playwright
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Test protocol-http
         run: pnpm exec vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/protocol-http.xml
         working-directory: packages/protocol-http
 
@@ -79,6 +140,32 @@ jobs:
         run: pnpm exec vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/task-board.xml
         working-directory: examples/task-board
 
-      - name: Test summary
+      - name: Upload slow test results
         if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-slow
+          path: test-results/
+          retention-days: 1
+
+  summary:
+    needs: [test-fast, test-slow]
+    runs-on: ubuntu-latest
+    if: ${{ !cancelled() }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download fast test results
+        uses: actions/download-artifact@v4
+        with:
+          name: test-results-fast
+          path: test-results/
+
+      - name: Download slow test results
+        uses: actions/download-artifact@v4
+        with:
+          name: test-results-slow
+          path: test-results/
+
+      - name: Test summary
         run: node .github/scripts/test-summary.mjs >> $GITHUB_STEP_SUMMARY

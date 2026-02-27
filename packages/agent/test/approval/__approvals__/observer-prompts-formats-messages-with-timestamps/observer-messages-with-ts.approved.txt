@@ -1,0 +1,5 @@
+Observe the following conversation and produce structured observations:
+
+[user] [2026-02-27T10:00:00Z]: Investigate the auth module
+[assistant] [2026-02-27T10:00:05Z]: I found 3 files in src/auth/
+[tool]: File read: src/auth/login.ts

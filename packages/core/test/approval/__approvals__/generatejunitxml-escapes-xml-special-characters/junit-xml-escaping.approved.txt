@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="aver &amp; friends" tests="1" failures="1" time="0.010">
+  <testsuite name="Suite &lt;&quot;special&quot;&gt;" tests="1" failures="1" time="0.010">
+    <testcase name="test with &lt;html&gt; &amp; &quot;quotes&quot;" classname="it&apos;s tricky" time="0.010">
+      <failure message="a &lt; b &amp;&amp; c &gt; d">stack with &lt;tags&gt; &amp; &quot;quotes&quot;</failure>
+    </testcase>
+  </testsuite>
+</testsuites>

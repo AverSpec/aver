@@ -1,0 +1,1 @@
+  [PASS] QUERY  Cart.itemCount()  3ms

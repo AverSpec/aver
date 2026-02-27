@@ -1,0 +1,3 @@
+  [PASS] GIVEN  Cart.addItem({"id":1})  5ms
+  [PASS] WHEN   Cart.checkout()  120ms
+  [FAIL] THEN   Cart.isEmpty()  1ms — Cart is not empty

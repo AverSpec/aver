@@ -1,0 +1,15 @@
+## Compression Level 2: Aggressive compression
+Target: 6/10 detail retained.
+- Combine related items into group summaries.
+- Informational observations should be dropped or folded into related important ones.
+- Important observations can be condensed into brief statements.
+- Critical observations may be slightly shortened but must retain their core meaning.
+
+## Current observations
+
+<observations>
+[critical] Build uses tsup
+[important] Tests pass
+</observations>
+
+Compress these observations according to the level above. Output ONLY the <observations> tags (and <degenerate> tag if applicable). No other text.

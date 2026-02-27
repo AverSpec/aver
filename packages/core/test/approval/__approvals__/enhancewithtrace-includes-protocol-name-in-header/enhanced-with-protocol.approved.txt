@@ -1,0 +1,4 @@
+fail
+
+Action trace (playwright):
+  [PASS] ACT    undefined.addItem({"id":1,"qty":2})  12ms

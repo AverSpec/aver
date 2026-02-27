@@ -1,0 +1,5 @@
+Assertion failed
+
+Action trace:
+  [PASS] GIVEN  undefined.addItem({"id":1,"qty":2})  5ms
+  [FAIL] THEN   undefined.isEmpty({"id":1,"qty":2})  1ms — not empty

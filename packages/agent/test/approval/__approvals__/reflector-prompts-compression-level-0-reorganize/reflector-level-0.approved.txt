@@ -1,0 +1,15 @@
+## Compression Level 0: Reorganize
+Target: same level of detail, fewer observations.
+- Merge exact or near-duplicate observations into one.
+- Fix ordering: group related observations together.
+- Remove truly redundant entries.
+- Do NOT drop any unique information.
+
+## Current observations
+
+<observations>
+[critical] Build uses tsup
+[informational] Package count is 8
+</observations>
+
+Compress these observations according to the level above. Output ONLY the <observations> tags (and <degenerate> tag if applicable). No other text.

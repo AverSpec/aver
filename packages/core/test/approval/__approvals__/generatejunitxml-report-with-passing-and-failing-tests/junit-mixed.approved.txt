@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="aver" tests="2" failures="1" time="0.150">
+  <testsuite name="Cart" tests="2" failures="1" time="0.150">
+    <testcase name="adds item" classname="Cart &gt; basics" time="0.050" />
+    <testcase name="fails on empty" classname="Cart &gt; edge" time="0.100">
+      <failure message="Expected non-empty cart">Error: Expected non-empty cart
+  at test.spec.ts:42</failure>
+    </testcase>
+  </testsuite>
+</testsuites>

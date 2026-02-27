@@ -2,12 +2,9 @@ import { readdir, stat } from 'node:fs/promises'
 import { join, parse as parsePath } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { registerDomain, getDomains } from '@aver/core'
-import { toKebabCase as coreToKebabCase } from '@aver/core/scaffold'
+import { toKebabCase } from '@aver/core/scaffold'
 import type { Domain } from '@aver/core'
 import { log } from './logger.js'
-
-// Re-export for backward compatibility
-export const toKebabCase = coreToKebabCase
 
 const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', 'coverage', '.aver', '.worktrees'])
 

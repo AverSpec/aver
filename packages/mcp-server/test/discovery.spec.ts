@@ -3,13 +3,13 @@ import { mkdtempSync, writeFileSync, mkdirSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { resetRegistry, getDomains } from '@aver/core'
+import { toKebabCase } from '@aver/core/scaffold'
 import {
   scanConventionDirs,
   discoverDomains,
   scanAdapterFiles,
   matchDomainByKebab,
   isDomain,
-  toKebabCase,
   discoverAndRegister,
   getDomainFilePaths,
   resetDiscoveryCache,

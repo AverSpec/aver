@@ -9,7 +9,8 @@ import { AgentNetwork } from '../../network/agent-network.js'
 import type { Dispatchers, AgentNetworkCallbacks } from '../../network/agent-network.js'
 import type { Client } from '@libsql/client'
 import { join } from 'node:path'
-import { WorkspaceOps, WorkspaceStore } from '@aver/workspace'
+import { WorkspaceOps } from '../../workspace/operations.js'
+import { WorkspaceStore } from '../../workspace/storage.js'
 
 interface EngineHookOptions {
   agentPath: string

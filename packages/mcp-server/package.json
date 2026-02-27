@@ -34,7 +34,7 @@
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
-    "@aver/workspace": "workspace:^",
+    "@aver/agent": "workspace:^",
     "@modelcontextprotocol/sdk": "^1.26.0",
     "zod": "^4.0.0"
   },

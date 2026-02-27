@@ -29,7 +29,7 @@ interface ScenarioRow {
 }
 
 /**
- * Shape of the dynamically-imported @aver/workspace module.
+ * Shape of the dynamically-imported @aver/agent module (workspace subset).
  * We don't import types at compile time to avoid a hard dependency.
  */
 interface WorkspaceModule {
@@ -288,10 +288,10 @@ export async function runWorkspace(rawArgs: string[]): Promise<void> {
 
   let ws: WorkspaceModule
   try {
-    ws = await import('@aver/workspace') as unknown as WorkspaceModule
+    ws = await import('@aver/agent') as unknown as WorkspaceModule
   } catch (e: unknown) {
     if (e && typeof e === 'object' && 'code' in e && e.code === 'ERR_MODULE_NOT_FOUND') {
-      console.error('Workspace not installed. Run: pnpm add @aver/workspace')
+      console.error('Agent not installed. Run: pnpm add @aver/agent')
       process.exit(1)
     }
     throw e

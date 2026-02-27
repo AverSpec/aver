@@ -8,8 +8,8 @@ import {
   exportJson,
   importJson,
   detectPhase,
-} from '../../../src/index'
-import type { Scenario, Question } from '../../../src/index'
+} from '../../../../src/workspace/index.js'
+import type { Scenario, Question } from '../../../../src/workspace/types.js'
 
 interface WorkspaceTestSession {
   client: Client

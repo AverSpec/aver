@@ -1,4 +1,4 @@
-import type { Workspace, Scenario, Stage } from '@aver/workspace'
+import type { Workspace, Scenario, Stage } from './workspace/types.js'
 
 // --- Agent Session ---
 

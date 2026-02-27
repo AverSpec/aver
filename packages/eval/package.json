@@ -74,7 +74,6 @@
     "@anthropic-ai/claude-agent-sdk": "^0.2.0",
     "@aver/agent": "workspace:*",
     "@aver/core": "workspace:*",
-    "@aver/workspace": "workspace:*",
     "@libsql/client": "^0.17.0",
     "@types/node": "^22.0.0",
     "tsup": "^8.0.0",

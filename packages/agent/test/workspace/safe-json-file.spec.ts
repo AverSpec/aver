@@ -3,7 +3,7 @@ import { mkdtemp, rm, writeFile, readFile } from 'node:fs/promises'
 import { existsSync, writeFileSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { SafeJsonFile, atomicWriteFile, atomicWriteFileSync, withLock, _testLockMapSize, acquirePidLock, releasePidLock } from '../src/safe-json-file'
+import { SafeJsonFile, atomicWriteFile, atomicWriteFileSync, withLock, _testLockMapSize, acquirePidLock, releasePidLock } from '../../src/workspace/safe-json-file'
 
 describe('SafeJsonFile', () => {
   let dir: string

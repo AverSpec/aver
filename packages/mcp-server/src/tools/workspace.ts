@@ -16,7 +16,7 @@ import {
   type ScenarioSummary,
   type Question,
   type Phase,
-} from '@aver/workspace'
+} from '@aver/agent'
 import type { ToolsConfig } from './types.js'
 
 // --- Path resolution ---

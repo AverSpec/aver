@@ -1,4 +1,4 @@
-import type { Scenario } from '@aver/workspace'
+import type { Scenario } from '../workspace/types.js'
 import type { AgentEvent } from '../db/event-store.js'
 import type { Agent } from '../db/agent-store.js'
 import type { Session } from '../db/session-store.js'

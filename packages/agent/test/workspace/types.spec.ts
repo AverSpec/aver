@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { createScenario, createExample, type Scenario } from '../src/types'
+import { createScenario, createExample, type Scenario } from '../../src/workspace/types'
 
 describe('Scenario', () => {
   it('creates a captured scenario with generated id', () => {

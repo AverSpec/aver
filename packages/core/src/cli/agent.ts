@@ -68,8 +68,7 @@ async function runStart(goal?: string): Promise<void> {
   const { mkdirSync } = await import('node:fs')
   mkdirSync(agentPath, { recursive: true })
 
-  const { createDatabase, closeDatabase, AgentNetwork } = await import('@aver/agent')
-  const { WorkspaceStore, WorkspaceOps } = await import('@aver/workspace')
+  const { createDatabase, closeDatabase, AgentNetwork, WorkspaceStore, WorkspaceOps } = await import('@aver/agent')
 
   const dbFilePath = resolve(agentPath, 'aver-agent.db')
   const db = await createDatabase(dbFilePath)

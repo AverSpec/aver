@@ -23,7 +23,6 @@ jobs:
       - name: Build packages
         run: |
           pnpm --filter @aver/core run build
-          pnpm --filter @aver/workspace run build
           pnpm --filter @aver/approvals run build
           pnpm --filter @aver/agent run build
           pnpm --filter @aver/eval run build
@@ -50,11 +49,6 @@ jobs:
       - name: Test core
         run: pnpm exec vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/aver.xml
         working-directory: packages/core
-
-      - name: Test workspace
-        if: ${{ !cancelled() }}
-        run: pnpm exec vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/workspace.xml
-        working-directory: packages/workspace
 
       - name: Test approvals
         if: ${{ !cancelled() }}

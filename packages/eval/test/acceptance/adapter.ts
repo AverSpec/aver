@@ -2,8 +2,8 @@ import { implement, unit } from '@aver/core'
 import { createClient, type Client } from '@libsql/client'
 import { agentEval } from '../../src/domain.js'
 import type { WorkerResult } from '@aver/agent'
-import { WorkspaceStore, WorkspaceOps, initWorkspaceSchema } from '@aver/workspace'
-import type { Stage } from '@aver/workspace'
+import { WorkspaceStore, WorkspaceOps, initWorkspaceSchema } from '@aver/agent'
+import type { Stage } from '@aver/agent'
 import { judge } from '../../src/judge.js'
 
 const STAGE_ORDER: Stage[] = ['captured', 'characterized', 'mapped', 'specified', 'implemented']

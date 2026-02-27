@@ -1,6 +1,6 @@
 import React from 'react'
 import { Box, Text } from 'ink'
-import type { Scenario } from '@aver/workspace'
+import type { Scenario } from '../../workspace/types.js'
 
 interface Props {
   scenarios: Scenario[]

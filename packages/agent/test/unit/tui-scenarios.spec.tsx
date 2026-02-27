@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import React from 'react'
 import { render } from 'ink-testing-library'
 import { ScenarioPanel } from '../../src/tui/components/scenarios.js'
-import type { Scenario } from '@aver/workspace'
+import type { Scenario } from '../../src/workspace/types.js'
 
 function makeScenario(overrides: Partial<Scenario> = {}): Scenario {
   return {

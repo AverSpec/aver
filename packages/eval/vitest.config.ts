@@ -11,7 +11,6 @@ export default defineConfig({
     alias: {
       '@aver/core': resolve(__dirname, '../core/src/index.ts'),
       '@aver/agent': resolve(__dirname, '../agent/src/index.ts'),
-      '@aver/workspace': resolve(__dirname, '../workspace/src/index.ts'),
     },
   },
 })

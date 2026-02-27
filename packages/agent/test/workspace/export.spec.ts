@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { createClient, type Client } from '@libsql/client'
-import { WorkspaceOps } from '../src/operations'
-import { WorkspaceStore } from '../src/storage'
-import { exportMarkdown, exportJson, importJson } from '../src/export'
+import { WorkspaceOps } from '../../src/workspace/operations'
+import { WorkspaceStore } from '../../src/workspace/storage'
+import { exportMarkdown, exportJson, importJson } from '../../src/workspace/export'
 
 describe('export', () => {
   let client: Client

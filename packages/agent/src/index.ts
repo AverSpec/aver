@@ -66,3 +66,14 @@ export { loadSession, readEvents, requestStop } from './cli-ops.js'
 // ── Dogfood domains ─────────────────────────────────────────────────
 export { AverAgent } from './domain.js'
 export { AverTui } from './tui-domain.js'
+
+// ── Workspace (absorbed from @aver/workspace) ───────────────────────
+export { createScenario, createExample } from './workspace/types.js'
+export type { Scenario, Workspace, Example, Question, Stage, Transition } from './workspace/types.js'
+export { WorkspaceStore, initWorkspaceSchema } from './workspace/storage.js'
+export { WorkspaceOps, verifyAdvancement, nextStage, STAGE_ORDER } from './workspace/operations.js'
+export type { AdvanceInput, AdvanceResult, RevisitInput, AdvancementVerification, ScenarioFilter, ScenarioSummary } from './workspace/operations.js'
+export { exportMarkdown, exportJson, importJson } from './workspace/export.js'
+export { detectPhase } from './workspace/phase.js'
+export type { Phase, PhaseName } from './workspace/phase.js'
+export { SafeJsonFile, atomicWriteFile, atomicWriteFileSync, withLock } from './workspace/safe-json-file.js'

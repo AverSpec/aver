@@ -3,7 +3,7 @@ import { buildWorkerPrompts, type WorkerPromptInput } from './prompt.js'
 import { loadSkill } from './skill-loader.js'
 import { buildApprovalHook, type PermissionLevel } from '../shell/hooks.js'
 import type { WorkerDispatch, WorkerResult, ArtifactContent, AgentConfig } from '../types.js'
-import type { Scenario } from '@aver/workspace'
+import type { Scenario } from '../workspace/types.js'
 
 export type { WorkerPromptInput } from './prompt.js'
 export { buildWorkerPrompts } from './prompt.js'

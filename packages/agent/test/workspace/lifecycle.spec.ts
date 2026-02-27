@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { createClient, type Client } from '@libsql/client'
-import { WorkspaceOps, WorkspaceStore, detectPhase, exportMarkdown } from '../src/index'
-import type { Stage } from '../src/index'
+import { WorkspaceOps, WorkspaceStore, detectPhase, exportMarkdown } from '../../src/workspace/index'
+import type { Stage } from '../../src/workspace/index'
 
 describe('full lifecycle: captured -> characterized -> mapped -> specified -> implemented', () => {
   let client: Client

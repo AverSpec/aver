@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createClient, type Client } from '@libsql/client'
 import { createDatabase, closeDatabase, AgentStore, SessionStore, EventStore } from '../../src/db/index.js'
-import { WorkspaceStore, WorkspaceOps, initWorkspaceSchema } from '@aver/workspace'
+import { WorkspaceStore, initWorkspaceSchema } from '../../src/workspace/storage.js'
+import { WorkspaceOps } from '../../src/workspace/operations.js'
 import { AgentNetwork, type Dispatchers, type AgentNetworkConfig } from '../../src/network/agent-network.js'
 
 /**

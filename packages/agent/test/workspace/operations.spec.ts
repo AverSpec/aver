@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { createClient } from '@libsql/client'
-import { WorkspaceOps, verifyAdvancement } from '../src/operations'
-import { WorkspaceStore } from '../src/storage'
-import type { Scenario, Stage } from '../src/types'
+import { WorkspaceOps, verifyAdvancement } from '../../src/workspace/operations'
+import { WorkspaceStore } from '../../src/workspace/storage'
+import type { Scenario, Stage } from '../../src/workspace/types'
 
 describe('WorkspaceOps', () => {
   let ops: WorkspaceOps

@@ -78,15 +78,12 @@
   },
   "peerDependencies": {
     "vitest": ">=2.0.0",
-    "@aver/workspace": ">=0.1.0",
     "@aver/agent": ">=0.1.0"
   },
   "peerDependenciesMeta": {
-    "@aver/workspace": { "optional": true },
     "@aver/agent": { "optional": true }
   },
   "devDependencies": {
-    "@aver/workspace": "workspace:*",
     "@aver/agent": "workspace:*",
     "@clack/prompts": "^1.0.0",
     "@types/node": "^22.0.0",

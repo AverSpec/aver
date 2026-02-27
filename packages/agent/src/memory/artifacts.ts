@@ -1,7 +1,7 @@
 import { readFile, mkdir, rename, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { existsSync } from 'node:fs'
-import { atomicWriteFile } from '@aver/workspace'
+import { atomicWriteFile } from '../workspace/safe-json-file.js'
 import type { Client } from '@libsql/client'
 import type { ArtifactEntry, ArtifactContent, NewArtifact } from '../types.js'
 

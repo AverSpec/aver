@@ -1,5 +1,5 @@
 import type { Trigger } from '../network/triggers.js'
-import type { Scenario } from '@aver/workspace'
+import type { Scenario } from '../workspace/types.js'
 
 export interface SupervisorPromptInput {
   projectContext: string

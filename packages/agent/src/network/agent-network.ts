@@ -8,7 +8,7 @@ import { ContextAssembler } from '../context/assembler.js'
 // For MVP, worker output is stored as a single observation directly.
 import { TriggerQueue, type Trigger } from './triggers.js'
 import { extractJson } from '../parsing.js'
-import type { WorkspaceOps } from '@aver/workspace'
+import type { WorkspaceOps } from '../workspace/operations.js'
 
 // --- Decision types (new, simplified) ---
 

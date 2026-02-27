@@ -15,7 +15,7 @@ import { describe, it, expect } from 'vitest'
 import { verifyAdvancement } from '../../src/shell/verification.js'
 import { buildSupervisorPrompt } from '../../src/supervisor/prompt.js'
 import type { SupervisorPromptInput } from '../../src/supervisor/prompt.js'
-import type { Scenario } from '@aver/workspace'
+import type { Scenario } from '../../src/workspace/types.js'
 
 // ---------------------------------------------------------------------------
 // Helpers

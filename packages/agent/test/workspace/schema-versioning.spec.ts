@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { createClient } from '@libsql/client'
-import { WorkspaceStore } from '../src/storage'
+import { WorkspaceStore } from '../../src/workspace/storage'
 
 describe('schema versioning', () => {
   it('new workspaces get schemaVersion 1.0.0', async () => {

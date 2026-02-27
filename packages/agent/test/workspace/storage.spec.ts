@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { createClient, type Client } from '@libsql/client'
-import { WorkspaceStore } from '../src/storage'
-import { createScenario } from '../src/types'
+import { WorkspaceStore } from '../../src/workspace/storage'
+import { createScenario } from '../../src/workspace/types'
 
 describe('WorkspaceStore', () => {
   let client: Client

@@ -10,7 +10,8 @@ import {
 } from '../../src/network/agent-network.js'
 import { createDatabase, closeDatabase, AgentStore, SessionStore, EventStore } from '../../src/db/index.js'
 import { ObservationStore } from '../../src/db/observation-store.js'
-import { WorkspaceStore, WorkspaceOps, initWorkspaceSchema } from '@aver/workspace'
+import { WorkspaceStore, initWorkspaceSchema } from '../../src/workspace/storage.js'
+import { WorkspaceOps } from '../../src/workspace/operations.js'
 
 // --- Queue-based mock dispatchers ---
 

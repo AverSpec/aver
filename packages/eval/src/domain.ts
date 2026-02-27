@@ -1,5 +1,5 @@
 import { defineDomain, action, query, assertion } from '@aver/core'
-import type { Stage, Scenario } from '@aver/workspace'
+import type { Stage, Scenario } from '@aver/agent'
 import type { WorkerResult, ArtifactType } from '@aver/agent'
 
 export const agentEval = defineDomain({

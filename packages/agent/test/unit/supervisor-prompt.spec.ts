@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { buildSupervisorPrompt, type SupervisorPromptInput, type ActiveWorkerInfo } from '../../src/supervisor/prompt.js'
-import type { Scenario } from '@aver/workspace'
+import type { Scenario } from '../../src/workspace/types.js'
 import type { Trigger } from '../../src/network/triggers.js'
 
 function makeScenario(overrides: Partial<Scenario> = {}): Scenario {

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { verifyAdvancement } from '../../src/shell/verification.js'
-import type { Scenario } from '@aver/workspace'
+import type { Scenario } from '../../src/workspace/types.js'
 
 function makeScenario(overrides: Partial<Scenario> = {}): Scenario {
   return {

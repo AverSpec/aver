@@ -52,7 +52,6 @@
   },
   "dependencies": {
     "@aver/skills": "workspace:^",
-    "@aver/workspace": "workspace:^",
     "@libsql/client": "^0.17.0"
   },
   "peerDependencies": {

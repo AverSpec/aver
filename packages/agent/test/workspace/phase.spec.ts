@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { createClient, type Client } from '@libsql/client'
-import { WorkspaceOps } from '../src/operations'
-import { WorkspaceStore } from '../src/storage'
-import { detectPhase } from '../src/phase'
-import type { Stage } from '../src/types'
+import { WorkspaceOps } from '../../src/workspace/operations'
+import { WorkspaceStore } from '../../src/workspace/storage'
+import { detectPhase } from '../../src/workspace/phase'
+import type { Stage } from '../../src/workspace/types'
 
 describe('detectPhase', () => {
   let client: Client

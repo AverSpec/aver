@@ -182,5 +182,35 @@ export const agentEvalAdapter = implement(agentEval, {
         throw new Error(`Rubric failed: ${verdict.reasoning}`)
       }
     },
+
+    scenarioStageIs: async (ctx, { stage }) => {
+      if (!ctx.seededScenarioId) throw new Error('No scenario seeded')
+      const scenarios = await ctx.workspaceOps.getScenarios()
+      const s = scenarios.find(sc => sc.id === ctx.seededScenarioId)
+      if (!s) throw new Error(`Scenario ${ctx.seededScenarioId} not found`)
+      if (s.stage !== stage)
+        throw new Error(`Expected stage "${stage}" but got "${s.stage}"`)
+    },
+
+    scenarioBehaviorIs: async (ctx, { behavior }) => {
+      if (!ctx.seededScenarioId) throw new Error('No scenario seeded')
+      const scenarios = await ctx.workspaceOps.getScenarios()
+      const s = scenarios.find(sc => sc.id === ctx.seededScenarioId)
+      if (!s) throw new Error(`Scenario ${ctx.seededScenarioId} not found`)
+      if (s.behavior !== behavior)
+        throw new Error(`Expected behavior "${behavior}" but got "${s.behavior}"`)
+    },
+
+    workerSummaryIs: async (ctx, { summary }) => {
+      if (!ctx.lastWorkerResult) throw new Error('No worker result captured')
+      if (ctx.lastWorkerResult.summary !== summary)
+        throw new Error(`Expected summary "${summary}" but got "${ctx.lastWorkerResult.summary}"`)
+    },
+
+    artifactCountIs: async (ctx, { count }) => {
+      if (!ctx.lastWorkerResult) throw new Error('No worker result captured')
+      if (ctx.lastWorkerResult.artifacts.length !== count)
+        throw new Error(`Expected ${count} artifacts but got ${ctx.lastWorkerResult.artifacts.length}`)
+    },
   },
 })

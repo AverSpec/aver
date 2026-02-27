@@ -31,19 +31,17 @@ test('seeds scenario at characterized stage', async ({ given, then }) => {
   await then.scenarioAdvancedTo({ stage: 'characterized' })
 })
 
-test('seeds scenario at captured stage (no advancement)', async ({ given, query }) => {
+test('seeds scenario at captured stage (no advancement)', async ({ given, then }) => {
   await given.seedScenario({
     behavior: 'User can reset password',
     stage: 'captured',
     context: 'Password management',
   })
-  const scenario = await query.scenarioAfter()
-  expect(scenario.stage).toBe('captured')
-  expect(scenario.behavior).toBe('User can reset password')
-  // TODO: consider adding domain assertion
+  await then.scenarioStageIs({ stage: 'captured' })
+  await then.scenarioBehaviorIs({ behavior: 'User can reset password' })
 })
 
-test('runs worker and captures output', async ({ given, when, query }) => {
+test('runs worker and captures output', async ({ given, when, then }) => {
   await given.queueWorkerResult({
     summary: 'Investigated auth module',
     artifacts: [{
@@ -54,10 +52,8 @@ test('runs worker and captures output', async ({ given, when, query }) => {
     }],
   })
   await when.runWorker({ skill: 'investigation', goal: 'investigate auth' })
-  const output = await query.workerOutput()
-  expect(output.summary).toBe('Investigated auth module')
-  expect(output.artifacts).toHaveLength(1)
-  // TODO: consider adding domain assertion
+  await then.workerSummaryIs({ summary: 'Investigated auth module' })
+  await then.artifactCountIs({ count: 1 })
 })
 
 test('outputContainsArtifact passes for matching type', async ({ given, when, then }) => {

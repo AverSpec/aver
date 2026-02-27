@@ -26,12 +26,16 @@ describe('AgentEval domain', () => {
     expect(agentEval.vocabulary.queries.tokenCost).toBeDefined()
   })
 
-  it('declares 4 assertions', () => {
+  it('declares 8 assertions', () => {
     const assertionNames = Object.keys(agentEval.vocabulary.assertions)
-    expect(assertionNames).toHaveLength(4)
+    expect(assertionNames).toHaveLength(8)
     expect(assertionNames).toContain('scenarioAdvancedTo')
     expect(assertionNames).toContain('outputContainsArtifact')
     expect(assertionNames).toContain('withinTokenBudget')
     expect(assertionNames).toContain('outputMeetsRubric')
+    expect(assertionNames).toContain('scenarioStageIs')
+    expect(assertionNames).toContain('scenarioBehaviorIs')
+    expect(assertionNames).toContain('workerSummaryIs')
+    expect(assertionNames).toContain('artifactCountIs')
   })
 })

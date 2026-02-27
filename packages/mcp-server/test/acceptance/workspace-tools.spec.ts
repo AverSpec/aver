@@ -1,4 +1,4 @@
-import { describe, beforeEach, expect } from 'vitest'
+import { describe, beforeEach } from 'vitest'
 import { suite, registerAdapter, resetRegistry } from '@aver/core'
 import { averMcp } from './domains/aver-mcp'
 import { averMcpAdapter } from './adapters/aver-mcp.unit'
@@ -18,15 +18,9 @@ describe('MCP Workspace Tools (acceptance)', () => {
     test('captures a scenario and retrieves summary', async ({ given, query, then }) => {
       await given.captureScenario({ behavior: 'user logs in', story: 'Auth' })
 
-      const captured = await query.lastCapturedScenario()
-      // TODO: consider adding domain assertion for scenario capture
-      expect(captured.stage).toBe('captured')
-      expect(captured.behavior).toBe('user logs in')
-
-      const summary = await query.scenarioSummary()
-      // TODO: consider adding domain assertion for scenario summary
-      expect(summary.captured).toBe(1)
-      expect(summary.total).toBe(1)
+      await then.lastCapturedScenarioIs({ stage: 'captured', behavior: 'user logs in' })
+      await then.summaryFieldIs({ field: 'captured', value: 1 })
+      await then.summaryFieldIs({ field: 'total', value: 1 })
     })
 
     test('advances a scenario to the next stage', async ({ given, when, query, then }) => {
@@ -63,11 +57,10 @@ describe('MCP Workspace Tools (acceptance)', () => {
       await given.captureScenario({ behavior: 'question test' })
       const scenario = await query.lastCapturedScenario()
 
-      await given.addQuestion({ scenarioId: scenario.id, text: 'What about edge cases?' })
-      const question = await query.lastAddedQuestion()
-      // TODO: consider adding domain assertion for question text
-      expect(question.text).toBe('What about edge cases?')
+      await when.addQuestion({ scenarioId: scenario.id, text: 'What about edge cases?' })
+      await then.lastQuestionTextIs({ text: 'What about edge cases?' })
 
+      const question = await query.lastAddedQuestion()
       await when.resolveQuestion({ scenarioId: scenario.id, questionId: question.id, answer: 'Handle them' })
       await then.questionIsResolved({ scenarioId: scenario.id, questionId: question.id })
     })
@@ -85,7 +78,7 @@ describe('MCP Workspace Tools (acceptance)', () => {
   })
 
   describe('filtering and candidates', () => {
-    test('filters scenarios by stage', async ({ given, when, query }) => {
+    test('filters scenarios by stage', async ({ given, when, query, then }) => {
       await given.captureScenario({ behavior: 'first' })
       const first = await query.lastCapturedScenario()
 
@@ -93,25 +86,18 @@ describe('MCP Workspace Tools (acceptance)', () => {
 
       await when.advanceScenario({ id: first.id, rationale: 'r', promotedBy: 'p' })
 
-      const captured = await query.scenarios({ stage: 'captured' })
-      // TODO: consider adding domain assertion for scenario filtering
-      expect(captured).toHaveLength(1)
-      expect(captured[0].behavior).toBe('second')
+      await then.filteredScenariosLengthIs({ stage: 'captured', count: 1 })
     })
 
-    test('returns advance candidates without open questions', async ({ given, when, query }) => {
+    test('returns advance candidates without open questions', async ({ given, when, query, then }) => {
       await given.captureScenario({ behavior: 'candidate' })
       const scenario = await query.lastCapturedScenario()
 
-      const before = await query.advanceCandidates()
-      // TODO: consider adding domain assertion for advance candidates
-      expect(before).toHaveLength(1)
+      await then.advanceCandidatesLengthIs({ count: 1 })
 
       await when.addQuestion({ scenarioId: scenario.id, text: 'Blocking?' })
 
-      const after = await query.advanceCandidates()
-      // TODO: consider adding domain assertion for question blocking advancement
-      expect(after).toHaveLength(0)
+      await then.advanceCandidatesLengthIs({ count: 0 })
     })
   })
 
@@ -126,13 +112,11 @@ describe('MCP Workspace Tools (acceptance)', () => {
   })
 
   describe('export and import', () => {
-    test('exports workspace as markdown', async ({ given, query }) => {
+    test('exports workspace as markdown', async ({ given, then }) => {
       await given.captureScenario({ behavior: 'exportable', story: 'Export' })
 
-      const md = await query.exportedScenarios({ format: 'markdown' })
-      // TODO: consider adding domain assertion for markdown export
-      expect(md).toContain('exportable')
-      expect(md).toContain('Captured')
+      await then.exportContains({ format: 'markdown', text: 'exportable' })
+      await then.exportContains({ format: 'markdown', text: 'Captured' })
     })
 
     test('exports and imports JSON with deduplication', async ({ given, when, query, then }) => {

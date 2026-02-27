@@ -63,5 +63,6 @@ export const averWorkspace = defineDomain({
     scenarioSurvivedRoundTrip: assertion<{ id: string; behavior: string }>(),
     scenarioDoesNotExist: assertion<{ id: string }>(),
     throwsError: assertion<{ message: string }>(),
+    scenarioCountIs: assertion<{ count: number }>(),
   },
 })

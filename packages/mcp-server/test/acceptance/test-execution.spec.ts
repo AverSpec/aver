@@ -1,4 +1,4 @@
-import { describe, beforeEach, expect } from 'vitest'
+import { describe, beforeEach } from 'vitest'
 import { suite, registerAdapter, resetRegistry } from '@aver/core'
 import { averMcp } from './domains/aver-mcp'
 import { averMcpAdapter } from './adapters/aver-mcp.unit'
@@ -14,7 +14,7 @@ describe('MCP Test Execution (acceptance)', () => {
     resetRegistry()
   })
 
-  test('retrieves failure details after saving a run with failures', async ({ given, query }) => {
+  test('retrieves failure details after saving a run with failures', async ({ given, then }) => {
     await given.saveTestRun({
       results: [
         { testName: 'passes', domain: 'Cart', status: 'pass', trace: [] },
@@ -24,13 +24,10 @@ describe('MCP Test Execution (acceptance)', () => {
       ],
     })
 
-    const details = await query.failureDetails()
-    // TODO: consider adding domain assertion for failure details
-    expect(details.failures[0].testName).toBe('fails')
-    expect(details.failures[0].domain).toBe('Cart')
+    await then.firstFailureIs({ testName: 'fails', domain: 'Cart' })
   })
 
-  test('retrieves test trace by name', async ({ given, query }) => {
+  test('retrieves test trace by name', async ({ given, then }) => {
     await given.saveTestRun({
       results: [
         { testName: 'my-test', domain: 'Cart', status: 'pass', trace: [
@@ -40,19 +37,13 @@ describe('MCP Test Execution (acceptance)', () => {
       ],
     })
 
-    const trace = await query.testTrace({ testName: 'my-test' })
-    // TODO: consider adding domain assertion for test trace retrieval
-    expect(trace).not.toBeNull()
-    expect(trace!.testName).toBe('my-test')
-    expect(trace!.status).toBe('pass')
+    await then.testTraceIs({ testName: 'my-test', status: 'pass' })
   })
 
-  test('returns null trace for unknown test', async ({ given, query }) => {
+  test('returns null trace for unknown test', async ({ given, then }) => {
     await given.saveTestRun({ results: [] })
 
-    const trace = await query.testTrace({ testName: 'nonexistent' })
-    // TODO: consider adding domain assertion for null trace
-    expect(trace).toBeNull()
+    await then.testTraceIsNull({ testName: 'nonexistent' })
   })
 
   // --- RunStore retention ---

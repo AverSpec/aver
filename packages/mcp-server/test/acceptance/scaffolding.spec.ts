@@ -1,4 +1,4 @@
-import { describe, beforeEach, expect } from 'vitest'
+import { describe, beforeEach } from 'vitest'
 import { suite, registerAdapter, resetRegistry } from '@aver/core'
 import { averMcp } from './domains/aver-mcp'
 import { averMcpAdapter } from './adapters/aver-mcp.unit'
@@ -14,14 +14,11 @@ describe('MCP Scaffolding (acceptance)', () => {
     resetRegistry()
   })
 
-  test('generates a domain structure template from a description', async ({ query }) => {
-    const structure = await query.domainStructure({ description: 'user authentication' })
-    // TODO: consider adding domain assertion for domain structure generation
-    expect(structure.suggestedName).toBe('userAuthentication')
-    expect((structure.actions as any[])[0].name).toBe('create')
+  test('generates a domain structure template from a description', async ({ then }) => {
+    await then.domainStructureSuggestedNameIs({ description: 'user authentication', name: 'userAuthentication' })
   })
 
-  test('describes adapter structure for an existing domain', async ({ given, query }) => {
+  test('describes adapter structure for an existing domain', async ({ given, then }) => {
     await given.registerTestDomain({
       name: 'Cart',
       actions: ['addItem'],
@@ -29,16 +26,11 @@ describe('MCP Scaffolding (acceptance)', () => {
       assertions: ['isEmpty'],
     })
 
-    const structure = await query.adapterStructure({ domain: 'Cart', protocol: 'test-inner' })
-    // TODO: consider adding domain assertion for adapter structure
-    expect(structure).not.toBeNull()
-    expect(structure!.domain).toBe('Cart')
-    expect(structure!.handlers.actions[0]).toBe('addItem')
+    await then.adapterStructureDomainIs({ domain: 'Cart', protocol: 'test-inner', expectedDomain: 'Cart' })
+    await then.adapterStructureFirstActionIs({ domain: 'Cart', protocol: 'test-inner', action: 'addItem' })
   })
 
-  test('returns null for unknown domain adapter structure', async ({ query }) => {
-    const result = await query.adapterStructure({ domain: 'Unknown', protocol: 'direct' })
-    // TODO: consider adding domain assertion for null adapter structure
-    expect(result).toBeNull()
+  test('returns null for unknown domain adapter structure', async ({ then }) => {
+    await then.adapterStructureIsNull({ domain: 'Unknown', protocol: 'direct' })
   })
 })

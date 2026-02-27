@@ -323,20 +323,18 @@ describe('Scenario Pipeline', () => {
 
       await when.reloadFromDisk()
 
-      const count = await query.scenarioCount()
-      expect(count).toBe(1) // TODO: consider adding domain assertion
+      await then.scenarioCountIs({ count: 1 })
       await then.scenarioSurvivedRoundTrip({ id, behavior: 'persisted behavior' })
     })
 
-    test('multiple scenarios persist across reload', async ({ when, query }) => {
+    test('multiple scenarios persist across reload', async ({ when, then }) => {
       await when.captureScenario({ behavior: 'first' })
       await when.captureScenario({ behavior: 'second' })
       await when.captureScenario({ behavior: 'third' })
 
       await when.reloadFromDisk()
 
-      const count = await query.scenarioCount()
-      expect(count).toBe(3) // TODO: consider adding domain assertion
+      await then.scenarioCountIs({ count: 3 })
     })
   })
 

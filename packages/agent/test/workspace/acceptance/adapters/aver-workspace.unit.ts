@@ -295,5 +295,11 @@ export const averWorkspaceAdapter = implement(averWorkspace, {
       if (!session.lastError.message.includes(message))
         throw new Error(`Expected error message to contain "${message}" but got "${session.lastError.message}"`)
     },
+
+    scenarioCountIs: async (session, { count }) => {
+      const workspace = await session.store.load()
+      if (workspace.scenarios.length !== count)
+        throw new Error(`Expected ${count} scenarios but got ${workspace.scenarios.length}`)
+    },
   },
 })

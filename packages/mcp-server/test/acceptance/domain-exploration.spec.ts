@@ -1,4 +1,4 @@
-import { describe, beforeEach, expect } from 'vitest'
+import { describe, beforeEach } from 'vitest'
 import { suite, registerAdapter, resetRegistry } from '@aver/core'
 import { averMcp } from './domains/aver-mcp'
 import { averMcpAdapter } from './adapters/aver-mcp.unit'
@@ -44,13 +44,11 @@ describe('MCP Domain Exploration (acceptance)', () => {
     expect(vocab!.queries).toHaveLength(1)
   })
 
-  test('returns null for unknown domain vocabulary', async ({ query }) => {
-    const result = await query.domainVocabulary({ name: 'NonExistent' })
-    // TODO: consider adding domain assertion for null vocabulary
-    expect(result).toBeNull()
+  test('returns null for unknown domain vocabulary', async ({ then }) => {
+    await then.domainVocabularyIsNull({ name: 'NonExistent' })
   })
 
-  test('lists all registered adapters', async ({ given, query }) => {
+  test('lists all registered adapters', async ({ given, then }) => {
     await given.registerTestDomain({
       name: 'Cart',
       actions: ['addItem'],
@@ -58,15 +56,10 @@ describe('MCP Domain Exploration (acceptance)', () => {
       assertions: [],
     })
 
-    const adapters = await query.adapterList()
-    const cartAdapter = adapters.find(a => a.domainName === 'Cart')
-    // TODO: consider adding domain assertion for adapter definition
-    expect(cartAdapter).toBeDefined()
+    await then.adapterExistsForDomain({ domain: 'Cart' })
   })
 
-  test('returns null for project context when no config loaded', async ({ query }) => {
-    const result = await query.projectContext()
-    // TODO: consider adding domain assertion for null project context
-    expect(result).toBeNull()
+  test('returns null for project context when no config loaded', async ({ then }) => {
+    await then.projectContextIsNull()
   })
 })

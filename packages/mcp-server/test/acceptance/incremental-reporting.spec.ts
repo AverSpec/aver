@@ -1,4 +1,4 @@
-import { describe, beforeEach, expect } from 'vitest'
+import { describe, beforeEach } from 'vitest'
 import { suite, registerAdapter, resetRegistry } from '@aver/core'
 import { averMcp } from './domains/aver-mcp'
 import { averMcpAdapter } from './adapters/aver-mcp.unit'
@@ -14,7 +14,7 @@ describe('MCP Incremental Reporting (acceptance)', () => {
     resetRegistry()
   })
 
-  test('diffs two runs showing newly passing and newly failing', async ({ given, query }) => {
+  test('diffs two runs showing newly passing and newly failing', async ({ given, then }) => {
     // First run: test-a passes, test-b fails
     await given.saveTestRun({
       results: [
@@ -31,16 +31,11 @@ describe('MCP Incremental Reporting (acceptance)', () => {
       ],
     })
 
-    const diff = await query.runDiff()
-    // TODO: consider adding domain assertion for run diff results
-    expect(diff).not.toBeNull()
-    expect(diff!.newlyFailing[0]).toBe('test-a')
-    expect(diff!.newlyPassing[0]).toBe('test-b')
+    await then.runDiffHasNewlyFailing({ testName: 'test-a' })
+    await then.runDiffHasNewlyPassing({ testName: 'test-b' })
   })
 
-  test('returns null when fewer than 2 runs exist', async ({ query }) => {
-    const diff = await query.runDiff()
-    // TODO: consider adding domain assertion for null run diff
-    expect(diff).toBeNull()
+  test('returns null when fewer than 2 runs exist', async ({ then }) => {
+    await then.runDiffIsNull()
   })
 })

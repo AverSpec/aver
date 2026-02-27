@@ -41,5 +41,9 @@ export const agentEval = defineDomain({
     outputContainsArtifact: assertion<{ type: ArtifactType }>(),
     withinTokenBudget: assertion<{ max: number }>(),
     outputMeetsRubric: assertion<{ rubric: string }>(),
+    scenarioStageIs: assertion<{ stage: Stage }>(),
+    scenarioBehaviorIs: assertion<{ behavior: string }>(),
+    workerSummaryIs: assertion<{ summary: string }>(),
+    artifactCountIs: assertion<{ count: number }>(),
   },
 })

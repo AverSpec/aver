@@ -8,7 +8,6 @@ export default defineConfig({
       'packages/mcp-server',
       'packages/protocol-http',
       'packages/protocol-playwright',
-      'packages/workspace',
       'packages/agent',
       'examples/task-board',
     ],

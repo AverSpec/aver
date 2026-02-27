@@ -425,7 +425,7 @@ describe('verifyAdvancement', () => {
     const scenario = makeScenario({
       stage: 'captured',
       mode: 'observed',
-      seams: ['function boundary at TaskService.create()'],
+      seams: [{ type: 'function-boundary', location: 'TaskService.create()', description: 'Entry point for task creation logic' }],
     })
     const result = verifyAdvancement(scenario, 'captured', 'characterized')
     expect(result.blocked).toBe(false)

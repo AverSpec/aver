@@ -69,7 +69,7 @@ export { AverTui } from './tui-domain.js'
 
 // ── Workspace (absorbed from @aver/workspace) ───────────────────────
 export { createScenario, createExample } from './workspace/types.js'
-export type { Scenario, Workspace, Example, Question, Stage, Transition } from './workspace/types.js'
+export type { Scenario, Workspace, Example, Question, Seam, Stage, Transition } from './workspace/types.js'
 export { WorkspaceStore, initWorkspaceSchema } from './workspace/storage.js'
 export { WorkspaceOps, verifyAdvancement, nextStage, STAGE_ORDER } from './workspace/operations.js'
 export type { AdvanceInput, AdvanceResult, RevisitInput, AdvancementVerification, ScenarioFilter, ScenarioSummary } from './workspace/operations.js'

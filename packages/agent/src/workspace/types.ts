@@ -15,6 +15,12 @@ export interface Question {
   resolvedAt?: string
 }
 
+export interface Seam {
+  type: string
+  location: string
+  description: string
+}
+
 export interface Transition {
   from: Stage
   to: Stage
@@ -38,7 +44,7 @@ export interface Scenario {
 
   // Technical grounding
   constraints: string[]
-  seams: string[]
+  seams: Seam[]
 
   // Provenance
   promotedBy?: string

@@ -90,6 +90,16 @@ Respond with a single flat JSON object. The "action" field determines the type:
 }
 \`\`\`
 
+### discuss — Start or continue an open-ended conversation with the human
+\`\`\`json
+{
+  "action": "discuss",
+  "message": "I'd like to explore the authentication requirements. What methods do your users currently use to log in?",
+  "scenarioId": "sc-1"
+}
+\`\`\`
+Use discuss for multi-turn exploration (gathering requirements, clarifying scope, discovering behaviors). Unlike ask_human (single gating question), discuss signals iterative conversation. When discussion ends, produce captured scenarios, open questions, or summary observations.
+
 ### update_scenario — Modify scenario fields (not stage transitions)
 \`\`\`json
 {

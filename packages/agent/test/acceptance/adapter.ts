@@ -50,6 +50,7 @@ interface AgentTestContext {
   supervisorQueue: Array<{ response: string; tokenUsage: number }>
   workerQueue: Array<{ response: string; tokenUsage: number }>
   messages: string[]
+  answerQueue: string[]
   config: AgentNetworkConfig
 }
 
@@ -78,6 +79,7 @@ export const averAgentAdapter = implement(AverAgent, {
         supervisorQueue,
         workerQueue,
         messages: [],
+        answerQueue: [],
         config: { maxCycleDepth: 20 },
       }
     },
@@ -110,6 +112,33 @@ export const averAgentAdapter = implement(AverAgent, {
         ctx.config,
         {
           onMessage: (msg) => ctx.messages.push(msg),
+        },
+      )
+      ctx.network = network
+      await network.start(goal)
+
+      // Wait for the async trigger loop to settle
+      await vi.waitFor(() => {
+        expect(ctx.dispatchers.supervisorDispatch).toHaveBeenCalled()
+      }, { timeout: 3000 })
+
+      // Give one more tick for final side effects (stop, worker complete, etc.)
+      await new Promise((r) => setTimeout(r, 100))
+    },
+
+    startInteractiveSession: async (ctx, { goal, answers }) => {
+      ctx.answerQueue = [...answers]
+      const network = new AgentNetwork(
+        ctx.db,
+        ctx.dispatchers,
+        ctx.workspaceOps,
+        ctx.config,
+        {
+          onMessage: (msg) => ctx.messages.push(msg),
+          onQuestion: async () => {
+            const answer = ctx.answerQueue.shift()
+            return answer ?? '(no answer queued)'
+          },
         },
       )
       ctx.network = network

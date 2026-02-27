@@ -7,6 +7,7 @@ const VALID_ACTIONS = new Set([
   'terminate_worker',
   'advance_scenario',
   'ask_human',
+  'discuss',
   'update_scenario',
   'stop',
 ])
@@ -132,6 +133,16 @@ export function parseDecision(text: string): SupervisorDecision {
           message: 'ask_human must have a "question" string',
           field: 'question',
           actionType: 'ask_human',
+        })
+      }
+      break
+    case 'discuss':
+      if (typeof decision.message !== 'string' || decision.message.length === 0) {
+        throw new DecisionParseError({
+          type: 'missing_field',
+          message: 'discuss must have a "message" string',
+          field: 'message',
+          actionType: 'discuss',
         })
       }
       break

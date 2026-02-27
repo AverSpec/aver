@@ -144,7 +144,55 @@ describe('AverAgent acceptance', () => {
     await then.messageReceived({ text: 'Should we proceed with SSO?' })
   })
 
-  // 8. Invalid supervisor JSON triggers error state
+  // 8. discuss delivers message via onMessage (no onQuestion)
+  test('delivers discuss message via onMessage', async ({ given, when, then }) => {
+    await given.supervisorWillDecide({
+      decision: { action: 'discuss', message: 'Let us explore the login requirements.' },
+      tokenUsage: 100,
+    })
+    // Without onQuestion, discuss just calls onMessage and does not trigger another wake
+    await given.supervisorWillDecide({
+      decision: { action: 'stop', reason: 'done' },
+      tokenUsage: 50,
+    })
+    await when.startSession({ goal: 'Explore login' })
+    await then.messageReceived({ text: 'Let us explore the login requirements.' })
+  })
+
+  // 9. discuss with onQuestion creates multi-turn loop
+  test('discuss with onQuestion re-wakes supervisor with human answer', async ({ given, when, then, query }) => {
+    // First wake: supervisor sends discuss
+    await given.supervisorWillDecide({
+      decision: { action: 'discuss', message: 'What auth methods do you use?', scenarioId: 'sc-1' },
+      tokenUsage: 100,
+    })
+    // Second wake (after human answers): supervisor sends another discuss
+    await given.supervisorWillDecide({
+      decision: { action: 'discuss', message: 'Do you also need OAuth support?' },
+      tokenUsage: 100,
+    })
+    // Third wake (after human answers again): supervisor stops
+    await given.supervisorWillDecide({
+      decision: { action: 'stop', reason: 'discussion complete' },
+      tokenUsage: 50,
+    })
+    // Start interactive session with pre-queued answers
+    await when.startInteractiveSession({
+      goal: 'Discover auth requirements',
+      answers: ['We use email and password', 'Yes, Google OAuth too'],
+    })
+    await then.sessionStopped()
+    // Both discuss messages should have been delivered
+    await then.messageReceived({ text: 'What auth methods do you use?' })
+    await then.messageReceived({ text: 'Do you also need OAuth support?' })
+    // The first exchange should be stored as an observation scoped to sc-1
+    const obs = await query.scenarioObservations({ scenarioId: 'sc-1' })
+    expect(obs.length).toBeGreaterThanOrEqual(1)
+    expect(obs[0]).toContain('What auth methods do you use?')
+    expect(obs[0]).toContain('We use email and password')
+  })
+
+  // 10. Invalid supervisor JSON triggers error state
   test('handles invalid supervisor JSON gracefully', async ({ given, when, then }) => {
     // Override the supervisor queue with an invalid response
     // We need to push a raw response — use supervisorWillDecide with something

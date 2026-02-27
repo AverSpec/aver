@@ -5,6 +5,7 @@ export const AverAgent = defineDomain({
   name: 'AverAgent',
   actions: {
     startSession: action<{ goal: string }>(),
+    startInteractiveSession: action<{ goal: string; answers: string[] }>(),
     resumeSession: action<{ answer: string }>(),
     supervisorWillDecide: action<{ decision: SupervisorDecision; tokenUsage: number }>(),
     workerWillReturn: action<{ response: string; tokenUsage: number }>(),

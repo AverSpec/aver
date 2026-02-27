@@ -54,6 +54,26 @@ describe('parseDecision', () => {
     expect(result.action).toBe('ask_human')
   })
 
+  it('parses discuss action', () => {
+    const json = JSON.stringify({
+      action: 'discuss',
+      message: 'Tell me about the login flow',
+      scenarioId: 'sc-1',
+    })
+    const result = parseDecision(json)
+    expect(result.action).toBe('discuss')
+    expect((result as any).message).toBe('Tell me about the login flow')
+  })
+
+  it('parses discuss action without scenarioId (optional)', () => {
+    const json = JSON.stringify({
+      action: 'discuss',
+      message: 'What are the main user stories?',
+    })
+    const result = parseDecision(json)
+    expect(result.action).toBe('discuss')
+  })
+
   it('parses update_scenario action', () => {
     const json = JSON.stringify({
       action: 'update_scenario',
@@ -217,6 +237,27 @@ describe('parseDecision', () => {
 
     it('rejects empty question', () => {
       const json = JSON.stringify({ action: 'ask_human', question: '' })
+      expect(() => parseDecision(json)).toThrow(DecisionParseError)
+    })
+  })
+
+  // --- Semantic validation: discuss ---
+
+  describe('discuss semantic validation', () => {
+    it('rejects missing message', () => {
+      const json = JSON.stringify({ action: 'discuss' })
+      expect(() => parseDecision(json)).toThrow(DecisionParseError)
+      try {
+        parseDecision(json)
+      } catch (e) {
+        const err = e as DecisionParseError
+        expect(err.details.field).toBe('message')
+        expect(err.details.actionType).toBe('discuss')
+      }
+    })
+
+    it('rejects empty message', () => {
+      const json = JSON.stringify({ action: 'discuss', message: '' })
       expect(() => parseDecision(json)).toThrow(DecisionParseError)
     })
   })

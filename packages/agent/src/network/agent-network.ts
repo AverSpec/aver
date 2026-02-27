@@ -18,6 +18,7 @@ export type SupervisorDecision =
   | { action: 'terminate_worker'; agentId: string }
   | { action: 'advance_scenario'; scenarioId: string; rationale?: string }
   | { action: 'ask_human'; question: string }
+  | { action: 'discuss'; message: string; scenarioId?: string }
   | { action: 'update_scenario'; scenarioId: string; updates: Record<string, unknown> }
   | { action: 'stop'; reason?: string }
 
@@ -61,6 +62,7 @@ const VALID_ACTIONS = new Set([
   'terminate_worker',
   'advance_scenario',
   'ask_human',
+  'discuss',
   'update_scenario',
   'stop',
 ])
@@ -244,6 +246,9 @@ export class AgentNetwork {
       case 'ask_human':
         await this.handleAskHuman(decision)
         break
+      case 'discuss':
+        await this.handleDiscuss(decision)
+        break
       case 'update_scenario':
         await this.handleUpdateScenario(decision)
         break
@@ -339,6 +344,38 @@ export class AgentNetwork {
       await this.logEvent('human:answer', { answer })
 
       // Push human:message trigger with the response
+      this.triggerQueue.push({
+        type: 'human:message',
+        data: { message: answer },
+        timestamp: new Date().toISOString(),
+      })
+    }
+  }
+
+  private async handleDiscuss(
+    decision: Extract<SupervisorDecision, { action: 'discuss' }>,
+  ): Promise<void> {
+    // Always deliver the message
+    if (this.callbacks.onMessage) {
+      this.callbacks.onMessage(decision.message)
+    }
+
+    if (this.callbacks.onQuestion) {
+      const answer = await this.callbacks.onQuestion(decision.message)
+      await this.logEvent('human:answer', { answer })
+
+      // Store the exchange as an observation
+      const scope = decision.scenarioId ? `scenario:${decision.scenarioId}` : 'strategy'
+      const exchange = `Discussion:\nQ: ${decision.message}\nA: ${answer}`
+      await this.observationStore.addObservation({
+        agentId: this.supervisorAgent?.id ?? 'supervisor',
+        scope,
+        priority: 'important',
+        content: exchange.slice(0, 2000),
+        tokenCount: Math.ceil(exchange.length / 4),
+      })
+
+      // Push human:message trigger to re-wake supervisor
       this.triggerQueue.push({
         type: 'human:message',
         data: { message: answer },
@@ -461,6 +498,7 @@ export class AgentNetwork {
       'Examples:',
       '  {"action":"create_worker","goal":"Investigate login flow","skill":"investigation","permission":"read_only"}',
       '  {"action":"advance_scenario","scenarioId":"abc-123","rationale":"All criteria met"}',
+      '  {"action":"discuss","message":"I\'d like to explore the auth requirements. What methods do your users use to log in?","scenarioId":"sc-1"}',
       '  {"action":"stop","reason":"All scenarios implemented"}',
     ].join('\n')
   }

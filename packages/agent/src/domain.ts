@@ -6,17 +6,17 @@ export const AverAgent = defineDomain({
   actions: {
     startSession: action<{ goal: string }>(),
     resumeSession: action<{ answer: string }>(),
-    queueSupervisorDecision: action<{ decision: SupervisorDecision; tokenUsage: number }>(),
-    queueWorkerResponse: action<{ response: string; tokenUsage: number }>(),
+    supervisorWillDecide: action<{ decision: SupervisorDecision; tokenUsage: number }>(),
+    workerWillReturn: action<{ response: string; tokenUsage: number }>(),
   },
   queries: {
     sessionStatus: query<void, string | undefined>(),
     sessionGoal: query<void, string | undefined>(),
-    workerCount: query<void, number>(),
+    activeWorkerCount: query<void, number>(),
     tokenUsage: query<void, { supervisor: number; worker: number }>(),
     lastError: query<void, string | undefined>(),
-    messagesReceived: query<void, string[]>(),
-    observationContent: query<{ scope: string }, string[]>(),
+    humanMessages: query<void, string[]>(),
+    scenarioObservations: query<{ scenarioId: string }, string[]>(),
   },
   assertions: {
     sessionIs: assertion<{ status: string }>(),

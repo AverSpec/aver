@@ -91,14 +91,14 @@ export const averAgentAdapter = implement(AverAgent, {
   },
 
   actions: {
-    queueSupervisorDecision: async (ctx, { decision, tokenUsage }) => {
+    supervisorWillDecide: async (ctx, { decision, tokenUsage }) => {
       ctx.supervisorQueue.push({
         response: JSON.stringify(decision),
         tokenUsage,
       })
     },
 
-    queueWorkerResponse: async (ctx, { response, tokenUsage }) => {
+    workerWillReturn: async (ctx, { response, tokenUsage }) => {
       ctx.workerQueue.push({ response, tokenUsage })
     },
 
@@ -149,7 +149,7 @@ export const averAgentAdapter = implement(AverAgent, {
       return ctx.network?.currentSession?.goal
     },
 
-    workerCount: async (ctx) => {
+    activeWorkerCount: async (ctx) => {
       const result = await ctx.db.execute({
         sql: "SELECT COUNT(*) as cnt FROM agents WHERE role = 'worker'",
         args: [],
@@ -173,11 +173,11 @@ export const averAgentAdapter = implement(AverAgent, {
       return (last.data as { message?: string }).message
     },
 
-    messagesReceived: async (ctx) => ctx.messages,
+    humanMessages: async (ctx) => ctx.messages,
 
-    observationContent: async (ctx, { scope }) => {
+    scenarioObservations: async (ctx, { scenarioId }) => {
       const store = new ObservationStore(ctx.db)
-      const obs = await store.getObservations(scope)
+      const obs = await store.getObservations(`scenario:${scenarioId}`)
       return obs.map((o) => o.content)
     },
   },

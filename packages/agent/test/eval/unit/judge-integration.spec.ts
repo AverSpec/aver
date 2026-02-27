@@ -6,9 +6,9 @@ describe('judge() with mock provider', () => {
   beforeEach(() => {
     setDefaultProvider(
       mockProvider([
-        { match: 'references seams', verdict: { pass: true, reasoning: 'Seams are referenced.' } },
-        { match: 'no hallucin', verdict: { pass: true, reasoning: 'No hallucinations detected.' } },
-        { match: 'actionable', verdict: { pass: false, reasoning: 'Rules are too abstract.' } },
+        { match: 'references seams', verdict: { pass: true, reasoning: 'Seams are referenced.', confidence: 'high' } },
+        { match: 'no hallucin', verdict: { pass: true, reasoning: 'No hallucinations detected.', confidence: 'high' } },
+        { match: 'actionable', verdict: { pass: false, reasoning: 'Rules are too abstract.', confidence: 'medium' } },
       ]),
     )
   })
@@ -47,7 +47,7 @@ describe('provider.judge() direct usage (replaces createJudge)', () => {
 
   it('calls provider.judge() directly without a wrapper', async () => {
     const provider = mockProvider([
-      { match: 'seams', verdict: { pass: true, reasoning: 'References seams.' } },
+      { match: 'seams', verdict: { pass: true, reasoning: 'References seams.', confidence: 'high' } },
     ])
 
     const verdict = await provider.judge('content about seams', 'References seams')
@@ -58,12 +58,12 @@ describe('provider.judge() direct usage (replaces createJudge)', () => {
   it('provider.judge() is isolated from the default provider', async () => {
     setDefaultProvider(
       mockProvider([
-        { match: 'default', verdict: { pass: true, reasoning: 'From default.' } },
+        { match: 'default', verdict: { pass: true, reasoning: 'From default.', confidence: 'high' } },
       ]),
     )
 
     const customProvider = mockProvider([
-      { match: 'custom', verdict: { pass: false, reasoning: 'From custom.' } },
+      { match: 'custom', verdict: { pass: false, reasoning: 'From custom.', confidence: 'low' } },
     ])
 
     // direct provider call uses its own rules, not the default

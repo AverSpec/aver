@@ -14,7 +14,7 @@ export function mockProvider(rules: MockRule[]): JudgeProvider {
           return rule.verdict
         }
       }
-      return { pass: false, reasoning: `No matching mock rule for rubric: "${rubric}"` }
+      return { pass: false, reasoning: `No matching mock rule for rubric: "${rubric}"`, confidence: 'low' }
     },
   }
 }

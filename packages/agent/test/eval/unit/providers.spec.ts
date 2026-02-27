@@ -40,14 +40,14 @@ describe('agentSdkProvider', () => {
         asyncIterable({
           type: 'result',
           subtype: 'success',
-          structured_output: { pass: true, reasoning: 'Meets all criteria.' },
+          structured_output: { pass: true, reasoning: 'Meets all criteria.', confidence: 'high' },
         }) as any,
       )
 
       const provider = agentSdkProvider()
       const verdict = await provider.judge('some content', 'some rubric')
 
-      expect(verdict).toEqual({ pass: true, reasoning: 'Meets all criteria.' })
+      expect(verdict).toEqual({ pass: true, reasoning: 'Meets all criteria.', confidence: 'high' })
       expect(mockQuery).toHaveBeenCalledWith(
         expect.objectContaining({
           options: expect.objectContaining({
@@ -123,7 +123,7 @@ describe('agentSdkProvider', () => {
         asyncIterable({
           type: 'result',
           subtype: 'success',
-          structured_output: { pass: true, reasoning: '' }, // empty reasoning should fail
+          structured_output: { pass: true, reasoning: '', confidence: 'high' }, // empty reasoning should fail
         }) as any,
       )
 
@@ -136,7 +136,7 @@ describe('agentSdkProvider', () => {
         asyncIterable({
           type: 'result',
           subtype: 'success',
-          structured_output: { pass: false, reasoning: 'Does not meet criteria.' },
+          structured_output: { pass: false, reasoning: 'Does not meet criteria.', confidence: 'medium' },
         }) as any,
       )
 
@@ -166,7 +166,7 @@ describe('agentSdkProvider', () => {
       expect(verdict.confidence).toBe('high')
     })
 
-    it('returns undefined confidence when not present', async () => {
+    it('rejects verdict without confidence', async () => {
       mockQuery.mockReturnValue(
         asyncIterable({
           type: 'result',
@@ -176,8 +176,7 @@ describe('agentSdkProvider', () => {
       )
 
       const provider = agentSdkProvider()
-      const verdict = await provider.judge('content', 'rubric')
-      expect(verdict.confidence).toBeUndefined()
+      await expect(provider.judge('content', 'rubric')).rejects.toThrow()
     })
   })
 })

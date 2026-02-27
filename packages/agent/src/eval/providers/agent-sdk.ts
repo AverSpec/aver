@@ -25,7 +25,7 @@ export function agentSdkProvider(opts?: AgentSdkProviderOptions): JudgeProvider 
           reasoning: { type: 'string' as const },
           confidence: { type: 'string' as const, enum: ['high', 'medium', 'low'] },
         },
-        required: ['pass', 'reasoning'] as const,
+        required: ['pass', 'reasoning', 'confidence'] as const,
         additionalProperties: false,
       }
 

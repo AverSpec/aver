@@ -4,7 +4,7 @@ import type { JudgeProvider } from './providers/types.js'
 export const VerdictSchema = z.object({
   pass: z.boolean(),
   reasoning: z.string().min(1),
-  confidence: z.enum(['high', 'medium', 'low']).optional(),
+  confidence: z.enum(['high', 'medium', 'low']),
 })
 
 export type Verdict = z.infer<typeof VerdictSchema>

@@ -4,18 +4,18 @@ import { mockProvider } from '../../../src/eval/providers/mock'
 
 describe('VerdictSchema', () => {
   it('parses a valid pass verdict', () => {
-    const result = VerdictSchema.parse({ pass: true, reasoning: 'Output meets all criteria.' })
+    const result = VerdictSchema.parse({ pass: true, reasoning: 'Output meets all criteria.', confidence: 'high' })
     expect(result.pass).toBe(true)
     expect(result.reasoning).toBe('Output meets all criteria.')
   })
 
   it('parses a valid fail verdict', () => {
-    const result = VerdictSchema.parse({ pass: false, reasoning: 'Missing domain references.' })
+    const result = VerdictSchema.parse({ pass: false, reasoning: 'Missing domain references.', confidence: 'medium' })
     expect(result.pass).toBe(false)
   })
 
   it('rejects empty reasoning', () => {
-    expect(() => VerdictSchema.parse({ pass: true, reasoning: '' })).toThrow()
+    expect(() => VerdictSchema.parse({ pass: true, reasoning: '', confidence: 'high' })).toThrow()
   })
 
   it('rejects missing fields', () => {
@@ -28,9 +28,8 @@ describe('VerdictSchema', () => {
     expect(result.confidence).toBe('high')
   })
 
-  it('accepts verdict without confidence (optional)', () => {
-    const result = VerdictSchema.parse({ pass: true, reasoning: 'OK.' })
-    expect(result.confidence).toBeUndefined()
+  it('rejects verdict without confidence (required)', () => {
+    expect(() => VerdictSchema.parse({ pass: true, reasoning: 'OK.' })).toThrow()
   })
 
   it('rejects invalid confidence value', () => {
@@ -48,7 +47,7 @@ describe('VerdictSchema', () => {
 describe('mockProvider', () => {
   it('returns a matching canned verdict', async () => {
     const provider = mockProvider([
-      { match: 'cart operations', verdict: { pass: true, reasoning: 'References cart.' } },
+      { match: 'cart operations', verdict: { pass: true, reasoning: 'References cart.', confidence: 'high' } },
     ])
     const result = await provider.judge('some content', 'References cart operations')
     expect(result.pass).toBe(true)
@@ -57,7 +56,7 @@ describe('mockProvider', () => {
 
   it('returns fail when no match found', async () => {
     const provider = mockProvider([
-      { match: 'cart', verdict: { pass: true, reasoning: 'ok' } },
+      { match: 'cart', verdict: { pass: true, reasoning: 'ok', confidence: 'high' } },
     ])
     const result = await provider.judge('content', 'References inventory')
     expect(result.pass).toBe(false)
@@ -66,7 +65,7 @@ describe('mockProvider', () => {
 
   it('matches against rubric text', async () => {
     const provider = mockProvider([
-      { match: 'hallucin', verdict: { pass: true, reasoning: 'No hallucinations found.' } },
+      { match: 'hallucin', verdict: { pass: true, reasoning: 'No hallucinations found.', confidence: 'high' } },
     ])
     const result = await provider.judge('output text', 'Check for hallucinations in the output')
     expect(result.pass).toBe(true)

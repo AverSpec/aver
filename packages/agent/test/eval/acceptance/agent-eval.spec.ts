@@ -9,11 +9,11 @@ beforeAll(() => {
   setDefaultProvider(mockProvider([
     {
       match: 'investigation quality',
-      verdict: { pass: true, reasoning: 'Output contains structured findings' },
+      verdict: { pass: true, reasoning: 'Output contains structured findings', confidence: 'high' },
     },
     {
       match: 'impossible standard',
-      verdict: { pass: false, reasoning: 'Does not meet unrealistic bar' },
+      verdict: { pass: false, reasoning: 'Does not meet unrealistic bar', confidence: 'low' },
     },
   ]))
 })

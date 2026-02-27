@@ -11,10 +11,10 @@ The `aver workspace` command manages a **scenario workspace** -- a local store o
 
 ## Install
 
-The workspace is part of `@aver/workspace`, which the core CLI imports dynamically. Install it alongside `@aver/core`:
+The workspace is part of `@aver/agent`, which the core CLI imports dynamically. Install it alongside `@aver/core`:
 
 ```bash
-npm install @aver/workspace
+npm install @aver/agent
 ```
 
 ## Storage

@@ -90,7 +90,7 @@ npx vitest run
 |---------|-------------|
 | [`@aver/core`](packages/core) | Core framework — domains, adapters, suite, CLI |
 | [`@aver/approvals`](packages/approvals) | Approval testing — structural diffs and visual screenshot comparison |
-| [`@aver/workspace`](packages/workspace) | Scenario workspace — maturity pipeline state management |
+| [`@aver/agent`](packages/agent) | AI agent platform — includes workspace, eval, and scenario pipeline |
 | [`@aver/protocol-http`](packages/protocol-http) | HTTP protocol adapter (fetch-based) |
 | [`@aver/protocol-playwright`](packages/protocol-playwright) | Playwright browser protocol adapter |
 | [`@aver/mcp-server`](packages/mcp-server) | MCP server for AI-assisted testing |

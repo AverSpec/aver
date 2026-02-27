@@ -6,5 +6,5 @@ export default defineConfig({
   dts: true,
   sourcemap: true,
   clean: true,
-  external: ['@aver/core', '@anthropic-ai/claude-agent-sdk', 'ink', 'react', '@inkjs/ui', 'ink-text-input'],
+  external: ['@aver/core', '@anthropic-ai/claude-agent-sdk', 'ink', 'react', '@inkjs/ui', 'ink-text-input', 'zod'],
 })

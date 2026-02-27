@@ -1,6 +1,6 @@
 import { defineDomain, action, query, assertion } from '@aver/core'
-import type { Stage, Scenario } from '@aver/agent'
-import type { WorkerResult, ArtifactType } from '@aver/agent'
+import type { Stage, Scenario } from '../workspace/types.js'
+import type { WorkerResult, ArtifactType } from '../types.js'
 
 export const agentEval = defineDomain({
   name: 'AgentEval',

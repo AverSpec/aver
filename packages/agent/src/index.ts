@@ -77,3 +77,13 @@ export { exportMarkdown, exportJson, importJson } from './workspace/export.js'
 export { detectPhase } from './workspace/phase.js'
 export type { Phase, PhaseName } from './workspace/phase.js'
 export { SafeJsonFile, atomicWriteFile, atomicWriteFileSync, withLock } from './workspace/safe-json-file.js'
+
+// ── Eval (absorbed from @aver/eval) ─────────────────────────────────
+export { judge, setDefaultProvider, resetDefaultProvider, VerdictSchema, buildJudgePrompt, JUDGE_SYSTEM_PROMPT } from './eval/judge.js'
+export type { Verdict } from './eval/judge.js'
+export type { JudgeProvider } from './eval/providers/types.js'
+export { agentSdkProvider } from './eval/providers/agent-sdk.js'
+export type { AgentSdkProviderOptions } from './eval/providers/agent-sdk.js'
+export { mockProvider } from './eval/providers/mock.js'
+export type { MockRule } from './eval/providers/mock.js'
+export { agentEval } from './eval/domain.js'

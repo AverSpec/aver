@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { agentSdkProvider } from '../../src/providers/agent-sdk'
+import { agentSdkProvider } from '../../../src/eval/providers/agent-sdk'
 
 vi.mock('@anthropic-ai/claude-agent-sdk', () => ({
   query: vi.fn(),

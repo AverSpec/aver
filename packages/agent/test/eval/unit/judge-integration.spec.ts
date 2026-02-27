@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { judge, setDefaultProvider, resetDefaultProvider } from '../../src/judge'
-import { mockProvider } from '../../src/providers/mock'
+import { judge, setDefaultProvider, resetDefaultProvider } from '../../../src/eval/judge'
+import { mockProvider } from '../../../src/eval/providers/mock'
 
 describe('judge() with mock provider', () => {
   beforeEach(() => {

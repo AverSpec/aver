@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { VerdictSchema } from '../../src/judge'
-import { mockProvider } from '../../src/providers/mock'
+import { VerdictSchema } from '../../../src/eval/judge'
+import { mockProvider } from '../../../src/eval/providers/mock'
 
 describe('VerdictSchema', () => {
   it('parses a valid pass verdict', () => {

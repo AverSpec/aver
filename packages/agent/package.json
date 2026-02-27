@@ -52,10 +52,12 @@
   },
   "dependencies": {
     "@aver/skills": "workspace:^",
-    "@libsql/client": "^0.17.0"
+    "@libsql/client": "^0.17.0",
+    "zod": "^4.0.0"
   },
   "peerDependencies": {
     "@anthropic-ai/claude-agent-sdk": ">=0.2.0",
+    "@anthropic-ai/sdk": ">=0.30.0",
     "@aver/core": "workspace:^",
     "@types/react": ">=19.0.0",
     "ink": ">=6.0.0",
@@ -63,6 +65,9 @@
   },
   "peerDependenciesMeta": {
     "@anthropic-ai/claude-agent-sdk": {
+      "optional": true
+    },
+    "@anthropic-ai/sdk": {
       "optional": true
     },
     "ink": {

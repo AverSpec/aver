@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { agentEval } from '../../src/domain'
+import { agentEval } from '../../../src/eval/domain'
 
 describe('AgentEval domain', () => {
   it('has the correct domain name', () => {

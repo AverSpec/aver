@@ -25,7 +25,6 @@ jobs:
           pnpm --filter @aver/core run build
           pnpm --filter @aver/approvals run build
           pnpm --filter @aver/agent run build
-          pnpm --filter @aver/eval run build
           pnpm --filter @aver/mcp-server run build
           pnpm --filter @aver/protocol-http run build
           pnpm --filter @aver/protocol-playwright run build
@@ -59,11 +58,6 @@ jobs:
         if: ${{ !cancelled() }}
         run: pnpm exec vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/agent.xml
         working-directory: packages/agent
-
-      - name: Test eval
-        if: ${{ !cancelled() }}
-        run: pnpm exec vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/eval.xml
-        working-directory: packages/eval
 
       - name: Test mcp-server
         if: ${{ !cancelled() }}

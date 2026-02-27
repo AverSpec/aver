@@ -2,8 +2,8 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { readFileSync, existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { execSync } from 'node:child_process'
-import { setDefaultProvider, resetDefaultProvider, judge } from '../../src/judge.js'
-import { agentSdkProvider } from '../../src/providers/agent-sdk.js'
+import { setDefaultProvider, resetDefaultProvider, judge } from '../../../src/eval/judge.js'
+import { agentSdkProvider } from '../../../src/eval/providers/agent-sdk.js'
 
 /**
  * Integration tests that call a real LLM judge via the Claude Agent SDK.

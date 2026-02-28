@@ -30,7 +30,7 @@ export interface ScenarioFilter {
   keyword?: string
 }
 
-export interface ScenarioUpdate {
+export interface ScenarioUpdateInput {
   behavior?: string
   context?: string
   story?: string
@@ -131,7 +131,7 @@ export class WorkspaceOps {
     return captured
   }
 
-  async updateScenario(id: string, updates: ScenarioUpdate): Promise<Scenario> {
+  async updateScenario(id: string, updates: ScenarioUpdateInput): Promise<Scenario> {
     let updated!: Scenario
     await this.store.mutate(ws => {
       const scenario = ws.scenarios.find(s => s.id === id)

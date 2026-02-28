@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { createScenario, type Scenario, type Stage, type Question } from './types.js'
+import { createScenario, type Scenario, type Stage, type Question, type Example, type Seam } from './types.js'
 import type { WorkspaceStore } from './storage.js'
 
 export const STAGE_ORDER: Stage[] = ['captured', 'characterized', 'mapped', 'specified', 'implemented']
@@ -28,6 +28,16 @@ export interface ScenarioFilter {
   stage?: Stage
   story?: string
   keyword?: string
+}
+
+export interface ScenarioUpdate {
+  behavior?: string
+  context?: string
+  story?: string
+  rules?: string[]
+  examples?: Example[]
+  constraints?: string[]
+  seams?: Seam[]
 }
 
 export interface ScenarioSummary {
@@ -119,6 +129,27 @@ export class WorkspaceOps {
       return ws
     })
     return captured
+  }
+
+  async updateScenario(id: string, updates: ScenarioUpdate): Promise<Scenario> {
+    let updated!: Scenario
+    await this.store.mutate(ws => {
+      const scenario = ws.scenarios.find(s => s.id === id)
+      if (!scenario) throw new Error('Scenario not found: ' + id)
+
+      if (updates.behavior !== undefined) scenario.behavior = updates.behavior
+      if (updates.context !== undefined) scenario.context = updates.context
+      if (updates.story !== undefined) scenario.story = updates.story
+      if (updates.rules !== undefined) scenario.rules = updates.rules
+      if (updates.examples !== undefined) scenario.examples = updates.examples
+      if (updates.constraints !== undefined) scenario.constraints = updates.constraints
+      if (updates.seams !== undefined) scenario.seams = updates.seams
+
+      scenario.updatedAt = new Date().toISOString()
+      updated = scenario
+      return ws
+    })
+    return updated
   }
 
   async advanceScenario(id: string, input: AdvanceInput): Promise<AdvanceResult> {

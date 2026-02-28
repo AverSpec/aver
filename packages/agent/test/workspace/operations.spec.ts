@@ -381,6 +381,83 @@ describe('WorkspaceOps', () => {
     })
   })
 
+  describe('updateScenario', () => {
+    it('updates behavior and context', async () => {
+      const scenario = await ops.captureScenario({ behavior: 'old behavior', context: 'old context' })
+      const updated = await ops.updateScenario(scenario.id, { behavior: 'new behavior', context: 'new context' })
+
+      expect(updated.behavior).toBe('new behavior')
+      expect(updated.context).toBe('new context')
+      expect(updated.stage).toBe('captured') // unchanged
+
+      const persisted = await ops.getScenario(scenario.id)
+      expect(persisted!.behavior).toBe('new behavior')
+    })
+
+    it('replaces rules array', async () => {
+      const scenario = await ops.captureScenario({ behavior: 'test' })
+      const updated = await ops.updateScenario(scenario.id, { rules: ['rule 1', 'rule 2'] })
+
+      expect(updated.rules).toEqual(['rule 1', 'rule 2'])
+    })
+
+    it('replaces examples array', async () => {
+      const scenario = await ops.captureScenario({ behavior: 'test' })
+      const updated = await ops.updateScenario(scenario.id, {
+        examples: [{ description: 'ex1', expectedOutcome: 'pass' }]
+      })
+
+      expect(updated.examples).toEqual([{ description: 'ex1', expectedOutcome: 'pass' }])
+    })
+
+    it('replaces constraints array', async () => {
+      const scenario = await ops.captureScenario({ behavior: 'test' })
+      const updated = await ops.updateScenario(scenario.id, { constraints: ['must be fast'] })
+
+      expect(updated.constraints).toEqual(['must be fast'])
+    })
+
+    it('replaces seams array', async () => {
+      const scenario = await ops.captureScenario({ behavior: 'test' })
+      const updated = await ops.updateScenario(scenario.id, {
+        seams: [{ type: 'http', location: '/api/users', description: 'REST endpoint' }]
+      })
+
+      expect(updated.seams).toEqual([{ type: 'http', location: '/api/users', description: 'REST endpoint' }])
+    })
+
+    it('updates story field', async () => {
+      const scenario = await ops.captureScenario({ behavior: 'test', story: 'old' })
+      const updated = await ops.updateScenario(scenario.id, { story: 'new story' })
+
+      expect(updated.story).toBe('new story')
+    })
+
+    it('applies partial updates without touching other fields', async () => {
+      const scenario = await ops.captureScenario({ behavior: 'keep me', context: 'keep me too', story: 'keep' })
+      const updated = await ops.updateScenario(scenario.id, { rules: ['new rule'] })
+
+      expect(updated.behavior).toBe('keep me')
+      expect(updated.context).toBe('keep me too')
+      expect(updated.story).toBe('keep')
+      expect(updated.rules).toEqual(['new rule'])
+    })
+
+    it('throws for nonexistent scenario', async () => {
+      await expect(ops.updateScenario('nonexistent', { behavior: 'x' }))
+        .rejects.toThrow('Scenario not found')
+    })
+
+    it('stamps updatedAt', async () => {
+      const scenario = await ops.captureScenario({ behavior: 'test' })
+      const before = scenario.updatedAt
+      await new Promise(r => setTimeout(r, 10))
+      const updated = await ops.updateScenario(scenario.id, { behavior: 'changed' })
+
+      expect(updated.updatedAt).not.toBe(before)
+    })
+  })
+
   describe('concurrency', () => {
     it('serializes concurrent captureScenario calls', async () => {
       const promises = Array.from({ length: 5 }, (_, i) =>

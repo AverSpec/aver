@@ -22,6 +22,9 @@ export const stageAdvancement = defineDomain({
     advancementBlocked: assertion<{ reason: string }>(),
     advancementSucceeded: assertion<{ to: string }>(),
     confirmationCleared: assertion(),
+    confirmationIs: assertion<{ confirmer: string }>(),
     transitionRecorded: assertion<{ from: string; to: string; by: string }>(),
+    domainLinksAre: assertion<{ domainOperation?: string; testNames?: string[] }>(),
+    operationFailed: assertion<{ message: string }>(),
   },
 })

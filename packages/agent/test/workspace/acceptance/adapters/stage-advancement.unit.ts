@@ -1,3 +1,4 @@
+import { expect } from 'vitest'
 import { createClient, type Client } from '@libsql/client'
 import { implement, unit } from '@aver/core'
 import { stageAdvancement } from '../domains/stage-advancement'
@@ -128,44 +129,56 @@ export const stageAdvancementAdapter = implement(stageAdvancement, {
   assertions: {
     scenarioIsAt: async (session, { stage }) => {
       const s = await session.ops.getScenario(session.scenarioId)
-      if (!s) throw new Error(`Scenario not found: ${session.scenarioId}`)
-      if (s.stage !== stage)
-        throw new Error(`Expected stage "${stage}" but got "${s.stage}"`)
+      expect(s).toBeDefined()
+      expect(s!.stage).toBe(stage)
     },
 
     advancementBlocked: async (session, { reason }) => {
-      if (!session.lastError)
-        throw new Error('Expected advancement to be blocked but no error was thrown')
-      if (!session.lastError.message.includes(reason))
-        throw new Error(
-          `Expected block reason to contain "${reason}" but got "${session.lastError.message}"`,
-        )
+      expect(session.lastError).toBeDefined()
+      expect(session.lastError!.message).toContain(reason)
     },
 
     advancementSucceeded: async (session, { to }) => {
-      if (session.lastError)
-        throw new Error(`Expected advancement to succeed but got error: ${session.lastError.message}`)
-      if (session.advancedTo !== to)
-        throw new Error(`Expected advancement to "${to}" but got "${session.advancedTo}"`)
+      expect(session.lastError).toBeUndefined()
+      expect(session.advancedTo).toBe(to)
     },
 
     confirmationCleared: async (session) => {
       const s = await session.ops.getScenario(session.scenarioId)
-      if (!s) throw new Error(`Scenario not found: ${session.scenarioId}`)
-      if (s.confirmedBy)
-        throw new Error(`Expected confirmation to be cleared but got "${s.confirmedBy}"`)
+      expect(s).toBeDefined()
+      expect(s!.confirmedBy).toBeFalsy()
+    },
+
+    confirmationIs: async (session, { confirmer }) => {
+      const s = await session.ops.getScenario(session.scenarioId)
+      expect(s).toBeDefined()
+      expect(s!.confirmedBy).toBe(confirmer)
     },
 
     transitionRecorded: async (session, { from, to, by }) => {
       const s = await session.ops.getScenario(session.scenarioId)
-      if (!s) throw new Error(`Scenario not found: ${session.scenarioId}`)
-      const match = s.transitions.find(
+      expect(s).toBeDefined()
+      const match = s!.transitions.find(
         (t) => t.from === from && t.to === to && t.by === by,
       )
-      if (!match)
-        throw new Error(
-          `Expected transition from "${from}" to "${to}" by "${by}" but found none in ${JSON.stringify(s.transitions)}`,
-        )
+      expect(match).toBeDefined()
+    },
+
+    domainLinksAre: async (session, { domainOperation, testNames }) => {
+      const s = await session.ops.getScenario(session.scenarioId)
+      expect(s).toBeDefined()
+      if (domainOperation !== undefined) {
+        expect(s!.domainOperation).toBe(domainOperation)
+      }
+      if (testNames !== undefined) {
+        const actual = s!.testNames ?? []
+        expect(actual.sort()).toEqual([...testNames].sort())
+      }
+    },
+
+    operationFailed: async (session, { message }) => {
+      expect(session.lastError).toBeDefined()
+      expect(session.lastError!.message).toContain(message)
     },
   },
 })

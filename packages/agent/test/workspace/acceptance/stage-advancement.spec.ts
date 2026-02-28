@@ -174,5 +174,42 @@ describe('Stage Advancement', () => {
       await when.advanceScenario({ rationale: 'tests linked', promotedBy: 'dev' })
       await then.advancementSucceeded({ to: 'implemented' })
     })
+
+    test('linking is additive across fields', async ({ given, when, then }) => {
+      await given.captureScenario({ behavior: 'additive linking' })
+      await given.linkToDomain({ domainOperation: 'Cart.addItem' })
+      await when.linkToDomain({ testNames: ['test one'] })
+      await then.domainLinksAre({ domainOperation: 'Cart.addItem', testNames: ['test one'] })
+    })
+
+    test('linking non-existent scenario fails', async ({ when, then }) => {
+      // No scenario captured — session.scenarioId is empty
+      await when.linkToDomain({ domainOperation: 'Ghost.op' })
+      await then.operationFailed({ message: 'Scenario not found' })
+    })
+  })
+
+  // --- Human Gates operations (5778f1ff) ---
+
+  describe('human gates operations', () => {
+    test('confirm sets confirmedBy field', async ({ given, when, then }) => {
+      await given.captureScenario({ behavior: 'awaiting confirm' })
+      await given.advanceScenario({ rationale: 'r', promotedBy: 'p' })
+      await when.confirmScenario({ confirmer: 'product-owner' })
+      await then.confirmationIs({ confirmer: 'product-owner' })
+    })
+
+    test('re-confirm overwrites previous confirmer', async ({ given, when, then }) => {
+      await given.captureScenario({ behavior: 'double confirm' })
+      await given.confirmScenario({ confirmer: 'first-person' })
+      await when.confirmScenario({ confirmer: 'second-person' })
+      await then.confirmationIs({ confirmer: 'second-person' })
+    })
+
+    test('confirming non-existent scenario fails', async ({ when, then }) => {
+      // No scenario captured — session.scenarioId is empty
+      await when.confirmScenario({ confirmer: 'ghost' })
+      await then.operationFailed({ message: 'Scenario not found' })
+    })
   })
 })

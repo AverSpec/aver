@@ -71,11 +71,10 @@ describe('real judge pipeline', () => {
       const dispatchers = createSdkDispatchers({
         claudeExecutablePath: claudePath,
         maxWorkerTurns: 15,
-        timeouts: { workerTurnMs: 30_000, workerTotalMs: 120_000 },
       })
       const result = await dispatchers.workerDispatch(systemPrompt, userPrompt)
       artifactContent = result.response
-    }, 180_000)
+    }, 300_000)
 
     it('identifies concrete findings with evidence', async () => {
       const rubric =

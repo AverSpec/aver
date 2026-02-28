@@ -91,4 +91,13 @@ describe('extractJson', () => {
     const extracted = extractJson(`text ${json} more`)
     expect(JSON.parse(extracted).next).toBe(true)
   })
+
+  it('handles empty input string', () => {
+    expect(extractJson('')).toBe('')
+  })
+
+  it('extracts JSON with multi-line preamble text', () => {
+    const text = 'I have decided to stop the session.\n{"action":"stop","reason":"done"}'
+    expect(extractJson(text)).toBe('{"action":"stop","reason":"done"}')
+  })
 })

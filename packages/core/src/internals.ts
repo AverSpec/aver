@@ -15,3 +15,5 @@ export {
 } from './core/registry'
 
 export { getGlobalTest, getGlobalDescribe } from './core/test-registration'
+
+export { resetCoverageConfig } from './core/config'

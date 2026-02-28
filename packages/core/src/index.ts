@@ -20,6 +20,7 @@ export {
   resetRegistry,
   getGlobalTest,
   getGlobalDescribe,
+  resetCoverageConfig,
 } from './internals'
 
 export type { ActionMarker, QueryMarker, AssertionMarker } from './core/types'
@@ -29,7 +30,7 @@ export type { Protocol, TestMetadata, TestCompletion } from './core/protocol'
 export type { RunningTestContext } from './core/test-context'
 export type { ProtocolExtensions, Screenshotter } from './core/extensions'
 export type { AverConfig, AverConfigInput, CoverageConfig } from './core/config'
-export { getCoverageConfig, resetCoverageConfig } from './core/config'
+export { getCoverageConfig } from './core/config'
 export type { VocabularyCoverage } from './core/coverage'
 export type { TraceEntry, TraceAttachment } from './core/trace'
 export type { ActProxy, QueryProxy, AssertProxy, TestContext, SuiteReturn, PlannedTest } from './core/suite'

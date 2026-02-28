@@ -35,8 +35,12 @@ export function defineConfig(input: AverConfigInput): AverConfig {
     registerAdapter(adapter)
   }
 
+  const minPct = input.coverage?.minPercentage ?? 0
+  if (typeof minPct !== 'number' || minPct < 0 || minPct > 100) {
+    throw new Error(`coverage.minPercentage must be a number between 0 and 100, got ${minPct}`)
+  }
   coverageConfig = {
-    minPercentage: input.coverage?.minPercentage ?? 0,
+    minPercentage: minPct,
   }
 
   return {

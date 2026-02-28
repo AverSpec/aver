@@ -72,6 +72,13 @@ The outer loop stays thin. It reads scenario state, decides what work to dispatc
 4. Post checkpoint questions for anything requiring human judgment
 5. When subagents complete, review results and advance scenarios
 
+**Claude Code dispatch (Task tool):**
+- **1 scenario** at `specified`: dispatch subagent on current tree (no worktree isolation needed)
+- **2+ independent scenarios** at `specified`: dispatch each with `isolation: "worktree"` for parallel work
+- **Dependent scenarios** (shared domain, overlapping files): dispatch sequentially on current tree
+- Each subagent goal: "Implement scenario {id}: {behavior}" — include rules and examples as context
+- On completion: review subagent results, run full test suite, advance scenarios that pass
+
 **What the outer loop does:**
 - Calls MCP tools to read/write scenario state
 - Facilitates Example Mapping conversations
@@ -100,6 +107,9 @@ The outer loop stays thin. It reads scenario state, decides what work to dispatc
 | `add_question` | Attach an open question to a scenario |
 | `resolve_question` | Mark a question as answered |
 | `link_to_domain` | Connect a scenario to domain operations and tests |
+| `update_scenario` | Update scenario fields (rules, examples, seams, constraints, behavior, context, story) |
+| `confirm_scenario` | Human-only gate — sets confirmedBy required before characterized → mapped |
+| `delete_scenario` | Remove a scenario from the workspace |
 | `export_scenarios` | Export as markdown or JSON |
 | `import_scenarios` | Import from JSON |
 

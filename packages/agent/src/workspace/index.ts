@@ -8,3 +8,18 @@ export { exportMarkdown, exportJson, importJson } from './export.js'
 export { detectPhase } from './phase.js'
 export type { Phase, PhaseName } from './phase.js'
 export { SafeJsonFile, atomicWriteFile, atomicWriteFileSync, withLock } from './safe-json-file.js'
+
+// Backlog
+export { BacklogOps } from './backlog-ops.js'
+export { createBacklogItem } from './backlog-types.js'
+export type {
+  BacklogItem,
+  BacklogItemReference,
+  BacklogStatus,
+  BacklogPriority,
+  BacklogItemType,
+  BacklogFilter,
+  BacklogSummary,
+  BacklogMoveTarget,
+  BacklogItemUpdateInput,
+} from './backlog-types.js'

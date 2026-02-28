@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { homedir } from 'node:os'
 import { createClient, type Client } from '@libsql/client'
 import type { Workspace, Scenario } from './types.js'
+import type { BacklogItem } from './backlog-types.js'
 
 const CURRENT_VERSION = '1.0.0'
 
@@ -16,9 +17,15 @@ const META_SQL = `CREATE TABLE IF NOT EXISTS workspace_meta (
   value TEXT NOT NULL
 )`
 
+const BACKLOG_SQL = `CREATE TABLE IF NOT EXISTS backlog_items (
+  id TEXT PRIMARY KEY,
+  data TEXT NOT NULL
+)`
+
 export async function initWorkspaceSchema(client: Client): Promise<void> {
   await client.execute(SCHEMA_SQL)
   await client.execute(META_SQL)
+  await client.execute(BACKLOG_SQL)
 }
 
 export class WorkspaceStore {
@@ -96,6 +103,28 @@ export class WorkspaceStore {
       sql: "INSERT OR REPLACE INTO workspace_meta (key, value) VALUES ('created_at', ?)",
       args: [updated.createdAt],
     })
+
+    return updated
+  }
+
+  async loadBacklogItems(): Promise<BacklogItem[]> {
+    await this.ensureSchema()
+    const result = await this.client.execute('SELECT data FROM backlog_items ORDER BY rowid')
+    return result.rows.map(row => JSON.parse(row.data as string))
+  }
+
+  async mutateBacklog(fn: (items: BacklogItem[]) => BacklogItem[]): Promise<BacklogItem[]> {
+    await this.ensureSchema()
+    const items = await this.loadBacklogItems()
+    const updated = fn(items)
+
+    await this.client.execute('DELETE FROM backlog_items')
+    for (const item of updated) {
+      await this.client.execute({
+        sql: 'INSERT INTO backlog_items (id, data) VALUES (?, ?)',
+        args: [item.id, JSON.stringify(item)],
+      })
+    }
 
     return updated
   }

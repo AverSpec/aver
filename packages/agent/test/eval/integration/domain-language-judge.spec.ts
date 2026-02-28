@@ -49,7 +49,7 @@ describe('domain language quality', () => {
     `
 
     const verdict = await judge(content, DOMAIN_LANGUAGE_RUBRIC)
-    expect(verdict.pass).toBe(true)
+    expect(verdict.pass, `Judge reasoning: ${verdict.reasoning}`).toBe(true)
   }, 60_000)
 
   it('fails rules and examples written in implementation language', async () => {
@@ -67,7 +67,7 @@ describe('domain language quality', () => {
     `
 
     const verdict = await judge(content, DOMAIN_LANGUAGE_RUBRIC)
-    expect(verdict.pass).toBe(false)
+    expect(verdict.pass, `Judge reasoning: ${verdict.reasoning}`).toBe(false)
   }, 60_000)
 
   it('passes domain concepts that sound technical but are ubiquitous language', async () => {
@@ -84,6 +84,6 @@ describe('domain language quality', () => {
     `
 
     const verdict = await judge(content, DOMAIN_LANGUAGE_RUBRIC)
-    expect(verdict.pass).toBe(true)
+    expect(verdict.pass, `Judge reasoning: ${verdict.reasoning}`).toBe(true)
   }, 60_000)
 })

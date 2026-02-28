@@ -41,7 +41,7 @@ describe('real judge pipeline', () => {
     const rubric = 'The output identifies specific missing test coverage and provides actionable recommendations.'
 
     const verdict = await judge(content, rubric)
-    expect(verdict.pass).toBe(true)
+    expect(verdict.pass, `Judge reasoning: ${verdict.reasoning}`).toBe(true)
     expect(verdict.reasoning).toBeTruthy()
   }, 60_000)
 
@@ -50,7 +50,7 @@ describe('real judge pipeline', () => {
     const rubric = 'The output provides a detailed technical analysis with specific file paths, code examples, and prioritized recommendations.'
 
     const verdict = await judge(content, rubric)
-    expect(verdict.pass).toBe(false)
+    expect(verdict.pass, `Judge reasoning: ${verdict.reasoning}`).toBe(false)
     expect(verdict.reasoning).toBeTruthy()
   }, 60_000)
 
@@ -74,6 +74,7 @@ describe('real judge pipeline', () => {
       })
       const result = await dispatchers.workerDispatch(systemPrompt, userPrompt)
       artifactContent = result.response
+      console.log('--- Worker artifact content ---\n', artifactContent.slice(0, 2000), '\n--- end ---')
     }, 300_000)
 
     it('identifies concrete findings with evidence', async () => {
@@ -81,7 +82,7 @@ describe('real judge pipeline', () => {
         'The analysis identifies at least 2 concrete findings about the code, each with evidence (file paths, line references, or code snippets).'
 
       const verdict = await judge(artifactContent, rubric)
-      expect(verdict.pass).toBe(true)
+      expect(verdict.pass, `Judge reasoning: ${verdict.reasoning}`).toBe(true)
       expect(verdict.reasoning).toBeTruthy()
     }, 60_000)
 
@@ -90,7 +91,7 @@ describe('real judge pipeline', () => {
         'The analysis provides specific, actionable recommendations that a developer could implement without further clarification.'
 
       const verdict = await judge(artifactContent, rubric)
-      expect(verdict.pass).toBe(true)
+      expect(verdict.pass, `Judge reasoning: ${verdict.reasoning}`).toBe(true)
       expect(verdict.reasoning).toBeTruthy()
     }, 60_000)
 
@@ -99,7 +100,7 @@ describe('real judge pipeline', () => {
         'The analysis identifies at least one seam where tests can attach, describing the seam type and test attachment strategy.'
 
       const verdict = await judge(artifactContent, rubric)
-      expect(verdict.pass).toBe(true)
+      expect(verdict.pass, `Judge reasoning: ${verdict.reasoning}`).toBe(true)
       expect(verdict.reasoning).toBeTruthy()
     }, 60_000)
 
@@ -108,7 +109,7 @@ describe('real judge pipeline', () => {
         'Findings include confidence levels (confirmed, inferred, or speculative) as instructed by the investigation skill.'
 
       const verdict = await judge(artifactContent, rubric)
-      expect(verdict.pass).toBe(true)
+      expect(verdict.pass, `Judge reasoning: ${verdict.reasoning}`).toBe(true)
       expect(verdict.reasoning).toBeTruthy()
     }, 60_000)
   })

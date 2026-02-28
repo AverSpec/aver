@@ -44,7 +44,7 @@ longer tracked — emails are sent asynchronously with no timing guarantee.
     const rubric = 'The supervisor decision to revisit is reasonable. The evidence clearly contradicts the existing specification (wrong API, wrong template, removed SLA). Revisiting to characterized (not captured) is appropriate because the behavior itself is still relevant, but the technical grounding needs re-investigation.'
 
     const verdict = await judge(content, rubric)
-    expect(verdict.pass).toBe(true)
+    expect(verdict.pass, `Judge reasoning: ${verdict.reasoning}`).toBe(true)
     expect(verdict.confidence).not.toBe('low')
   }, 60_000)
 
@@ -63,7 +63,7 @@ longer tracked — emails are sent asynchronously with no timing guarantee.
     const rubric = 'The supervisor decision to revisit is unreasonable. There is no evidence of a problem — the scenario has been confirmed by the product owner, has clear rules, and no contradictory evidence. Revisiting to captured (the earliest stage) is especially wasteful as it would require re-confirmation. The rationale is vague and not grounded in evidence.'
 
     const verdict = await judge(content, rubric)
-    expect(verdict.pass).toBe(true)
+    expect(verdict.pass, `Judge reasoning: ${verdict.reasoning}`).toBe(true)
     expect(verdict.confidence).not.toBe('low')
   }, 60_000)
 
@@ -82,7 +82,7 @@ longer tracked — emails are sent asynchronously with no timing guarantee.
     const rubric = 'The supervisor decision to revisit is reasonable and targets the right depth. Revisiting to specified (not captured or characterized) is appropriate because the failing test is a specification-level issue (rounding rules), not a fundamental behavioral issue. The behavior and investigation are still valid — only the precision specification needs updating.'
 
     const verdict = await judge(content, rubric)
-    expect(verdict.pass).toBe(true)
+    expect(verdict.pass, `Judge reasoning: ${verdict.reasoning}`).toBe(true)
     expect(verdict.confidence).not.toBe('low')
   }, 60_000)
 })

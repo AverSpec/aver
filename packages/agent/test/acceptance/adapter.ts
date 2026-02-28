@@ -30,7 +30,7 @@ function createQueuedDispatchers(
     return { response: '{"action":"stop","reason":"no more queued responses"}', tokenUsage: 0 }
   })
 
-  const workerDispatch = vi.fn(async () => {
+  const workerDispatch = vi.fn(async (_sys?: string, _usr?: string, _perm?: string) => {
     const next = workerQueue.shift()
     if (next) return next
     return { response: 'Worker completed the task.', tokenUsage: 50 }

@@ -26,7 +26,7 @@ function createMockDispatchers(supervisorResponses: string[]) {
     callIndex++
     return { response, tokenUsage: 100 }
   })
-  const workerDispatch = vi.fn(async () => ({
+  const workerDispatch = vi.fn(async (_sys?: string, _usr?: string, _perm?: string) => ({
     response: 'Worker completed the task successfully.',
     tokenUsage: 200,
   }))
@@ -149,6 +149,13 @@ describe('AgentNetwork', () => {
       expect(workerRow).toBeDefined()
       expect(workerRow!.skill).toBe('investigation')
       expect(workerRow!.permission).toBe('read_only')
+
+      // Verify permission was passed to workerDispatch
+      expect(dispatchers.workerDispatch).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.any(String),
+        'read_only',
+      )
     })
 
     it('terminate_worker decision marks agent as terminated', async () => {

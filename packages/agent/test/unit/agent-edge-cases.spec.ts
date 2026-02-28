@@ -33,7 +33,7 @@ function createMockDispatchers(supervisorResponses: string[]) {
     callIndex++
     return { response, tokenUsage: 100 }
   })
-  const workerDispatch = vi.fn(async () => ({
+  const workerDispatch = vi.fn(async (_sys?: string, _usr?: string, _perm?: string) => ({
     response: 'Worker completed the task successfully.',
     tokenUsage: 200,
   }))
@@ -466,7 +466,7 @@ describe('AgentNetwork edge cases', () => {
     it('workerDispatch throwing logs worker:error and pushes worker:stuck trigger', async () => {
       let supervisorCallCount = 0
       const dispatchers = createMockDispatchers([])
-      dispatchers.workerDispatch = vi.fn(async () => {
+      dispatchers.workerDispatch = vi.fn(async (_sys?: string, _usr?: string, _perm?: string) => {
         throw new Error('SDK connection refused')
       })
       dispatchers.supervisorDispatch = vi.fn(async () => {
@@ -626,7 +626,7 @@ describe('AgentNetwork edge cases', () => {
       // Create a slow worker that takes time to complete
       let workerStarted = false
       const dispatchers = createMockDispatchers([])
-      dispatchers.workerDispatch = vi.fn(async () => {
+      dispatchers.workerDispatch = vi.fn(async (_sys?: string, _usr?: string, _perm?: string) => {
         workerStarted = true
         // Simulate a slow worker
         await new Promise((r) => setTimeout(r, 100))
@@ -702,7 +702,7 @@ describe('AgentNetwork edge cases', () => {
 
       // Make worker dispatch fast but supervisor slow enough that both workers
       // complete before the supervisor finishes
-      dispatchers.workerDispatch = vi.fn(async () => ({
+      dispatchers.workerDispatch = vi.fn(async (_sys?: string, _usr?: string, _perm?: string) => ({
         response: 'Done.',
         tokenUsage: 50,
       }))

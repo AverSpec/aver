@@ -72,7 +72,7 @@ describe('real judge pipeline', () => {
         claudeExecutablePath: claudePath,
         maxWorkerTurns: 15,
       })
-      const result = await dispatchers.workerDispatch(systemPrompt, userPrompt)
+      const result = await dispatchers.workerDispatch(systemPrompt, userPrompt, 'read_only')
       artifactContent = result.response
       console.log('--- Worker artifact content ---\n', artifactContent.slice(0, 2000), '\n--- end ---')
     }, 300_000)

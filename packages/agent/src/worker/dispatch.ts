@@ -140,7 +140,7 @@ function extractStatus(text: string): 'complete' | 'stuck' {
   return 'complete'
 }
 
-function buildCanUseTool(level: PermissionLevel) {
+export function buildCanUseTool(level: PermissionLevel) {
   // Non-interactive: sensitive commands (git push, rm -rf, sudo) are always denied
   const hook = buildApprovalHook(level, async () => false)
   return async (
@@ -168,7 +168,7 @@ function buildCanUseTool(level: PermissionLevel) {
   }
 }
 
-function buildDisallowedTools(permissionLevel: string): string[] {
+export function buildDisallowedTools(permissionLevel: string): string[] {
   switch (permissionLevel) {
     case 'read_only':
       return [...WRITE_TOOLS, 'Bash', 'Task']

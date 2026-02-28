@@ -9,6 +9,7 @@ import { ContextAssembler } from '../context/assembler.js'
 import { TriggerQueue, type Trigger } from './triggers.js'
 import { extractJson } from '../parsing.js'
 import type { WorkspaceOps } from '../workspace/operations.js'
+import type { PermissionLevel } from '../shell/hooks.js'
 
 // --- Decision types (new, simplified) ---
 
@@ -32,7 +33,7 @@ export interface DispatchResult {
 
 export interface Dispatchers {
   supervisorDispatch: (systemPrompt: string, userPrompt: string) => Promise<DispatchResult>
-  workerDispatch: (systemPrompt: string, userPrompt: string) => Promise<DispatchResult>
+  workerDispatch: (systemPrompt: string, userPrompt: string, permission: PermissionLevel) => Promise<DispatchResult>
 }
 
 // --- Config ---
@@ -472,6 +473,7 @@ export class AgentNetwork {
       const { response, tokenUsage } = await this.dispatchers.workerDispatch(
         systemPrompt,
         userPrompt,
+        (worker.permission as PermissionLevel) ?? 'read_only',
       )
 
       // Update token usage

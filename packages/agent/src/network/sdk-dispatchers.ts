@@ -1,5 +1,7 @@
 import { query } from '@anthropic-ai/claude-agent-sdk'
 import { withAbort } from './with-abort.js'
+import type { PermissionLevel } from '../shell/hooks.js'
+import { buildCanUseTool, buildDisallowedTools } from '../worker/dispatch.js'
 
 const DEFAULT_SUPERVISOR_TURN_MS = 30_000
 const DEFAULT_SUPERVISOR_TOTAL_MS = 120_000
@@ -47,6 +49,7 @@ export function createSdkDispatchers(config: SdkDispatcherConfig) {
       turnTimeoutMs: number
       totalTimeoutMs: number
       disallowedTools?: string[]
+      canUseTool?: (toolName: string, input: Record<string, unknown>, options: { signal: AbortSignal }) => Promise<{ behavior: 'allow' | 'deny'; message?: string }>
     },
   ): Promise<DispatchResult> {
     const totalController = new AbortController()
@@ -68,6 +71,7 @@ export function createSdkDispatchers(config: SdkDispatcherConfig) {
           maxTurns: options.maxTurns,
           persistSession: false,
           ...(options.disallowedTools && { disallowedTools: options.disallowedTools }),
+          ...(options.canUseTool && { canUseTool: options.canUseTool }),
         },
       })
 
@@ -113,12 +117,14 @@ export function createSdkDispatchers(config: SdkDispatcherConfig) {
         totalTimeoutMs: supervisorTotalMs,
         disallowedTools: ALL_TOOLS,
       }),
-    workerDispatch: (systemPrompt: string, userPrompt: string) =>
+    workerDispatch: (systemPrompt: string, userPrompt: string, permission: PermissionLevel) =>
       dispatch(systemPrompt, userPrompt, {
         model: config.workerModel,
         maxTurns: config.maxWorkerTurns ?? 15,
         turnTimeoutMs: workerTurnMs,
         totalTimeoutMs: workerTotalMs,
+        disallowedTools: buildDisallowedTools(permission),
+        canUseTool: buildCanUseTool(permission),
       }),
   }
 }

@@ -37,9 +37,10 @@ export function agentSdkProvider(opts?: AgentSdkProviderOptions): JudgeProvider 
           model,
           systemPrompt: JUDGE_SYSTEM_PROMPT,
           allowedTools: [],
-          // SDK implements structured output as a tool call: turn 1 = model calls
-          // StructuredOutput tool, turn 2 = tool result completes the request.
-          maxTurns: 2,
+          // SDK structured output: model calls StructuredOutput tool, then
+          // tool result completes the request. Usually 2 turns, but allow
+          // retries when the model needs an extra attempt with large inputs.
+          maxTurns: 4,
           outputFormat: { type: 'json_schema', schema: verdictJsonSchema },
           permissionMode: 'bypassPermissions',
           allowDangerouslySkipPermissions: true,

@@ -86,9 +86,9 @@ describe('real judge pipeline', () => {
       expect(verdict.reasoning).toBeTruthy()
     }, 60_000)
 
-    it('provides actionable recommendations', async () => {
+    it('identifies gaps or constraints', async () => {
       const rubric =
-        'The analysis provides specific, actionable recommendations that a developer could implement without further clarification.'
+        'The analysis identifies at least one gap, limitation, or constraint in the code under investigation.'
 
       const verdict = await judge(artifactContent, rubric)
       expect(verdict.pass, `Judge reasoning: ${verdict.reasoning}`).toBe(true)

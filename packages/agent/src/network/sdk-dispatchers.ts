@@ -1,4 +1,4 @@
-import { query } from '@anthropic-ai/claude-agent-sdk'
+import { query, type CanUseTool } from '@anthropic-ai/claude-agent-sdk'
 import { withAbort } from './with-abort.js'
 import type { PermissionLevel } from '../shell/hooks.js'
 import { buildCanUseTool, buildDisallowedTools } from '../worker/dispatch.js'
@@ -49,7 +49,7 @@ export function createSdkDispatchers(config: SdkDispatcherConfig) {
       turnTimeoutMs: number
       totalTimeoutMs: number
       disallowedTools?: string[]
-      canUseTool?: (toolName: string, input: Record<string, unknown>, options: { signal: AbortSignal }) => Promise<{ behavior: 'allow' | 'deny'; message?: string }>
+      canUseTool?: CanUseTool
     },
   ): Promise<DispatchResult> {
     const totalController = new AbortController()
@@ -62,17 +62,19 @@ export function createSdkDispatchers(config: SdkDispatcherConfig) {
     let tokenUsage = 0
 
     try {
+      const queryOptions = {
+        ...baseOptions,
+        systemPrompt,
+        model: options.model,
+        maxTurns: options.maxTurns,
+        persistSession: false,
+        ...(options.disallowedTools && { disallowedTools: options.disallowedTools }),
+        ...(options.canUseTool && { canUseTool: options.canUseTool }),
+      }
+
       const q = query({
         prompt: userPrompt,
-        options: {
-          ...baseOptions,
-          systemPrompt,
-          model: options.model,
-          maxTurns: options.maxTurns,
-          persistSession: false,
-          ...(options.disallowedTools && { disallowedTools: options.disallowedTools }),
-          ...(options.canUseTool && { canUseTool: options.canUseTool }),
-        },
+        options: queryOptions,
       })
 
       for await (const message of withAbort(q, totalController.signal, options.turnTimeoutMs)) {

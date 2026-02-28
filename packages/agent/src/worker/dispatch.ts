@@ -146,8 +146,8 @@ export function buildCanUseTool(level: PermissionLevel) {
   return async (
     toolName: string,
     input: Record<string, unknown>,
-    options: { signal: AbortSignal },
-  ) => {
+    options: { signal: AbortSignal; [key: string]: unknown },
+  ): Promise<{ behavior: 'allow' } | { behavior: 'deny'; message: string }> => {
     const result = await hook(
       {
         hook_event_name: 'PreToolUse',

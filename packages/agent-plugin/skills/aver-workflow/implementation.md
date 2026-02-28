@@ -70,6 +70,15 @@ After tests are GREEN, link the scenario to domain artifacts:
 
 Without domain links, the scenario cannot advance to `implemented`.
 
+## Parallel Dispatch
+
+When multiple independent scenarios are at `specified`:
+- **1 scenario:** Work directly on the current tree. No isolation needed.
+- **2+ independent scenarios:** Dispatch each as a separate subagent with worktree isolation. Each subagent runs the full ATDD double loop independently.
+- **Dependent scenarios** (shared domain, overlapping files): Work sequentially on the current tree to avoid merge conflicts.
+
+Independence heuristic: scenarios targeting different domains or different adapter protocols are independent. Scenarios sharing a domain should be sequential.
+
 ## Anti-Patterns
 
 - **Changing too many things at once.** One change per red-green cycle.

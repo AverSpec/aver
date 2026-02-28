@@ -151,6 +151,15 @@ export async function confirmScenarioHandler(
   await createOps(basePath, projectId).confirmScenario(input.id, input.confirmer)
 }
 
+export async function updateScenarioHandler(
+  input: { id: string; behavior?: string; context?: string; story?: string; rules?: string[]; examples?: Array<{ description: string; expectedOutcome: string; given?: string }>; constraints?: string[]; seams?: Array<{ type: string; location: string; description: string }> },
+  basePath: string,
+  projectId: string,
+): Promise<Scenario> {
+  const { id, ...updates } = input
+  return createOps(basePath, projectId).updateScenario(id, updates)
+}
+
 export async function getWorkflowPhaseHandler(
   basePath: string,
   projectId: string,
@@ -342,6 +351,35 @@ export function registerWorkspaceTools(server: McpServer, config?: ToolsConfig):
     async (input) => {
       await confirmScenarioHandler(input, resolveBasePath(), resolveProjectId())
       return { content: [{ type: 'text' as const, text: JSON.stringify({ confirmed: input.id, by: input.confirmer }) }] }
+    },
+  )
+
+  server.registerTool(
+    'update_scenario',
+    {
+      description: 'Update scenario fields (behavior, context, story, rules, examples, constraints, seams). Does not change stage — use advance_scenario or revisit_scenario for that.',
+      inputSchema: {
+        id: z.string().describe('The ID of the scenario to update'),
+        behavior: z.string().optional().describe('Updated behavior description'),
+        context: z.string().optional().describe('Updated context'),
+        story: z.string().optional().describe('Updated story name'),
+        rules: z.array(z.string()).optional().describe('Replace rules array'),
+        examples: z.array(z.object({
+          description: z.string(),
+          expectedOutcome: z.string(),
+          given: z.string().optional(),
+        })).optional().describe('Replace examples array'),
+        constraints: z.array(z.string()).optional().describe('Replace constraints array'),
+        seams: z.array(z.object({
+          type: z.string(),
+          location: z.string(),
+          description: z.string(),
+        })).optional().describe('Replace seams array'),
+      },
+    },
+    async (input) => {
+      const result = await updateScenarioHandler(input, resolveBasePath(), resolveProjectId())
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] }
     },
   )
 

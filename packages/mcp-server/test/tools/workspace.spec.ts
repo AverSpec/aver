@@ -16,6 +16,7 @@ import {
   getAdvanceCandidatesHandler,
   exportScenariosHandler,
   importScenariosHandler,
+  updateScenarioHandler,
   clearWorkspaceCache,
 } from '../../src/tools/workspace'
 
@@ -240,6 +241,52 @@ describe('workspace tool handlers', () => {
       const candidates = await getAdvanceCandidatesHandler(dir, projectId)
       expect(candidates).toHaveLength(1)
       expect(candidates[0].behavior).toBe('b')
+    })
+  })
+
+  describe('update_scenario', () => {
+    it('updates behavior field', async () => {
+      const scenario = await captureScenarioHandler({ behavior: 'old' }, dir, projectId)
+      const updated = await updateScenarioHandler({ id: scenario.id, behavior: 'new' }, dir, projectId)
+      expect(updated.behavior).toBe('new')
+    })
+
+    it('updates rules array', async () => {
+      const scenario = await captureScenarioHandler({ behavior: 'test' }, dir, projectId)
+      const updated = await updateScenarioHandler({ id: scenario.id, rules: ['r1', 'r2'] }, dir, projectId)
+      expect(updated.rules).toEqual(['r1', 'r2'])
+    })
+
+    it('updates examples array', async () => {
+      const scenario = await captureScenarioHandler({ behavior: 'test' }, dir, projectId)
+      const updated = await updateScenarioHandler({
+        id: scenario.id,
+        examples: [{ description: 'ex', expectedOutcome: 'pass' }]
+      }, dir, projectId)
+      expect(updated.examples).toHaveLength(1)
+    })
+
+    it('updates seams array', async () => {
+      const scenario = await captureScenarioHandler({ behavior: 'test' }, dir, projectId)
+      const updated = await updateScenarioHandler({
+        id: scenario.id,
+        seams: [{ type: 'http', location: '/api', description: 'endpoint' }]
+      }, dir, projectId)
+      expect(updated.seams).toHaveLength(1)
+    })
+
+    it('updates constraints array', async () => {
+      const scenario = await captureScenarioHandler({ behavior: 'test' }, dir, projectId)
+      const updated = await updateScenarioHandler({
+        id: scenario.id,
+        constraints: ['must be idempotent']
+      }, dir, projectId)
+      expect(updated.constraints).toEqual(['must be idempotent'])
+    })
+
+    it('throws for nonexistent scenario', async () => {
+      await expect(updateScenarioHandler({ id: 'nope', behavior: 'x' }, dir, projectId))
+        .rejects.toThrow('Scenario not found')
     })
   })
 

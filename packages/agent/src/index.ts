@@ -33,6 +33,8 @@ export type {
   SupervisorDecision,
 } from './network/index.js'
 export type { Trigger, TriggerType } from './network/index.js'
+export { createSdkDispatchers } from './network/index.js'
+export type { SdkDispatcherConfig } from './network/index.js'
 
 // ── v2 Database ──────────────────────────────────────────────────────
 export { createDatabase, closeDatabase } from './db/index.js'

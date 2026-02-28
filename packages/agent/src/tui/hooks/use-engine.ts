@@ -6,7 +6,8 @@ import { createDatabase, closeDatabase } from '../../db/database.js'
 import { AgentStore } from '../../db/agent-store.js'
 import { EventStore } from '../../db/event-store.js'
 import { AgentNetwork } from '../../network/agent-network.js'
-import type { Dispatchers, AgentNetworkCallbacks } from '../../network/agent-network.js'
+import type { AgentNetworkCallbacks } from '../../network/agent-network.js'
+import { createSdkDispatchers } from '../../network/sdk-dispatchers.js'
 import type { Client } from '@libsql/client'
 import { join } from 'node:path'
 import { WorkspaceOps } from '../../workspace/operations.js'
@@ -51,15 +52,17 @@ export function useEngine(options: EngineHookOptions) {
         const store = WorkspaceStore.fromPath(options.workspacePath, options.projectId)
         const workspaceOps = new WorkspaceOps(store)
 
-        // Create dispatchers (stub for now — real SDK dispatchers are wired in CLI)
-        const dispatchers: Dispatchers = {
-          supervisorDispatch: async (_sys: string, _user: string) => {
-            return { response: '{"action":"stop","reason":"TUI dispatchers not wired to LLM yet"}', tokenUsage: 0 }
+        const dispatchers = createSdkDispatchers({
+          claudeExecutablePath: options.config.claudeExecutablePath,
+          supervisorModel: options.config.model.supervisor,
+          workerModel: options.config.model.worker,
+          maxWorkerTurns: options.config.cycles.maxWorkerIterations,
+          timeouts: {
+            supervisorTotalMs: options.config.timeouts?.supervisorCallMs,
+            workerTurnMs: options.config.timeouts?.workerTurnMs,
+            workerTotalMs: options.config.timeouts?.workerTotalMs,
           },
-          workerDispatch: async (_sys: string, _user: string) => {
-            return { response: 'Worker stub', tokenUsage: 0 }
-          },
-        }
+        })
 
         // Create callbacks
         const callbacks: AgentNetworkCallbacks = {

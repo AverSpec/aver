@@ -186,6 +186,19 @@ export class WorkspaceOps {
 
       scenario.promotedFrom = from
       scenario.revisitRationale = input.rationale
+
+      // Strip fields owned by stages we're moving past
+      // confirmedBy is the gate to 'mapped' (index 2) — clear if target < characterized (index 1)
+      if (targetIdx < 1) {
+        scenario.confirmedBy = undefined
+      }
+      // domain links are the gate to 'implemented' (index 4) — clear if target < specified (index 3)
+      if (targetIdx < 3) {
+        scenario.domainOperation = undefined
+        scenario.testNames = undefined
+        scenario.approvalBaseline = undefined
+      }
+
       scenario.stage = input.targetStage
       scenario.updatedAt = now
       revisited = scenario

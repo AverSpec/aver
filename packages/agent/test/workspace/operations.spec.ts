@@ -247,6 +247,52 @@ describe('WorkspaceOps', () => {
       expect(updated!.transitions[1].to).toBe('captured')
       expect(updated!.transitions[1].rationale).toBe('needs re-investigation')
     })
+
+    it('clears confirmedBy when revisiting to captured', async () => {
+      const scenario = await ops.captureScenario({ behavior: 'test' })
+      await advanceToStage(scenario.id, 'mapped') // sets confirmedBy
+      const pre = await ops.getScenario(scenario.id)
+      expect(pre!.confirmedBy).toBe('test-confirmer') // sanity check
+
+      await ops.revisitScenario(scenario.id, {
+        targetStage: 'captured',
+        rationale: 'fundamental rethink needed',
+      })
+
+      const updated = await ops.getScenario(scenario.id)
+      expect(updated!.confirmedBy).toBeUndefined()
+    })
+
+    it('clears domain links when revisiting past specified', async () => {
+      const scenario = await ops.captureScenario({ behavior: 'test' })
+      await advanceToStage(scenario.id, 'implemented') // sets domainOperation
+      const pre = await ops.getScenario(scenario.id)
+      expect(pre!.domainOperation).toBe('test.op') // sanity check
+
+      await ops.revisitScenario(scenario.id, {
+        targetStage: 'characterized',
+        rationale: 'spec was wrong',
+      })
+
+      const updated = await ops.getScenario(scenario.id)
+      expect(updated!.domainOperation).toBeUndefined()
+      expect(updated!.testNames).toBeUndefined()
+      expect(updated!.approvalBaseline).toBeUndefined()
+    })
+
+    it('preserves domain links when revisiting within same tier', async () => {
+      const scenario = await ops.captureScenario({ behavior: 'test' })
+      await advanceToStage(scenario.id, 'implemented')
+
+      await ops.revisitScenario(scenario.id, {
+        targetStage: 'specified',
+        rationale: 'implementation needs rework',
+      })
+
+      const updated = await ops.getScenario(scenario.id)
+      expect(updated!.domainOperation).toBe('test.op')
+      expect(updated!.stage).toBe('specified')
+    })
   })
 
   describe('addQuestion / resolveQuestion', () => {

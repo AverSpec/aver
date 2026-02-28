@@ -59,7 +59,7 @@ Present uncertain items prominently. They become the starting agenda for the map
 A characterized scenario has:
 - Execution path documented (entry point through to effect)
 - Seams identified with test attachment strategy
-- Constraints noted (schemas, validation, config)
+- Constraints framed as business rules in domain language (e.g., "a task must have a title"), not implementation details (e.g., "validation in TaskService.create()"). Implementation locations belong in seams, not constraints.
 - Approval baselines captured as evidence
 - Confidence level for each finding
 - Questions posted for anything requiring human judgment

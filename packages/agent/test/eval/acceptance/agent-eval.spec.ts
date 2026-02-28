@@ -15,6 +15,10 @@ beforeAll(() => {
       match: 'impossible standard',
       verdict: { pass: false, reasoning: 'Does not meet unrealistic bar', confidence: 'low' },
     },
+    {
+      match: 'domain language',
+      verdict: { pass: true, reasoning: 'Rules use business language, not implementation details', confidence: 'high' },
+    },
   ]))
 })
 
@@ -103,5 +107,23 @@ test('outputMeetsRubric fails with non-matching rule', async ({ given, when, the
     artifacts: [],
   })
   await when.runWorker({ skill: 'investigation', goal: 'basic work' })
+  await expect(then.outputMeetsRubric({ rubric: 'impossible standard' })).rejects.toThrow('Rubric failed')
+})
+
+test('worker output with domain-language rules meets domain language rubric', async ({ given, when, then }) => {
+  await given.queueWorkerResult({
+    summary: 'Rules: A task must have a title. New tasks default to the todo stage. Examples: Given no title, create task, rejected. Given title "Fix bug", create task, task exists.',
+    artifacts: [],
+  })
+  await when.runWorker({ skill: 'scenario-mapping', goal: 'map task creation' })
+  await then.outputMeetsRubric({ rubric: 'domain language quality' })
+})
+
+test('worker output with implementation-language rules fails domain language rubric', async ({ given, when, then }) => {
+  await given.queueWorkerResult({
+    summary: 'Rules: TaskService.create() validates title via Zod schema. store.mutate() handles atomic writes. confirmedBy must be non-falsy string.',
+    artifacts: [],
+  })
+  await when.runWorker({ skill: 'scenario-mapping', goal: 'map task creation' })
   await expect(then.outputMeetsRubric({ rubric: 'impossible standard' })).rejects.toThrow('Rubric failed')
 })

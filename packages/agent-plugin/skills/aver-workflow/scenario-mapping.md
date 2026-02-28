@@ -23,10 +23,12 @@ Read the behavior description. If the scenario is `characterized`, review invest
 
 ### 2. Extract rules
 
-Derive rules from code evidence, approval baselines, and domain knowledge. Each rule is a single constraint or invariant:
-- "Title is required"
-- "Default status is 'todo' when not specified"
+Derive rules from code evidence, approval baselines, and domain knowledge. Each rule is a **business constraint in domain language** — describe WHY the behavior matters, not WHERE it lives in code:
+- "A task must have a title"
+- "New tasks default to the 'todo' stage"
 - "Task titles must be unique within a board"
+
+Implementation details (which function validates, which table stores) belong in **seams**, not rules. Rules should read like something a product owner would say.
 
 ### 3. Generate examples per rule
 
@@ -54,15 +56,21 @@ Present uncertain items first. Confirmed items can wait — the uncertain ones s
 
 ## Example Format
 
-```
-Rule: Title is required [Confirmed — validation in TaskService.create()]
-  Example: Given empty title "" → create task → validation error "title is required"
-  Example: Given valid title "Fix bug" → create task → task exists with title "Fix bug"
+Rules and examples use **domain language**, not implementation details. Confidence annotations go on a separate line referencing evidence, not baked into the rule text.
 
-Rule: Default status is 'todo' [Inferred — no explicit default, but all fixtures use 'todo']
-  Example: Given title with no status → create task → task has status 'todo'
-  Example: Given title with status 'in-progress' → create task → task has status 'in-progress'
 ```
+Rule: A task must have a title
+  Confidence: Confirmed (see approval baseline: create-task-validation.txt)
+  Example: Given no title → create task → rejected with "title is required"
+  Example: Given title "Fix bug" → create task → task exists with title "Fix bug"
+
+Rule: New tasks default to the 'todo' stage
+  Confidence: Inferred (all existing tasks start at 'todo', no explicit default found)
+  Example: Given a title with no stage specified → create task → task is in 'todo'
+  Example: Given a title with stage 'in-progress' → create task → task is in 'in-progress'
+```
+
+Notice: rules read like business constraints ("A task must have a title"), not code constraints ("Title validation in TaskService.create()"). Implementation locations belong in seams.
 
 ## When to Stop
 

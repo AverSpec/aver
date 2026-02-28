@@ -8,6 +8,3 @@ export { agentSdkProvider } from './providers/agent-sdk.js'
 export type { AgentSdkProviderOptions } from './providers/agent-sdk.js'
 export { mockProvider } from './providers/mock.js'
 export type { MockRule } from './providers/mock.js'
-
-// AgentEval domain
-export { agentEval } from './domain.js'

@@ -1,5 +1,5 @@
 import { implement, unit } from '@aver/core'
-import { AverTui } from '../../src/tui-domain.js'
+import { AverTui } from './domains/aver-tui.js'
 import { tuiReducer, initialState } from '../../src/tui/state.js'
 import type { TuiState, PendingQuestion } from '../../src/tui/state.js'
 import type { Scenario } from '../../src/workspace/types.js'

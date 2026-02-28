@@ -1,5 +1,5 @@
 import { suite } from '@aver/core'
-import { agentEval } from '../../../src/eval/domain.js'
+import { agentEval } from './domains/agent-eval.js'
 import { setDefaultProvider, resetDefaultProvider, mockProvider } from '../../../src/eval/index.js'
 import { agentEvalAdapter } from './adapter.js'
 

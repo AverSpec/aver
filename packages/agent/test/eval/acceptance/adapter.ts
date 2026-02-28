@@ -1,6 +1,6 @@
 import { implement, unit } from '@aver/core'
 import { createClient, type Client } from '@libsql/client'
-import { agentEval } from '../../../src/eval/domain.js'
+import { agentEval } from './domains/agent-eval.js'
 import type { WorkerResult } from '../../../src/types.js'
 import { WorkspaceStore, initWorkspaceSchema } from '../../../src/workspace/storage.js'
 import { WorkspaceOps } from '../../../src/workspace/operations.js'

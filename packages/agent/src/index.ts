@@ -65,10 +65,6 @@ export type { AgentArgs } from './cli.js'
 // ── CLI operations (session/event reads for CLI commands) ─────────
 export { loadSession, readEvents, requestStop } from './cli-ops.js'
 
-// ── Dogfood domains ─────────────────────────────────────────────────
-export { AverAgent } from './domain.js'
-export { AverTui } from './tui-domain.js'
-
 // ── Workspace (absorbed from @aver/workspace) ───────────────────────
 export { createScenario, createExample } from './workspace/types.js'
 export type { Scenario, Workspace, Example, Question, Seam, Stage, Transition } from './workspace/types.js'
@@ -88,4 +84,3 @@ export { agentSdkProvider } from './eval/providers/agent-sdk.js'
 export type { AgentSdkProviderOptions } from './eval/providers/agent-sdk.js'
 export { mockProvider } from './eval/providers/mock.js'
 export type { MockRule } from './eval/providers/mock.js'
-export { agentEval } from './eval/domain.js'

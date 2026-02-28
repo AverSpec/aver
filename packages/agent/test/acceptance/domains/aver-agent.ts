@@ -1,5 +1,5 @@
 import { defineDomain, action, query, assertion } from '@aver/core'
-import type { SupervisorDecision } from './network/agent-network.js'
+import type { SupervisorDecision } from '../../../src/network/agent-network.js'
 
 export const AverAgent = defineDomain({
   name: 'AverAgent',

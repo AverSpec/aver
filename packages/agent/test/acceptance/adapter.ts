@@ -1,7 +1,7 @@
 import { implement } from '@aver/core'
 import { createClient, type Client } from '@libsql/client'
 import { vi } from 'vitest'
-import { AverAgent } from '../../src/domain.js'
+import { AverAgent } from './domains/aver-agent.js'
 import {
   AgentNetwork,
   type Dispatchers,

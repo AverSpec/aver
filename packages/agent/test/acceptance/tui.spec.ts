@@ -1,5 +1,5 @@
 import { suite } from '@aver/core'
-import { AverTui } from '../../src/tui-domain.js'
+import { AverTui } from './domains/aver-tui.js'
 import { averTuiAdapter } from './tui-adapter.js'
 
 const { test } = suite(AverTui, averTuiAdapter)

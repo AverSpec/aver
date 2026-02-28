@@ -1,5 +1,5 @@
 import { suite } from '@aver/core'
-import { AverAgent } from '../../src/domain.js'
+import { AverAgent } from './domains/aver-agent.js'
 import { averAgentAdapter } from './adapter.js'
 import { describe } from 'vitest'
 

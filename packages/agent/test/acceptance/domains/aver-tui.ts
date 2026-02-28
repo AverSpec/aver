@@ -1,6 +1,6 @@
 import { defineDomain, action, query, assertion } from '@aver/core'
-import type { AgentEvent } from './db/event-store.js'
-import type { TuiState, WorkerStatus } from './tui/state.js'
+import type { AgentEvent } from '../../../src/db/event-store.js'
+import type { TuiState, WorkerStatus } from '../../../src/tui/state.js'
 
 export const AverTui = defineDomain({
   name: 'AverTui',

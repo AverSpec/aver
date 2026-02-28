@@ -150,15 +150,63 @@ describe('parseVitestJson()', () => {
         name: '/path/to/acceptance/Cart/cart.spec.ts',
         assertionResults: [
           { fullName: 'adds item to cart', status: 'passed' },
-          { fullName: 'removes item from cart', status: 'failed' },
+          { fullName: 'removes item from cart', status: 'failed', failureMessages: ['Expected 0 items but got 1'] },
         ],
       }],
     })
     const run = parseVitestJson(json)
     expect(run.results).toHaveLength(2)
     expect(run.results[0]).toMatchObject({ testName: 'adds item to cart', status: 'pass' })
+    expect(run.results[0].trace).toEqual([])
     expect(run.results[1]).toMatchObject({ testName: 'removes item from cart', status: 'fail' })
+    expect(run.results[1].trace).toEqual([
+      { kind: 'error', name: 'removes item from cart', status: 'fail', error: 'Expected 0 items but got 1' },
+    ])
     expect(run.error).toBeUndefined()
+  })
+
+  it('extracts domain from acceptance path', () => {
+    const json = JSON.stringify({
+      testResults: [{
+        name: '/path/to/acceptance/Cart/cart.spec.ts',
+        assertionResults: [{ fullName: 'test', status: 'passed' }],
+      }],
+    })
+    const run = parseVitestJson(json)
+    expect(run.results[0].domain).toBe('Cart')
+  })
+
+  it('extracts domain from domains/ path', () => {
+    const json = JSON.stringify({
+      testResults: [{
+        name: '/path/to/tests/domains/auth/auth.spec.ts',
+        assertionResults: [{ fullName: 'test', status: 'passed' }],
+      }],
+    })
+    const run = parseVitestJson(json)
+    expect(run.results[0].domain).toBe('auth')
+  })
+
+  it('extracts domain from spec filename when no known directory pattern', () => {
+    const json = JSON.stringify({
+      testResults: [{
+        name: '/path/to/tests/cart.spec.ts',
+        assertionResults: [{ fullName: 'test', status: 'passed' }],
+      }],
+    })
+    const run = parseVitestJson(json)
+    expect(run.results[0].domain).toBe('cart')
+  })
+
+  it('returns unknown for paths with no recognizable pattern', () => {
+    const json = JSON.stringify({
+      testResults: [{
+        name: '/path/to/something',
+        assertionResults: [{ fullName: 'test', status: 'passed' }],
+      }],
+    })
+    const run = parseVitestJson(json)
+    expect(run.results[0].domain).toBe('unknown')
   })
 
   it('returns error field when JSON is invalid', () => {

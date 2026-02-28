@@ -76,7 +76,12 @@ export function parseVitestJson(jsonStr: string): RunData {
           testName: test.fullName ?? test.title ?? 'unknown',
           domain: extractDomainFromPath(file.name ?? ''),
           status: test.status === 'passed' ? 'pass' : test.status === 'failed' ? 'fail' : 'skip',
-          trace: [],
+          trace: (test.failureMessages ?? []).map((msg: string) => ({
+            kind: 'error',
+            name: test.fullName ?? test.title ?? 'unknown',
+            status: 'fail',
+            error: msg,
+          })),
         })
       }
     }
@@ -91,8 +96,19 @@ export function parseVitestJson(jsonStr: string): RunData {
 }
 
 function extractDomainFromPath(filePath: string): string {
-  const match = filePath.match(/acceptance\/([^/]+)/)
-  return match?.[1] ?? 'unknown'
+  // 1. acceptance/<name> (aver's own test structure)
+  const acceptanceMatch = filePath.match(/acceptance\/([^/]+)/)
+  if (acceptanceMatch) return acceptanceMatch[1]
+
+  // 2. domains/<name> (common test directory pattern)
+  const domainsMatch = filePath.match(/domains\/([^/]+)/)
+  if (domainsMatch) return domainsMatch[1]
+
+  // 3. Spec filename without extensions (e.g., cart.spec.ts → cart)
+  const fileMatch = filePath.match(/([^/]+?)\.(?:spec|test)\.[^/]+$/)
+  if (fileMatch) return fileMatch[1]
+
+  return 'unknown'
 }
 
 export interface FailureDetails {

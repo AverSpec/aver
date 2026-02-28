@@ -44,7 +44,7 @@ export function useEngine(options: EngineHookOptions) {
 
       try {
         // Create database
-        const dbPath = join(options.agentPath, 'agent.db')
+        const dbPath = join(options.agentPath, 'aver-agent.db')
         const db = await createDatabase(dbPath)
         dbRef.current = db
 

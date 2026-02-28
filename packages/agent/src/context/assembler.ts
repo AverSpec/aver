@@ -68,8 +68,15 @@ export class ContextAssembler {
     }
   }
 
-  private formatBlock(observations: Observation[], _budget: number): string {
+  private formatBlock(observations: Observation[], budget: number): string {
     if (observations.length === 0) return ''
-    return observations.map(formatObservation).join('\n')
+    const lines: string[] = []
+    let tokens = 0
+    for (const obs of observations) {
+      tokens += obs.tokenCount
+      if (tokens > budget) break
+      lines.push(formatObservation(obs))
+    }
+    return lines.join('\n')
   }
 }

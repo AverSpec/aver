@@ -133,7 +133,7 @@ describe('AgentNetwork edge cases', () => {
       const eventStore = new EventStore(db)
       const errors = await eventStore.getEventsByType('error')
       expect(errors.length).toBeGreaterThanOrEqual(1)
-      expect(JSON.stringify(errors[0].data)).toContain('Invalid or missing action')
+      expect(JSON.stringify(errors[0].data)).toContain('must have an \\"action\\" string field')
     })
 
     it('unknown action type results in session error', async () => {
@@ -153,7 +153,7 @@ describe('AgentNetwork edge cases', () => {
       const eventStore = new EventStore(db)
       const errors = await eventStore.getEventsByType('error')
       expect(errors.length).toBeGreaterThanOrEqual(1)
-      expect(JSON.stringify(errors[0].data)).toContain('Invalid or missing action')
+      expect(JSON.stringify(errors[0].data)).toContain('Unknown action type')
     })
 
     it('valid JSON string (not object) results in session error', async () => {
@@ -279,11 +279,9 @@ describe('AgentNetwork edge cases', () => {
   // 3. create_worker with missing fields
   // -------------------------------------------------------
   describe('create_worker with missing fields', () => {
-    it('create_worker without goal or skill results in session error', async () => {
-      // parseDecision does no per-field validation — it trusts the structure.
-      // At runtime, decision.goal and decision.skill are undefined, which
-      // causes createAgent to pass undefined to the SQL args. libsql rejects
-      // undefined values, throwing an error that is caught by wakeSupervisor.
+    it('create_worker without goal or skill results in DecisionParseError', async () => {
+      // The stricter parseDecision validates required fields per action type.
+      // Missing goal/skill throws a DecisionParseError before reaching the DB.
       const dispatchers = createMockDispatchers([
         '{"action":"create_worker"}',
         '{"action":"stop","reason":"done"}',
@@ -297,13 +295,15 @@ describe('AgentNetwork edge cases', () => {
       })
       await new Promise((r) => setTimeout(r, 200))
 
-      // BUG DOCUMENTATION: create_worker with missing goal/skill passes
-      // undefined to the SQL layer, which throws. The error is caught by
-      // wakeSupervisor's try/catch, setting session to error. No worker
-      // is created. This is a lack of input validation in parseDecision.
+      // parseDecision rejects the decision before it reaches the DB layer
       const sessionStore = new SessionStore(db)
       const session = await sessionStore.getSession(network.currentSession!.id)
       expect(session!.status).toBe('error')
+
+      const eventStore = new EventStore(db)
+      const errors = await eventStore.getEventsByType('error')
+      expect(errors.length).toBeGreaterThanOrEqual(1)
+      expect(JSON.stringify(errors[0].data)).toContain('create_worker must have a')
 
       // No worker rows should exist
       const result = await db.execute({

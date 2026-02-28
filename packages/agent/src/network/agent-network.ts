@@ -7,7 +7,7 @@ import { ContextAssembler } from '../context/assembler.js'
 // Observer integration for full observation extraction is deferred to v2.
 // For MVP, worker output is stored as a single observation directly.
 import { TriggerQueue, type Trigger } from './triggers.js'
-import { extractJson } from '../parsing.js'
+import { parseDecision } from '../supervisor/decisions.js'
 import type { WorkspaceOps } from '../workspace/operations.js'
 import type { PermissionLevel } from '../shell/hooks.js'
 
@@ -57,18 +57,6 @@ export interface AgentNetworkCallbacks {
 const DEFAULT_MAX_CYCLE_DEPTH = 50
 const DEFAULT_OBSERVATION_THRESHOLD = 30_000
 const DEFAULT_REFLECTION_THRESHOLD = 40_000
-
-const VALID_ACTIONS = new Set([
-  'create_worker',
-  'assign_goal',
-  'terminate_worker',
-  'advance_scenario',
-  'ask_human',
-  'discuss',
-  'update_scenario',
-  'revisit_scenario',
-  'stop',
-])
 
 // --- AgentNetwork ---
 
@@ -212,7 +200,7 @@ export class AgentNetwork {
       }
 
       // Parse decision
-      const decision = this.parseDecision(response)
+      const decision = parseDecision(response)
 
       await this.logEvent('supervisor:decision', {
         action: decision.action,
@@ -533,7 +521,7 @@ export class AgentNetwork {
     return [
       'You are the supervisor agent for an Aver acceptance-testing session.',
       'Respond with a single JSON object containing an "action" field.',
-      `Valid actions: ${Array.from(VALID_ACTIONS).join(', ')}`,
+      'Valid actions: create_worker, assign_goal, terminate_worker, advance_scenario, ask_human, discuss, update_scenario, revisit_scenario, stop',
       '',
       'Examples:',
       '  {"action":"create_worker","goal":"Investigate login flow","skill":"investigation","permission":"read_only"}',
@@ -568,32 +556,6 @@ export class AgentNetwork {
     )
 
     return parts.join('\n\n')
-  }
-
-  // --- Decision parsing ---
-
-  private parseDecision(text: string): SupervisorDecision {
-    const json = extractJson(text)
-    let parsed: unknown
-    try {
-      parsed = JSON.parse(json)
-    } catch {
-      throw new Error(`Failed to parse supervisor decision as JSON: ${text.slice(0, 200)}`)
-    }
-
-    if (!parsed || typeof parsed !== 'object') {
-      throw new Error('Supervisor decision must be a JSON object')
-    }
-
-    const obj = parsed as Record<string, unknown>
-    const action = obj.action as string | undefined
-
-    if (!action || typeof action !== 'string' || !VALID_ACTIONS.has(action)) {
-      throw new Error(`Invalid or missing action: ${String(action)}`)
-    }
-
-    // Return the full object as-is — we trust the structure for MVP
-    return obj as unknown as SupervisorDecision
   }
 
   // --- Utilities ---

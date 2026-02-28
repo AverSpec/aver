@@ -248,6 +248,66 @@ describe('ContextAssembler', () => {
     })
   })
 
+  describe('budget enforcement', () => {
+    it('truncates observations when token budget is exceeded', async () => {
+      // Each observation has tokenCount = 10 (set by seedObservation helper).
+      // With a budget of 25, only 2 observations should fit (20 tokens).
+      // The 3rd would push to 30 which exceeds 25.
+      const smallBudgetAssembler = new ContextAssembler(store, {
+        supervisorObservationBudget: 25,
+        workerObservationBudget: 25,
+      })
+
+      await seedObservation({
+        agentId: 'supervisor',
+        scope: 'project',
+        priority: 'critical',
+        content: 'First observation',
+        createdAt: '2026-02-26T09:10:00.000Z',
+      })
+      await seedObservation({
+        agentId: 'supervisor',
+        scope: 'project',
+        priority: 'important',
+        content: 'Second observation',
+        createdAt: '2026-02-26T09:20:00.000Z',
+      })
+      await seedObservation({
+        agentId: 'supervisor',
+        scope: 'strategy',
+        priority: 'informational',
+        content: 'Third observation (should be truncated)',
+        createdAt: '2026-02-26T09:30:00.000Z',
+      })
+
+      const ctx = await smallBudgetAssembler.assembleForSupervisor('supervisor')
+      const lines = ctx.observationBlock.split('\n')
+
+      expect(lines).toHaveLength(2)
+      expect(ctx.observationBlock).toContain('First observation')
+      expect(ctx.observationBlock).toContain('Second observation')
+      expect(ctx.observationBlock).not.toContain('Third observation')
+    })
+
+    it('returns empty string when first observation exceeds budget', async () => {
+      const tinyBudgetAssembler = new ContextAssembler(store, {
+        supervisorObservationBudget: 5,
+        workerObservationBudget: 5,
+      })
+
+      await seedObservation({
+        agentId: 'supervisor',
+        scope: 'project',
+        priority: 'critical',
+        content: 'Too large',
+        createdAt: '2026-02-26T09:10:00.000Z',
+      })
+
+      const ctx = await tinyBudgetAssembler.assembleForSupervisor('supervisor')
+      expect(ctx.observationBlock).toBe('')
+    })
+  })
+
   describe('empty store', () => {
     it('returns empty observationBlock', async () => {
       const ctx = await assembler.assembleForSupervisor('supervisor')

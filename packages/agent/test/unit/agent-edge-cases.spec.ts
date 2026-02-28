@@ -833,4 +833,112 @@ describe('AgentNetwork edge cases', () => {
       expect(network.isStopped).toBe(true)
     })
   })
+
+  // -------------------------------------------------------
+  // revisit_scenario
+  // -------------------------------------------------------
+  describe('revisit_scenario', () => {
+    it('moves scenario backward and logs event', async () => {
+      const scenario = await workspaceOps.captureScenario({ behavior: 'test revisit' })
+      await workspaceOps.advanceScenario(scenario.id, { rationale: 'advance', promotedBy: 'dev' })
+
+      const dispatchers = createMockDispatchers([
+        JSON.stringify({
+          action: 'revisit_scenario',
+          scenarioId: scenario.id,
+          targetStage: 'captured',
+          rationale: 'evidence contradicts behavior',
+        }),
+      ])
+
+      const network = new AgentNetwork(db, dispatchers, workspaceOps, config)
+      await network.start('test goal')
+      await waitForSupervisorCalls(dispatchers, 1)
+      await new Promise((r) => setTimeout(r, 100))
+
+      const updated = await workspaceOps.getScenario(scenario.id)
+      expect(updated!.stage).toBe('captured')
+
+      const eventStore = new EventStore(db)
+      const events = await eventStore.getEvents()
+      const revisitEvent = events.find(e => e.type === 'scenario:revisited')
+      expect(revisitEvent).toBeDefined()
+      expect(revisitEvent!.data.scenarioId).toBe(scenario.id)
+    })
+
+    it('strips fields on backward move through agent', async () => {
+      const scenario = await workspaceOps.captureScenario({ behavior: 'test strip' })
+      // Advance to implemented (sets confirmedBy and domainOperation)
+      await workspaceOps.advanceScenario(scenario.id, { rationale: 'a', promotedBy: 'dev' })
+      await workspaceOps.confirmScenario(scenario.id, 'human')
+      await workspaceOps.advanceScenario(scenario.id, { rationale: 'b', promotedBy: 'dev' })
+      await workspaceOps.advanceScenario(scenario.id, { rationale: 'c', promotedBy: 'dev' })
+      await workspaceOps.linkToDomain(scenario.id, { domainOperation: 'test.op', testNames: ['test1'] })
+      await workspaceOps.advanceScenario(scenario.id, { rationale: 'd', promotedBy: 'dev' })
+
+      const dispatchers = createMockDispatchers([
+        JSON.stringify({
+          action: 'revisit_scenario',
+          scenarioId: scenario.id,
+          targetStage: 'captured',
+          rationale: 'complete rethink',
+        }),
+      ])
+
+      const network = new AgentNetwork(db, dispatchers, workspaceOps, config)
+      await network.start('test goal')
+      await waitForSupervisorCalls(dispatchers, 1)
+      await new Promise((r) => setTimeout(r, 100))
+
+      const updated = await workspaceOps.getScenario(scenario.id)
+      expect(updated!.stage).toBe('captured')
+      expect(updated!.confirmedBy).toBeUndefined()
+      expect(updated!.domainOperation).toBeUndefined()
+      expect(updated!.testNames).toBeUndefined()
+    })
+
+    it('logs revisit:blocked for non-existent scenario', async () => {
+      const dispatchers = createMockDispatchers([
+        JSON.stringify({
+          action: 'revisit_scenario',
+          scenarioId: 'nonexistent',
+          targetStage: 'captured',
+          rationale: 'test',
+        }),
+      ])
+
+      const network = new AgentNetwork(db, dispatchers, workspaceOps, config)
+      await network.start('test goal')
+      await waitForSupervisorCalls(dispatchers, 1)
+      await new Promise((r) => setTimeout(r, 100))
+
+      const eventStore = new EventStore(db)
+      const events = await eventStore.getEvents()
+      const blocked = events.find(e => e.type === 'revisit:blocked')
+      expect(blocked).toBeDefined()
+    })
+
+    it('logs revisit:blocked for same or later stage', async () => {
+      const scenario = await workspaceOps.captureScenario({ behavior: 'test' })
+
+      const dispatchers = createMockDispatchers([
+        JSON.stringify({
+          action: 'revisit_scenario',
+          scenarioId: scenario.id,
+          targetStage: 'mapped',
+          rationale: 'test',
+        }),
+      ])
+
+      const network = new AgentNetwork(db, dispatchers, workspaceOps, config)
+      await network.start('test goal')
+      await waitForSupervisorCalls(dispatchers, 1)
+      await new Promise((r) => setTimeout(r, 100))
+
+      const eventStore = new EventStore(db)
+      const events = await eventStore.getEvents()
+      const blocked = events.find(e => e.type === 'revisit:blocked')
+      expect(blocked).toBeDefined()
+    })
+  })
 })

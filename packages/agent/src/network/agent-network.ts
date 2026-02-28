@@ -254,6 +254,9 @@ export class AgentNetwork {
       case 'update_scenario':
         await this.handleUpdateScenario(decision)
         break
+      case 'revisit_scenario':
+        await this.handleRevisitScenario(decision)
+        break
       case 'stop':
         await this.handleStop(decision)
         break
@@ -394,6 +397,32 @@ export class AgentNetwork {
       scenarioId: decision.scenarioId,
       updates: decision.updates,
     })
+  }
+
+  private async handleRevisitScenario(
+    decision: Extract<SupervisorDecision, { action: 'revisit_scenario' }>,
+  ): Promise<void> {
+    try {
+      const scenario = await this.workspaceOps.getScenario(decision.scenarioId)
+      const fromStage = scenario?.stage ?? 'unknown'
+
+      await this.workspaceOps.revisitScenario(decision.scenarioId, {
+        targetStage: decision.targetStage as any,
+        rationale: decision.rationale,
+      })
+
+      await this.logEvent('scenario:revisited', {
+        scenarioId: decision.scenarioId,
+        fromStage,
+        toStage: decision.targetStage,
+        rationale: decision.rationale,
+      })
+    } catch (err) {
+      await this.logEvent('revisit:blocked', {
+        scenarioId: decision.scenarioId,
+        reason: err instanceof Error ? err.message : String(err),
+      })
+    }
   }
 
   private async handleStop(

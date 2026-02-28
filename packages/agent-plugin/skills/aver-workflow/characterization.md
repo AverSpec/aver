@@ -27,6 +27,15 @@ Use `approve(value)` from `@aver/approvals` to capture complex outputs. Approval
 - Are brittle but comprehensive — good for characterization
 - Graduate to named domain assertions as scenarios advance through mapping and specification
 
+## Expressing What You Find
+
+When documenting characterized behavior, describe it in **domain language**:
+
+- **Good**: "Tasks with empty titles are rejected" (business constraint)
+- **Bad**: "TaskValidator.validate() throws when title.length === 0" (implementation detail)
+
+Implementation details (which function, which line, which table) go in **seams**. The behavioral description should read like something a product owner would recognize.
+
 ## From Characterization to Specification
 
 Characterization tests document what the system DOES. They become evidence for the mapping session, where the human confirms whether the behavior is intended. Behaviors confirmed as intended feed into specification (naming vocabulary). Behaviors identified as bugs become new scenarios for correction.

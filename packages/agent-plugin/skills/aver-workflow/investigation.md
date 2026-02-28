@@ -10,7 +10,7 @@ An existing system has behavior that is unknown, undocumented, or untested. Buil
 
 1. Trace the code path from entry point (route, event listener, UI component) to effect (database write, API response, DOM update)
 2. Identify seams where tests can attach
-3. Note constraints that shape the behavior (schemas, validation, config)
+3. Note constraints that shape the behavior — express these as **business rules in domain language** (see Output section for format)
 4. Capture current behavior with approval tests as evidence
 5. Record findings as artifacts
 
@@ -59,7 +59,19 @@ Present uncertain items prominently. They become the starting agenda for the map
 A characterized scenario has:
 - Execution path documented (entry point through to effect)
 - Seams identified with test attachment strategy
-- Constraints framed as business rules in domain language (e.g., "a task must have a title"), not implementation details (e.g., "validation in TaskService.create()"). Implementation locations belong in seams, not constraints.
+- Constraints framed as **business rules in domain language**, not implementation details. Implementation locations belong in **seams**, not constraints.
+
+**Good constraints** (domain language — what a product owner would say):
+- "A task must have a title"
+- "New tasks default to the 'todo' stage"
+- "A human must confirm intent before domain design begins"
+
+**Bad constraints** (implementation details — what a developer would grep for):
+- "Validation in TaskService.create() checks title is non-empty"
+- "Default status set in database migration 003"
+- "confirmedBy field must be non-falsy string"
+
+The implementation details go in **seams** — that's where you document which function validates, which table stores, which config controls the behavior.
 - Approval baselines captured as evidence
 - Confidence level for each finding
 - Questions posted for anything requiring human judgment
@@ -87,4 +99,4 @@ Approval tests are a starting point, not a destination. As scenarios advance thr
 - **Skipping seam analysis.** Without seams, tests require the full system running. Find the narrowest seam that exercises the behavior.
 - **Presenting findings without confidence levels.** The human needs to know which findings are solid vs speculative.
 
-> **Human interaction:** In the CycleEngine, set `suggestedNext` to describe what needs human input — the supervisor will issue `ask_user`. In Claude Code, interact directly or use `add_question` MCP tool.
+> **Human interaction:** Present findings directly and wait for confirmation. Use `add_question`/`resolve_question` MCP tools for async questions.

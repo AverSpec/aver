@@ -41,7 +41,36 @@ At least two per rule — one satisfying, one violating. Each has three parts:
 
 Any ambiguity becomes a question, not a guess. Use `add_question` MCP tool to attach questions to the scenario. Do NOT resolve questions by fabricating answers.
 
-### 5. Resolve or defer
+### 5. Persist rules and examples on the scenario
+
+Use `update_scenario` to save rules and examples directly on the scenario object. This is the durable record — not rationale text, not session notes.
+
+```
+Call update_scenario with:
+  id: "<scenario ID>"
+  rules: [
+    "A task must have a title",
+    "New tasks default to the 'todo' stage",
+    "Task titles must be unique within a board"
+  ]
+  examples: [
+    {
+      description: "Empty title rejected",
+      given: "No title provided",
+      expectedOutcome: "Rejected with 'title is required'"
+    },
+    {
+      description: "Valid task created with default stage",
+      given: "Title 'Fix bug' with no stage specified",
+      expectedOutcome: "Task exists in 'todo' stage"
+    }
+  ]
+```
+
+Rules are **business constraints in domain language** — what a product owner would say.
+Examples read like **Example Mapping cards** with Given/When/Then in domain language.
+
+### 6. Resolve or defer
 
 Questions the human answers immediately: resolve with `resolve_question` and refine rules/examples. Questions needing more investigation: leave open. The scenario cannot advance until all questions are resolved.
 
@@ -94,8 +123,9 @@ Do NOT finalize vocabulary names during mapping. That happens in specification w
 ## Advancement to `mapped`
 
 Prerequisites:
-1. All questions on the scenario are resolved
-2. The human confirms the rules and examples reflect their intent
+1. Rules and examples saved on the scenario via `update_scenario`
+2. All questions on the scenario are resolved
+3. The human confirms the rules and examples reflect their intent
 
 **ALWAYS confirm with the human before advancing to `mapped`.** Present rules, examples, and proposed scope. Wait for explicit approval.
 
@@ -108,4 +138,4 @@ Prerequisites:
 - **Batching too many proposals.** Present 1-3 items at a time. Prioritize uncertain items. Large batches cause rubber-stamping.
 - **Advancing without human confirmation.** The `mapped` stage means the human has confirmed intent. Never auto-advance.
 
-> **Human interaction:** In the CycleEngine, set `suggestedNext` to describe what the supervisor should present to the human. In Claude Code, interact directly or use `add_question`/`resolve_question` MCP tools.
+> **Human interaction:** Present rules and examples directly and wait for explicit confirmation before advancing. Use `add_question`/`resolve_question` MCP tools for async questions.

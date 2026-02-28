@@ -70,4 +70,4 @@ The domain file and adapter handlers are written during the `implemented` stage,
 - **Skipping adapter interface review.** The adapter interface is where domain meets protocol. Verify handler shapes.
 - **Implementing during specification.** This stage defines WHAT to build. The inner loop handles HOW.
 
-> **Human interaction:** In the CycleEngine, set `suggestedNext` to request vocabulary approval. In Claude Code, present the proposal directly and wait for confirmation.
+> **Human interaction:** Present the proposed vocabulary directly and wait for explicit confirmation before writing any domain code.

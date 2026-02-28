@@ -18,4 +18,5 @@ export interface TraceEntry {
   attachments?: TraceAttachment[]
   metadata?: Record<string, unknown>
   correlationId?: string
+  domainName?: string
 }

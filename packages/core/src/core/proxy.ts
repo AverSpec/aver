@@ -55,6 +55,7 @@ function buildKindProxy(
   calledOps: CalledOps | undefined,
   correlationId: string | undefined,
   clock: Clock,
+  domainName?: string,
 ): any {
   const proxy: any = {}
 
@@ -71,7 +72,7 @@ function buildKindProxy(
           : getAdapter().handlers.assertions
 
       const handler = (handlers as any)[name]
-      const entry: TraceEntry = { kind, category, name, payload, status: 'pass', startAt: clock(), correlationId }
+      const entry: TraceEntry = { kind, category, name, payload, status: 'pass', startAt: clock(), correlationId, domainName }
 
       try {
         const result = await handler(getCtx(), payload)
@@ -102,12 +103,13 @@ export function createProxies<D extends Domain>(
   calledOps?: CalledOps,
   correlationId?: string,
   clock: Clock = Date.now,
+  domainName?: string,
 ): Proxies<D> {
   const actionNames = Object.keys(domain.vocabulary.actions)
   const queryNames = Object.keys(domain.vocabulary.queries)
   const assertionNames = Object.keys(domain.vocabulary.assertions)
 
-  const args = [getCtx, getAdapter, trace, calledOps, correlationId, clock] as const
+  const args = [getCtx, getAdapter, trace, calledOps, correlationId, clock, domainName] as const
 
   const act = buildKindProxy('action', 'act', actionNames, ...args)
   const given = buildKindProxy('action', 'given', actionNames, ...args)

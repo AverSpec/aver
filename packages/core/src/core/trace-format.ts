@@ -30,9 +30,29 @@ export function formatTrace(trace: TraceEntry[], domainName: string): string {
       const errorStr = e.status === 'fail' && e.error
         ? ` — ${(e.error as Error).message ?? e.error}`
         : ''
-      return `  ${icon} ${label} ${domainName}.${e.name}(${payloadStr})${durationStr}${errorStr}`
+      const effectiveDomain = e.domainName ?? domainName
+      return `  ${icon} ${label} ${effectiveDomain}.${e.name}(${payloadStr})${durationStr}${errorStr}`
     })
     .join('\n')
+}
+
+export function enhanceComposedWithTrace(
+  error: unknown,
+  trace: TraceEntry[],
+  protocolNames: string[],
+): Error {
+  if (trace.length === 0) {
+    return error instanceof Error ? error : new Error(String(error))
+  }
+  const traceStr = formatTrace(trace, 'unknown')
+  const header = protocolNames.length > 0
+    ? `Action trace (${protocolNames.join(', ')}):`
+    : 'Action trace:'
+  const enhanced = new Error(
+    `${(error as Error).message}\n\n${header}\n${traceStr}`
+  )
+  enhanced.cause = error
+  return enhanced
 }
 
 export function enhanceWithTrace(error: unknown, trace: TraceEntry[], domain: Domain, protocolName?: string): Error {

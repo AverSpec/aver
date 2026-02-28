@@ -65,6 +65,7 @@ jobs:
           name: build-artifacts
 
       - name: Test core
+        if: ${{ !cancelled() }}
         run: pnpm exec vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/aver.xml
         working-directory: packages/core
 
@@ -82,6 +83,11 @@ jobs:
         if: ${{ !cancelled() }}
         run: pnpm exec vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/mcp-server.xml
         working-directory: packages/mcp-server
+
+      - name: Test protocol-http
+        if: ${{ !cancelled() }}
+        run: pnpm exec vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/protocol-http.xml
+        working-directory: packages/protocol-http
 
       - name: Upload fast test results
         if: ${{ !cancelled() }}
@@ -125,10 +131,6 @@ jobs:
 
       - name: Install Playwright
         run: pnpm exec playwright install --with-deps chromium
-
-      - name: Test protocol-http
-        run: pnpm exec vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/protocol-http.xml
-        working-directory: packages/protocol-http
 
       - name: Test protocol-playwright
         if: ${{ !cancelled() }}

@@ -392,11 +392,18 @@ export class AgentNetwork {
   private async handleUpdateScenario(
     decision: Extract<SupervisorDecision, { action: 'update_scenario' }>,
   ): Promise<void> {
-    // For now, log the update request. Full scenario mutation API comes later.
-    await this.logEvent('scenario:update_requested', {
-      scenarioId: decision.scenarioId,
-      updates: decision.updates,
-    })
+    try {
+      await this.workspaceOps.updateScenario(decision.scenarioId, decision.updates)
+      await this.logEvent('scenario:updated', {
+        scenarioId: decision.scenarioId,
+        fields: Object.keys(decision.updates),
+      })
+    } catch (err) {
+      await this.logEvent('scenario:update_failed', {
+        scenarioId: decision.scenarioId,
+        reason: err instanceof Error ? err.message : String(err),
+      })
+    }
   }
 
   private async handleRevisitScenario(

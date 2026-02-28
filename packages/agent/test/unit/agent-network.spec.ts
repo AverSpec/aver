@@ -362,6 +362,30 @@ describe('AgentNetwork', () => {
       expect(blocked).toBeDefined()
     })
 
+    it('update_scenario mutates scenario via WorkspaceOps', async () => {
+      // Create a scenario
+      await workspaceOps.captureScenario({ behavior: 'original behavior' })
+      const [scenario] = await workspaceOps.getScenarios()
+
+      const dispatchers = createMockDispatchers([
+        JSON.stringify({
+          action: 'update_scenario',
+          scenarioId: scenario.id,
+          updates: { behavior: 'updated behavior', rules: ['rule 1'] },
+        }),
+        '{"action":"stop","reason":"done"}',
+      ])
+
+      const network = new AgentNetwork(db, dispatchers, workspaceOps, config)
+      await network.start('test goal')
+
+      await vi.waitFor(async () => {
+        const updated = await workspaceOps.getScenario(scenario.id)
+        expect(updated!.behavior).toBe('updated behavior')
+        expect(updated!.rules).toEqual(['rule 1'])
+      })
+    })
+
     it('ask_human calls onQuestion callback', async () => {
       const onQuestion = vi.fn(async () => 'Yes, proceed')
       const dispatchers = createMockDispatchers([

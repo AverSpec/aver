@@ -1,16 +1,17 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
-import { readFileSync, existsSync } from 'node:fs'
-import { resolve } from 'node:path'
 import { execSync } from 'node:child_process'
 import { setDefaultProvider, resetDefaultProvider, judge } from '../../../src/eval/judge.js'
 import { agentSdkProvider } from '../../../src/eval/providers/agent-sdk.js'
+import { buildWorkerPrompts } from '../../../src/worker/prompt.js'
+import { loadSkill } from '../../../src/worker/skill-loader.js'
+import { createSdkDispatchers } from '../../../src/network/sdk-dispatchers.js'
 
 /**
  * Integration tests that call a real LLM judge via the Claude Agent SDK.
  *
  * These tests:
  * 1. Verify the eval pipeline works end-to-end with a real LLM
- * 2. Evaluate the agent's prompt-analysis artifact from the dogfood run
+ * 2. Dispatch a real worker to investigate a target file, then judge the output
  *
  * Requires: Claude Code installed (uses SDK auth, not ANTHROPIC_API_KEY)
  */
@@ -53,46 +54,59 @@ describe('real judge pipeline', () => {
     expect(verdict.reasoning).toBeTruthy()
   }, 60_000)
 
-  const artifactPath = resolve(__dirname, '../../../../.aver/agent/artifacts/prompt-analysis.md')
-  const hasArtifact = existsSync(artifactPath)
-
-  describe.skipIf(!hasArtifact)('dogfood artifact evaluation', () => {
+  describe('investigation artifact evaluation', () => {
     let artifactContent: string
 
-    beforeAll(() => {
-      artifactContent = readFileSync(artifactPath, 'utf-8')
-    })
+    beforeAll(async () => {
+      const skillResult = await loadSkill('investigation')
+      const skillContent = 'content' in skillResult ? skillResult.content : undefined
 
-    it('artifact identifies concrete findings with evidence', async () => {
+      const { systemPrompt, userPrompt } = buildWorkerPrompts({
+        goal: 'Investigate packages/agent/src/eval/judge.ts — trace code path, identify seams, note constraints, report confidence levels.',
+        skill: 'investigation',
+        permissionLevel: 'read_only',
+        observationBlock: '',
+      }, skillContent)
+
+      const dispatchers = createSdkDispatchers({
+        claudeExecutablePath: claudePath,
+        maxWorkerTurns: 5,
+        timeouts: { workerTurnMs: 30_000, workerTotalMs: 120_000 },
+      })
+      const result = await dispatchers.workerDispatch(systemPrompt, userPrompt)
+      artifactContent = result.response
+    }, 180_000)
+
+    it('identifies concrete findings with evidence', async () => {
       const rubric =
-        'The analysis identifies at least 3 concrete findings about LLM prompt quality, each with evidence from the source code (file paths, line references, or code snippets).'
+        'The analysis identifies at least 2 concrete findings about the code, each with evidence (file paths, line references, or code snippets).'
 
       const verdict = await judge(artifactContent, rubric)
       expect(verdict.pass).toBe(true)
       expect(verdict.reasoning).toBeTruthy()
     }, 60_000)
 
-    it('artifact provides actionable recommendations', async () => {
+    it('provides actionable recommendations', async () => {
       const rubric =
-        'The analysis provides specific, actionable recommendations that a developer could implement without further clarification. Recommendations should include what to change and where.'
+        'The analysis provides specific, actionable recommendations that a developer could implement without further clarification.'
 
       const verdict = await judge(artifactContent, rubric)
       expect(verdict.pass).toBe(true)
       expect(verdict.reasoning).toBeTruthy()
     }, 60_000)
 
-    it('artifact covers both supervisor and worker prompts', async () => {
+    it('identifies seams for test attachment', async () => {
       const rubric =
-        'The analysis covers BOTH the supervisor prompt (supervisor/prompt.ts) and the worker prompt (worker/prompt.ts), with findings specific to each.'
+        'The analysis identifies at least one seam where tests can attach, describing the seam type and test attachment strategy.'
 
       const verdict = await judge(artifactContent, rubric)
       expect(verdict.pass).toBe(true)
       expect(verdict.reasoning).toBeTruthy()
     }, 60_000)
 
-    it('artifact identifies the stage-advancement alignment gap', async () => {
+    it('reports confidence levels', async () => {
       const rubric =
-        'The analysis identifies that the supervisor prompt\'s stage advancement criteria do not match the actual verifyAdvancement() hard blocks in the codebase, and flags this as a significant risk.'
+        'Findings include confidence levels (confirmed, inferred, or speculative) as instructed by the investigation skill.'
 
       const verdict = await judge(artifactContent, rubric)
       expect(verdict.pass).toBe(true)

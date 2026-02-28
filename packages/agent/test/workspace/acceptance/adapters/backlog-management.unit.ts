@@ -77,15 +77,16 @@ export const backlogManagementAdapter = implement(backlogManagement, {
         // Resolve title-based references to IDs for after/before
         let afterId = after
         let beforeId = before
-        if (after) {
+        if (after || before) {
           const items = await session.ops.getItems()
-          const match = items.find(i => i.title === after)
-          if (match) afterId = match.id
-        }
-        if (before) {
-          const items = await session.ops.getItems()
-          const match = items.find(i => i.title === before)
-          if (match) beforeId = match.id
+          if (after) {
+            const match = items.find(i => i.title === after)
+            if (match) afterId = match.id
+          }
+          if (before) {
+            const match = items.find(i => i.title === before)
+            if (match) beforeId = match.id
+          }
         }
         await session.ops.moveItem(session.currentItemId, {
           priority: priority as BacklogPriority | undefined,
@@ -182,6 +183,12 @@ export const backlogManagementAdapter = implement(backlogManagement, {
       expect(currentIdx).toBeGreaterThanOrEqual(0)
       expect(otherIdx).toBeGreaterThanOrEqual(0)
       expect(currentIdx).toBeLessThan(otherIdx)
+    },
+
+    itemHasScenarioLink: async (session, { scenarioId }) => {
+      const item = await session.ops.getItem(session.currentItemId)
+      expect(item).toBeDefined()
+      expect(item!.scenarioIds).toContain(scenarioId)
     },
 
     itemDeleted: async (session) => {

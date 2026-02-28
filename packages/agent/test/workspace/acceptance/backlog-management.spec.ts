@@ -87,11 +87,10 @@ describe('Backlog Management', () => {
       await then.itemHasReference({ label: 'Design doc', path: 'docs/design.md' })
     })
 
-    test('linking a scenario to an item', async ({ given, when, then, query }) => {
+    test('linking a scenario to an item', async ({ given, when, then }) => {
       await given.createItem({ title: 'Tracked by scenario' })
       await when.linkScenario({ scenarioId: 'abc123' })
-      // Verify item still exists and the operation succeeded (no error)
-      await then.itemExists({ title: 'Tracked by scenario' })
+      await then.itemHasScenarioLink({ scenarioId: 'abc123' })
     })
   })
 

@@ -23,6 +23,7 @@ export const backlogManagement = defineDomain({
     itemHasPriority: assertion<{ priority: string }>(),
     itemHasReference: assertion<{ label: string; path: string }>(),
     itemRankedBefore: assertion<{ other: string }>(),
+    itemHasScenarioLink: assertion<{ scenarioId: string }>(),
     itemDeleted: assertion<void>(),
     operationFailed: assertion<{ message: string }>(),
   },

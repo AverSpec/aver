@@ -1,6 +1,3 @@
-import { basename } from 'node:path'
-import { homedir } from 'node:os'
-import { join } from 'node:path'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
 import {
@@ -18,40 +15,9 @@ import {
   type Phase,
 } from '@aver/agent'
 import type { ToolsConfig } from './types.js'
+import { setToolsConfig, resolveBasePath, resolveProjectId, getCachedStore } from './workspace-helpers.js'
 
-// --- Path resolution ---
-
-let _config: ToolsConfig | undefined
-
-function resolveBasePath(): string {
-  return _config?.workspaceBasePath ?? process.env.AVER_WORKSPACE_PATH ?? join(homedir(), '.aver', 'workspaces')
-}
-
-function resolveProjectId(): string {
-  return _config?.workspaceProjectId ?? process.env.AVER_PROJECT_ID ?? basename(process.cwd())
-}
-
-// --- Store cache ---
-
-let cachedStore: WorkspaceStore | undefined
-let cachedStoreKey: string | undefined
-
-function getCachedStore(basePath: string, projectId: string): WorkspaceStore {
-  const key = `${basePath}\0${projectId}`
-  if (cachedStore && cachedStoreKey === key) return cachedStore
-  cachedStore = WorkspaceStore.fromPath(basePath, projectId)
-  cachedStoreKey = key
-  return cachedStore
-}
-
-/**
- * Clear the cached WorkspaceStore/WorkspaceOps instance.
- * Called when config is reloaded so stale state is not retained.
- */
-export function clearWorkspaceCache(): void {
-  cachedStore = undefined
-  cachedStoreKey = undefined
-}
+export { clearWorkspaceCache } from './workspace-helpers.js'
 
 // --- Helpers ---
 
@@ -200,7 +166,7 @@ export async function importScenariosHandler(
 const stageEnum = z.enum(['captured', 'characterized', 'mapped', 'specified', 'implemented'])
 
 export function registerWorkspaceTools(server: McpServer, config?: ToolsConfig): void {
-  _config = config
+  setToolsConfig(config)
   server.registerTool(
     'get_scenario_summary',
     {

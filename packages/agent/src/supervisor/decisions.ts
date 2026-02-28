@@ -9,6 +9,7 @@ const VALID_ACTIONS = new Set([
   'ask_human',
   'discuss',
   'update_scenario',
+  'revisit_scenario',
   'stop',
 ])
 
@@ -161,6 +162,32 @@ export function parseDecision(text: string): SupervisorDecision {
           message: 'update_scenario must have an "updates" object',
           field: 'updates',
           actionType: 'update_scenario',
+        })
+      }
+      break
+    case 'revisit_scenario':
+      if (typeof decision.scenarioId !== 'string' || decision.scenarioId.length === 0) {
+        throw new DecisionParseError({
+          type: 'missing_field',
+          message: 'revisit_scenario must have a "scenarioId" string',
+          field: 'scenarioId',
+          actionType: 'revisit_scenario',
+        })
+      }
+      if (typeof decision.targetStage !== 'string' || decision.targetStage.length === 0) {
+        throw new DecisionParseError({
+          type: 'missing_field',
+          message: 'revisit_scenario must have a "targetStage" string',
+          field: 'targetStage',
+          actionType: 'revisit_scenario',
+        })
+      }
+      if (typeof decision.rationale !== 'string' || decision.rationale.length === 0) {
+        throw new DecisionParseError({
+          type: 'missing_field',
+          message: 'revisit_scenario must have a "rationale" string',
+          field: 'rationale',
+          actionType: 'revisit_scenario',
         })
       }
       break

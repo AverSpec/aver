@@ -84,6 +84,31 @@ describe('parseDecision', () => {
     expect(result.action).toBe('update_scenario')
   })
 
+  it('parses revisit_scenario with all required fields', () => {
+    const result = parseDecision('{"action":"revisit_scenario","scenarioId":"abc123","targetStage":"captured","rationale":"needs rethink"}')
+    expect(result).toEqual({
+      action: 'revisit_scenario',
+      scenarioId: 'abc123',
+      targetStage: 'captured',
+      rationale: 'needs rethink',
+    })
+  })
+
+  it('rejects revisit_scenario without scenarioId', () => {
+    expect(() => parseDecision('{"action":"revisit_scenario","targetStage":"captured","rationale":"x"}'))
+      .toThrow(/scenarioId/)
+  })
+
+  it('rejects revisit_scenario without targetStage', () => {
+    expect(() => parseDecision('{"action":"revisit_scenario","scenarioId":"abc","rationale":"x"}'))
+      .toThrow(/targetStage/)
+  })
+
+  it('rejects revisit_scenario without rationale', () => {
+    expect(() => parseDecision('{"action":"revisit_scenario","scenarioId":"abc","targetStage":"captured"}'))
+      .toThrow(/rationale/)
+  })
+
   it('parses stop action', () => {
     const json = JSON.stringify({ action: 'stop', reason: 'All done' })
     const result = parseDecision(json)

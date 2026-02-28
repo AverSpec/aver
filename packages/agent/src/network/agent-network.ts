@@ -20,6 +20,7 @@ export type SupervisorDecision =
   | { action: 'ask_human'; question: string }
   | { action: 'discuss'; message: string; scenarioId?: string }
   | { action: 'update_scenario'; scenarioId: string; updates: Record<string, unknown> }
+  | { action: 'revisit_scenario'; scenarioId: string; targetStage: string; rationale: string }
   | { action: 'stop'; reason?: string }
 
 // --- Dispatchers ---
@@ -64,6 +65,7 @@ const VALID_ACTIONS = new Set([
   'ask_human',
   'discuss',
   'update_scenario',
+  'revisit_scenario',
   'stop',
 ])
 

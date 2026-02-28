@@ -76,18 +76,10 @@ longer tracked — emails are sent asynchronously with no timing guarantee.
 - Test: "cart updates total on quantity change"
 - Test result: FAILING — expected total 29.97 but got 30.00 (rounding changed)
 
-## Two Possible Decisions
-
-Decision A (too far):
-{ "action": "revisit_scenario", "scenarioId": "ghi789", "targetStage": "captured", "rationale": "Test is failing, need to start over from scratch." }
-
-Decision B (right depth):
+## Supervisor Decision
 { "action": "revisit_scenario", "scenarioId": "ghi789", "targetStage": "specified", "rationale": "Test failing due to rounding precision mismatch. The specification needs to clarify rounding rules — the behavior and investigation are still valid." }
-
-## Question
-Which decision demonstrates better revisit depth?
     `
-    const rubric = 'Decision B is the better choice. It targets the nearest stage that addresses the problem (specified) rather than going all the way back to captured. The failing test is a specification-level issue (rounding rules) not a fundamental behavioral issue. Going back to captured would waste all the investigation and confirmation work. The answer should clearly identify Decision B as superior.'
+    const rubric = 'The supervisor decision to revisit is reasonable and targets the right depth. Revisiting to specified (not captured or characterized) is appropriate because the failing test is a specification-level issue (rounding rules), not a fundamental behavioral issue. The behavior and investigation are still valid — only the precision specification needs updating.'
 
     const verdict = await judge(content, rubric)
     expect(verdict.pass).toBe(true)

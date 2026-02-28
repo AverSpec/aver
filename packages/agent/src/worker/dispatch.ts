@@ -19,9 +19,12 @@ const DEFAULT_WORKER_TURN_MS = 180_000
 const DEFAULT_WORKER_TOTAL_MS = 1_800_000
 
 /**
- * Dispatch a worker via the SDK.
- * Builds prompts via buildWorkerPrompts, dispatches via SDK, and returns raw text as summary.
- * Workers no longer return structured JSON — the Observer compresses output into observations.
+ * @deprecated Use `createSdkDispatchers()` from `../network/sdk-dispatchers.js` instead.
+ *
+ * This module builds its own prompts and calls the SDK directly. In the v2
+ * architecture, AgentNetwork owns prompt building and dispatchers are thin
+ * wrappers. This file is retained as reference for prompt structure and
+ * permission handling that may be migrated into AgentNetwork.
  */
 export async function dispatchWorker(
   dispatch: WorkerDispatch,

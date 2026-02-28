@@ -6,6 +6,7 @@ import { runTestsHandler, getFailureDetailsHandler, getTestTraceHandler } from '
 import { describeDomainStructureHandler, describeAdapterStructureHandler, getProjectContextHandler } from './scaffolding.js'
 import { getRunDiffHandler } from './reporting.js'
 import { registerWorkspaceTools } from './workspace.js'
+import { registerBacklogTools } from './backlog.js'
 import { RunStore } from '../runs.js'
 import { reloadConfig } from '../config.js'
 import type { ToolsConfig } from './types.js'
@@ -19,6 +20,7 @@ export function registerTools(server: McpServer, config?: ToolsConfig): void {
   registerScaffoldingTools(server)
   registerReportingTools(server, store)
   registerWorkspaceTools(server, config)
+  registerBacklogTools(server, config)
 }
 
 function registerDomainTools(server: McpServer): void {

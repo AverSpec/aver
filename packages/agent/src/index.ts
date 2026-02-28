@@ -76,6 +76,21 @@ export { detectPhase } from './workspace/phase.js'
 export type { Phase, PhaseName } from './workspace/phase.js'
 export { SafeJsonFile, atomicWriteFile, atomicWriteFileSync, withLock } from './workspace/safe-json-file.js'
 
+// ── Backlog ──────────────────────────────────────────────────────────
+export { BacklogOps } from './workspace/backlog-ops.js'
+export { createBacklogItem } from './workspace/backlog-types.js'
+export type {
+  BacklogItem,
+  BacklogItemReference,
+  BacklogStatus,
+  BacklogPriority,
+  BacklogItemType,
+  BacklogFilter,
+  BacklogSummary,
+  BacklogMoveTarget,
+  BacklogItemUpdateInput,
+} from './workspace/backlog-types.js'
+
 // ── Eval (absorbed from @aver/eval) ─────────────────────────────────
 export { judge, setDefaultProvider, resetDefaultProvider, VerdictSchema, buildJudgePrompt, JUDGE_SYSTEM_PROMPT } from './eval/judge.js'
 export type { Verdict } from './eval/judge.js'

@@ -75,15 +75,18 @@ async function runStart(goal?: string): Promise<void> {
   const store = WorkspaceStore.fromPath(workspacePath, projectId)
   const workspaceOps = new WorkspaceOps(store)
 
-  // Stub dispatchers — real SDK integration is separate work
-  const dispatchers = {
-    supervisorDispatch: async (_sys: string, _user: string) => {
-      return { response: '{"action":"stop","reason":"stub dispatcher — real SDK not yet wired"}', tokenUsage: 0 }
+  const { createSdkDispatchers } = await import('@aver/agent')
+  const dispatchers = createSdkDispatchers({
+    claudeExecutablePath: config.claudeExecutablePath,
+    supervisorModel: config.model.supervisor,
+    workerModel: config.model.worker,
+    maxWorkerTurns: config.cycles.maxWorkerIterations,
+    timeouts: {
+      supervisorTotalMs: config.timeouts?.supervisorCallMs,
+      workerTurnMs: config.timeouts?.workerTurnMs,
+      workerTotalMs: config.timeouts?.workerTotalMs,
     },
-    workerDispatch: async (_sys: string, _user: string) => {
-      return { response: 'stub worker response', tokenUsage: 0 }
-    },
-  }
+  })
 
   const network = new AgentNetwork(db, dispatchers, workspaceOps, {
     supervisorModel: config.model.supervisor,

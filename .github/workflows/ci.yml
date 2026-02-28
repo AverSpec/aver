@@ -64,6 +64,9 @@ jobs:
         with:
           name: build-artifacts
 
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
       - run: mkdir -p test-results
 
       - name: Test core
@@ -80,6 +83,8 @@ jobs:
         if: ${{ !cancelled() }}
         run: pnpm exec vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/agent.xml
         working-directory: packages/agent
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
       - name: Test mcp-server
         if: ${{ !cancelled() }}

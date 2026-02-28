@@ -87,6 +87,9 @@ importers:
       '@libsql/client':
         specifier: ^0.17.0
         version: 0.17.0
+      lexorank:
+        specifier: ^1.0.5
+        version: 1.0.5
       zod:
         specifier: ^4.0.0
         version: 4.3.6
@@ -1585,6 +1588,9 @@ packages:
     resolution: {integrity: sha512-XmOWe7eyHYH14cLdVPoyg+GOH3rYX++KpzrylJwSW98t3Nk+U8XOl8FWKOgwtzdb8lXGf6zYwDUzeHMWfxasyg==}
     engines: {node: '>=6'}
     hasBin: true
+
+  lexorank@1.0.5:
+    resolution: {integrity: sha512-K1B/Yr/gIU0wm68hk/yB0p/mv6xM3ShD5aci42vOwcjof8slG8Kpo3Q7+1WTv7DaRHKWRgLPqrFDt+4GtuFAtA==}
 
   libsql@0.5.22:
     resolution: {integrity: sha512-NscWthMQt7fpU8lqd7LXMvT9pi+KhhmTHAJWUB/Lj6MWa0MKFv0F2V4C6WKKpjCVZl0VwcDz4nOI3CyaT1DDiA==}
@@ -3397,6 +3403,8 @@ snapshots:
   json-schema-typed@8.0.2: {}
 
   json5@2.2.3: {}
+
+  lexorank@1.0.5: {}
 
   libsql@0.5.22:
     dependencies:

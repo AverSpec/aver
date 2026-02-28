@@ -53,6 +53,7 @@
   "dependencies": {
     "@aver/skills": "workspace:^",
     "@libsql/client": "^0.17.0",
+    "lexorank": "^1.0.5",
     "zod": "^4.0.0"
   },
   "peerDependencies": {

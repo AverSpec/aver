@@ -810,7 +810,7 @@ describe('AgentNetwork edge cases', () => {
 
       const eventStore = new EventStore(db)
       const events = await eventStore.getEvents()
-      const updateEvent = events.find((e) => e.type === 'scenario:update_requested')
+      const updateEvent = events.find((e) => e.type === 'scenario:update_failed')
       expect(updateEvent).toBeDefined()
       expect(updateEvent!.data.scenarioId).toBe('some-id')
     })

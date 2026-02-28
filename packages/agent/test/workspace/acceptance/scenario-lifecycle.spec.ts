@@ -79,6 +79,31 @@ describe('Scenario Lifecycle', () => {
     })
   })
 
+  // --- Deletion ---
+
+  describe('deletion', () => {
+    test('deletes a scenario by ID', async ({ given, when, then }) => {
+      await given.captureScenario({ behavior: 'to be deleted' })
+      await then.stageIs({ stage: 'captured' })
+      await when.deleteScenario()
+      await then.scenarioDoesNotExist()
+    })
+
+    test('delete with unknown ID fails', async ({ when, then }) => {
+      // session.scenarioId is empty string — no scenario created
+      await when.deleteScenario()
+      await then.operationFailed({ message: 'Scenario not found' })
+    })
+
+    test('delete removes scenario from workspace', async ({ given, when, then, query }) => {
+      await given.captureScenario({ behavior: 'will be removed' })
+      await then.stageIs({ stage: 'captured' })
+      await when.deleteScenario()
+      const stage = await query.scenarioStage()
+      if (stage !== 'unknown') throw new Error(`Expected unknown, got ${stage}`)
+    })
+  })
+
   // --- Stage Revisit (cd463cbb) ---
 
   describe('revisit', () => {

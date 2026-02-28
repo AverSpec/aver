@@ -88,6 +88,15 @@ export const scenarioLifecycleAdapter = implement(scenarioLifecycle, {
         session.lastError = e
       }
     },
+
+    deleteScenario: async (session) => {
+      try {
+        session.lastError = undefined
+        await session.ops.deleteScenario(session.scenarioId)
+      } catch (e: any) {
+        session.lastError = e
+      }
+    },
   },
 
   queries: {
@@ -181,6 +190,11 @@ export const scenarioLifecycleAdapter = implement(scenarioLifecycle, {
       expect(s!.domainOperation).toBeFalsy()
       expect(s!.testNames?.length ?? 0).toBe(0)
       expect(s!.approvalBaseline).toBeFalsy()
+    },
+
+    scenarioDoesNotExist: async (session) => {
+      const s = await session.ops.getScenario(session.scenarioId)
+      expect(s).toBeUndefined()
     },
 
     transitionRecorded: async (session, { from, to }) => {

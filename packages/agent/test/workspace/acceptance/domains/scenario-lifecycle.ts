@@ -9,6 +9,7 @@ export const scenarioLifecycle = defineDomain({
     advanceScenario: action<{ rationale: string; promotedBy: string }>(),
     confirmScenario: action<{ confirmer: string }>(),
     linkToDomain: action<{ domainOperation?: string; testNames?: string[] }>(),
+    deleteScenario: action(),
   },
   queries: {
     scenarioStage: query<void, string>(),
@@ -29,6 +30,7 @@ export const scenarioLifecycle = defineDomain({
     confirmationPresent: assertion<{ confirmer: string }>(),
     linksCleared: assertion(),
     transitionRecorded: assertion<{ from: string; to: string }>(),
+    scenarioDoesNotExist: assertion(),
     operationFailed: assertion<{ message: string }>(),
   },
 })

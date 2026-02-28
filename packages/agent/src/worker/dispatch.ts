@@ -1,4 +1,5 @@
 import { query } from '@anthropic-ai/claude-agent-sdk'
+import { withAbort } from '../network/with-abort.js'
 import { buildWorkerPrompts, type WorkerPromptInput } from './prompt.js'
 import { loadSkill } from './skill-loader.js'
 import { buildApprovalHook, type PermissionLevel } from '../shell/hooks.js'
@@ -174,75 +175,5 @@ function buildDisallowedTools(permissionLevel: string): string[] {
       return []
     default:
       return [...WRITE_TOOLS, 'Task']
-  }
-}
-
-/**
- * Wraps an async iterable so that iteration aborts when either:
- *   (a) the `totalSignal` fires (overall deadline), or
- *   (b) a single `next()` call takes longer than `turnTimeoutMs`.
- */
-async function* withAbort<T>(
-  iter: AsyncIterable<T>,
-  totalSignal: AbortSignal,
-  turnTimeoutMs: number,
-): AsyncGenerator<T> {
-  if (totalSignal.aborted) {
-    throw totalSignal.reason instanceof Error ? totalSignal.reason : new Error('Worker aborted')
-  }
-
-  const it = iter[Symbol.asyncIterator]()
-
-  try {
-    while (true) {
-      const turnController = new AbortController()
-
-      const onTotalAbort = () =>
-        turnController.abort(
-          totalSignal.reason instanceof Error ? totalSignal.reason : new Error('Worker total timeout'),
-        )
-      if (totalSignal.aborted) {
-        throw totalSignal.reason instanceof Error ? totalSignal.reason : new Error('Worker total timeout')
-      }
-      totalSignal.addEventListener('abort', onTotalAbort, { once: true })
-
-      const turnTimer = setTimeout(() => {
-        turnController.abort(
-          new Error(`Worker turn timed out after ${turnTimeoutMs}ms`),
-        )
-      }, turnTimeoutMs)
-
-      let result: IteratorResult<T>
-      try {
-        result = await Promise.race([
-          it.next(),
-          new Promise<never>((_, reject) => {
-            if (turnController.signal.aborted) {
-              reject(
-                turnController.signal.reason instanceof Error
-                  ? turnController.signal.reason
-                  : new Error('Worker aborted'),
-              )
-              return
-            }
-            const onAbort = () =>
-              reject(
-                turnController.signal.reason instanceof Error
-                  ? turnController.signal.reason
-                  : new Error('Worker aborted'),
-              )
-            turnController.signal.addEventListener('abort', onAbort, { once: true })
-          }),
-        ])
-      } finally {
-        clearTimeout(turnTimer)
-        totalSignal.removeEventListener('abort', onTotalAbort)
-      }
-
-      if (result.done) break
-      yield result.value
-    }
-  } finally {
-    it.return?.()
   }
 }

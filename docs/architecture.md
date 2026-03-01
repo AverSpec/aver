@@ -43,6 +43,8 @@ Domains are the stable center of your test suite. They change only when business
 An adapter implements a domain for a specific protocol. The `implement()` function enforces that every action, query, and assertion declared in the domain is provided.
 
 ```typescript
+import { expect } from 'vitest'
+
 export const unitAdapter = implement(shoppingCart, {
   protocol: unit(() => new Cart()),
   actions: {
@@ -54,8 +56,7 @@ export const unitAdapter = implement(shoppingCart, {
   },
   assertions: {
     hasItems: async (cart, { count }) => {
-      if (cart.items.length !== count)
-        throw new Error(`Expected ${count} items`)
+      expect(cart.items.length).toBe(count)
     },
   },
 })

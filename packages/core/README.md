@@ -15,6 +15,7 @@ npm install @aver/core
 ## Usage
 
 ```typescript
+import { expect } from 'vitest'
 import { defineDomain, action, assertion, implement, unit, suite } from '@aver/core'
 
 const cart = defineDomain({
@@ -27,7 +28,7 @@ const adapter = implement(cart, {
   protocol: unit(() => []),
   actions: { addItem: async (items, { name }) => { items.push(name) } },
   assertions: { hasItems: async (items, { count }) => {
-    if (items.length !== count) throw new Error(`Expected ${count} items`)
+    expect(items.length).toBe(count)
   }},
 })
 

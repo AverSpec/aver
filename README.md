@@ -4,9 +4,9 @@
 [![npm version](https://img.shields.io/npm/v/@aver/core)](https://www.npmjs.com/package/@aver/core)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Domain-driven acceptance testing for TypeScript.
+Write tests once. Run them against unit code, HTTP APIs, and browser UIs — with zero duplication.
 
-Define **what** to test in domain language. Swap **how** via adapters. Same test runs against in-memory objects, HTTP APIs, and browser UI — zero code duplication.
+Aver separates **what** you test from **how** you test it. Define your testing vocabulary in domain language, then swap adapters to run the same tests against any implementation.
 
 ## The Problem
 

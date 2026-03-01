@@ -90,6 +90,19 @@ export async function importJson(
     const existingIds = new Set(target.scenarios.map(s => s.id))
 
     for (const scenario of source.scenarios) {
+      // Validate required fields before importing
+      if (
+        typeof scenario.id !== 'string' || scenario.id === '' ||
+        typeof scenario.behavior !== 'string' || scenario.behavior === '' ||
+        !STAGES.includes(scenario.stage)
+      ) {
+        skipped++
+        if (typeof scenario.id === 'string' && scenario.id !== '') {
+          skippedIds.push(scenario.id)
+        }
+        continue
+      }
+
       if (existingIds.has(scenario.id)) {
         skipped++
         skippedIds.push(scenario.id)

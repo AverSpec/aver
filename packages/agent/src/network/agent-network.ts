@@ -375,8 +375,8 @@ export class AgentNetwork {
       if (this.session) {
         try {
           await this.sessionStore.updateSession(this.session.id, { status: 'paused' })
-        } catch {
-          // Swallow
+        } catch (err) {
+          console.error('[aver] failed to pause session:', err)
         }
       }
     }
@@ -620,8 +620,8 @@ export class AgentNetwork {
     if (this.session) {
       try {
         await this.sessionStore.updateSession(this.session.id, { status: 'error' })
-      } catch {
-        // Swallow
+      } catch (err) {
+        console.error('[aver] failed to update session status:', err)
       }
     }
   }

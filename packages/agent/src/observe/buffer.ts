@@ -86,8 +86,9 @@ export class ObservationBuffer {
       .then((result) => {
         this.buffers.set(k, result)
       })
-      .catch(() => {
+      .catch((err) => {
         // Observation failed — nothing to buffer, just clear state
+        console.error('[aver] observation failed:', err)
       })
       .finally(() => {
         this.buffering.delete(k)

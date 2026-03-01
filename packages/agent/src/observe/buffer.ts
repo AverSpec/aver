@@ -48,6 +48,11 @@ export class ObservationBuffer {
     private config: BufferConfig = DEFAULT_CONFIG,
   ) {}
 
+  /** Compound key to isolate buffer state per (agentId, scope) pair. */
+  private key(agentId: string, scope: string): string {
+    return `${agentId}:${scope}`
+  }
+
   /**
    * Called when new messages arrive. Decides whether to trigger background
    * observation based on interval boundaries and concurrency state.
@@ -58,8 +63,10 @@ export class ObservationBuffer {
     messages: Message[],
     pendingTokens: number,
   ): Promise<void> {
-    // Skip if already buffering for this agent
-    if (this.buffering.has(agentId)) return
+    const k = this.key(agentId, scope)
+
+    // Skip if already buffering for this agent+scope
+    if (this.buffering.has(k)) return
 
     const interval = effectiveInterval(pendingTokens, this.config)
 
@@ -67,23 +74,23 @@ export class ObservationBuffer {
     const currentBoundary = Math.floor(pendingTokens / interval)
 
     // Only trigger if we've crossed a new boundary since the last trigger
-    const lastBoundary = this.lastTriggered.get(agentId) ?? 0
+    const lastBoundary = this.lastTriggered.get(k) ?? 0
     if (currentBoundary <= lastBoundary || currentBoundary === 0) return
 
-    this.lastTriggered.set(agentId, currentBoundary)
-    this.buffering.add(agentId)
+    this.lastTriggered.set(k, currentBoundary)
+    this.buffering.add(k)
 
     // Fire-and-forget: run Observer in the background
     this.observer
       .observe(agentId, scope, messages)
       .then((result) => {
-        this.buffers.set(agentId, result)
+        this.buffers.set(k, result)
       })
       .catch(() => {
         // Observation failed — nothing to buffer, just clear state
       })
       .finally(() => {
-        this.buffering.delete(agentId)
+        this.buffering.delete(k)
       })
   }
 
@@ -93,16 +100,17 @@ export class ObservationBuffer {
    */
   async activate(
     agentId: string,
-    _scope: string,
+    scope: string,
   ): Promise<ObserverResult | null> {
-    const result = this.buffers.get(agentId) ?? null
-    this.buffers.delete(agentId)
-    this.lastTriggered.delete(agentId)
+    const k = this.key(agentId, scope)
+    const result = this.buffers.get(k) ?? null
+    this.buffers.delete(k)
+    this.lastTriggered.delete(k)
     return result
   }
 
-  /** Check if currently buffering for an agent. */
-  isBuffering(agentId: string): boolean {
-    return this.buffering.has(agentId)
+  /** Check if currently buffering for an agent+scope pair. */
+  isBuffering(agentId: string, scope: string): boolean {
+    return this.buffering.has(this.key(agentId, scope))
   }
 }

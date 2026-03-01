@@ -48,8 +48,9 @@ export function enhanceComposedWithTrace(
   const header = protocolNames.length > 0
     ? `Action trace (${protocolNames.join(', ')}):`
     : 'Action trace:'
+  const msg = error instanceof Error ? error.message : String(error)
   const enhanced = new Error(
-    `${(error as Error).message}\n\n${header}\n${traceStr}`
+    `${msg}\n\n${header}\n${traceStr}`
   )
   enhanced.cause = error
   return enhanced
@@ -61,8 +62,9 @@ export function enhanceWithTrace(error: unknown, trace: TraceEntry[], domain: Do
   }
   const traceStr = formatTrace(trace, domain.name)
   const header = protocolName ? `Action trace (${protocolName}):` : 'Action trace:'
+  const msg = error instanceof Error ? error.message : String(error)
   const enhanced = new Error(
-    `${(error as Error).message}\n\n${header}\n${traceStr}`
+    `${msg}\n\n${header}\n${traceStr}`
   )
   enhanced.cause = error
   return enhanced

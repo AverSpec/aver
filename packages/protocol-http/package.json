@@ -38,12 +38,12 @@
     "prepublishOnly": "pnpm run build"
   },
   "peerDependencies": {
-    "@aver/core": "workspace:*"
+    "@aver/core": "workspace:^"
   },
   "devDependencies": {
     "tsup": "^8.0.0",
     "typescript": "^5.7.0",
     "vitest": "^3.0.0",
-    "@aver/core": "workspace:*"
+    "@aver/core": "workspace:^"
   }
 }

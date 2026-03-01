@@ -100,6 +100,21 @@ export interface AdvancementVerification {
   warnings: string[]
 }
 
+export class AdvancementBlockedError extends Error {
+  constructor(
+    public readonly hardBlocks: string[],
+    public readonly verification: AdvancementVerification,
+  ) {
+    super(hardBlocks[0])
+    this.name = 'AdvancementBlockedError'
+  }
+}
+
+export interface RevisitResult {
+  scenario: Scenario
+  clearedFields: string[]
+}
+
 /**
  * Unified advancement verification — single source of truth for all callers.
  * Returns hard blocks (prevent advancement) and warnings (advisory only).
@@ -208,7 +223,7 @@ export class WorkspaceOps {
 
       const verification = verifyAdvancement(scenario, scenario.stage, next)
       if (verification.blocked) {
-        throw new Error(verification.hardBlocks[0])
+        throw new AdvancementBlockedError(verification.hardBlocks, verification)
       }
       warnings = verification.warnings
 
@@ -236,8 +251,9 @@ export class WorkspaceOps {
     return { scenario: advanced, warnings }
   }
 
-  async revisitScenario(id: string, input: RevisitInput): Promise<Scenario> {
+  async revisitScenario(id: string, input: RevisitInput): Promise<RevisitResult> {
     let revisited!: Scenario
+    const clearedFields: string[] = []
     await this.store.mutate(ws => {
       const scenario = ws.scenarios.find(s => s.id === id)
       if (!scenario) throw new Error('Scenario not found: ' + id)
@@ -265,10 +281,14 @@ export class WorkspaceOps {
       // Strip fields owned by stages we're moving past
       // confirmedBy is the gate to 'mapped' (index 2) — clear if target < characterized (index 1)
       if (targetIdx < 1) {
+        if (scenario.confirmedBy !== undefined) clearedFields.push('confirmedBy')
         scenario.confirmedBy = undefined
       }
       // domain links are the gate to 'implemented' (index 4) — clear if target < specified (index 3)
       if (targetIdx < 3) {
+        if (scenario.domainOperation !== undefined) clearedFields.push('domainOperation')
+        if (scenario.testNames !== undefined) clearedFields.push('testNames')
+        if (scenario.approvalBaseline !== undefined) clearedFields.push('approvalBaseline')
         scenario.domainOperation = undefined
         scenario.testNames = undefined
         scenario.approvalBaseline = undefined
@@ -279,7 +299,7 @@ export class WorkspaceOps {
       revisited = scenario
       return ws
     })
-    return revisited
+    return { scenario: revisited, clearedFields }
   }
 
   async deleteScenario(id: string): Promise<void> {
@@ -437,7 +457,7 @@ export class WorkspaceOps {
         results.push({ id, status: 'advanced', scenario, warnings: warnings.length > 0 ? warnings : undefined })
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err)
-        const isBlock = msg.includes('Cannot advance') || msg.includes('confirmedBy is required')
+        const isBlock = err instanceof AdvancementBlockedError
         results.push({ id, status: isBlock ? 'blocked' : 'error', error: msg })
       }
     }
@@ -455,7 +475,7 @@ export class WorkspaceOps {
     const results: BatchRevisitItemResult[] = []
     for (const id of input.ids) {
       try {
-        const scenario = await this.revisitScenario(id, {
+        const { scenario } = await this.revisitScenario(id, {
           targetStage: input.targetStage,
           rationale: input.rationale,
         })

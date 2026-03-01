@@ -150,7 +150,7 @@ describe('workspace tool handlers', () => {
     it('revisits characterized back to captured', async () => {
       const scenario = await captureScenarioHandler({ behavior: 'a' }, dir, projectId)
       await advanceScenarioHandler({ id: scenario.id, rationale: 'advance', promotedBy: 'dev' }, dir, projectId)
-      const revisited = await revisitScenarioHandler({ id: scenario.id, targetStage: 'captured', rationale: 'rethinking' }, dir, projectId)
+      const { scenario: revisited } = await revisitScenarioHandler({ id: scenario.id, targetStage: 'captured', rationale: 'rethinking' }, dir, projectId)
       expect(revisited.stage).toBe('captured')
     })
 

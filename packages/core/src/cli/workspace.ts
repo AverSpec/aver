@@ -37,7 +37,7 @@ interface WorkspaceModule {
     getScenarioSummary(): Promise<ScenarioSummary>
     captureScenario(input: { behavior: string; context?: string; story?: string; mode?: 'observed' | 'intended' }): Promise<any>
     advanceScenario(id: string, opts: { rationale: string; promotedBy: string }): Promise<{ scenario: any; warnings: string[] }>
-    revisitScenario(id: string, opts: { targetStage: string; rationale: string }): Promise<any>
+    revisitScenario(id: string, opts: { targetStage: string; rationale: string }): Promise<{ scenario: any; clearedFields: string[] }>
     confirmScenario(id: string, confirmer: string): Promise<void>
     getScenarios(filter: { stage?: string; keyword?: string }): Promise<ScenarioRow[]>
   }
@@ -166,9 +166,12 @@ async function revisitCommand(store: any, ws: WorkspaceModule, args: string[]): 
   }
 
   const ops = new ws.WorkspaceOps(store)
-  const scenario = await ops.revisitScenario(id, { targetStage: values.to, rationale: values.rationale })
+  const { scenario, clearedFields } = await ops.revisitScenario(id, { targetStage: values.to, rationale: values.rationale })
   console.log(`Revisited: ${scenario.id} -> ${scenario.stage}`)
   console.log(`  Behavior: ${scenario.behavior}`)
+  if (clearedFields.length > 0) {
+    console.log(`  Cleared: ${clearedFields.join(', ')}`)
+  }
 }
 
 async function confirmCommand(store: any, ws: WorkspaceModule, args: string[]): Promise<void> {

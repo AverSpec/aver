@@ -12,6 +12,7 @@ import {
   type AdvanceResult,
   type BatchAdvanceResult,
   type BatchRevisitResult,
+  type RevisitResult,
   type ScenarioSummary,
   type Question,
   type Phase,
@@ -71,7 +72,7 @@ export async function revisitScenarioHandler(
   input: { id: string; targetStage: Stage; rationale: string },
   basePath: string,
   projectId: string,
-): Promise<Scenario> {
+): Promise<RevisitResult> {
   return createOps(basePath, projectId).revisitScenario(input.id, {
     targetStage: input.targetStage,
     rationale: input.rationale,

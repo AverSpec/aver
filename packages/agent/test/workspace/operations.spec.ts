@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { createClient } from '@libsql/client'
-import { WorkspaceOps, verifyAdvancement } from '../../src/workspace/operations'
+import { WorkspaceOps, verifyAdvancement, AdvancementBlockedError } from '../../src/workspace/operations'
 import { WorkspaceStore } from '../../src/workspace/storage'
 import type { Scenario, Stage } from '../../src/workspace/types'
 
@@ -202,7 +202,7 @@ describe('WorkspaceOps', () => {
     it('revisits implemented back to characterized', async () => {
       const scenario = await ops.captureScenario({ behavior: 'test' })
       await advanceToStage(scenario.id, 'implemented')
-      const revisited = await ops.revisitScenario(scenario.id, {
+      const { scenario: revisited } = await ops.revisitScenario(scenario.id, {
         targetStage: 'characterized',
         rationale: 'test started failing after system change'
       })
@@ -284,7 +284,7 @@ describe('WorkspaceOps', () => {
       const scenario = await ops.captureScenario({ behavior: 'test' })
       await advanceToStage(scenario.id, 'implemented')
 
-      await ops.revisitScenario(scenario.id, {
+      const { clearedFields } = await ops.revisitScenario(scenario.id, {
         targetStage: 'specified',
         rationale: 'implementation needs rework',
       })
@@ -292,6 +292,47 @@ describe('WorkspaceOps', () => {
       const updated = await ops.getScenario(scenario.id)
       expect(updated!.domainOperation).toBe('test.op')
       expect(updated!.stage).toBe('specified')
+      expect(clearedFields).toEqual([])
+    })
+
+    it('returns clearedFields listing domain links when stripped', async () => {
+      const scenario = await ops.captureScenario({ behavior: 'test' })
+      await advanceToStage(scenario.id, 'implemented')
+      // Also set testNames so we can verify they appear in clearedFields
+      await ops.linkToDomain(scenario.id, { testNames: ['test [unit]'] })
+
+      const { clearedFields } = await ops.revisitScenario(scenario.id, {
+        targetStage: 'characterized',
+        rationale: 'spec was wrong',
+      })
+
+      expect(clearedFields).toContain('domainOperation')
+      expect(clearedFields).toContain('testNames')
+    })
+
+    it('returns clearedFields listing confirmedBy when stripped', async () => {
+      const scenario = await ops.captureScenario({ behavior: 'test' })
+      await advanceToStage(scenario.id, 'mapped')
+
+      const { clearedFields } = await ops.revisitScenario(scenario.id, {
+        targetStage: 'captured',
+        rationale: 'fundamental rethink needed',
+      })
+
+      expect(clearedFields).toContain('confirmedBy')
+    })
+
+    it('returns empty clearedFields when no fields are cleared', async () => {
+      const scenario = await ops.captureScenario({ behavior: 'test' })
+      await ops.advanceScenario(scenario.id, { rationale: 'a', promotedBy: 'dev' })
+
+      const { clearedFields } = await ops.revisitScenario(scenario.id, {
+        targetStage: 'captured',
+        rationale: 'redo',
+      })
+
+      // characterized -> captured: confirmedBy was never set, so nothing cleared
+      expect(clearedFields).toEqual([])
     })
   })
 
@@ -363,6 +404,68 @@ describe('WorkspaceOps', () => {
       expect(summary.captured).toBe(4)
       expect(summary.openQuestions).toBe(1)
       expect(summary.total).toBe(4)
+    })
+  })
+
+  describe('AdvancementBlockedError', () => {
+    it('advanceScenario throws AdvancementBlockedError for verification failures', async () => {
+      const scenario = await ops.captureScenario({ behavior: 'test' })
+      await ops.advanceScenario(scenario.id, { rationale: 'a', promotedBy: 'dev' })
+      // At characterized, no confirmedBy — should throw AdvancementBlockedError
+      try {
+        await ops.advanceScenario(scenario.id, { rationale: 'b', promotedBy: 'dev' })
+        expect.unreachable('should have thrown')
+      } catch (err) {
+        expect(err).toBeInstanceOf(AdvancementBlockedError)
+        const blocked = err as InstanceType<typeof AdvancementBlockedError>
+        expect(blocked.hardBlocks).toHaveLength(1)
+        expect(blocked.hardBlocks[0]).toContain('confirmedBy')
+        expect(blocked.verification.blocked).toBe(true)
+      }
+    })
+
+    it('advanceScenario throws plain Error for non-verification failures', async () => {
+      try {
+        await ops.advanceScenario('nonexistent', { rationale: 'x', promotedBy: 'dev' })
+        expect.unreachable('should have thrown')
+      } catch (err) {
+        expect(err).not.toBeInstanceOf(AdvancementBlockedError)
+        expect(err).toBeInstanceOf(Error)
+      }
+    })
+  })
+
+  describe('batchAdvance classification', () => {
+    it('classifies blocked scenarios via AdvancementBlockedError', async () => {
+      const s1 = await ops.captureScenario({ behavior: 'test1' })
+      await ops.advanceScenario(s1.id, { rationale: 'a', promotedBy: 'dev' })
+      // s1 is characterized but not confirmed — will be blocked
+
+      const s2 = await ops.captureScenario({ behavior: 'test2' })
+      // s2 is captured — can advance to characterized
+
+      const result = await ops.batchAdvance({
+        ids: [s1.id, s2.id],
+        rationale: 'batch',
+        promotedBy: 'dev',
+      })
+
+      expect(result.summary.blocked).toBe(1)
+      expect(result.summary.advanced).toBe(1)
+      expect(result.results.find(r => r.id === s1.id)!.status).toBe('blocked')
+      expect(result.results.find(r => r.id === s2.id)!.status).toBe('advanced')
+    })
+
+    it('classifies non-existent scenarios as error (not blocked)', async () => {
+      const result = await ops.batchAdvance({
+        ids: ['nonexistent'],
+        rationale: 'batch',
+        promotedBy: 'dev',
+      })
+
+      expect(result.summary.errors).toBe(1)
+      expect(result.summary.blocked).toBe(0)
+      expect(result.results[0].status).toBe('error')
     })
   })
 

@@ -7,7 +7,7 @@ export type { AdvanceInput, AdvanceResult, RevisitInput, RevisitResult, Advancem
 export { exportMarkdown, exportJson, importJson } from './export.js'
 export { detectPhase } from './phase.js'
 export type { Phase, PhaseName } from './phase.js'
-export { SafeJsonFile, atomicWriteFile, atomicWriteFileSync, withLock } from './safe-json-file.js'
+export { atomicWriteFile, atomicWriteFileSync } from './safe-json-file.js'
 
 // Backlog
 export { BacklogOps } from './backlog-ops.js'

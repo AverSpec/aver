@@ -74,7 +74,7 @@ export type { AdvanceInput, AdvanceResult, RevisitInput, RevisitResult, Advancem
 export { exportMarkdown, exportJson, importJson } from './workspace/export.js'
 export { detectPhase } from './workspace/phase.js'
 export type { Phase, PhaseName } from './workspace/phase.js'
-export { SafeJsonFile, atomicWriteFile, atomicWriteFileSync, withLock } from './workspace/safe-json-file.js'
+export { atomicWriteFile, atomicWriteFileSync } from './workspace/safe-json-file.js'
 
 // ── Backlog ──────────────────────────────────────────────────────────
 export { BacklogOps } from './workspace/backlog-ops.js'

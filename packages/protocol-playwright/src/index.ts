@@ -17,7 +17,11 @@ export function playwright(options?: PlaywrightOptions): Protocol<Page> {
   // Track browser-per-page so parallel tests each close their own browser
   const browserForPage = new Map<Page, Browser>()
   const consoleLogs = new WeakMap<Page, string[]>()
-  // Track the most recently created page for the screenshotter extension
+  /**
+   * Module-level active page reference. Overwritten on each setup() call.
+   * Known limitation: parallel tests will race on this variable.
+   * @see https://github.com/njackson/aver/issues — tracked for fix in future release
+   */
   let activePage: Page | undefined
   const artifactsDir = options?.artifactsDir ?? join(process.cwd(), 'test-results', 'aver-artifacts')
   const captureScreenshot = options?.captureScreenshot ?? true

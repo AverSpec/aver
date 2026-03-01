@@ -48,22 +48,21 @@ export function resolveProjectId(): string {
 
 // --- Store cache ---
 
-let cachedStore: WorkspaceStore | undefined
-let cachedStoreKey: string | undefined
+const storeCache = new Map<string, WorkspaceStore>()
 
 export function getCachedStore(basePath: string, projectId: string): WorkspaceStore {
   const key = `${basePath}\0${projectId}`
-  if (cachedStore && cachedStoreKey === key) return cachedStore
-  cachedStore = WorkspaceStore.fromPath(basePath, projectId)
-  cachedStoreKey = key
-  return cachedStore
+  const cached = storeCache.get(key)
+  if (cached) return cached
+  const store = WorkspaceStore.fromPath(basePath, projectId)
+  storeCache.set(key, store)
+  return store
 }
 
 /**
- * Clear the cached WorkspaceStore/WorkspaceOps instance.
+ * Clear the cached WorkspaceStore/WorkspaceOps instances.
  * Called when config is reloaded so stale state is not retained.
  */
 export function clearWorkspaceCache(): void {
-  cachedStore = undefined
-  cachedStoreKey = undefined
+  storeCache.clear()
 }

@@ -105,7 +105,7 @@ export function resetDiscoveryCache(): void {
 function buildImportUrl(filePath: string): string {
   const base = pathToFileURL(filePath).href
   try {
-    const currentMtime = statSync(filePath).mtimeMs
+    const currentMtime = Math.floor(statSync(filePath).mtimeMs)
     const lastMtime = mtimeCache.get(filePath)
     if (lastMtime !== undefined && lastMtime === currentMtime) {
       return base

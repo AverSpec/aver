@@ -416,7 +416,7 @@ export function registerWorkspaceTools(server: McpServer, config?: ToolsConfig):
     {
       description: 'Import scenarios from JSON. Skips scenarios with duplicate IDs.',
       inputSchema: {
-        json: z.string().describe('JSON string of workspace data to import'),
+        json: z.string().max(1_000_000).describe('JSON string of workspace data to import'),
       },
     },
     async (input) => {

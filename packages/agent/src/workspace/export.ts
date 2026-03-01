@@ -69,8 +69,8 @@ export async function importJson(
   let parsed: unknown
   try {
     parsed = JSON.parse(json)
-  } catch {
-    throw new Error('Import failed: input is not valid JSON')
+  } catch (err) {
+    throw new Error('Import failed: input is not valid JSON', { cause: err })
   }
 
   if (

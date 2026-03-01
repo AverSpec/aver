@@ -5,7 +5,7 @@ import { log } from './logger.js'
 export function createServer(): McpServer {
   return new McpServer({
     name: 'aver',
-    version: '0.1.0',
+    version: '0.1.1',
   })
 }
 

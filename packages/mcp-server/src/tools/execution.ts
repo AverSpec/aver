@@ -1,4 +1,7 @@
-import { execFileSync } from 'node:child_process'
+import { execFile } from 'node:child_process'
+import { promisify } from 'node:util'
+
+const execFileAsync = promisify(execFile)
 import type { RunStore, RunData, TestResult } from '../runs.js'
 
 export interface RunSummary {
@@ -30,10 +33,10 @@ export function buildRunSummary(run: RunData): RunSummary {
   }
 }
 
-export function runTestsHandler(
+export async function runTestsHandler(
   store: RunStore,
   opts?: { domain?: string; adapter?: string },
-): RunSummary {
+): Promise<RunSummary> {
   const vitestArgs = ['aver', 'run', '--reporter=json']
 
   const env: Record<string, string> = { ...process.env as Record<string, string> }
@@ -43,13 +46,13 @@ export function runTestsHandler(
   const npx = process.platform === 'win32' ? 'npx.cmd' : 'npx'
   let jsonOutput: string
   try {
-    jsonOutput = execFileSync(npx, vitestArgs, {
+    const { stdout } = await execFileAsync(npx, vitestArgs, {
       env,
       encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'pipe'],
       timeout: 5 * 60 * 1000,
       maxBuffer: 10 * 1024 * 1024,
     })
+    jsonOutput = stdout
   } catch (err: any) {
     if (err.killed) {
       throw new Error('Test run timed out after 5 minutes')

@@ -71,7 +71,7 @@ function registerExecutionTools(server: McpServer, store: RunStore): void {
       },
     },
     async ({ domain, adapter }) => {
-      const summary = runTestsHandler(store, { domain, adapter })
+      const summary = await runTestsHandler(store, { domain, adapter })
       return { content: [{ type: 'text' as const, text: JSON.stringify(summary, null, 2) }] }
     },
   )

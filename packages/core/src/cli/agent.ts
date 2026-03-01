@@ -89,7 +89,6 @@ async function runStart(goal?: string): Promise<void> {
     claudeExecutablePath: config.claudeExecutablePath,
     supervisorModel: config.model.supervisor,
     workerModel: config.model.worker,
-    maxWorkerTurns: config.cycles.maxWorkerIterations,
     timeouts: {
       supervisorTotalMs: config.timeouts?.supervisorCallMs,
       workerTurnMs: config.timeouts?.workerTurnMs,

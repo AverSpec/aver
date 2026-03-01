@@ -15,3 +15,5 @@ export {
 } from './agent-network.js'
 
 export { createSdkDispatchers, type SdkDispatcherConfig } from './sdk-dispatchers.js'
+
+export { type StreamEvent, type RawStreamBlock } from './stream-events.js'

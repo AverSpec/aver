@@ -32,7 +32,7 @@ export type {
   DispatchResult,
   SupervisorDecision,
 } from './network/index.js'
-export type { Trigger, TriggerType } from './network/index.js'
+export type { Trigger, TriggerType, StreamEvent } from './network/index.js'
 export { createSdkDispatchers } from './network/index.js'
 export type { SdkDispatcherConfig } from './network/index.js'
 

@@ -35,4 +35,12 @@ describe('WorkerPanel', () => {
     const { lastFrame } = render(<WorkerPanel workers={workers} />)
     expect(lastFrame()).toContain('stuck')
   })
+
+  it('accepts height and scrollOffset props', () => {
+    const workers: WorkerStatus[] = [
+      { id: 'w-1', goal: 'Test task', skill: 'general', permissionLevel: 'read_only', status: 'running', startedAt: Date.now() },
+    ]
+    const { lastFrame } = render(<WorkerPanel workers={workers} height={20} scrollOffset={0} />)
+    expect(lastFrame()).toContain('Test task')
+  })
 })

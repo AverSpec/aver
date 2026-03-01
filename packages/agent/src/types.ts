@@ -28,7 +28,6 @@ export interface AgentConfig {
   cycles: {
     checkpointInterval: number
     rollupThreshold: number
-    maxWorkerIterations: number
     maxCycleDepth?: number
   }
   /**
@@ -67,7 +66,6 @@ export const DEFAULT_CONFIG: AgentConfig = {
   cycles: {
     checkpointInterval: 10,
     rollupThreshold: 3,
-    maxWorkerIterations: 15,
   },
   timeouts: {
     supervisorCallMs: 120_000,

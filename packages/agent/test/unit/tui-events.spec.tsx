@@ -10,8 +10,8 @@ describe('EventPanel', () => {
     expect(lastFrame()).toContain('Waiting')
   })
 
-  it('shows spinner when running with no events', () => {
-    const { lastFrame } = render(<EventPanel events={[]} phase="running" />)
+  it('shows spinner when supervisor is thinking', () => {
+    const { lastFrame } = render(<EventPanel events={[]} phase="running" supervisorThinking={true} />)
     expect(lastFrame()).toContain('Supervisor analyzing')
   })
 
@@ -24,5 +24,13 @@ describe('EventPanel', () => {
     expect(lastFrame()).toContain('session:start')
     expect(lastFrame()).toContain('worker:created')
     expect(lastFrame()).toContain('Investigate auth')
+  })
+
+  it('accepts height and scrollOffset props', () => {
+    const events: AgentEvent[] = [
+      { id: 'evt-1', type: 'session:start', data: { goal: 'test' }, createdAt: '2026-01-01T10:32:05Z' },
+    ]
+    const { lastFrame } = render(<EventPanel events={events} phase="running" height={20} scrollOffset={0} />)
+    expect(lastFrame()).toContain('session:start')
   })
 })

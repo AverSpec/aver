@@ -155,6 +155,7 @@ describe('AgentNetwork', () => {
         expect.any(String),
         expect.any(String),
         'read_only',
+        undefined, // onStreamMessage callback (not set in this test)
       )
     })
 

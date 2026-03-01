@@ -79,7 +79,7 @@ describe('protocol types', () => {
   it('AgentConfig has auth, model, cycles, dashboard', () => {
     const config: AgentConfig = {
       model: { supervisor: 'claude-sonnet-4-5-20250929', worker: 'claude-opus-4-6' },
-      cycles: { checkpointInterval: 10, rollupThreshold: 3, maxWorkerIterations: 15 },
+      cycles: { checkpointInterval: 10, rollupThreshold: 3 },
       dashboard: { port: 4700 },
     }
     expect(config.cycles.checkpointInterval).toBe(10)

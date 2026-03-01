@@ -4,13 +4,17 @@ import { SessionStore, type Session } from '../db/session-store.js'
 import { EventStore } from '../db/event-store.js'
 import { ObservationStore } from '../db/observation-store.js'
 import { ContextAssembler } from '../context/assembler.js'
-// Observer integration for full observation extraction is deferred to v2.
-// For MVP, worker output is stored as a single observation directly.
+import { Observer, type DispatchFn as ObserverDispatchFn } from '../observe/observer.js'
+import { Reflector } from '../observe/reflector.js'
+import { estimateTokens } from '../db/tokens.js'
 import { TriggerQueue, type Trigger } from './triggers.js'
 import { parseDecision, DecisionParseError } from '../supervisor/decisions.js'
+import { buildSupervisorPrompt, type ActiveWorkerInfo } from '../supervisor/prompt.js'
+import { buildWorkerPrompts } from '../worker/prompt.js'
 import { STAGE_ORDER, type WorkspaceOps } from '../workspace/operations.js'
 import type { Stage } from '../workspace/types.js'
 import type { PermissionLevel } from '../shell/hooks.js'
+import type { StreamEvent, RawStreamBlock } from './stream-events.js'
 
 // --- Decision types (new, simplified) ---
 
@@ -34,7 +38,8 @@ export interface DispatchResult {
 
 export interface Dispatchers {
   supervisorDispatch: (systemPrompt: string, userPrompt: string) => Promise<DispatchResult>
-  workerDispatch: (systemPrompt: string, userPrompt: string, permission: PermissionLevel) => Promise<DispatchResult>
+  workerDispatch: (systemPrompt: string, userPrompt: string, permission: PermissionLevel, onStreamBlock?: (block: RawStreamBlock) => void) => Promise<DispatchResult>
+  observerDispatch?: (systemPrompt: string, userPrompt: string) => Promise<string>
 }
 
 // --- Config ---
@@ -46,11 +51,14 @@ export interface AgentNetworkConfig {
   supervisorModel?: string
   workerModel?: string
   claudeExecutablePath?: string
+  projectContext?: string
 }
 
 export interface AgentNetworkCallbacks {
   onMessage?: (msg: string) => void
   onQuestion?: (question: string) => Promise<string>
+  onStreamEvent?: (event: StreamEvent) => void
+  onSupervisorThinking?: (thinking: boolean) => void
 }
 
 // --- Constants ---
@@ -69,9 +77,12 @@ export class AgentNetwork {
   private readonly contextAssembler: ContextAssembler
   private readonly triggerQueue: TriggerQueue
   private readonly maxCycleDepth: number
+  private readonly observer: Observer | undefined
+  private readonly reflector: Reflector | undefined
 
   private session: Session | undefined
   private supervisorAgent: Agent | undefined
+  private sessionWorkerIds = new Set<string>()
   private cycleDepth = 0
   private stopped = false
 
@@ -92,16 +103,26 @@ export class AgentNetwork {
     })
     this.triggerQueue = new TriggerQueue()
     this.maxCycleDepth = config.maxCycleDepth ?? DEFAULT_MAX_CYCLE_DEPTH
+
+    // Wire Observer + Reflector when observerDispatch is provided
+    if (dispatchers.observerDispatch) {
+      this.observer = new Observer(this.observationStore, dispatchers.observerDispatch)
+      this.reflector = new Reflector(
+        this.observationStore,
+        dispatchers.observerDispatch,
+        { threshold: config.reflectionThreshold ?? DEFAULT_REFLECTION_THRESHOLD },
+      )
+    }
   }
 
-  async start(goal: string): Promise<void> {
+  async start(goal?: string): Promise<void> {
     // 1. Create session
-    this.session = await this.sessionStore.createSession({ goal })
+    this.session = await this.sessionStore.createSession({ goal: goal ?? '' })
 
     // 2. Create supervisor agent
     this.supervisorAgent = await this.agentStore.createAgent({
       role: 'supervisor',
-      goal,
+      goal: goal ?? '',
       model: this.config.supervisorModel,
     })
 
@@ -112,12 +133,12 @@ export class AgentNetwork {
     })
 
     // 4. Log session start
-    await this.logEvent('session:start', { goal, sessionId: this.session.id })
+    await this.logEvent('session:start', { goal: goal ?? '(open session)', sessionId: this.session.id })
 
     // 5. Push session:start trigger (fires wakeSupervisor)
     this.triggerQueue.push({
       type: 'session:start',
-      data: { goal },
+      data: { goal: goal ?? '' },
       timestamp: new Date().toISOString(),
     })
   }
@@ -145,6 +166,15 @@ export class AgentNetwork {
   }
 
   async handleHumanMessage(message: string): Promise<void> {
+    // Persist as a project-scoped critical observation so it survives compression
+    await this.observationStore.addObservation({
+      agentId: this.supervisorAgent?.id ?? 'human',
+      scope: 'project',
+      priority: 'critical',
+      content: `Human message: ${message}`,
+      tokenCount: estimateTokens(`Human message: ${message}`),
+    })
+
     this.triggerQueue.push({
       type: 'human:message',
       data: { message },
@@ -173,23 +203,41 @@ export class AgentNetwork {
       const context = await this.contextAssembler.assembleForSupervisor(supervisorId)
 
       // Gather workspace state
-      const scenarios = await this.workspaceOps.getScenarios()
-      const activeWorkers = await this.agentStore.getActiveWorkers()
+      const scenarios = await this.workspaceOps.getScenarios() as import('../workspace/types.js').Scenario[]
+      const allWorkers = await this.agentStore.getActiveWorkers()
+      const activeWorkers = allWorkers.filter((w) => this.sessionWorkerIds.has(w.id))
 
-      // Build prompts
-      const systemPrompt = this.buildSupervisorSystemPrompt()
-      const userPrompt = this.buildSupervisorUserPrompt(
-        context.observationBlock,
+      // Extract human messages from triggers into the dedicated field
+      const humanMessages = triggers
+        .filter((t) => t.type === 'human:message' && t.data?.message)
+        .map((t) => t.data!.message as string)
+      const humanMessage = humanMessages.length > 0 ? humanMessages.join('\n\n') : undefined
+
+      // Build prompts using the rich builder
+      const workerInfos: ActiveWorkerInfo[] = activeWorkers.map((w) => ({
+        id: w.id,
+        goal: w.goal,
+        skill: w.skill,
+        status: w.status,
+        scenarioId: w.scenarioId,
+      }))
+
+      const { system: systemPrompt, user: userPrompt } = buildSupervisorPrompt({
+        projectContext: this.config.projectContext ?? '',
+        observations: context.observationBlock,
         scenarios,
-        activeWorkers,
+        activeWorkers: workerInfos,
         triggers,
-      )
+        humanMessage,
+      })
 
       // Dispatch
+      this.callbacks.onSupervisorThinking?.(true)
       const { response, tokenUsage } = await this.dispatchers.supervisorDispatch(
         systemPrompt,
         userPrompt,
       )
+      this.callbacks.onSupervisorThinking?.(false)
 
       // Update token usage
       if (this.session) {
@@ -285,6 +333,7 @@ export class AgentNetwork {
       scenarioId: decision.scenarioId,
       model: decision.model ?? this.config.workerModel,
     })
+    this.sessionWorkerIds.add(worker.id)
 
     await this.logEvent('worker:created', {
       agentId: worker.id,
@@ -351,6 +400,8 @@ export class AgentNetwork {
   private async handleAskHuman(
     decision: Extract<SupervisorDecision, { action: 'ask_human' }>,
   ): Promise<void> {
+    await this.logEvent('supervisor:message', { message: decision.question, type: 'ask_human' })
+
     if (this.callbacks.onMessage) {
       this.callbacks.onMessage(decision.question)
     }
@@ -385,6 +436,8 @@ export class AgentNetwork {
   private async handleDiscuss(
     decision: Extract<SupervisorDecision, { action: 'discuss' }>,
   ): Promise<void> {
+    await this.logEvent('supervisor:message', { message: decision.message, type: 'discuss' })
+
     // Always deliver the message
     if (this.callbacks.onMessage) {
       this.callbacks.onMessage(decision.message)
@@ -491,18 +544,38 @@ export class AgentNetwork {
       const scenarioId = worker.scenarioId ?? 'default'
       const context = await this.contextAssembler.assembleForWorker(worker.id, scenarioId)
 
-      const systemPrompt = `You are a worker agent. Skill: ${worker.skill ?? 'general'}. Permission: ${worker.permission ?? 'read_only'}.`
-      const userPrompt = [
-        context.observationBlock ? `## Observations\n${context.observationBlock}\n` : '',
-        `## Goal\n${worker.goal}`,
-      ]
-        .filter(Boolean)
-        .join('\n')
+      // Use rich worker prompt builder
+      const { systemPrompt, userPrompt } = buildWorkerPrompts({
+        goal: worker.goal,
+        observationBlock: context.observationBlock,
+        permissionLevel: worker.permission ?? 'read_only',
+        skill: worker.skill ?? 'general',
+      })
+
+      // Bridge streaming: wrap raw blocks with worker.id to produce StreamEvents
+      const onStreamBlock = this.callbacks.onStreamEvent
+        ? (block: RawStreamBlock) => {
+            let event: StreamEvent
+            switch (block.type) {
+              case 'text':
+                event = { type: 'worker:text', workerId: worker.id, text: block.text }
+                break
+              case 'tool_use':
+                event = { type: 'worker:tool_use', workerId: worker.id, tool: block.tool, input: block.input }
+                break
+              case 'tool_result':
+                event = { type: 'worker:tool_result', workerId: worker.id, tool: block.tool, output: block.output }
+                break
+            }
+            this.callbacks.onStreamEvent!(event)
+          }
+        : undefined
 
       const { response, tokenUsage } = await this.dispatchers.workerDispatch(
         systemPrompt,
         userPrompt,
         (worker.permission as PermissionLevel) ?? 'read_only',
+        onStreamBlock,
       )
 
       // Update token usage
@@ -515,14 +588,27 @@ export class AgentNetwork {
         }
       }
 
-      // For MVP, store the worker response as a single observation directly
-      await this.observationStore.addObservation({
-        agentId: worker.id,
-        scope: worker.scenarioId ? `scenario:${worker.scenarioId}` : `agent:${worker.id}`,
-        priority: 'important',
-        content: response.slice(0, 2000), // truncate for safety
-        tokenCount: Math.ceil(response.length / 4),
-      })
+      // Store worker output as observations
+      const scope = worker.scenarioId ? `scenario:${worker.scenarioId}` : `agent:${worker.id}`
+      if (this.observer) {
+        // Use Observer for structured observation extraction
+        await this.observer.observe(worker.id, scope, [
+          { role: 'assistant', content: response },
+        ])
+        // Check if Reflector should compress
+        if (this.reflector) {
+          await this.reflector.reflect(scope)
+        }
+      } else {
+        // Fallback: store as a single observation (preserves existing test behavior)
+        await this.observationStore.addObservation({
+          agentId: worker.id,
+          scope,
+          priority: 'important',
+          content: response.slice(0, 2000),
+          tokenCount: estimateTokens(response.slice(0, 2000)),
+        })
+      }
 
       await this.agentStore.updateAgent(worker.id, { status: 'idle' })
 
@@ -554,49 +640,6 @@ export class AgentNetwork {
         timestamp: new Date().toISOString(),
       })
     }
-  }
-
-  // --- Prompt building ---
-
-  private buildSupervisorSystemPrompt(): string {
-    return [
-      'You are the supervisor agent for an Aver acceptance-testing session.',
-      'Respond with a single JSON object containing an "action" field.',
-      'Valid actions: create_worker, assign_goal, terminate_worker, advance_scenario, ask_human, discuss, update_scenario, revisit_scenario, stop',
-      '',
-      'Examples:',
-      '  {"action":"create_worker","goal":"Investigate login flow","skill":"investigation","permission":"read_only"}',
-      '  {"action":"advance_scenario","scenarioId":"abc-123","rationale":"All criteria met"}',
-      '  {"action":"discuss","message":"I\'d like to explore the auth requirements. What methods do your users use to log in?","scenarioId":"sc-1"}',
-      '  {"action":"stop","reason":"All scenarios implemented"}',
-    ].join('\n')
-  }
-
-  private buildSupervisorUserPrompt(
-    observationBlock: string,
-    scenarios: unknown[],
-    activeWorkers: Agent[],
-    triggers: Trigger[],
-  ): string {
-    const parts: string[] = []
-
-    if (observationBlock) {
-      parts.push(`## Observations\n${observationBlock}`)
-    }
-
-    parts.push(`## Workspace\n${JSON.stringify(scenarios, null, 2)}`)
-
-    if (activeWorkers.length > 0) {
-      parts.push(
-        `## Active Workers\n${activeWorkers.map((w) => `- ${w.id}: ${w.goal} (${w.status})`).join('\n')}`,
-      )
-    }
-
-    parts.push(
-      `## Triggers\n${triggers.map((t) => `- ${t.type}${t.data ? ': ' + JSON.stringify(t.data) : ''}`).join('\n')}`,
-    )
-
-    return parts.join('\n\n')
   }
 
   // --- Utilities ---

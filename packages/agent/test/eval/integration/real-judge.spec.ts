@@ -70,7 +70,6 @@ describe('real judge pipeline', () => {
 
       const dispatchers = createSdkDispatchers({
         claudeExecutablePath: claudePath,
-        maxWorkerTurns: 15,
       })
       const result = await dispatchers.workerDispatch(systemPrompt, userPrompt, 'read_only')
       artifactContent = result.response

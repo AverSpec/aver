@@ -93,7 +93,7 @@ export async function dispatchWorker(
         model: config.model.worker,
         systemPrompt,
         disallowedTools,
-        maxTurns: config.cycles.maxWorkerIterations,
+        maxTurns: 500,
         canUseTool,
         persistSession: false,
         ...(config.claudeExecutablePath && { pathToClaudeCodeExecutable: config.claudeExecutablePath }),

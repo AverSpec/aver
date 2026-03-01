@@ -28,6 +28,9 @@ export function useEngine(options: EngineHookOptions) {
   const dbRef = useRef<Client | null>(null)
   const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const lastEventCountRef = useRef(0)
+  const lastWorkerCountRef = useRef(0)
+  const lastScenarioCountRef = useRef(0)
+  const sessionStartRef = useRef<string | null>(null)
 
   // Cleanup on unmount
   useEffect(() => {
@@ -56,7 +59,6 @@ export function useEngine(options: EngineHookOptions) {
           claudeExecutablePath: options.config.claudeExecutablePath,
           supervisorModel: options.config.model.supervisor,
           workerModel: options.config.model.worker,
-          maxWorkerTurns: options.config.cycles.maxWorkerIterations,
           timeouts: {
             supervisorTotalMs: options.config.timeouts?.supervisorCallMs,
             workerTurnMs: options.config.timeouts?.workerTurnMs,
@@ -80,6 +82,12 @@ export function useEngine(options: EngineHookOptions) {
           onQuestion: async (question: string) => {
             return onQuestion(question)
           },
+          onStreamEvent: (event) => {
+            dispatch({ type: 'stream_event', event })
+          },
+          onSupervisorThinking: (thinking) => {
+            dispatch({ type: 'supervisor_thinking', thinking })
+          },
         }
 
         // Create and start network
@@ -91,6 +99,7 @@ export function useEngine(options: EngineHookOptions) {
         }, callbacks)
 
         networkRef.current = network
+        sessionStartRef.current = new Date().toISOString()
 
         // Start polling for state updates
         const agentStore = new AgentStore(db)
@@ -98,20 +107,32 @@ export function useEngine(options: EngineHookOptions) {
 
         pollTimerRef.current = setInterval(async () => {
           try {
-            // Poll events
-            const events = await eventStore.getEvents()
+            // Poll events — only from current session
+            const allEvents = await eventStore.getEvents()
+            const events = sessionStartRef.current
+              ? allEvents.filter((e) => e.createdAt >= sessionStartRef.current!)
+              : allEvents
             if (events.length !== lastEventCountRef.current) {
               lastEventCountRef.current = events.length
               dispatch({ type: 'events_sync', events })
             }
 
-            // Poll workers
-            const agents = await agentStore.getActiveWorkers()
-            dispatch({ type: 'workers_sync', agents })
+            // Poll workers — only dispatch if count changed
+            const allAgents = await agentStore.getActiveWorkers()
+            const agents = sessionStartRef.current
+              ? allAgents.filter((a) => a.createdAt >= sessionStartRef.current!)
+              : allAgents
+            if (agents.length !== lastWorkerCountRef.current) {
+              lastWorkerCountRef.current = agents.length
+              dispatch({ type: 'workers_sync', agents })
+            }
 
-            // Poll scenarios
+            // Poll scenarios — only dispatch if count changed
             const scenarios = await workspaceOps.getScenarios()
-            dispatch({ type: 'scenarios_updated', scenarios })
+            if (scenarios.length !== lastScenarioCountRef.current) {
+              lastScenarioCountRef.current = scenarios.length
+              dispatch({ type: 'scenarios_updated', scenarios })
+            }
           } catch {
             // Swallow polling errors — the stores may not exist yet
           }

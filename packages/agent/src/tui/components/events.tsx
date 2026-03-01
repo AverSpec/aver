@@ -6,24 +6,32 @@ import type { AgentEvent } from '../../db/event-store.js'
 interface Props {
   events: AgentEvent[]
   phase: 'awaiting_goal' | 'running' | 'stopped'
+  supervisorThinking?: boolean
+  height?: number
+  scrollOffset?: number
 }
 
-export function EventPanel({ events, phase }: Props): React.ReactElement {
-  // Show only the last N events to keep the panel manageable
-  const visible = events.slice(-50)
+export function EventPanel({ events, phase, supervisorThinking, height, scrollOffset = 0 }: Props): React.ReactElement {
+  // Apply scroll: offset counts from the bottom
+  const endIdx = scrollOffset > 0 ? events.length - scrollOffset : events.length
+  const maxVisible = height ? height - 2 : events.length // Reserve for header + possible scroll indicator
+  const visible = events.slice(Math.max(0, endIdx - maxVisible), Math.max(0, endIdx))
 
   return (
-    <Box flexDirection="column" borderStyle="single" borderColor="gray" paddingX={1} flexGrow={1}>
+    <Box flexDirection="column" width="100%" height={height} paddingX={1}>
       <Text bold>Events</Text>
       {events.length === 0 && phase === 'awaiting_goal' && (
         <Text dimColor>Waiting for goal...</Text>
       )}
-      {events.length === 0 && phase === 'running' && (
-        <Spinner label="Supervisor analyzing..." />
-      )}
       {visible.map((event) => (
         <EventLine key={`${event.createdAt}-${event.type}`} event={event} />
       ))}
+      {supervisorThinking && scrollOffset === 0 && (
+        <Spinner label=" Supervisor analyzing..." />
+      )}
+      {scrollOffset > 0 && (
+        <Text dimColor italic>↓ {scrollOffset} more below</Text>
+      )}
     </Box>
   )
 }
@@ -33,7 +41,7 @@ function EventLine({ event }: { event: AgentEvent }): React.ReactElement {
   const dataStr = formatEventData(event)
 
   return (
-    <Text>
+    <Text wrap="truncate-end">
       <Text dimColor>[{time}]</Text> <Text color={eventColor(event.type)}>{event.type}</Text>
       {dataStr && <Text> {dataStr}</Text>}
     </Text>
@@ -41,6 +49,7 @@ function EventLine({ event }: { event: AgentEvent }): React.ReactElement {
 }
 
 function eventColor(type: string): string {
+  if (type === 'supervisor:message') return 'white'
   if (type.startsWith('worker:')) return 'cyan'
   if (type.startsWith('session:')) return 'blue'
   if (type.startsWith('advancement:') || type.startsWith('scenario:')) return 'yellow'
@@ -72,6 +81,8 @@ function formatEventData(event: AgentEvent): string {
       return `${d.scenarioId}: ${d.reason}`
     case 'advancement:warning':
       return `${d.scenarioId}: ${d.warning}`
+    case 'supervisor:message':
+      return `${d.message}`
     case 'human:answer':
       return `"${d.answer}"`
     default:

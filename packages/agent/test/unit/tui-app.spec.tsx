@@ -8,7 +8,7 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
 describe('TUI App', () => {
-  it('renders all panels in awaiting_goal phase', () => {
+  it('renders TuiShell with panel shortcuts on startup', () => {
     const dir = mkdtempSync(join(tmpdir(), 'aver-tui-test-'))
     const { lastFrame } = render(
       <App
@@ -19,9 +19,9 @@ describe('TUI App', () => {
       />,
     )
     const frame = lastFrame()!
-    expect(frame).toContain('Scenarios')
-    expect(frame).toContain('Workers')
-    expect(frame).toContain('Events')
-    expect(frame).toContain('Enter a goal')
+    expect(frame).toContain('1:Chat')
+    expect(frame).toContain('2:Workers')
+    expect(frame).toContain('3:Scenarios')
+    expect(frame).toContain('4:Events')
   })
 })

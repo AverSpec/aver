@@ -3,13 +3,31 @@ import React from 'react'
 import { render } from 'ink-testing-library'
 import { BottomBar } from '../../src/tui/components/bottom-bar.js'
 
-describe('BottomBar (migrated from Prompt)', () => {
+describe('BottomBar', () => {
+  it('shows panel shortcuts', () => {
+    const { lastFrame } = render(
+      <BottomBar
+        activePanel="chat"
+        inputFocused={false}
+        phase="running"
+        onSubmit={() => {}}
+        onFocus={() => {}}
+        onBlur={() => {}}
+      />,
+    )
+    const frame = lastFrame()!
+    expect(frame).toContain('1:Chat')
+    expect(frame).toContain('2:Workers')
+    expect(frame).toContain('3:Scenarios')
+    expect(frame).toContain('4:Events')
+  })
+
   it('shows placeholder when not focused', () => {
     const { lastFrame } = render(
       <BottomBar
         activePanel="chat"
         inputFocused={false}
-        phase="awaiting_goal"
+        phase="running"
         onSubmit={() => {}}
         onFocus={() => {}}
         onBlur={() => {}}
@@ -18,7 +36,7 @@ describe('BottomBar (migrated from Prompt)', () => {
     expect(lastFrame()).toContain('Press / to type')
   })
 
-  it('shows text input when focused and running', () => {
+  it('shows text input when focused', () => {
     const { lastFrame } = render(
       <BottomBar
         activePanel="chat"
@@ -32,7 +50,7 @@ describe('BottomBar (migrated from Prompt)', () => {
     expect(lastFrame()).toContain('Send a message')
   })
 
-  it('shows pending question options when focused', () => {
+  it('shows select options when question has options', () => {
     const { lastFrame } = render(
       <BottomBar
         activePanel="chat"
@@ -44,7 +62,23 @@ describe('BottomBar (migrated from Prompt)', () => {
         onBlur={() => {}}
       />,
     )
-    expect(lastFrame()).toContain('Yes')
-    expect(lastFrame()).toContain('No')
+    const frame = lastFrame()!
+    expect(frame).toContain('Yes')
+    expect(frame).toContain('No')
+  })
+
+  it('highlights active panel', () => {
+    const { lastFrame } = render(
+      <BottomBar
+        activePanel="workers"
+        inputFocused={false}
+        phase="running"
+        onSubmit={() => {}}
+        onFocus={() => {}}
+        onBlur={() => {}}
+      />,
+    )
+    // Workers panel label should be present
+    expect(lastFrame()).toContain('2:Workers')
   })
 })

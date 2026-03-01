@@ -95,7 +95,6 @@ The agent uses sensible defaults. You can override them by passing a custom conf
 | `model.worker` | `claude-opus-4-6` | Model for workers (investigation, coding, testing) |
 | `cycles.checkpointInterval` | `10` | Events between automatic checkpoints |
 | `cycles.rollupThreshold` | `3` | Checkpoints before a rollup summary |
-| `cycles.maxWorkerIterations` | `15` | Maximum turns per worker dispatch |
 | `dashboard.port` | `4700` | Port for the web dashboard |
 | `claudeExecutablePath` | Auto-detected | Path to the `claude` binary. The CLI runs `which claude` automatically. |
 

@@ -4,6 +4,8 @@ import type { Scenario } from '../../workspace/types.js'
 
 interface Props {
   scenarios: Scenario[]
+  height?: number
+  scrollOffset?: number
 }
 
 const STAGE_ICON: Record<string, string> = {
@@ -22,11 +24,11 @@ const STAGE_COLOR: Record<string, string> = {
   implemented: 'green',
 }
 
-export function ScenarioPanel({ scenarios }: Props): React.ReactElement {
+export function ScenarioPanel({ scenarios, height, scrollOffset = 0 }: Props): React.ReactElement {
   const implemented = scenarios.filter((s) => s.stage === 'implemented').length
 
   return (
-    <Box flexDirection="column" borderStyle="single" borderColor="gray" paddingX={1} minHeight={6}>
+    <Box flexDirection="column" width="100%" height={height} paddingX={1}>
       <Text bold>Scenarios</Text>
       {scenarios.length === 0 ? (
         <Text dimColor>No scenarios yet — the supervisor will create them.</Text>

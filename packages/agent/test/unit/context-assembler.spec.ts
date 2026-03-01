@@ -249,10 +249,10 @@ describe('ContextAssembler', () => {
   })
 
   describe('budget enforcement', () => {
-    it('truncates observations when token budget is exceeded', async () => {
+    it('keeps most recent observations when budget is exceeded, drops oldest', async () => {
       // Each observation has tokenCount = 10 (set by seedObservation helper).
-      // With a budget of 25, only 2 observations should fit (20 tokens).
-      // The 3rd would push to 30 which exceeds 25.
+      // With a budget of 25, only 2 observations fit (20 tokens).
+      // The oldest should be dropped, keeping the 2 most recent.
       const smallBudgetAssembler = new ContextAssembler(store, {
         supervisorObservationBudget: 25,
         workerObservationBudget: 25,
@@ -262,7 +262,7 @@ describe('ContextAssembler', () => {
         agentId: 'supervisor',
         scope: 'project',
         priority: 'critical',
-        content: 'First observation',
+        content: 'Oldest observation (should be dropped)',
         createdAt: '2026-02-26T09:10:00.000Z',
       })
       await seedObservation({
@@ -276,7 +276,7 @@ describe('ContextAssembler', () => {
         agentId: 'supervisor',
         scope: 'strategy',
         priority: 'informational',
-        content: 'Third observation (should be truncated)',
+        content: 'Newest observation',
         createdAt: '2026-02-26T09:30:00.000Z',
       })
 
@@ -284,12 +284,75 @@ describe('ContextAssembler', () => {
       const lines = ctx.observationBlock.split('\n')
 
       expect(lines).toHaveLength(2)
-      expect(ctx.observationBlock).toContain('First observation')
+      expect(ctx.observationBlock).not.toContain('Oldest observation')
       expect(ctx.observationBlock).toContain('Second observation')
-      expect(ctx.observationBlock).not.toContain('Third observation')
+      expect(ctx.observationBlock).toContain('Newest observation')
     })
 
-    it('returns empty string when first observation exceeds budget', async () => {
+    it('preserves chronological order among kept observations', async () => {
+      // Budget fits 3 of 5 observations. The 3 most recent should be kept
+      // and appear in chronological order (oldest-kept first).
+      const assembler3 = new ContextAssembler(store, {
+        supervisorObservationBudget: 35,
+      })
+
+      for (let i = 1; i <= 5; i++) {
+        await seedObservation({
+          agentId: 'supervisor',
+          scope: 'project',
+          priority: 'critical',
+          content: `Obs-${i}`,
+          createdAt: `2026-02-26T09:${String(i * 10).padStart(2, '0')}:00.000Z`,
+        })
+      }
+
+      const ctx = await assembler3.assembleForSupervisor('supervisor')
+      const lines = ctx.observationBlock.split('\n')
+
+      expect(lines).toHaveLength(3)
+      expect(lines[0]).toContain('Obs-3')
+      expect(lines[1]).toContain('Obs-4')
+      expect(lines[2]).toContain('Obs-5')
+    })
+
+    it('returns all observations when total tokens fit within budget', async () => {
+      // Budget of 50 easily fits 3 observations at 10 tokens each (30 total).
+      const assemblerOk = new ContextAssembler(store, {
+        supervisorObservationBudget: 50,
+      })
+
+      await seedObservation({
+        agentId: 'supervisor',
+        scope: 'project',
+        priority: 'critical',
+        content: 'A',
+        createdAt: '2026-02-26T09:10:00.000Z',
+      })
+      await seedObservation({
+        agentId: 'supervisor',
+        scope: 'project',
+        priority: 'critical',
+        content: 'B',
+        createdAt: '2026-02-26T09:20:00.000Z',
+      })
+      await seedObservation({
+        agentId: 'supervisor',
+        scope: 'project',
+        priority: 'critical',
+        content: 'C',
+        createdAt: '2026-02-26T09:30:00.000Z',
+      })
+
+      const ctx = await assemblerOk.assembleForSupervisor('supervisor')
+      const lines = ctx.observationBlock.split('\n')
+
+      expect(lines).toHaveLength(3)
+      expect(ctx.observationBlock).toContain('A')
+      expect(ctx.observationBlock).toContain('B')
+      expect(ctx.observationBlock).toContain('C')
+    })
+
+    it('returns empty string when even the newest observation exceeds budget', async () => {
       const tinyBudgetAssembler = new ContextAssembler(store, {
         supervisorObservationBudget: 5,
         workerObservationBudget: 5,
@@ -305,6 +368,35 @@ describe('ContextAssembler', () => {
 
       const ctx = await tinyBudgetAssembler.assembleForSupervisor('supervisor')
       expect(ctx.observationBlock).toBe('')
+    })
+
+    it('enforces worker budget independently of supervisor budget', async () => {
+      const mixedBudget = new ContextAssembler(store, {
+        supervisorObservationBudget: 100,
+        workerObservationBudget: 15, // fits only 1 observation at 10 tokens
+      })
+
+      await seedObservation({
+        agentId: 'worker-1',
+        scope: 'scenario:sc-1',
+        priority: 'critical',
+        content: 'Old worker obs',
+        createdAt: '2026-02-26T09:10:00.000Z',
+      })
+      await seedObservation({
+        agentId: 'worker-1',
+        scope: 'scenario:sc-1',
+        priority: 'critical',
+        content: 'New worker obs',
+        createdAt: '2026-02-26T09:20:00.000Z',
+      })
+
+      const ctx = await mixedBudget.assembleForWorker('worker-1', 'sc-1')
+      const lines = ctx.observationBlock.split('\n')
+
+      expect(lines).toHaveLength(1)
+      expect(ctx.observationBlock).toContain('New worker obs')
+      expect(ctx.observationBlock).not.toContain('Old worker obs')
     })
   })
 

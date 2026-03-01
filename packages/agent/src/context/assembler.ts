@@ -68,15 +68,30 @@ export class ContextAssembler {
     }
   }
 
+  /**
+   * Format observations into a text block, keeping the most recent
+   * observations that fit within the token budget. When total tokens
+   * exceed the budget, the oldest observations are dropped first.
+   */
   private formatBlock(observations: Observation[], budget: number): string {
     if (observations.length === 0) return ''
-    const lines: string[] = []
+
+    // Observations arrive in chronological order (oldest first).
+    // Walk backwards from newest to find the cut point.
     let tokens = 0
-    for (const obs of observations) {
-      tokens += obs.tokenCount
-      if (tokens > budget) break
-      lines.push(formatObservation(obs))
+    let startIndex = 0
+    for (let i = observations.length - 1; i >= 0; i--) {
+      const next = tokens + observations[i].tokenCount
+      if (next > budget) {
+        startIndex = i + 1
+        break
+      }
+      tokens = next
     }
-    return lines.join('\n')
+
+    return observations
+      .slice(startIndex)
+      .map(formatObservation)
+      .join('\n')
   }
 }

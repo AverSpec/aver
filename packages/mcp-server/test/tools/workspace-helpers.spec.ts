@@ -46,6 +46,10 @@ describe('validateProjectId', () => {
     expect(() => validateProjectId('foo\\bar')).toThrow('path separators')
   })
 
+  it('rejects standalone dot', () => {
+    expect(() => validateProjectId('.')).toThrow('path traversal')
+  })
+
   it('rejects standalone dot-dot', () => {
     expect(() => validateProjectId('..')).toThrow('path traversal')
   })

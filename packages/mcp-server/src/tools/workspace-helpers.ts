@@ -30,8 +30,8 @@ export function validateProjectId(id: string): string {
   if (/[/\\]/.test(id)) {
     throw new Error(`projectId contains path separators: ${id}`)
   }
-  // Reject standalone ".." or segments like "../foo" / "foo/.."
-  if (id === '..' || id.startsWith('../') || id.endsWith('/..') || id.includes('/../')) {
+  // Reject "." and ".." and segments like "../foo" / "foo/.."
+  if (id === '.' || id === '..' || id.startsWith('../') || id.endsWith('/..') || id.includes('/../')) {
     throw new Error(`projectId contains path traversal: ${id}`)
   }
   // Only allow alphanumeric, dash, underscore, dot

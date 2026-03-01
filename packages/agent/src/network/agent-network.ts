@@ -7,7 +7,7 @@ import { ContextAssembler } from '../context/assembler.js'
 // Observer integration for full observation extraction is deferred to v2.
 // For MVP, worker output is stored as a single observation directly.
 import { TriggerQueue, type Trigger } from './triggers.js'
-import { parseDecision } from '../supervisor/decisions.js'
+import { parseDecision, DecisionParseError } from '../supervisor/decisions.js'
 import type { WorkspaceOps } from '../workspace/operations.js'
 import type { PermissionLevel } from '../shell/hooks.js'
 
@@ -199,8 +199,22 @@ export class AgentNetwork {
         }
       }
 
-      // Parse decision
-      const decision = parseDecision(response)
+      // Parse decision — malformed decisions are logged and skipped
+      let decision: SupervisorDecision
+      try {
+        decision = parseDecision(response)
+      } catch (parseErr) {
+        if (parseErr instanceof DecisionParseError) {
+          await this.logEvent('decision:invalid', {
+            error: parseErr.message,
+            details: parseErr.details,
+            rawResponse: response.slice(0, 500),
+          })
+          // Skip this decision — don't kill the session
+          return
+        }
+        throw parseErr
+      }
 
       await this.logEvent('supervisor:decision', {
         action: decision.action,

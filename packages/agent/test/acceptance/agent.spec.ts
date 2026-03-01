@@ -192,18 +192,16 @@ describe('AverAgent acceptance', () => {
     expect(obs[0]).toContain('We use email and password')
   })
 
-  // 10. Invalid supervisor JSON triggers error state
+  // 10. Invalid supervisor decision is skipped gracefully (session stays running)
   test('handles invalid supervisor JSON gracefully', async ({ given, when, then }) => {
-    // Override the supervisor queue with an invalid response
-    // We need to push a raw response — use supervisorWillDecide with something
-    // that will produce invalid JSON. Actually, the mock dispatcher shifts from the queue.
-    // We need a way to queue a raw invalid response.
-    // The simplest approach: queue a decision that is valid JSON but has an invalid action.
+    // Queue a decision that is valid JSON but has an invalid action.
+    // The decision should be logged as decision:invalid and skipped,
+    // keeping the session in running state rather than setting it to error.
     await given.supervisorWillDecide({
       decision: { action: 'invalid_action' as never },
       tokenUsage: 100,
     })
     await when.startSession({ goal: 'Error test' })
-    await then.sessionErrored({})
+    await then.sessionIs({ status: 'running' })
   })
 })

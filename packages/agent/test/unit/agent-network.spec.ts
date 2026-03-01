@@ -452,12 +452,16 @@ describe('AgentNetwork', () => {
         expect(dispatchers.supervisorDispatch).toHaveBeenCalled()
       })
 
-      // Session should be in error state
+      // Malformed decisions are logged and skipped — session stays running
       await vi.waitFor(async () => {
-        const sessionStore = new SessionStore(db)
-        const session = await sessionStore.getSession(network.currentSession!.id)
-        expect(session!.status).toBe('error')
+        const eventStore = new EventStore(db)
+        const invalidEvents = await eventStore.getEventsByType('decision:invalid')
+        expect(invalidEvents.length).toBeGreaterThanOrEqual(1)
       })
+
+      const sessionStore = new SessionStore(db)
+      const session = await sessionStore.getSession(network.currentSession!.id)
+      expect(session!.status).toBe('running')
     })
 
     it('respects maxCycleDepth limit', async () => {

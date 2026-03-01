@@ -83,7 +83,7 @@ describe('AgentNetwork edge cases', () => {
   // 1. Malformed supervisor output
   // -------------------------------------------------------
   describe('malformed supervisor output', () => {
-    it('non-JSON text results in session error', async () => {
+    it('non-JSON text logs decision:invalid and keeps session running', async () => {
       const dispatchers = createMockDispatchers(['This has no JSON whatsoever'])
 
       const network = new AgentNetwork(db, dispatchers, workspaceOps, config)
@@ -93,19 +93,19 @@ describe('AgentNetwork edge cases', () => {
 
       const sessionStore = new SessionStore(db)
       const session = await sessionStore.getSession(network.currentSession!.id)
-      expect(session!.status).toBe('error')
+      expect(session!.status).toBe('running')
 
       const eventStore = new EventStore(db)
-      const errors = await eventStore.getEventsByType('error')
-      expect(errors.length).toBeGreaterThanOrEqual(1)
-      expect(JSON.stringify(errors[0].data)).toContain('Supervisor wake failed')
+      const invalidEvents = await eventStore.getEventsByType('decision:invalid')
+      expect(invalidEvents.length).toBeGreaterThanOrEqual(1)
+      expect(JSON.stringify(invalidEvents[0].data)).toContain('Failed to parse')
     })
 
-    it('valid JSON array (not object) hits missing-action guard and results in session error', async () => {
+    it('valid JSON array (not object) logs decision:invalid and keeps session running', async () => {
       // extractJson finds no '{', returns raw text "[1, 2, 3]".
       // JSON.parse succeeds yielding an array. typeof [] === 'object', so the
       // "must be object" guard passes. But obj.action is undefined, so the
-      // missing-action guard fires.
+      // missing-action guard fires as a DecisionParseError.
       const dispatchers = createMockDispatchers(['[1, 2, 3]'])
 
       const network = new AgentNetwork(db, dispatchers, workspaceOps, config)
@@ -115,10 +115,14 @@ describe('AgentNetwork edge cases', () => {
 
       const sessionStore = new SessionStore(db)
       const session = await sessionStore.getSession(network.currentSession!.id)
-      expect(session!.status).toBe('error')
+      expect(session!.status).toBe('running')
+
+      const eventStore = new EventStore(db)
+      const invalidEvents = await eventStore.getEventsByType('decision:invalid')
+      expect(invalidEvents.length).toBeGreaterThanOrEqual(1)
     })
 
-    it('valid JSON object but missing action field results in session error', async () => {
+    it('valid JSON object but missing action field logs decision:invalid and keeps session running', async () => {
       const dispatchers = createMockDispatchers(['{"reason":"forgot action"}'])
 
       const network = new AgentNetwork(db, dispatchers, workspaceOps, config)
@@ -128,15 +132,15 @@ describe('AgentNetwork edge cases', () => {
 
       const sessionStore = new SessionStore(db)
       const session = await sessionStore.getSession(network.currentSession!.id)
-      expect(session!.status).toBe('error')
+      expect(session!.status).toBe('running')
 
       const eventStore = new EventStore(db)
-      const errors = await eventStore.getEventsByType('error')
-      expect(errors.length).toBeGreaterThanOrEqual(1)
-      expect(JSON.stringify(errors[0].data)).toContain('must have an \\"action\\" string field')
+      const invalidEvents = await eventStore.getEventsByType('decision:invalid')
+      expect(invalidEvents.length).toBeGreaterThanOrEqual(1)
+      expect(JSON.stringify(invalidEvents[0].data)).toContain('must have an \\"action\\" string field')
     })
 
-    it('unknown action type results in session error', async () => {
+    it('unknown action type logs decision:invalid and keeps session running', async () => {
       const dispatchers = createMockDispatchers([
         '{"action":"launch_missiles","target":"moon"}',
       ])
@@ -148,15 +152,15 @@ describe('AgentNetwork edge cases', () => {
 
       const sessionStore = new SessionStore(db)
       const session = await sessionStore.getSession(network.currentSession!.id)
-      expect(session!.status).toBe('error')
+      expect(session!.status).toBe('running')
 
       const eventStore = new EventStore(db)
-      const errors = await eventStore.getEventsByType('error')
-      expect(errors.length).toBeGreaterThanOrEqual(1)
-      expect(JSON.stringify(errors[0].data)).toContain('Unknown action type')
+      const invalidEvents = await eventStore.getEventsByType('decision:invalid')
+      expect(invalidEvents.length).toBeGreaterThanOrEqual(1)
+      expect(JSON.stringify(invalidEvents[0].data)).toContain('Unknown action type')
     })
 
-    it('valid JSON string (not object) results in session error', async () => {
+    it('valid JSON string (not object) logs decision:invalid and keeps session running', async () => {
       // extractJson will return the raw string, JSON.parse yields a string, not an object
       const dispatchers = createMockDispatchers(['"just a string"'])
 
@@ -167,7 +171,102 @@ describe('AgentNetwork edge cases', () => {
 
       const sessionStore = new SessionStore(db)
       const session = await sessionStore.getSession(network.currentSession!.id)
-      expect(session!.status).toBe('error')
+      expect(session!.status).toBe('running')
+
+      const eventStore = new EventStore(db)
+      const invalidEvents = await eventStore.getEventsByType('decision:invalid')
+      expect(invalidEvents.length).toBeGreaterThanOrEqual(1)
+    })
+
+    it('advance_scenario without scenarioId logs decision:invalid', async () => {
+      const dispatchers = createMockDispatchers([
+        '{"action":"advance_scenario"}',
+      ])
+
+      const network = new AgentNetwork(db, dispatchers, workspaceOps, config)
+      await network.start('test goal')
+
+      await waitForSupervisorCalls(dispatchers, 1)
+
+      const sessionStore = new SessionStore(db)
+      const session = await sessionStore.getSession(network.currentSession!.id)
+      expect(session!.status).toBe('running')
+
+      const eventStore = new EventStore(db)
+      const invalidEvents = await eventStore.getEventsByType('decision:invalid')
+      expect(invalidEvents.length).toBeGreaterThanOrEqual(1)
+      expect((invalidEvents[0].data.details as any).field).toBe('scenarioId')
+      expect((invalidEvents[0].data.details as any).actionType).toBe('advance_scenario')
+    })
+
+    it('update_scenario without scenarioId logs decision:invalid', async () => {
+      const dispatchers = createMockDispatchers([
+        '{"action":"update_scenario","updates":{"behavior":"new"}}',
+      ])
+
+      const network = new AgentNetwork(db, dispatchers, workspaceOps, config)
+      await network.start('test goal')
+
+      await waitForSupervisorCalls(dispatchers, 1)
+
+      const sessionStore = new SessionStore(db)
+      const session = await sessionStore.getSession(network.currentSession!.id)
+      expect(session!.status).toBe('running')
+
+      const eventStore = new EventStore(db)
+      const invalidEvents = await eventStore.getEventsByType('decision:invalid')
+      expect(invalidEvents.length).toBeGreaterThanOrEqual(1)
+      expect((invalidEvents[0].data.details as any).field).toBe('scenarioId')
+      expect((invalidEvents[0].data.details as any).actionType).toBe('update_scenario')
+    })
+
+    it('discuss without message logs decision:invalid', async () => {
+      const dispatchers = createMockDispatchers([
+        '{"action":"discuss"}',
+      ])
+
+      const network = new AgentNetwork(db, dispatchers, workspaceOps, config)
+      await network.start('test goal')
+
+      await waitForSupervisorCalls(dispatchers, 1)
+
+      const eventStore = new EventStore(db)
+      const invalidEvents = await eventStore.getEventsByType('decision:invalid')
+      expect(invalidEvents.length).toBeGreaterThanOrEqual(1)
+      expect((invalidEvents[0].data.details as any).field).toBe('message')
+    })
+
+    it('revisit_scenario without required fields logs decision:invalid', async () => {
+      const dispatchers = createMockDispatchers([
+        '{"action":"revisit_scenario","scenarioId":"abc"}',
+      ])
+
+      const network = new AgentNetwork(db, dispatchers, workspaceOps, config)
+      await network.start('test goal')
+
+      await waitForSupervisorCalls(dispatchers, 1)
+
+      const eventStore = new EventStore(db)
+      const invalidEvents = await eventStore.getEventsByType('decision:invalid')
+      expect(invalidEvents.length).toBeGreaterThanOrEqual(1)
+      expect((invalidEvents[0].data.details as any).field).toBe('targetStage')
+      expect((invalidEvents[0].data.details as any).actionType).toBe('revisit_scenario')
+    })
+
+    it('malformed decision includes raw response snippet in event', async () => {
+      const dispatchers = createMockDispatchers([
+        '{"action":"advance_scenario"}',
+      ])
+
+      const network = new AgentNetwork(db, dispatchers, workspaceOps, config)
+      await network.start('test goal')
+
+      await waitForSupervisorCalls(dispatchers, 1)
+
+      const eventStore = new EventStore(db)
+      const invalidEvents = await eventStore.getEventsByType('decision:invalid')
+      expect(invalidEvents.length).toBeGreaterThanOrEqual(1)
+      expect(invalidEvents[0].data.rawResponse).toContain('advance_scenario')
     })
 
     it('network does not crash after malformed output — it remains callable', async () => {
@@ -279,9 +378,10 @@ describe('AgentNetwork edge cases', () => {
   // 3. create_worker with missing fields
   // -------------------------------------------------------
   describe('create_worker with missing fields', () => {
-    it('create_worker without goal or skill results in DecisionParseError', async () => {
+    it('create_worker without goal or skill logs decision:invalid and keeps session running', async () => {
       // The stricter parseDecision validates required fields per action type.
-      // Missing goal/skill throws a DecisionParseError before reaching the DB.
+      // Missing goal/skill throws a DecisionParseError which is now caught
+      // gracefully — the decision is skipped, not treated as a fatal error.
       const dispatchers = createMockDispatchers([
         '{"action":"create_worker"}',
         '{"action":"stop","reason":"done"}',
@@ -298,12 +398,12 @@ describe('AgentNetwork edge cases', () => {
       // parseDecision rejects the decision before it reaches the DB layer
       const sessionStore = new SessionStore(db)
       const session = await sessionStore.getSession(network.currentSession!.id)
-      expect(session!.status).toBe('error')
+      expect(session!.status).toBe('running')
 
       const eventStore = new EventStore(db)
-      const errors = await eventStore.getEventsByType('error')
-      expect(errors.length).toBeGreaterThanOrEqual(1)
-      expect(JSON.stringify(errors[0].data)).toContain('create_worker must have a')
+      const invalidEvents = await eventStore.getEventsByType('decision:invalid')
+      expect(invalidEvents.length).toBeGreaterThanOrEqual(1)
+      expect(JSON.stringify(invalidEvents[0].data)).toContain('create_worker must have a')
 
       // No worker rows should exist
       const result = await db.execute({

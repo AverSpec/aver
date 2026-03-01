@@ -160,6 +160,7 @@ export class AgentNetwork {
     this.cycleDepth++
 
     if (this.cycleDepth > this.maxCycleDepth) {
+      this.stopped = true
       await this.handleError(`Cycle depth limit reached (${this.maxCycleDepth})`)
       this.triggerQueue.markIdle()
       return
@@ -229,6 +230,12 @@ export class AgentNetwork {
       )
     } finally {
       this.triggerQueue.markIdle()
+      // If markIdle() delivered queued triggers, the new wakeSupervisor() call
+      // runs synchronously up to its first await, setting isActive = true.
+      // If no triggers were pending, isActive stays false — the burst is over.
+      if (!this.triggerQueue.isActive) {
+        this.cycleDepth = 0
+      }
     }
   }
 

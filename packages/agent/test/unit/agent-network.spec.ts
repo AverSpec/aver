@@ -490,6 +490,14 @@ describe('AgentNetwork', () => {
         // The cycle depth should have been reached or supervisor should stop being called
         expect(callCount).toBeLessThanOrEqual(15) // some slack for async
       }, { timeout: 5000 })
+
+      await new Promise((r) => setTimeout(r, 200))
+
+      // Session should be in error state and stopped
+      const sessionStore = new SessionStore(db)
+      const session = await sessionStore.getSession(network.currentSession!.id)
+      expect(session!.status).toBe('error')
+      expect(network.isStopped).toBe(true)
     })
   })
 

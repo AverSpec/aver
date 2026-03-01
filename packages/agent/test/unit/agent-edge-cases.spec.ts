@@ -288,7 +288,7 @@ describe('AgentNetwork edge cases', () => {
   // 2. Cycle-depth exhaustion
   // -------------------------------------------------------
   describe('cycle-depth exhaustion', () => {
-    it('exceeding maxCycleDepth sets session to error but does not set stopped', async () => {
+    it('exceeding maxCycleDepth sets session to error and sets stopped', async () => {
       // Use a very small depth limit for fast testing
       const smallConfig: AgentNetworkConfig = { maxCycleDepth: 3 }
 
@@ -323,12 +323,8 @@ describe('AgentNetwork edge cases', () => {
       const session = await sessionStore.getSession(network.currentSession!.id)
       expect(session!.status).toBe('error')
 
-      // BUG DOCUMENTATION: stopped remains false after cycle-depth exhaustion.
-      // This means the network could theoretically accept new triggers (e.g.,
-      // handleHumanMessage) and attempt to wake the supervisor again, which
-      // would immediately hit the depth limit again. This is arguably a bug
-      // but tests current behavior.
-      expect(network.isStopped).toBe(false)
+      // stopped should be true — prevents zombie sessions from accepting new triggers
+      expect(network.isStopped).toBe(true)
 
       // Error event should be logged
       const eventStore = new EventStore(db)
@@ -337,6 +333,83 @@ describe('AgentNetwork edge cases', () => {
         JSON.stringify(e.data).includes('Cycle depth limit'),
       )
       expect(depthError).toBeDefined()
+    })
+
+    it('resets cycleDepth when trigger queue drains between bursts', async () => {
+      // maxCycleDepth of 3. We'll do 4 separate bursts of 1 call each (4 total),
+      // which exceeds the limit, but each burst individually is under the limit.
+      // Using ask_human (no onQuestion callback) so it doesn't chain triggers
+      // and doesn't set stopped.
+      const smallConfig: AgentNetworkConfig = { maxCycleDepth: 3 }
+
+      let callCount = 0
+      const dispatchers = createMockDispatchers([])
+      dispatchers.supervisorDispatch = vi.fn(async () => {
+        callCount++
+        // ask_human without onQuestion callback — no chained triggers, no stop
+        return { response: '{"action":"ask_human","question":"waiting"}', tokenUsage: 10 }
+      }) as unknown as Dispatchers['supervisorDispatch']
+
+      const network = new AgentNetwork(db, dispatchers, workspaceOps, smallConfig)
+      await network.start('test goal')
+
+      // First burst: start triggers 1 supervisor call
+      await waitForSupervisorCalls(dispatchers, 1)
+
+      // Second burst via human message — depth should have reset
+      await network.handleHumanMessage('second burst')
+      await waitForSupervisorCalls(dispatchers, 2, 5000)
+
+      // Third burst
+      await network.handleHumanMessage('third burst')
+      await waitForSupervisorCalls(dispatchers, 3, 5000)
+
+      // Fourth burst — this would exceed maxCycleDepth=3 if depth weren't reset
+      await network.handleHumanMessage('fourth burst')
+      await waitForSupervisorCalls(dispatchers, 4, 5000)
+
+      // Session should still be running — not in error state
+      const sessionStore = new SessionStore(db)
+      const session = await sessionStore.getSession(network.currentSession!.id)
+      expect(session!.status).not.toBe('error')
+      expect(network.isStopped).toBe(false)
+    })
+
+    it('continuous burst still hits depth limit', async () => {
+      // A runaway loop where each decision triggers re-wake without queue drain
+      const smallConfig: AgentNetworkConfig = { maxCycleDepth: 3 }
+
+      let callCount = 0
+      const dispatchers = createMockDispatchers([])
+      dispatchers.supervisorDispatch = vi.fn(async () => {
+        callCount++
+        // create_worker triggers worker:goal_complete which re-wakes supervisor
+        return {
+          response: JSON.stringify({
+            action: 'create_worker',
+            goal: `Runaway ${callCount}`,
+            skill: 'investigation',
+          }),
+          tokenUsage: 10,
+        }
+      }) as unknown as Dispatchers['supervisorDispatch']
+
+      const network = new AgentNetwork(db, dispatchers, workspaceOps, smallConfig)
+      await network.start('test goal')
+
+      await vi.waitFor(
+        () => {
+          expect(callCount).toBeGreaterThanOrEqual(3)
+        },
+        { timeout: 5000 },
+      )
+      await new Promise((r) => setTimeout(r, 200))
+
+      // Should have hit the depth limit and stopped
+      const sessionStore = new SessionStore(db)
+      const session = await sessionStore.getSession(network.currentSession!.id)
+      expect(session!.status).toBe('error')
+      expect(network.isStopped).toBe(true)
     })
 
     it('cycle depth increments across multiple wake cycles', async () => {

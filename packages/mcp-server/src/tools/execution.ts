@@ -71,14 +71,37 @@ export function parseVitestJson(jsonStr: string): RunData {
     const parsed = JSON.parse(jsonStr)
     const testResults = parsed.testResults ?? []
     for (const file of testResults) {
-      for (const test of file.assertionResults ?? []) {
+      const assertions = file.assertionResults ?? []
+
+      // Capture file-level errors (e.g., import failures, syntax errors)
+      // when no individual assertion results exist
+      if (assertions.length === 0 && file.message) {
         results.push({
-          testName: test.fullName ?? test.title ?? 'unknown',
+          testName: file.name ?? 'unknown file',
+          domain: extractDomainFromPath(file.name ?? ''),
+          status: 'fail',
+          failureMessage: file.message,
+          trace: [{
+            kind: 'error',
+            name: file.name ?? 'unknown file',
+            status: 'fail',
+            error: file.message,
+          }],
+        })
+        continue
+      }
+
+      for (const test of assertions) {
+        const failureMessages: string[] = test.failureMessages ?? []
+        const testName = test.fullName ?? test.title ?? 'unknown'
+        results.push({
+          testName,
           domain: extractDomainFromPath(file.name ?? ''),
           status: test.status === 'passed' ? 'pass' : test.status === 'failed' ? 'fail' : 'skip',
-          trace: (test.failureMessages ?? []).map((msg: string) => ({
+          failureMessage: failureMessages.length > 0 ? failureMessages.join('\n') : undefined,
+          trace: failureMessages.map((msg: string) => ({
             kind: 'error',
-            name: test.fullName ?? test.title ?? 'unknown',
+            name: testName,
             status: 'fail',
             error: msg,
           })),
@@ -135,7 +158,7 @@ export function getFailureDetailsHandler(
     failures: failures.map((r) => ({
       testName: r.testName,
       domain: r.domain,
-      error: r.trace.find((t) => t.error)?.error,
+      error: r.failureMessage ?? r.trace.find((t) => t.error)?.error,
       trace: r.trace,
     })),
   }
@@ -145,6 +168,7 @@ export interface TestTrace {
   testName: string
   domain: string
   status: string
+  failureMessage?: string
   trace: Array<{ kind: string; name: string; status: string; error?: string }>
 }
 
@@ -162,6 +186,7 @@ export function getTestTraceHandler(
     testName: result.testName,
     domain: result.domain,
     status: result.status,
+    failureMessage: result.failureMessage,
     trace: result.trace,
   }
 }

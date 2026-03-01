@@ -6,6 +6,7 @@ export interface TestResult {
   testName: string
   domain: string
   status: 'pass' | 'fail' | 'skip'
+  failureMessage?: string
   trace: Array<{ kind: string; name: string; status: string; error?: string }>
 }
 

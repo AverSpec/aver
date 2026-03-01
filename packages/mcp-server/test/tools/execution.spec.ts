@@ -87,6 +87,35 @@ describe('getFailureDetailsHandler()', () => {
     expect(result.failures[0].trace).toHaveLength(2)
   })
 
+  it('returns failureMessage as error when available', () => {
+    store.save({
+      timestamp: '2026-02-08T14:30:00.000Z',
+      results: [
+        {
+          testName: 'test-with-message', domain: 'Cart', status: 'fail',
+          failureMessage: 'Expected 0 items but got 1',
+          trace: [{ kind: 'error', name: 'test-with-message', status: 'fail', error: 'Expected 0 items but got 1' }],
+        },
+      ],
+    })
+    const result = getFailureDetailsHandler(store)
+    expect(result.failures[0].error).toBe('Expected 0 items but got 1')
+  })
+
+  it('falls back to trace error when failureMessage is absent', () => {
+    store.save({
+      timestamp: '2026-02-08T14:30:00.000Z',
+      results: [
+        {
+          testName: 'legacy-test', domain: 'Cart', status: 'fail',
+          trace: [{ kind: 'assertion', name: 'isEmpty', status: 'fail', error: 'not empty' }],
+        },
+      ],
+    })
+    const result = getFailureDetailsHandler(store)
+    expect(result.failures[0].error).toBe('not empty')
+  })
+
   it('filters by domain when provided', () => {
     store.save({
       timestamp: '2026-02-08T14:30:00.000Z',
@@ -141,6 +170,23 @@ describe('getTestTraceHandler()', () => {
     const result = getTestTraceHandler(store, 'nonexistent')
     expect(result).toBeNull()
   })
+
+  it('includes failureMessage in trace result for failed tests', () => {
+    store.save({
+      timestamp: '2026-02-08T14:30:00.000Z',
+      results: [
+        {
+          testName: 'failing test', domain: 'Cart', status: 'fail',
+          failureMessage: 'AssertionError: expected true to be false',
+          trace: [{ kind: 'error', name: 'failing test', status: 'fail', error: 'AssertionError: expected true to be false' }],
+        },
+      ],
+    })
+    const result = getTestTraceHandler(store, 'failing test')
+    expect(result?.failureMessage).toBe('AssertionError: expected true to be false')
+    expect(result?.trace).toHaveLength(1)
+    expect(result?.trace[0].error).toBe('AssertionError: expected true to be false')
+  })
 })
 
 describe('parseVitestJson()', () => {
@@ -158,11 +204,66 @@ describe('parseVitestJson()', () => {
     expect(run.results).toHaveLength(2)
     expect(run.results[0]).toMatchObject({ testName: 'adds item to cart', status: 'pass' })
     expect(run.results[0].trace).toEqual([])
+    expect(run.results[0].failureMessage).toBeUndefined()
     expect(run.results[1]).toMatchObject({ testName: 'removes item from cart', status: 'fail' })
+    expect(run.results[1].failureMessage).toBe('Expected 0 items but got 1')
     expect(run.results[1].trace).toEqual([
       { kind: 'error', name: 'removes item from cart', status: 'fail', error: 'Expected 0 items but got 1' },
     ])
     expect(run.error).toBeUndefined()
+  })
+
+  it('populates failureMessage from multiple failureMessages joined with newline', () => {
+    const json = JSON.stringify({
+      testResults: [{
+        name: '/path/to/cart.spec.ts',
+        assertionResults: [{
+          fullName: 'multi-assert test',
+          status: 'failed',
+          failureMessages: [
+            'AssertionError: expected 5 to be 4',
+            'AssertionError: expected "foo" to be "bar"',
+          ],
+        }],
+      }],
+    })
+    const run = parseVitestJson(json)
+    expect(run.results[0].failureMessage).toBe(
+      'AssertionError: expected 5 to be 4\nAssertionError: expected "foo" to be "bar"',
+    )
+    expect(run.results[0].trace).toHaveLength(2)
+  })
+
+  it('captures file-level errors when assertionResults is empty', () => {
+    const json = JSON.stringify({
+      testResults: [{
+        name: '/path/to/acceptance/Cart/cart.spec.ts',
+        message: 'SyntaxError: Cannot find module "./missing-dep"',
+        assertionResults: [],
+      }],
+    })
+    const run = parseVitestJson(json)
+    expect(run.results).toHaveLength(1)
+    expect(run.results[0].status).toBe('fail')
+    expect(run.results[0].failureMessage).toBe('SyntaxError: Cannot find module "./missing-dep"')
+    expect(run.results[0].domain).toBe('Cart')
+    expect(run.results[0].trace).toEqual([{
+      kind: 'error',
+      name: '/path/to/acceptance/Cart/cart.spec.ts',
+      status: 'fail',
+      error: 'SyntaxError: Cannot find module "./missing-dep"',
+    }])
+  })
+
+  it('skips file-level entry when message is absent and assertionResults is empty', () => {
+    const json = JSON.stringify({
+      testResults: [{
+        name: '/path/to/cart.spec.ts',
+        assertionResults: [],
+      }],
+    })
+    const run = parseVitestJson(json)
+    expect(run.results).toHaveLength(0)
   })
 
   it('extracts domain from acceptance path', () => {
@@ -244,6 +345,66 @@ describe('parseVitestJson()', () => {
     const snippetMatch = run.error!.match(/Raw output \(first 500 chars\): (.*)/)
     expect(snippetMatch).toBeTruthy()
     expect(snippetMatch![1].length).toBe(500)
+  })
+})
+
+describe('end-to-end: parseVitestJson -> store -> getFailureDetails', () => {
+  let dir: string
+  let store: RunStore
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'aver-e2e-'))
+    store = new RunStore(dir)
+  })
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true })
+  })
+
+  it('failure messages survive round-trip through store', () => {
+    const json = JSON.stringify({
+      testResults: [{
+        name: '/path/to/acceptance/Cart/cart.spec.ts',
+        assertionResults: [
+          { fullName: 'passes', status: 'passed' },
+          {
+            fullName: 'fails with message',
+            status: 'failed',
+            failureMessages: ['AssertionError: expected 5 to be 4\n    at Context.<anonymous> (cart.spec.ts:10:5)'],
+          },
+        ],
+      }],
+    })
+    const run = parseVitestJson(json)
+    store.save(run)
+
+    const details = getFailureDetailsHandler(store)
+    expect(details.failures).toHaveLength(1)
+    expect(details.failures[0].testName).toBe('fails with message')
+    expect(details.failures[0].error).toContain('AssertionError: expected 5 to be 4')
+    expect(details.failures[0].trace).toHaveLength(1)
+    expect(details.failures[0].trace[0].error).toContain('AssertionError')
+
+    const trace = getTestTraceHandler(store, 'fails with message')
+    expect(trace?.failureMessage).toContain('AssertionError: expected 5 to be 4')
+    expect(trace?.trace[0].error).toContain('AssertionError')
+  })
+
+  it('file-level errors survive round-trip through store', () => {
+    const json = JSON.stringify({
+      testResults: [{
+        name: '/path/to/acceptance/Cart/cart.spec.ts',
+        message: 'Error: Cannot find module "./missing"',
+        assertionResults: [],
+      }],
+    })
+    const run = parseVitestJson(json)
+    store.save(run)
+
+    const details = getFailureDetailsHandler(store)
+    expect(details.failures).toHaveLength(1)
+    expect(details.failures[0].error).toContain('Cannot find module')
+    expect(details.failures[0].trace[0].error).toContain('Cannot find module')
   })
 })
 

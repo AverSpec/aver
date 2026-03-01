@@ -84,6 +84,8 @@ npx aver init --domain ShoppingCart --protocol unit
 npx aver run
 ```
 
+See the [Getting Started guide](docs/guides/getting-started.md) for a complete walkthrough.
+
 ## Packages
 
 | Package | Description |

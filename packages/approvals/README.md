@@ -1,5 +1,7 @@
 # @aver/approvals
 
+> **Status: Stable** — API surface is locked for 0.x releases.
+
 Approval testing for [Aver](../../README.md) — structural diffs and visual regression.
 
 ## Install

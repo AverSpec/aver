@@ -1,5 +1,7 @@
 # @aver/mcp-server
 
+> **Status: Experimental** — API may change between minor versions.
+
 MCP server for [Aver](../../README.md) domain-driven acceptance testing. Exposes domain exploration, test execution, and scaffolding tools to AI assistants.
 
 ## Install

@@ -1,5 +1,7 @@
 # @aver/protocol-http
 
+> **Status: Stable** — API surface is locked for 0.x releases.
+
 HTTP protocol for [Aver](../../README.md) acceptance testing. Provides a fetch-based HTTP client as the adapter context.
 
 ## Install

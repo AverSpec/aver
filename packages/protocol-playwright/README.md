@@ -1,5 +1,7 @@
 # @aver/protocol-playwright
 
+> **Status: Stable** — API surface is locked for 0.x releases.
+
 Playwright browser protocol for [Aver](../../README.md) acceptance testing. Manages browser lifecycle and provides a Playwright `Page` as the adapter context.
 
 ## Install

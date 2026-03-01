@@ -1,5 +1,7 @@
 # @aver/core
 
+> **Status: Stable** — API surface is locked for 0.x releases.
+
 Domain-driven acceptance testing for TypeScript.
 
 Define **what** to test in domain language. Swap **how** via adapters. Same test runs against in-memory objects, HTTP APIs, and browser UI.

@@ -86,6 +86,16 @@ npx aver run
 
 See the [Getting Started guide](docs/guides/getting-started.md) for a complete walkthrough.
 
+## When to Use Aver
+
+**Single adapter:** You get tests in domain language that read like specifications, not implementation details.
+
+**Multiple adapters:** The real multiplier — one test suite runs against unit code, HTTP APIs, and browser UIs with zero duplication.
+
+**AI-assisted teams:** The scenario pipeline (capture → specify → implement) structures AI-driven test development and keeps business intent front-and-center.
+
+**When not to use:** If you only need simple unit tests with no protocol variety, plain vitest is simpler.
+
 ## Packages
 
 | Package | Description |

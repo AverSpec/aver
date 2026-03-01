@@ -28,7 +28,7 @@ export function http(options: HttpOptions): Protocol<HttpContext> {
       function request(method: string) {
         return async (path: string, body?: unknown): Promise<Response> => {
           const controller = new AbortController()
-          const timer = setTimeout(() => controller.abort(), timeout)
+          const timer = setTimeout(() => controller.abort(new Error(`Request timed out after ${timeout}ms`)), timeout)
           try {
             return await fetch(`${base}${path}`, {
               method,

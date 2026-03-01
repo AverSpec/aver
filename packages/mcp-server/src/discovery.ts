@@ -1,4 +1,5 @@
 import { readdir, stat, access } from 'node:fs/promises'
+import { statSync } from 'node:fs'
 import { join, parse as parsePath } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { registerDomain, getDomains } from '@aver/core'
@@ -85,6 +86,7 @@ export interface DiscoveredDomain {
 }
 
 const domainFilePaths = new Map<string, string>()
+const mtimeCache = new Map<string, number>()
 
 export function getDomainFilePaths(): Map<string, string> {
   return new Map(domainFilePaths)
@@ -92,6 +94,28 @@ export function getDomainFilePaths(): Map<string, string> {
 
 export function resetDiscoveryCache(): void {
   domainFilePaths.clear()
+  mtimeCache.clear()
+}
+
+/**
+ * Build a cache-busting import URL for a file.
+ * Only appends a query param when the file's mtime has changed since the last
+ * import, preventing unbounded ESM module cache growth from Date.now() URLs.
+ */
+function buildImportUrl(filePath: string): string {
+  const base = pathToFileURL(filePath).href
+  try {
+    const currentMtime = statSync(filePath).mtimeMs
+    const lastMtime = mtimeCache.get(filePath)
+    if (lastMtime !== undefined && lastMtime === currentMtime) {
+      return base
+    }
+    mtimeCache.set(filePath, currentMtime)
+    return `${base}?t=${currentMtime}`
+  } catch {
+    // If stat fails, fall back to uncached URL
+    return `${base}?t=${Date.now()}`
+  }
 }
 
 export async function discoverDomains(rootDir: string): Promise<DiscoveredDomain[]> {
@@ -137,7 +161,7 @@ export async function discoverDomains(rootDir: string): Promise<DiscoveredDomain
 
       const filePath = join(dir, entry.name)
       try {
-        const url = pathToFileURL(filePath).href + `?t=${Date.now()}`
+        const url = buildImportUrl(filePath)
         const mod = await import(url)
         for (const exported of Object.values(mod)) {
           if (isDomain(exported) && !seen.has(exported.name)) {
@@ -151,7 +175,7 @@ export async function discoverDomains(rootDir: string): Promise<DiscoveredDomain
           const fallbackPath = await findCompiledFallback(filePath)
           if (fallbackPath) {
             try {
-              const fallbackUrl = pathToFileURL(fallbackPath).href + `?t=${Date.now()}`
+              const fallbackUrl = buildImportUrl(fallbackPath)
               const mod = await import(fallbackUrl)
               for (const exported of Object.values(mod)) {
                 if (isDomain(exported) && !seen.has(exported.name)) {

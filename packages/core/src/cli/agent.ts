@@ -1,4 +1,8 @@
-import type { AgentArgs } from '@aver/agent'
+/** Local mirror of the AgentArgs type from @aver/agent to avoid a static dependency. */
+interface AgentArgs {
+  command: 'start' | 'stop' | 'status' | 'log' | 'dashboard' | 'help'
+  goal?: string
+}
 
 export async function runAgentCommand(parsed: AgentArgs): Promise<void> {
   switch (parsed.command) {

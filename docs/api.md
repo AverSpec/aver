@@ -200,6 +200,7 @@ The callback receives:
 | `when` | Alias for `act` — narrative clarity for trigger steps (Given-When-Then) |
 | `query` | Typed proxy for queries |
 | `assert` | Typed proxy for assertions |
+| `then` | Alias for `assert` — narrative clarity for verification steps (Given-When-Then) |
 | `trace` | Current action trace array |
 
 ---

@@ -107,14 +107,15 @@ export function createSdkDispatchers(config: SdkDispatcherConfig) {
   const workerTurnMs = config.timeouts?.workerTurnMs ?? DEFAULT_WORKER_TURN_MS
   const workerTotalMs = config.timeouts?.workerTotalMs ?? DEFAULT_WORKER_TOTAL_MS
 
-  // Supervisor: no tools, maxTurns 2 (structured output pattern)
+  // Supervisor: no tools, maxTurns 4 (structured output pattern — needs
+  // headroom for retries with large prompts, e.g. after discuss/human:answer)
   const ALL_TOOLS = ['Bash', 'Edit', 'Write', 'Read', 'Glob', 'Grep', 'Task', 'NotebookEdit', 'WebFetch', 'WebSearch']
 
   return {
     supervisorDispatch: (systemPrompt: string, userPrompt: string) =>
       dispatch(systemPrompt, userPrompt, {
         model: config.supervisorModel,
-        maxTurns: 2,
+        maxTurns: 4,
         turnTimeoutMs: supervisorTurnMs,
         totalTimeoutMs: supervisorTotalMs,
         disallowedTools: ALL_TOOLS,

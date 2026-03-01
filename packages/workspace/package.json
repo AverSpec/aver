@@ -1,21 +1,30 @@
 {
-  "name": "@aver/mcp-server",
+  "name": "@aver/workspace",
   "version": "0.1.1",
-  "description": "MCP server for Aver domain-driven acceptance testing",
+  "description": "Scenario workspace engine for the Aver BDD framework",
   "type": "module",
   "license": "MIT",
   "author": "Nate Jackson",
   "repository": {
     "type": "git",
     "url": "https://github.com/njackson/aver.git",
-    "directory": "packages/mcp-server"
+    "directory": "packages/workspace"
   },
   "homepage": "https://github.com/njackson/aver",
   "bugs": "https://github.com/njackson/aver/issues",
-  "keywords": ["testing", "mcp", "model-context-protocol", "ai-testing", "aver"],
-  "publishConfig": { "access": "public" },
-  "engines": { "node": ">=18.0.0" },
-  "bin": { "aver-mcp": "./dist/index.js" },
+  "keywords": [
+    "testing",
+    "aver",
+    "workspace",
+    "bdd",
+    "scenarios"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -26,7 +35,9 @@
       }
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "test": "vitest run",
@@ -34,18 +45,14 @@
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
-    "@aver/workspace": "workspace:^",
-    "@modelcontextprotocol/sdk": "^1.26.0",
-    "zod": "^4.0.0"
-  },
-  "peerDependencies": {
-    "@aver/core": "workspace:^"
+    "@libsql/client": "^0.17.0",
+    "lexorank": "^1.0.5"
   },
   "devDependencies": {
+    "@aver/core": "workspace:^",
+    "@types/node": "^22.0.0",
     "tsup": "^8.0.0",
     "typescript": "^5.7.0",
-    "vitest": "^3.0.0",
-    "@types/node": "^22.0.0",
-    "@aver/core": "workspace:^"
+    "vitest": "^3.0.0"
   }
 }

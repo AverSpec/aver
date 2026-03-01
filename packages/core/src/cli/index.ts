@@ -25,22 +25,8 @@ switch (command) {
     break
   }
   case 'agent': {
-    try {
-      const { parseAgentArgs, printAgentHelp } = await import('@aver/agent')
-      const parsed = parseAgentArgs(args)
-      if (parsed.command === 'help') {
-        printAgentHelp()
-      } else {
-        const { runAgentCommand } = await import('./agent.js')
-        await runAgentCommand(parsed)
-      }
-    } catch (e: unknown) {
-      if (e && typeof e === 'object' && 'code' in e && e.code === 'ERR_MODULE_NOT_FOUND') {
-        console.error('Agent not installed. Run: pnpm add @aver/agent')
-        process.exit(1)
-      }
-      throw e
-    }
+    const { runAgentCommand } = await import('./agent.js')
+    await runAgentCommand({ command: args[0] as any ?? 'help' })
     break
   }
   case '--help':
@@ -54,14 +40,13 @@ Commands:
   aver init      Scaffold a new domain
   aver approve   Update approvals
   aver workspace Manage scenario workspaces
-  aver agent     AI agent for domain-driven development (experimental)
+  aver agent     (moved to aver-experimental)
 
 Options:
   --help         Show this help message
 
 Run "aver run --help" for run options.
 Run "aver workspace --help" for workspace options.
-Run "aver agent --help" for agent options.
 `)
     break
   }

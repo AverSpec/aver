@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, unlinkSync } from 'node:fs'
 import { join } from 'node:path'
-import { atomicWriteFileSync } from '@aver/agent'
+import { atomicWriteFileSync } from '@aver/workspace'
 
 export interface TestResult {
   testName: string

@@ -36,9 +36,9 @@ When documenting characterized behavior, describe it in **domain language**:
 
 Implementation details (which function, which line, which table) go in **seams**. The behavioral description should read like something a product owner would recognize.
 
-## From Characterization to Specification
+## From Characterization to Scenario Capture
 
-Characterization tests document what the system DOES. They become evidence for the mapping session, where the human confirms whether the behavior is intended. Behaviors confirmed as intended feed into specification (naming vocabulary). Behaviors identified as bugs become new scenarios for correction.
+Characterization tests document what the system DOES. Each characterized behavior is a candidate for scenario capture — call `capture_scenario` with `mode: "observed"` for each distinct behavior found. These scenarios carry characterization evidence (approval baselines, seams, constraints) into the Example Mapping session, where the human confirms whether the behavior is intended. Behaviors confirmed as intended advance through mapping to specification. Behaviors identified as bugs become new `intended` mode scenarios for correction.
 
 ## Anti-Patterns
 

@@ -1,10 +1,10 @@
-# Scenario Mapping (Example Mapping)
+# Example Mapping (Facilitated Session)
 
-Structured conversation technique to extract rules, examples, and questions from a scenario. Based on Matt Wynne's Example Mapping. The core activity for advancing scenarios to `mapped`.
+Structured collaborative technique to extract rules, examples, and questions from a scenario. Based on Matt Wynne's Example Mapping. The agent facilitates — the human/team confirms, refines, and decides.
 
 ## When to Use
 
-A scenario at `captured` (greenfield/intended) or `characterized` (legacy/observed) needs decomposition into testable pieces before domain vocabulary can be designed.
+A scenario at `captured` (greenfield/intended) or `characterized` (legacy/observed) needs decomposition into testable pieces before domain vocabulary can be designed. This is the core activity for advancing scenarios to `mapped`.
 
 ## The Four Cards
 
@@ -15,35 +15,89 @@ A scenario at `captured` (greenfield/intended) or `characterized` (legacy/observ
 | **Example** | Green | A concrete given/when/then proving a rule |
 | **Question** | Red | An unresolved ambiguity |
 
-## Session Flow
+## Facilitation Flow
 
-### 1. Present the scenario
+### 1. Open the Session
 
-Read the behavior description. If the scenario is `characterized`, review investigation evidence (approval baselines, seam analysis) first.
+Present the story and set context. If the scenario is `characterized`, review evidence first.
 
-### 2. Extract rules
+Say to the human:
+> "Let's map out **[scenario behavior]**. Here's what we know so far:
+> - [summary of evidence / context / approval baselines]
+> - [known constraints]
+>
+> Who else should weigh in on this? (Three Amigos: product owner, tester, developer)"
 
-Derive rules from code evidence, approval baselines, and domain knowledge. Each rule is a **business constraint in domain language** — describe WHY the behavior matters, not WHERE it lives in code:
-- "A task must have a title"
-- "New tasks default to the 'todo' stage"
-- "Task titles must be unique within a board"
+Wait for the human to confirm participants and context before proceeding.
 
-Implementation details (which function validates, which table stores) belong in **seams**, not rules. Rules should read like something a product owner would say.
+### 2. Elicit Rules — Lead with Uncertainty
 
-### 3. Generate examples per rule
+Propose candidate rules. **Present uncertain items first** — they shape the conversation more than confirmed ones.
 
-At least two per rule — one satisfying, one violating. Each has three parts:
-- **Given**: precondition / initial state
-- **When**: the action taken
-- **Then**: the expected outcome
+For each proposed rule, state confidence:
 
-### 4. Capture questions
+Say to the human:
+> "I see these candidate rules. I'm leading with the ones I'm least sure about:
+>
+> **Speculative** (needs your input):
+> - [rule] — I'm guessing based on [evidence]. Is this right?
+>
+> **Inferred** (pattern-based):
+> - [rule] — I see this pattern in [evidence]. Does it match your understanding?
+>
+> **Confirmed** (directly evident):
+> - [rule] — This is explicit in [code/test/schema]."
 
-Any ambiguity becomes a question, not a guess. Use `add_question` MCP tool to attach questions to the scenario. Do NOT resolve questions by fabricating answers.
+**Speculative rules generate questions automatically.** For each speculative rule, immediately call `add_question` with the uncertainty. Don't wait.
 
-### 5. Persist rules and examples on the scenario
+Present 1-3 rules at a time. Large batches cause rubber-stamping. Ask:
+> "Do these match your understanding? Anything missing? Anything wrong?"
 
-Use `update_scenario` to save rules and examples directly on the scenario object. This is the durable record — not rationale text, not session notes.
+### 3. Generate Examples Together
+
+For each confirmed rule, propose a concrete example. Then ask for counter-examples and edge cases.
+
+Say to the human:
+> "For the rule **[rule text]**, here's an example:
+>
+> **Given**: [precondition]
+> **When**: [action]
+> **Then**: [expected outcome]
+>
+> Can you think of an edge case or a situation where this rule gets tricky?"
+
+Generate at least two examples per rule — one satisfying, one violating. The human may suggest examples the agent wouldn't think of.
+
+### 4. Capture Questions Immediately
+
+Any ambiguity becomes a question, not a guess. Call `add_question` the moment uncertainty surfaces.
+
+Say to the human:
+> "I'm not sure about [X]. I've captured it as a question on the scenario. We can't advance until it's resolved — but we can keep mapping other rules in the meantime."
+
+Do NOT resolve questions by fabricating answers. Questions exist because the answer requires human judgment.
+
+### 5. Check Scope
+
+After rules and examples are drafted, check whether the scenario should be split.
+
+Say to the human:
+> "We have [N] rules and [M] examples. Let me check scope:
+> - More than 8 rules? → probably too broad, should split
+> - More questions than examples? → need more investigation first
+> - Rules that contradict? → two scenarios masquerading as one
+>
+> Is this one scenario or should we split it?"
+
+Splitting signals:
+- **More than 8 rules**: the scenario is too broad
+- **More questions than examples**: not enough understanding
+- **Rules that contradict**: two scenarios masquerading as one
+- **Examples requiring multi-step setup across features**: crosses domain boundaries
+
+### 6. Persist Rules and Examples
+
+Use `update_scenario` to save rules and examples directly on the scenario object.
 
 ```
 Call update_scenario with:
@@ -70,43 +124,31 @@ Call update_scenario with:
 Rules are **business constraints in domain language** — what a product owner would say.
 Examples read like **Example Mapping cards** with Given/When/Then in domain language.
 
-### 6. Resolve or defer
+### 7. Confidence Check and Advancement
 
-Questions the human answers immediately: resolve with `resolve_question` and refine rules/examples. Questions needing more investigation: leave open. The scenario cannot advance until all questions are resolved.
+Present a summary with confidence levels before asking to advance.
 
-## Confidence Reporting
+Say to the human:
+> "Here's where we landed on **[scenario behavior]**:
+>
+> **Rules** ([N] total):
+> - [Confirmed] [rule]
+> - [Inferred] [rule] — I think this is right based on [evidence]
+>
+> **Examples** ([M] total):
+> - [example summaries]
+>
+> **Open Questions** ([Q] total):
+> - [question list, if any]
+>
+> Are you confident enough to move to domain design, or do we need more investigation?"
 
-For each proposed rule, indicate confidence:
-- **Confirmed**: directly evident in code (explicit validation, schema constraint, test assertion)
-- **Inferred**: pattern-based reasoning (naming conventions, similar modules, comments)
-- **Speculative**: partial evidence, needs human verification
+Prerequisites for advancement to `mapped`:
+1. Rules and examples saved on the scenario via `update_scenario`
+2. All questions on the scenario are resolved
+3. The human confirms the rules and examples reflect their intent
 
-Present uncertain items first. Confirmed items can wait — the uncertain ones shape the conversation.
-
-## Example Format
-
-Rules and examples use **domain language**, not implementation details. Confidence annotations go on a separate line referencing evidence, not baked into the rule text.
-
-```
-Rule: A task must have a title
-  Confidence: Confirmed (see approval baseline: create-task-validation.txt)
-  Example: Given no title → create task → rejected with "title is required"
-  Example: Given title "Fix bug" → create task → task exists with title "Fix bug"
-
-Rule: New tasks default to the 'todo' stage
-  Confidence: Inferred (all existing tasks start at 'todo', no explicit default found)
-  Example: Given a title with no stage specified → create task → task is in 'todo'
-  Example: Given a title with stage 'in-progress' → create task → task is in 'in-progress'
-```
-
-Notice: rules read like business constraints ("A task must have a title"), not code constraints ("Title validation in TaskService.create()"). Implementation locations belong in seams.
-
-## When to Stop
-
-- **More than 8 rules**: the scenario is too broad. Split into multiple scenarios.
-- **More questions than examples**: not enough understanding. More investigation needed.
-- **Rules that contradict**: two scenarios masquerading as one. Split.
-- **Examples requiring multi-step setup across features**: the scenario crosses domain boundaries. Split by domain.
+**ALWAYS confirm with the human before advancing.** Never auto-advance.
 
 ## Mapping Examples to Domain Operations (Preview)
 
@@ -120,15 +162,6 @@ During the session, start thinking about how examples map to Aver operations:
 
 Do NOT finalize vocabulary names during mapping. That happens in specification with human approval. Just note the rough shape.
 
-## Advancement to `mapped`
-
-Prerequisites:
-1. Rules and examples saved on the scenario via `update_scenario`
-2. All questions on the scenario are resolved
-3. The human confirms the rules and examples reflect their intent
-
-**ALWAYS confirm with the human before advancing to `mapped`.** Present rules, examples, and proposed scope. Wait for explicit approval.
-
 ## Anti-Patterns
 
 - **Skipping rules, going straight to examples.** Rules structure the examples. Without them, you get random scenarios instead of systematic coverage.
@@ -137,5 +170,4 @@ Prerequisites:
 - **Naming operations in implementation language.** "postToTaskEndpoint" is adapter detail. "createTask" is domain language.
 - **Batching too many proposals.** Present 1-3 items at a time. Prioritize uncertain items. Large batches cause rubber-stamping.
 - **Advancing without human confirmation.** The `mapped` stage means the human has confirmed intent. Never auto-advance.
-
-> **Human interaction:** Present rules and examples directly and wait for explicit confirmation before advancing. Use `add_question`/`resolve_question` MCP tools for async questions.
+- **Deciding for the human.** The agent proposes, the human disposes. Present options, not conclusions.

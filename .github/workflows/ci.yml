@@ -24,7 +24,7 @@ jobs:
         run: |
           pnpm --filter @aver/core run build
           pnpm --filter @aver/approvals run build
-          pnpm --filter @aver/agent run build
+          pnpm --filter @aver/workspace run build
           pnpm --filter @aver/mcp-server run build
           pnpm --filter @aver/protocol-http run build
           pnpm --filter @aver/protocol-playwright run build
@@ -37,7 +37,7 @@ jobs:
           path: |
             packages/core/dist
             packages/approvals/dist
-            packages/agent/dist
+            packages/workspace/dist
             packages/mcp-server/dist
             packages/protocol-http/dist
             packages/protocol-playwright/dist
@@ -64,9 +64,6 @@ jobs:
         with:
           name: build-artifacts
 
-      - name: Install Claude Code
-        run: npm install -g @anthropic-ai/claude-code
-
       - run: mkdir -p test-results
 
       - name: Test core
@@ -79,12 +76,10 @@ jobs:
         run: pnpm exec vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/approvals.xml
         working-directory: packages/approvals
 
-      - name: Test agent
+      - name: Test workspace
         if: ${{ !cancelled() }}
-        run: pnpm exec vitest run --exclude 'test/eval/integration/**' --reporter=junit --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/agent.xml
-        working-directory: packages/agent
-        env:
-          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: pnpm exec vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/workspace.xml
+        working-directory: packages/workspace
 
       - name: Test mcp-server
         if: ${{ !cancelled() }}

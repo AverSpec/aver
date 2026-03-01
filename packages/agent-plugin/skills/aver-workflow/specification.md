@@ -6,6 +6,20 @@ Transform `mapped` scenarios into domain vocabulary and adapter interface defini
 
 Scenarios at `mapped` stage with: rules, examples, resolved questions, human-confirmed intent.
 
+## Confidence Review
+
+Before naming vocabulary, review the confidence levels from the mapping session. Any **inferred** or **speculative** rules that weren't resolved during mapping should be flagged now.
+
+Say to the human:
+> "Before we name the domain vocabulary, let me check our confidence on the rules:
+>
+> - [Confirmed rules — these are solid ground for naming]
+> - [Inferred rules — I'm fairly confident, but want to double-check: does [rule] hold?]
+>
+> Are we confident enough in these rules to design vocabulary around them?"
+
+Rules with low confidence may produce vocabulary that needs renaming later. Better to resolve uncertainty now than rename operations after tests are written.
+
 ## Naming Vocabulary
 
 Derive operation names from the examples' given/when/then structure:
@@ -25,7 +39,9 @@ Derive operation names from the examples' given/when/then structure:
 
 ## Human Confirms Names
 
-Present proposed vocabulary to the human before writing any domain code:
+Present proposed vocabulary to the human before writing any domain code. Vocabulary names become shared language — ask who else should weigh in:
+
+> "These names will be the shared language for this domain. Should anyone else review them — a product owner for correctness, another developer for consistency with existing domains?"
 
 ```
 For the "task creation" scenarios, I propose:

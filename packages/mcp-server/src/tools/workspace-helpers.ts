@@ -1,7 +1,7 @@
 import { basename } from 'node:path'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
-import { WorkspaceStore } from '@aver/agent'
+import { WorkspaceStore } from '@aver/workspace'
 import type { ToolsConfig } from './types.js'
 
 // --- Config ---

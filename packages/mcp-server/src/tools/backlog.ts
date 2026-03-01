@@ -4,7 +4,7 @@ import {
   BacklogOps,
   type BacklogItem,
   type BacklogSummary,
-} from '@aver/agent'
+} from '@aver/workspace'
 import type { ToolsConfig } from './types.js'
 import { setToolsConfig, resolveBasePath, resolveProjectId, getCachedStore } from './workspace-helpers.js'
 

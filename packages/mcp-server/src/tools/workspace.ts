@@ -16,7 +16,7 @@ import {
   type ScenarioSummary,
   type Question,
   type Phase,
-} from '@aver/agent'
+} from '@aver/workspace'
 import type { ToolsConfig } from './types.js'
 import { setToolsConfig, resolveBasePath, resolveProjectId, getCachedStore } from './workspace-helpers.js'
 

@@ -11,9 +11,9 @@ On session start:
 
 ## Build
 
-Must build agent THEN core before running CLI:
+Must build workspace THEN core before running CLI:
 ```
-pnpm --filter @aver/agent run build && pnpm --filter @aver/core run build
+pnpm --filter @aver/workspace run build && pnpm --filter @aver/core run build
 ```
 
 CLI entry: `node packages/core/dist/cli.js` (ESM)
@@ -24,4 +24,11 @@ CLI entry: `node packages/core/dist/cli.js` (ESM)
 pnpm exec aver run
 ```
 
-Expected failures: 5 eval/judge tests (need Claude Code auth), 7 Playwright tests (need browser).
+Expected failures: 7 Playwright tests (need browser).
+
+## Architecture
+
+- `@aver/workspace` — scenario workspace engine (WorkspaceOps, BacklogOps, storage)
+- `@aver/core` — domain-driven acceptance testing framework
+- `@aver/mcp-server` — MCP server for workspace tools
+- `@aver/agent` — moved to [aver-experimental](https://github.com/njackson/aver-experimental)

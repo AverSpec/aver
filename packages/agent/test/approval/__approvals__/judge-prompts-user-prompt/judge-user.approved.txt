@@ -1,7 +1,0 @@
-## CONTENT
-
-The cart contains 3 items totaling $45.00.
-
-## RUBRIC
-
-Output must include a dollar amount and item count.

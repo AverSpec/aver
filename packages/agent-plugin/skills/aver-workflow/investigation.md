@@ -91,6 +91,31 @@ Approval tests are a starting point, not a destination. As scenarios advance thr
 - Named assertions check specific properties (resilient, but targeted)
 - Graduate incrementally — keep approvals alongside named assertions until coverage is confirmed
 
+## Crossing Point: Investigation → Scenario Capture
+
+After presenting findings, **immediately propose scenarios to capture**. Don't wait for the human to ask — every distinct behavior you observed is a candidate.
+
+Say to the human:
+> "Before I share findings — who else should review these? A product owner for intent, a tester for edge cases, a developer for feasibility?"
+
+Then present findings:
+
+> "Based on this investigation, I see [N] distinct behaviors:
+>
+> 1. **[behavior]** — [confidence level]. [one-line evidence summary]
+> 2. **[behavior]** — [confidence level]. [one-line evidence summary]
+> 3. **[behavior]** — [confidence level]. [one-line evidence summary]
+>
+> Should I capture these as scenarios? Any that should be combined, split, or skipped?"
+
+For each behavior the human confirms:
+- Call `capture_scenario` with `mode: "observed"` and the behavior description
+- Attach seams and constraints via `update_scenario`
+- Link approval baselines via `link_to_domain` (approvalBaseline)
+- Post open questions via `add_question` for speculative findings
+
+Then transition to Example Mapping for each captured scenario. The investigation evidence becomes input to the mapping session — approval baselines show what the system does, seams show where tests attach, constraints become candidate rules.
+
 ## Anti-Patterns
 
 - **Approving baselines without reviewing.** First run captures whatever the system does. Inspect before accepting.
@@ -98,5 +123,4 @@ Approval tests are a starting point, not a destination. As scenarios advance thr
 - **Testing through only one seam.** Legacy systems often have inconsistencies between API, UI, and internal logic. Capture at multiple seams.
 - **Skipping seam analysis.** Without seams, tests require the full system running. Find the narrowest seam that exercises the behavior.
 - **Presenting findings without confidence levels.** The human needs to know which findings are solid vs speculative.
-
-> **Human interaction:** Present findings directly and wait for confirmation. Use `add_question`/`resolve_question` MCP tools for async questions.
+- **Waiting for the human to ask for scenarios.** Proactively propose scenario captures after presenting findings. The investigation's purpose is to feed the pipeline.

@@ -141,6 +141,7 @@ Tests use domain language only — no implementation details leak in. Create `te
 
 ```typescript
 import { suite } from '@aver/core'
+import { expect } from 'vitest'
 import { shoppingCart } from '../domains/shopping-cart.js'
 
 const { test } = suite(shoppingCart)
@@ -159,7 +160,6 @@ test('remove items from cart', async ({ act, assert }) => {
 test('query cart contents', async ({ act, query }) => {
   await act.addItem({ product: 'Widget', quantity: 3 })
   const contents = await query.cartContents()
-  const { expect } = await import('vitest')
   expect(contents).toEqual([{ product: 'Widget', quantity: 3 }])
 })
 ```

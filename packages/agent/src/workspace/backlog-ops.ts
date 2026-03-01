@@ -123,7 +123,16 @@ export class BacklogOps {
 
       if (target.after) {
         const afterItem = tierItems.find(i => i.id === target.after)
-        if (!afterItem) throw new Error(`Backlog item "${target.after}" not found`)
+        if (!afterItem) {
+          const inOtherTier = items.find(i => i.id === target.after && i.id !== id)
+          if (inOtherTier) {
+            throw new Error(
+              `Item "${target.after}" exists but is in the ${inOtherTier.priority} tier. ` +
+              `Use the priority parameter to move across tiers, or specify an item within the same tier.`
+            )
+          }
+          throw new Error(`Backlog item "${target.after}" not found`)
+        }
         const afterIdx = tierItems.indexOf(afterItem)
         const afterRank = LexoRank.parse(afterItem.rank)
         const nextItem = tierItems[afterIdx + 1]
@@ -132,7 +141,16 @@ export class BacklogOps {
           : afterRank.genNext().toString()
       } else if (target.before) {
         const beforeItem = tierItems.find(i => i.id === target.before)
-        if (!beforeItem) throw new Error(`Backlog item "${target.before}" not found`)
+        if (!beforeItem) {
+          const inOtherTier = items.find(i => i.id === target.before && i.id !== id)
+          if (inOtherTier) {
+            throw new Error(
+              `Item "${target.before}" exists but is in the ${inOtherTier.priority} tier. ` +
+              `Use the priority parameter to move across tiers, or specify an item within the same tier.`
+            )
+          }
+          throw new Error(`Backlog item "${target.before}" not found`)
+        }
         const beforeIdx = tierItems.indexOf(beforeItem)
         const beforeRank = LexoRank.parse(beforeItem.rank)
         const prevItem = tierItems[beforeIdx - 1]

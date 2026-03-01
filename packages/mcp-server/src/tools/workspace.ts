@@ -159,7 +159,7 @@ export async function importScenariosHandler(
   input: { json: string },
   basePath: string,
   projectId: string,
-): Promise<{ added: number; skipped: number }> {
+): Promise<{ added: number; skipped: number; skippedIds: string[] }> {
   const store = createStore(basePath, projectId)
   return importJson(store, input.json)
 }

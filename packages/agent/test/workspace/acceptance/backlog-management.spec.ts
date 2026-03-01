@@ -66,6 +66,14 @@ describe('Backlog Management', () => {
       await then.itemHasPriority({ priority: 'P0' })
     })
 
+    test('moving after an item in a different tier gives a helpful error', async ({ given, when, then }) => {
+      await given.createItem({ title: 'P0 item', priority: 'P0' })
+      await given.createItem({ title: 'P2 item', priority: 'P2' })
+      await given.selectItem({ title: 'P2 item' })
+      await when.moveItem({ after: 'P0 item' })
+      await then.operationFailed({ message: 'exists but is in the P0 tier' })
+    })
+
     test('reordering within a priority tier', async ({ given, when, then }) => {
       await given.createItem({ title: 'First', priority: 'P1' })
       await given.createItem({ title: 'Second', priority: 'P1' })

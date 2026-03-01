@@ -91,5 +91,15 @@ describe('export', () => {
       expect(imported.skipped).toBe(1)
       expect(await ops.getScenarios()).toHaveLength(1)
     })
+
+    it('returns skippedIds listing the duplicate scenario IDs', async () => {
+      const s1 = await ops.captureScenario({ behavior: 'a' })
+      const s2 = await ops.captureScenario({ behavior: 'b' })
+      const json = exportJson(await store.load())
+
+      const imported = await importJson(store, json)
+      expect(imported.skippedIds).toEqual(expect.arrayContaining([s1.id, s2.id]))
+      expect(imported.skippedIds).toHaveLength(2)
+    })
   })
 })

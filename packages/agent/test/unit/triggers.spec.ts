@@ -68,7 +68,7 @@ describe('TriggerQueue', () => {
     expect(cb).not.toHaveBeenCalled()
   })
 
-  it('debounces: two triggers of same type → only most recent kept', () => {
+  it('preserves multiple same-type triggers from different agents', () => {
     const queue = new TriggerQueue()
     const cb = vi.fn()
     queue.onTrigger(cb)
@@ -79,12 +79,12 @@ describe('TriggerQueue', () => {
     queue.push(first)
     queue.push(second)
 
-    expect(queue.pendingCount).toBe(1)
+    expect(queue.pendingCount).toBe(2)
 
     queue.markIdle()
 
     expect(cb).toHaveBeenCalledOnce()
-    expect(cb).toHaveBeenCalledWith([second])
+    expect(cb).toHaveBeenCalledWith([first, second])
   })
 
   it('no debounce across different types', () => {
@@ -105,7 +105,7 @@ describe('TriggerQueue', () => {
     expect(cb).toHaveBeenCalledWith([critical, stuck])
   })
 
-  it('pendingCount reflects queue size', () => {
+  it('pendingCount reflects queue size including same-type duplicates', () => {
     const queue = new TriggerQueue()
     queue.markActive()
 
@@ -117,9 +117,9 @@ describe('TriggerQueue', () => {
     queue.push(makeTrigger('worker:stuck'))
     expect(queue.pendingCount).toBe(2)
 
-    // Same type replaces — still 2
+    // Same type is now preserved — count goes to 3
     queue.push(makeTrigger('worker:critical'))
-    expect(queue.pendingCount).toBe(2)
+    expect(queue.pendingCount).toBe(3)
   })
 
   it('isActive reflects state', () => {
@@ -139,6 +139,29 @@ describe('TriggerQueue', () => {
 
     expect(() => queue.push(makeTrigger('session:start'))).not.toThrow()
     expect(queue.pendingCount).toBe(1) // queued since no callback to deliver to
+  })
+
+  it('preserves concurrent worker goal_complete triggers from different workers', () => {
+    const queue = new TriggerQueue()
+    const cb = vi.fn()
+    queue.onTrigger(cb)
+    queue.markActive()
+
+    const w1Done = makeTrigger('worker:goal_complete', { agentId: 'worker-1', data: { result: 'ok' } })
+    const w2Done = makeTrigger('worker:goal_complete', { agentId: 'worker-2', data: { result: 'ok' } })
+    const w3Done = makeTrigger('worker:goal_complete', { agentId: 'worker-3', data: { result: 'ok' } })
+    queue.push(w1Done)
+    queue.push(w2Done)
+    queue.push(w3Done)
+
+    expect(queue.pendingCount).toBe(3)
+
+    queue.markIdle()
+
+    expect(cb).toHaveBeenCalledOnce()
+    const batch = cb.mock.calls[0][0] as Trigger[]
+    expect(batch).toHaveLength(3)
+    expect(batch).toEqual([w1Done, w2Done, w3Done])
   })
 
   it('push without callback while active queues the trigger', () => {

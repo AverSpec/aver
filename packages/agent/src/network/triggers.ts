@@ -20,15 +20,15 @@ export interface Trigger {
 export type TriggerCallback = (triggers: Trigger[]) => void
 
 /**
- * Event queue with debounce logic for supervisor wake triggers.
+ * Event queue for supervisor wake triggers.
  *
  * When the supervisor is idle, incoming triggers fire the callback immediately.
- * When the supervisor is active, triggers are queued and debounced by type
- * (only the most recent trigger per type is kept). On markIdle(), any queued
- * triggers are delivered as a batch.
+ * When the supervisor is active, triggers are queued and delivered as a batch
+ * on markIdle(). All triggers are preserved — multiple same-type triggers
+ * (e.g. two worker completions) are kept so none are silently dropped.
  */
 export class TriggerQueue {
-  private queue: Map<TriggerType, Trigger> = new Map()
+  private queue: Trigger[] = []
   private callback: TriggerCallback | undefined
   private active = false
 
@@ -40,8 +40,7 @@ export class TriggerQueue {
     if (!this.active && this.callback) {
       this.callback([trigger])
     } else {
-      // Debounce: overwrite any existing trigger of the same type
-      this.queue.set(trigger.type, trigger)
+      this.queue.push(trigger)
     }
   }
 
@@ -56,9 +55,9 @@ export class TriggerQueue {
    */
   markIdle(): void {
     this.active = false
-    if (this.queue.size > 0 && this.callback) {
-      const batch = Array.from(this.queue.values())
-      this.queue.clear()
+    if (this.queue.length > 0 && this.callback) {
+      const batch = this.queue.slice()
+      this.queue.length = 0
       this.callback(batch)
     }
   }
@@ -70,7 +69,7 @@ export class TriggerQueue {
 
   /** Pending trigger count (for debugging/monitoring). */
   get pendingCount(): number {
-    return this.queue.size
+    return this.queue.length
   }
 
   /** Whether the supervisor is currently active. */

@@ -8,7 +8,8 @@ import { ContextAssembler } from '../context/assembler.js'
 // For MVP, worker output is stored as a single observation directly.
 import { TriggerQueue, type Trigger } from './triggers.js'
 import { parseDecision, DecisionParseError } from '../supervisor/decisions.js'
-import type { WorkspaceOps } from '../workspace/operations.js'
+import { STAGE_ORDER, type WorkspaceOps } from '../workspace/operations.js'
+import type { Stage } from '../workspace/types.js'
 import type { PermissionLevel } from '../shell/hooks.js'
 
 // --- Decision types (new, simplified) ---
@@ -434,11 +435,15 @@ export class AgentNetwork {
     decision: Extract<SupervisorDecision, { action: 'revisit_scenario' }>,
   ): Promise<void> {
     try {
+      if (!STAGE_ORDER.includes(decision.targetStage as any)) {
+        throw new Error(`Invalid targetStage "${decision.targetStage}" — must be one of: ${STAGE_ORDER.join(', ')}`)
+      }
+
       const scenario = await this.workspaceOps.getScenario(decision.scenarioId)
       const fromStage = scenario?.stage ?? 'unknown'
 
       const { clearedFields } = await this.workspaceOps.revisitScenario(decision.scenarioId, {
-        targetStage: decision.targetStage as any,
+        targetStage: decision.targetStage as Stage,
         rationale: decision.rationale,
       })
 

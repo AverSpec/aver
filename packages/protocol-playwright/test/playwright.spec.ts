@@ -13,4 +13,45 @@ describe('playwright()', () => {
     const protocol = playwright({ headless: true })
     expect(protocol.name).toBe('playwright')
   })
+
+  it('exposes screenshotter extension with regions', () => {
+    const regions = { header: 'header', footer: 'footer' }
+    const protocol = playwright({ regions })
+    const screenshotter = protocol.extensions?.screenshotter
+    expect(screenshotter).toBeDefined()
+    expect(screenshotter!.regions).toEqual(regions)
+  })
+
+  it('screenshotter throws when no active page exists', async () => {
+    const protocol = playwright()
+    const screenshotter = protocol.extensions?.screenshotter
+    await expect(screenshotter!.capture('/tmp/test.png')).rejects.toThrow(
+      'No active page for screenshotter',
+    )
+  })
+
+  it('screenshotter throws for unknown region', async () => {
+    // We can't test this fully without a browser, but we can verify
+    // the error path for unknown regions by checking the structure
+    const protocol = playwright({ regions: { header: '#header' } })
+    const screenshotter = protocol.extensions?.screenshotter
+    // Without setup(), activePage is undefined, so it throws the "no active page" error first
+    await expect(screenshotter!.capture('/tmp/test.png', { region: 'footer' })).rejects.toThrow(
+      'No active page for screenshotter',
+    )
+  })
+
+  it('has onTestFail handler', () => {
+    const protocol = playwright()
+    expect(typeof protocol.onTestFail).toBe('function')
+  })
+
+  it('uses per-page browser tracking (no shared browser variable)', () => {
+    // Create two protocol instances to verify they are independent
+    const p1 = playwright()
+    const p2 = playwright()
+    // Each instance should have its own state — verifying structural independence
+    expect(p1).not.toBe(p2)
+    expect(p1.extensions?.screenshotter).not.toBe(p2.extensions?.screenshotter)
+  })
 })

@@ -352,9 +352,9 @@ export class WorkspaceOps {
       const scenario = ws.scenarios.find(s => s.id === scenarioId)
       if (!scenario) throw new Error('Scenario not found: ' + scenarioId)
 
-      if (links.domainOperation) scenario.domainOperation = links.domainOperation
-      if (links.testNames) scenario.testNames = links.testNames
-      if (links.approvalBaseline) scenario.approvalBaseline = links.approvalBaseline
+      if (links.domainOperation !== undefined) scenario.domainOperation = links.domainOperation
+      if (links.testNames !== undefined) scenario.testNames = links.testNames
+      if (links.approvalBaseline !== undefined) scenario.approvalBaseline = links.approvalBaseline
       scenario.updatedAt = new Date().toISOString()
       return ws
     })

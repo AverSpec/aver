@@ -13,6 +13,8 @@ import {
   discoverAndRegister,
   getDomainFilePaths,
   resetDiscoveryCache,
+  isTypeScriptLoaderError,
+  findCompiledFallback,
 } from '../src/discovery'
 
 describe('toKebabCase', () => {
@@ -290,6 +292,149 @@ describe('matchDomainByKebab', () => {
 
   it('returns undefined for no match', () => {
     expect(matchDomainByKebab('unknown', domains)).toBeUndefined()
+  })
+})
+
+describe('isTypeScriptLoaderError', () => {
+  it('detects ERR_UNKNOWN_FILE_EXTENSION', () => {
+    const err = new Error('Unknown file extension ".ts"')
+    ;(err as NodeJS.ErrnoException).code = 'ERR_UNKNOWN_FILE_EXTENSION'
+    expect(isTypeScriptLoaderError(err)).toBe(true)
+  })
+
+  it('detects SyntaxError from TS type annotations', () => {
+    const err = new SyntaxError('Unexpected reserved word \'type\'')
+    expect(isTypeScriptLoaderError(err)).toBe(true)
+  })
+
+  it('detects SyntaxError from TS interface keyword', () => {
+    const err = new SyntaxError('Unexpected reserved word \'interface\'')
+    expect(isTypeScriptLoaderError(err)).toBe(true)
+  })
+
+  it('returns false for generic errors', () => {
+    expect(isTypeScriptLoaderError(new Error('Module not found'))).toBe(false)
+  })
+
+  it('returns false for non-Error values', () => {
+    expect(isTypeScriptLoaderError('string')).toBe(false)
+    expect(isTypeScriptLoaderError(null)).toBe(false)
+    expect(isTypeScriptLoaderError(42)).toBe(false)
+  })
+
+  it('returns false for generic SyntaxError without TS keywords', () => {
+    expect(isTypeScriptLoaderError(new SyntaxError('Unexpected token }'))).toBe(false)
+  })
+})
+
+describe('findCompiledFallback', () => {
+  let tmpDir: string
+
+  beforeEach(() => {
+    tmpDir = mkdtempSync(join(tmpdir(), 'aver-fallback-'))
+  })
+
+  afterEach(() => {
+    rmSync(tmpDir, { recursive: true, force: true })
+  })
+
+  it('returns .js path when compiled file exists', async () => {
+    writeFileSync(join(tmpDir, 'cart.ts'), 'export const x = 1')
+    writeFileSync(join(tmpDir, 'cart.js'), 'exports.x = 1')
+    const result = await findCompiledFallback(join(tmpDir, 'cart.ts'))
+    expect(result).toBe(join(tmpDir, 'cart.js'))
+  })
+
+  it('returns undefined when no .js file exists', async () => {
+    writeFileSync(join(tmpDir, 'cart.ts'), 'export const x = 1')
+    const result = await findCompiledFallback(join(tmpDir, 'cart.ts'))
+    expect(result).toBeUndefined()
+  })
+})
+
+describe('discoverDomains — .ts/.js preference', () => {
+  let tmpDir: string
+
+  beforeEach(() => {
+    tmpDir = mkdtempSync(join(tmpdir(), 'aver-tspref-'))
+    resetRegistry()
+  })
+
+  afterEach(() => {
+    rmSync(tmpDir, { recursive: true, force: true })
+  })
+
+  it('prefers .js over .ts when both exist in the same directory', async () => {
+    mkdirSync(join(tmpDir, 'domains'))
+    // Both files export the same domain — the .js should be picked
+    const domainContent = `
+      export const Cart = {
+        name: 'Cart',
+        vocabulary: { actions: {}, queries: {}, assertions: {} },
+      }
+    `
+    writeFileSync(join(tmpDir, 'domains', 'cart.ts'), domainContent)
+    writeFileSync(join(tmpDir, 'domains', 'cart.js'), domainContent)
+
+    const results = await discoverDomains(tmpDir)
+    expect(results).toHaveLength(1)
+    expect(results[0].domain.name).toBe('Cart')
+    // Should use the .js file, not .ts
+    expect(results[0].filePath).toBe(join(tmpDir, 'domains', 'cart.js'))
+  })
+
+  it('still discovers .ts-only domains (when TS loader is available)', async () => {
+    mkdirSync(join(tmpDir, 'domains'))
+    writeFileSync(join(tmpDir, 'domains', 'orders.ts'), `
+      export const Orders = {
+        name: 'Orders',
+        vocabulary: { actions: {}, queries: {}, assertions: {} },
+      }
+    `)
+
+    const results = await discoverDomains(tmpDir)
+    expect(results).toHaveLength(1)
+    expect(results[0].domain.name).toBe('Orders')
+    expect(results[0].filePath).toBe(join(tmpDir, 'domains', 'orders.ts'))
+  })
+
+  it('discovers .js file even without a .ts sibling', async () => {
+    mkdirSync(join(tmpDir, 'domains'))
+    writeFileSync(join(tmpDir, 'domains', 'cart.js'), `
+      export const Cart = {
+        name: 'Cart',
+        vocabulary: { actions: {}, queries: {}, assertions: {} },
+      }
+    `)
+
+    const results = await discoverDomains(tmpDir)
+    expect(results).toHaveLength(1)
+    expect(results[0].filePath).toBe(join(tmpDir, 'domains', 'cart.js'))
+  })
+
+  it('handles mixed: some domains .ts-only, some with .js sibling', async () => {
+    mkdirSync(join(tmpDir, 'domains'))
+    const cartContent = `
+      export const Cart = {
+        name: 'Cart',
+        vocabulary: { actions: {}, queries: {}, assertions: {} },
+      }
+    `
+    writeFileSync(join(tmpDir, 'domains', 'cart.ts'), cartContent)
+    writeFileSync(join(tmpDir, 'domains', 'cart.js'), cartContent)
+    writeFileSync(join(tmpDir, 'domains', 'orders.ts'), `
+      export const Orders = {
+        name: 'Orders',
+        vocabulary: { actions: {}, queries: {}, assertions: {} },
+      }
+    `)
+
+    const results = await discoverDomains(tmpDir)
+    expect(results).toHaveLength(2)
+    const cart = results.find(r => r.domain.name === 'Cart')
+    const orders = results.find(r => r.domain.name === 'Orders')
+    expect(cart?.filePath).toBe(join(tmpDir, 'domains', 'cart.js'))
+    expect(orders?.filePath).toBe(join(tmpDir, 'domains', 'orders.ts'))
   })
 })
 

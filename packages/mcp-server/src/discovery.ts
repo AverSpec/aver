@@ -1,10 +1,41 @@
-import { readdir, stat } from 'node:fs/promises'
+import { readdir, stat, access } from 'node:fs/promises'
 import { join, parse as parsePath } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { registerDomain, getDomains } from '@aver/core'
 import { toKebabCase } from '@aver/core/scaffold'
 import type { Domain } from '@aver/core'
 import { log } from './logger.js'
+
+/**
+ * Detect whether an import error is due to Node not having a TypeScript loader.
+ * Common error codes/messages when importing .ts without tsx/ts-node/--loader:
+ * - ERR_UNKNOWN_FILE_EXTENSION: "Unknown file extension \".ts\""
+ * - SyntaxError from encountering TS syntax (type annotations, etc.)
+ */
+export function isTypeScriptLoaderError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false
+  const msg = err.message ?? ''
+  const code = (err as NodeJS.ErrnoException).code ?? ''
+  return (
+    code === 'ERR_UNKNOWN_FILE_EXTENSION' ||
+    (err instanceof SyntaxError && /\b(type|interface|import\.meta)\b/.test(msg))
+  )
+}
+
+/**
+ * Given a .ts file path, find a compiled .js fallback in the same directory.
+ * Returns the .js path if it exists, or undefined.
+ */
+export async function findCompiledFallback(tsFilePath: string): Promise<string | undefined> {
+  const { dir, name } = parsePath(tsFilePath)
+  const jsPath = join(dir, `${name}.js`)
+  try {
+    await access(jsPath)
+    return jsPath
+  } catch {
+    return undefined
+  }
+}
 
 const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', 'coverage', '.aver', '.worktrees'])
 
@@ -74,9 +105,29 @@ export async function discoverDomains(rootDir: string): Promise<DiscoveredDomain
     } catch {
       continue
     }
+
+    // Build a set of basenames that have .js files so we can skip .ts duplicates
+    const jsBasenames = new Set<string>()
+    for (const entry of entries) {
+      if (!entry.isFile()) continue
+      const { name: base, ext } = parsePath(entry.name)
+      if (ext === '.js') jsBasenames.add(base)
+    }
+
     for (const entry of entries) {
       if (!entry.isFile()) continue
       if (!/\.(ts|js|mjs)$/.test(entry.name)) continue
+
+      const { name: base, ext } = parsePath(entry.name)
+
+      // Skip .ts files when a .js sibling exists (prefer compiled output)
+      if (ext === '.ts' && jsBasenames.has(base)) {
+        log('info', 'skipping .ts file (compiled .js sibling exists)', {
+          filePath: join(dir, entry.name),
+          jsFile: join(dir, `${base}.js`),
+        })
+        continue
+      }
 
       const filePath = join(dir, entry.name)
       try {
@@ -89,7 +140,42 @@ export async function discoverDomains(rootDir: string): Promise<DiscoveredDomain
           }
         }
       } catch (err) {
-        log('warn', 'skipping file (import failed)', { filePath, error: (err as Error).message })
+        // If a .ts file failed, try to find and import a compiled .js fallback
+        if (ext === '.ts' && isTypeScriptLoaderError(err)) {
+          const fallbackPath = await findCompiledFallback(filePath)
+          if (fallbackPath) {
+            try {
+              const fallbackUrl = pathToFileURL(fallbackPath).href + `?t=${Date.now()}`
+              const mod = await import(fallbackUrl)
+              for (const exported of Object.values(mod)) {
+                if (isDomain(exported) && !seen.has(exported.name)) {
+                  seen.add(exported.name)
+                  found.push({ domain: exported, filePath: fallbackPath })
+                }
+              }
+              log('info', '.ts import failed, loaded compiled .js fallback', {
+                tsFile: filePath,
+                jsFile: fallbackPath,
+              })
+              continue
+            } catch (fallbackErr) {
+              log('warn', '.ts import failed and .js fallback also failed', {
+                tsFile: filePath,
+                jsFile: fallbackPath,
+                error: (fallbackErr as Error).message,
+              })
+              continue
+            }
+          }
+          log('warn', '.ts file cannot be imported without a TypeScript loader (tsx, ts-node, or --loader). ' +
+            'Either compile to .js or run with a TS-capable runtime.', {
+            filePath,
+            error: (err as Error).message,
+            hint: 'Run with tsx or ts-node, or compile your domains to .js',
+          })
+        } else {
+          log('warn', 'skipping file (import failed)', { filePath, error: (err as Error).message })
+        }
       }
     }
   }

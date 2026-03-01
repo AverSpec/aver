@@ -47,6 +47,17 @@ export function findAdapter(domain: Domain): Adapter | undefined {
     if (parentMatch) return parentMatch
   }
 
+  // Name-based fallback for re-exported / bundler-duplicated domains
+  const nameMatch = adapters.find(a => a.domain.name === domain.name)
+  if (nameMatch) {
+    console.warn(
+      `[aver] Domain "${domain.name}" matched by name, not reference. ` +
+      `This usually means the domain was re-exported through a bundler. ` +
+      `Import the domain from its original source.`
+    )
+    return nameMatch
+  }
+
   return undefined
 }
 
@@ -67,6 +78,20 @@ export function findAdapters(domain: Domain): Adapter[] {
         if (a.domain === current) results.push(a)
       }
       if (results.length > 0) break
+    }
+  }
+
+  // Name-based fallback for re-exported / bundler-duplicated domains
+  if (results.length === 0) {
+    for (const a of adapters) {
+      if (a.domain.name === domain.name) results.push(a)
+    }
+    if (results.length > 0) {
+      console.warn(
+        `[aver] Domain "${domain.name}" matched by name, not reference. ` +
+        `This usually means the domain was re-exported through a bundler. ` +
+        `Import the domain from its original source.`
+      )
     }
   }
 

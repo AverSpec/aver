@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import {
   registerDomain, getDomains, getDomain,
   registerAdapter, getAdapters, findAdapter, findAdapters, resetRegistry,
@@ -195,6 +195,45 @@ describe('findAdapter', () => {
 
     expect(findAdapter(child)).toBe(childAdapter)
   })
+
+  it('does not warn on reference match', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const adapter = makeAdapter(cart)
+    registerAdapter(adapter)
+    findAdapter(cart)
+    expect(warnSpy).not.toHaveBeenCalled()
+    warnSpy.mockRestore()
+  })
+
+  it('falls back to name match when reference differs', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const adapter = makeAdapter(cart)
+    registerAdapter(adapter)
+
+    // Simulate a re-exported domain with the same name but different reference
+    const cartCopy = defineDomain({
+      name: 'Cart',
+      actions: { addItem: action() },
+      queries: { total: query<number>() },
+      assertions: { isEmpty: assertion() },
+    })
+
+    expect(findAdapter(cartCopy)).toBe(adapter)
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Domain "Cart" matched by name, not reference')
+    )
+    warnSpy.mockRestore()
+  })
+
+  it('returns undefined with no warning when neither reference nor name matches', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const adapter = makeAdapter(cart)
+    registerAdapter(adapter)
+
+    expect(findAdapter(orders)).toBeUndefined()
+    expect(warnSpy).not.toHaveBeenCalled()
+    warnSpy.mockRestore()
+  })
 })
 
 describe('findAdapters', () => {
@@ -273,5 +312,48 @@ describe('findAdapters', () => {
     registerAdapter(adapter)
 
     expect(findAdapters(orders)).toEqual([])
+  })
+
+  it('does not warn on reference match', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const adapter = makeAdapter(cart)
+    registerAdapter(adapter)
+    findAdapters(cart)
+    expect(warnSpy).not.toHaveBeenCalled()
+    warnSpy.mockRestore()
+  })
+
+  it('falls back to name match when reference differs', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const unitAdapter = makeAdapter(cart, 'unit')
+    const httpAdapter = makeAdapter(cart, 'http')
+    registerAdapter(unitAdapter)
+    registerAdapter(httpAdapter)
+
+    const cartCopy = defineDomain({
+      name: 'Cart',
+      actions: { addItem: action() },
+      queries: { total: query<number>() },
+      assertions: { isEmpty: assertion() },
+    })
+
+    const result = findAdapters(cartCopy)
+    expect(result).toHaveLength(2)
+    expect(result).toContain(unitAdapter)
+    expect(result).toContain(httpAdapter)
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Domain "Cart" matched by name, not reference')
+    )
+    warnSpy.mockRestore()
+  })
+
+  it('returns empty array with no warning when neither reference nor name matches', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const adapter = makeAdapter(cart)
+    registerAdapter(adapter)
+
+    expect(findAdapters(orders)).toEqual([])
+    expect(warnSpy).not.toHaveBeenCalled()
+    warnSpy.mockRestore()
   })
 })

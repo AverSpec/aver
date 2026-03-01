@@ -18,8 +18,32 @@ export function resolveBasePath(): string {
   return _config?.workspaceBasePath ?? process.env.AVER_WORKSPACE_PATH ?? join(homedir(), '.aver', 'workspaces')
 }
 
+/**
+ * Validate that a projectId contains only safe characters.
+ * Allows alphanumeric, dashes, underscores, and dots — but rejects
+ * path separators, standalone dot-dot segments, and empty strings.
+ */
+export function validateProjectId(id: string): string {
+  if (!id) {
+    throw new Error('projectId must not be empty')
+  }
+  if (/[/\\]/.test(id)) {
+    throw new Error(`projectId contains path separators: ${id}`)
+  }
+  // Reject standalone ".." or segments like "../foo" / "foo/.."
+  if (id === '..' || id.startsWith('../') || id.endsWith('/..') || id.includes('/../')) {
+    throw new Error(`projectId contains path traversal: ${id}`)
+  }
+  // Only allow alphanumeric, dash, underscore, dot
+  if (!/^[a-zA-Z0-9._-]+$/.test(id)) {
+    throw new Error(`projectId contains invalid characters: ${id}`)
+  }
+  return id
+}
+
 export function resolveProjectId(): string {
-  return _config?.workspaceProjectId ?? process.env.AVER_PROJECT_ID ?? basename(process.cwd())
+  const raw = _config?.workspaceProjectId ?? process.env.AVER_PROJECT_ID ?? basename(process.cwd())
+  return validateProjectId(raw)
 }
 
 // --- Store cache ---

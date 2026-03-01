@@ -59,7 +59,12 @@ async function runStart(goal?: string): Promise<void> {
     }
   }
 
-  // Plain-text fallback (non-TTY or missing TUI deps)
+  // Plain-text fallback (missing TUI deps)
+  if (!process.stdin.isTTY) {
+    console.error('The aver agent requires an interactive terminal (TTY). It cannot run in CI or piped environments.')
+    process.exit(1)
+  }
+
   if (!goal) {
     console.error('Usage: aver agent start "your goal here"')
     process.exit(1)
@@ -97,9 +102,6 @@ async function runStart(goal?: string): Promise<void> {
     onMessage: (msg) => console.log(`[agent] ${msg}`),
     onQuestion: async (question) => {
       console.log(`[agent] Question: ${question}`)
-      // Non-interactive: auto-answer
-      if (!process.stdin.isTTY) return 'continue'
-      // Interactive: read from stdin
       const { createInterface } = await import('node:readline')
       const rl = createInterface({ input: process.stdin, output: process.stdout })
       return new Promise<string>((res) => {

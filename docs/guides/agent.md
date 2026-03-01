@@ -38,7 +38,7 @@ The goal argument is required. If omitted, the CLI prints a usage hint and exits
 
 **Interactive mode:** When running in a terminal, the supervisor can ask you questions (with numbered options). You respond inline.
 
-**Non-interactive mode:** When stdin is not a TTY (e.g., in CI), the agent auto-answers questions with the first available option.
+**Requires a TTY:** The agent requires an interactive terminal. If stdin is not a TTY (e.g., in CI or piped environments), it exits with an error.
 
 Press `Ctrl-C` to gracefully stop after the current cycle.
 

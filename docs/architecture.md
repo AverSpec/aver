@@ -231,13 +231,13 @@ The agent-related functionality is split across three packages, each with a dist
 |:--------|:--------|:-------------|
 | `@aver/skills` | Pure markdown asset package | None — no deps, no build step |
 | `@aver/agent-plugin` | Claude Code integration shim | Thin packaging layer |
-| `@aver/agent` | Runtime with CycleEngine | Claude Agent SDK (optional peer dep) |
+| `@aver/agent` | Runtime with AgentNetwork | Claude Agent SDK (optional peer dep) |
 
 **`@aver/skills`** contains the workflow skill definitions as markdown files. It has zero dependencies and no build step. Because skills are plain markdown, they can be consumed by any tool — not just the Aver agent. An IDE extension, a different agent framework, or a human reviewer can all read and use the skill definitions directly.
 
 **`@aver/agent-plugin`** is a thin packaging layer that copies skills and configures the MCP server for the Claude Code plugin system. It bridges `@aver/skills` and `@aver/mcp-server` into a format Claude Code understands. It exists solely to keep plugin plumbing out of the other packages.
 
-**`@aver/agent`** is the heavy runtime package. It contains the CycleEngine (supervisor/worker dispatch), session management, and shell verification logic. It depends on the Claude Agent SDK as an optional peer dependency. Most users of the testing framework never need this package.
+**`@aver/agent`** is the heavy runtime package. It contains the AgentNetwork (supervisor/worker dispatch), session management, and shell verification logic. It depends on the Claude Agent SDK as an optional peer dependency. Most users of the testing framework never need this package.
 
 The separation ensures that users who only want the testing framework (`@aver/core` + protocol packages) do not pull in AI SDK dependencies. A team using Aver purely for multi-adapter acceptance testing has zero exposure to agent code.
 

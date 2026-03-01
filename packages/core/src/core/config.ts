@@ -5,10 +5,13 @@ export interface CoverageConfig {
   minPercentage: number
 }
 
+export type TeardownFailureMode = 'fail' | 'warn'
+
 export interface AverConfig {
   testDir: string
   adapters: Adapter[]
   coverage: CoverageConfig
+  teardownFailureMode: TeardownFailureMode
 }
 
 export interface AverConfigInput {
@@ -17,17 +20,25 @@ export interface AverConfigInput {
   coverage?: {
     minPercentage?: number
   }
+  /** Controls whether teardown errors fail the test ('fail', default) or only warn ('warn'). */
+  teardownFailureMode?: TeardownFailureMode
 }
 
 let coverageConfig: CoverageConfig = { minPercentage: 0 }
+let teardownMode: TeardownFailureMode = 'fail'
 
 export function getCoverageConfig(): CoverageConfig {
   return coverageConfig
 }
 
+export function getTeardownFailureMode(): TeardownFailureMode {
+  return teardownMode
+}
+
 /** @internal — resets module-level state between tests */
 export function resetCoverageConfig(): void {
   coverageConfig = { minPercentage: 0 }
+  teardownMode = 'fail'
 }
 
 export function defineConfig(input: AverConfigInput): AverConfig {
@@ -43,9 +54,12 @@ export function defineConfig(input: AverConfigInput): AverConfig {
     minPercentage: minPct,
   }
 
+  teardownMode = input.teardownFailureMode ?? 'fail'
+
   return {
     testDir: input.testDir ?? './tests/acceptance',
     adapters: input.adapters,
     coverage: coverageConfig,
+    teardownFailureMode: teardownMode,
   }
 }

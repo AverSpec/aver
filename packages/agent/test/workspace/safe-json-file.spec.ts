@@ -3,7 +3,7 @@ import { mkdtemp, rm, writeFile, readFile } from 'node:fs/promises'
 import { existsSync, writeFileSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { SafeJsonFile, atomicWriteFile, atomicWriteFileSync, withLock, _testLockMapSize, acquirePidLock, releasePidLock } from '../../src/workspace/safe-json-file'
+import { SafeJsonFile, atomicWriteFile, atomicWriteFileSync, withLock, _testLockMapSize, acquirePidLock, releasePidLock, LOCK_STALE_MS } from '../../src/workspace/safe-json-file'
 
 describe('SafeJsonFile', () => {
   let dir: string
@@ -219,14 +219,17 @@ describe('PID lock', () => {
     await file.mutate(v => ({ x: v.x + 1 }))
     // Lock file should now exist and contain this process's PID
     expect(existsSync(lockPath)).toBe(true)
-    const pid = parseInt(await readFile(lockPath, 'utf-8'), 10)
-    expect(pid).toBe(process.pid)
+    const lockData = JSON.parse(await readFile(lockPath, 'utf-8'))
+    expect(lockData.pid).toBe(process.pid)
+    expect(lockData.createdAt).toBeGreaterThan(0)
   })
 
   it('acquirePidLock succeeds when no lock file exists', () => {
     expect(() => acquirePidLock(filePath)).not.toThrow()
     expect(existsSync(lockPath)).toBe(true)
-    expect(parseInt(readFileSync(lockPath, 'utf-8').trim(), 10)).toBe(process.pid)
+    const lockData = JSON.parse(readFileSync(lockPath, 'utf-8').trim())
+    expect(lockData.pid).toBe(process.pid)
+    expect(lockData.createdAt).toBeGreaterThan(0)
   })
 
   it('acquirePidLock succeeds when the same process already holds the lock', () => {
@@ -236,31 +239,56 @@ describe('PID lock', () => {
   })
 
   it('takes over a stale lock from a dead process', () => {
-    // Write a lock file with a PID that cannot possibly be alive (pid 0 is not a valid user process)
-    // Use a very high PID that almost certainly does not exist
+    // Write a lock file with a PID that cannot possibly be alive
     const deadPid = 2_000_000_000
-    writeFileSync(lockPath, String(deadPid), 'utf-8')
+    writeFileSync(lockPath, JSON.stringify({ pid: deadPid, createdAt: Date.now() }), 'utf-8')
 
     // Should take over silently
     expect(() => acquirePidLock(filePath)).not.toThrow()
     // Lock file should now record our PID
-    const pid = parseInt(readFileSync(lockPath, 'utf-8').trim(), 10)
-    expect(pid).toBe(process.pid)
+    const lockData = JSON.parse(readFileSync(lockPath, 'utf-8').trim())
+    expect(lockData.pid).toBe(process.pid)
   })
 
-  it('throws when an active process holds the lock', () => {
-    // Use the current process's own PID but write it manually so acquirePidLock
-    // thinks it was written by a *different* call — we simulate a foreign process
-    // by writing a PID that is provably alive: process.pid itself.
-    // We need to trick the check into thinking it is NOT our PID.
-    // The simplest approach: write a PID we know is alive that is NOT process.pid.
-    // process.ppid is our parent shell — it is always alive during a test run.
+  it('takes over a stale lock from a dead process (legacy plain-PID format)', () => {
+    // Legacy lock files stored only the PID as a plain number
+    const deadPid = 2_000_000_000
+    writeFileSync(lockPath, String(deadPid), 'utf-8')
+
+    expect(() => acquirePidLock(filePath)).not.toThrow()
+    const lockData = JSON.parse(readFileSync(lockPath, 'utf-8').trim())
+    expect(lockData.pid).toBe(process.pid)
+  })
+
+  it('throws when an active process holds a fresh lock', () => {
+    // process.ppid is our parent shell — always alive during a test run
     const alivePid = process.ppid
-    writeFileSync(lockPath, String(alivePid), 'utf-8')
+    writeFileSync(lockPath, JSON.stringify({ pid: alivePid, createdAt: Date.now() }), 'utf-8')
 
     expect(() => acquirePidLock(filePath)).toThrow(
       /cannot acquire lock.*already holds it and is still running/
     )
+  })
+
+  it('takes over lock held by alive PID when lock age exceeds staleness threshold (PID reuse)', () => {
+    // Simulate PID reuse: the lock was written long ago by a process that has since
+    // died, but a new unrelated process now occupies the same PID.
+    const alivePid = process.ppid
+    const staleTimestamp = Date.now() - LOCK_STALE_MS - 1000
+    writeFileSync(lockPath, JSON.stringify({ pid: alivePid, createdAt: staleTimestamp }), 'utf-8')
+
+    // Should take over because the lock is older than LOCK_STALE_MS
+    expect(() => acquirePidLock(filePath)).not.toThrow()
+    const lockData = JSON.parse(readFileSync(lockPath, 'utf-8').trim())
+    expect(lockData.pid).toBe(process.pid)
+  })
+
+  it('takes over a corrupt lock file', () => {
+    writeFileSync(lockPath, '!!!not-valid-json!!!', 'utf-8')
+
+    expect(() => acquirePidLock(filePath)).not.toThrow()
+    const lockData = JSON.parse(readFileSync(lockPath, 'utf-8').trim())
+    expect(lockData.pid).toBe(process.pid)
   })
 
   it('releasePidLock removes the lock file', () => {

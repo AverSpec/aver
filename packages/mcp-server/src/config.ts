@@ -5,6 +5,7 @@ import { parseArgs } from 'node:util'
 import { resetRegistry } from '@aver/core'
 import { discoverAndRegister } from './discovery.js'
 import { log } from './logger.js'
+import { isProjectTrusted, logTrustWarning } from './trust.js'
 import { clearWorkspaceCache } from './tools/workspace.js'
 
 const CONFIG_FILENAMES = ['aver.config.ts', 'aver.config.js', 'aver.config.mjs']
@@ -64,6 +65,10 @@ export function resolveConfigPath(argv: string[], cwd?: string): string | undefi
 }
 
 export async function loadConfig(configPath: string): Promise<void> {
+  if (!isProjectTrusted()) {
+    logTrustWarning('config', { configPath })
+    return
+  }
   storedConfigPath = configPath
   await import(pathToFileURL(configPath).href)
 }
@@ -74,6 +79,11 @@ export async function reloadConfig(loader?: () => Promise<void>): Promise<void> 
   if (loader) {
     resetRegistry()
     await loader()
+    return
+  }
+
+  if (!isProjectTrusted()) {
+    logTrustWarning('config')
     return
   }
 

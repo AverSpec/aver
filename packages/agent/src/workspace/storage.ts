@@ -89,20 +89,20 @@ export class WorkspaceStore {
     const updated = fn(ws)
     updated.updatedAt = new Date().toISOString()
 
-    // Rebuild scenarios table from the mutated workspace
-    await this.client.execute('DELETE FROM scenarios')
-    for (const scenario of updated.scenarios) {
-      await this.client.execute({
+    // Rebuild scenarios table atomically — batch wraps all statements in a
+    // transaction so either all changes apply or none do (rollback on error).
+    const stmts: Array<{ sql: string; args: Array<string> }> = [
+      { sql: 'DELETE FROM scenarios', args: [] },
+      ...updated.scenarios.map(scenario => ({
         sql: 'INSERT INTO scenarios (id, data) VALUES (?, ?)',
         args: [scenario.id, JSON.stringify(scenario)],
-      })
-    }
-
-    // Store metadata
-    await this.client.execute({
-      sql: "INSERT OR REPLACE INTO workspace_meta (key, value) VALUES ('created_at', ?)",
-      args: [updated.createdAt],
-    })
+      })),
+      {
+        sql: "INSERT OR REPLACE INTO workspace_meta (key, value) VALUES ('created_at', ?)",
+        args: [updated.createdAt],
+      },
+    ]
+    await this.client.batch(stmts, 'write')
 
     return updated
   }
@@ -118,13 +118,15 @@ export class WorkspaceStore {
     const items = await this.loadBacklogItems()
     const updated = fn(items)
 
-    await this.client.execute('DELETE FROM backlog_items')
-    for (const item of updated) {
-      await this.client.execute({
+    // Rebuild backlog_items table atomically via batch transaction.
+    const stmts: Array<{ sql: string; args: Array<string> }> = [
+      { sql: 'DELETE FROM backlog_items', args: [] },
+      ...updated.map(item => ({
         sql: 'INSERT INTO backlog_items (id, data) VALUES (?, ?)',
         args: [item.id, JSON.stringify(item)],
-      })
-    }
+      })),
+    ]
+    await this.client.batch(stmts, 'write')
 
     return updated
   }

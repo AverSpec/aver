@@ -1,8 +1,9 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { suite } from '../../src/core/suite'
 import { resetRegistry, registerAdapter, getAdapters } from '../../src/core/registry'
 import { implement } from '../../src/core/adapter'
 import { defineDomain } from '../../src/core/domain'
+import { defineConfig, resetCoverageConfig } from '../../src/core/config'
 import { action, query, assertion } from '../../src/core/markers'
 import type { Protocol } from '../../src/core/protocol'
 
@@ -493,6 +494,8 @@ describe('suite() — teardown error handling', () => {
   afterEach(() => {
     if (originalTest) (globalThis as any).test = originalTest
     if (originalIt) (globalThis as any).it = originalIt
+    resetRegistry()
+    resetCoverageConfig()
   })
 
   it('does not replace original test error when teardown throws', async () => {
@@ -534,9 +537,8 @@ describe('suite() — teardown error handling', () => {
     expect(caught.message).toContain('original error')
   })
 
-  it('records teardown error in trace without throwing', async () => {
+  it('fails the test when teardown throws and test body passed (default)', async () => {
     let pending: Promise<void> | undefined
-    let lastTrace: any[] = []
 
     const fakeTest = (name: string, fn: () => Promise<void>) => {
       pending = fn()
@@ -546,18 +548,15 @@ describe('suite() — teardown error handling', () => {
     ;(globalThis as any).test = fakeTest
 
     const okDomain = defineDomain({
-      name: 'TeardownTrace',
+      name: 'TeardownFailDefault',
       actions: {},
       queries: {},
       assertions: { check: assertion() },
     })
     const protocol: Protocol<{}> = {
-      name: 'teardown-trace',
+      name: 'teardown-fail-default',
       async setup() { return {} },
       async teardown() { throw new Error('teardown boom') },
-      async onTestEnd(_ctx, meta) {
-        lastTrace = meta.trace
-      },
     }
     const adapter = implement(okDomain, {
       protocol,
@@ -571,8 +570,88 @@ describe('suite() — teardown error handling', () => {
       await assert.check()
     })
 
-    // Test itself passes, teardown error is caught but not re-thrown
+    let caught: any
+    await pending!.catch(e => { caught = e })
+    expect(caught).toBeDefined()
+    expect(caught.message).toContain('teardown boom')
+  })
+
+  it('only warns when teardownFailureMode is "warn"', async () => {
+    let pending: Promise<void> | undefined
+
+    const fakeTest = (name: string, fn: () => Promise<void>) => {
+      pending = fn()
+      return pending
+    }
+    fakeTest.skip = () => {}
+    ;(globalThis as any).test = fakeTest
+
+    const okDomain = defineDomain({
+      name: 'TeardownWarn',
+      actions: {},
+      queries: {},
+      assertions: { check: assertion() },
+    })
+    const protocol: Protocol<{}> = {
+      name: 'teardown-warn',
+      async setup() { return {} },
+      async teardown() { throw new Error('teardown boom') },
+    }
+    const adapter = implement(okDomain, {
+      protocol,
+      actions: {},
+      queries: {},
+      assertions: { check: async () => {} },
+    })
+
+    defineConfig({ adapters: [adapter], teardownFailureMode: 'warn' })
+
+    const { test: suiteTest } = suite(okDomain, adapter)
+    suiteTest('passing test with bad teardown', async ({ assert }) => {
+      await assert.check()
+    })
+
+    // Test should pass — teardown error is recorded but not thrown
     await pending
+  })
+
+  it('includes teardown error in trace on failure', async () => {
+    let pending: Promise<void> | undefined
+
+    const fakeTest = (name: string, fn: () => Promise<void>) => {
+      pending = fn()
+      return pending
+    }
+    fakeTest.skip = () => {}
+    ;(globalThis as any).test = fakeTest
+
+    const okDomain = defineDomain({
+      name: 'TeardownTraceCheck',
+      actions: {},
+      queries: {},
+      assertions: { check: assertion() },
+    })
+    const protocol: Protocol<{}> = {
+      name: 'teardown-trace-check',
+      async setup() { return {} },
+      async teardown() { throw new Error('teardown boom') },
+    }
+    const adapter = implement(okDomain, {
+      protocol,
+      actions: {},
+      queries: {},
+      assertions: { check: async () => {} },
+    })
+
+    const { test: suiteTest } = suite(okDomain, adapter)
+    suiteTest('trace includes teardown error', async ({ assert }) => {
+      await assert.check()
+    })
+
+    let caught: any
+    await pending!.catch(e => { caught = e })
+    expect(caught).toBeDefined()
+    expect(caught.message).toContain('teardown-error')
   })
 })
 

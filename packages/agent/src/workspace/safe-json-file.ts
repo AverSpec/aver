@@ -70,42 +70,90 @@ function isProcessAlive(pid: number): boolean {
 }
 
 /**
+ * Maximum age (in ms) before a lock is considered stale, regardless of whether
+ * the recorded PID is still alive. This handles PID reuse: the OS may assign
+ * the same PID to an unrelated process after the original holder exits.
+ *
+ * @internal exported for testing only
+ */
+export const LOCK_STALE_MS = 30_000
+
+/**
+ * Shape of data stored in the `.pid` lock file.
+ * @internal
+ */
+interface LockData {
+  pid: number
+  createdAt: number
+}
+
+/**
+ * Parse a lock file's contents. Handles both the legacy format (plain PID
+ * string) and the current JSON format `{ pid, createdAt }`.
+ */
+function parseLockFile(raw: string): LockData {
+  const trimmed = raw.trim()
+  // Legacy format: just a PID number
+  if (/^\d+$/.test(trimmed)) {
+    return { pid: parseInt(trimmed, 10), createdAt: 0 }
+  }
+  return JSON.parse(trimmed) as LockData
+}
+
+/**
  * Acquire a PID lock file for the given data file path.
  *
- * - If no lock file exists, write one with the current PID.
+ * - If no lock file exists, write one with the current PID + timestamp.
  * - If a lock file exists and the recorded PID is this process, it's already held — fine.
+ * - If the lock is older than LOCK_STALE_MS, consider it stale and take over
+ *   (handles PID reuse by an unrelated process).
  * - If the recorded PID belongs to a dead process (stale lock), take over.
- * - If the recorded PID belongs to a live process, throw.
+ * - If the recorded PID belongs to a live process and the lock is fresh, throw.
  *
  * @internal exported for testing only
  */
 export function acquirePidLock(filePath: string): void {
   const lockPath = filePath + '.pid'
   const myPid = process.pid
+  const now = Date.now()
 
   if (existsSync(lockPath)) {
-    const raw = readFileSync(lockPath, 'utf-8').trim()
-    const existingPid = parseInt(raw, 10)
+    let lockData: LockData
+    try {
+      lockData = parseLockFile(readFileSync(lockPath, 'utf-8'))
+    } catch {
+      // Corrupt lock file — treat as stale.
+      lockData = { pid: -1, createdAt: 0 }
+    }
 
-    if (existingPid === myPid) {
-      // Already held by this process — nothing to do.
+    if (lockData.pid === myPid) {
+      // Already held by this process — refresh the timestamp.
+      writeLockFile(lockPath, myPid, now)
       return
     }
 
-    if (isProcessAlive(existingPid)) {
+    const age = now - lockData.createdAt
+    const isStale = age >= LOCK_STALE_MS
+
+    if (!isStale && isProcessAlive(lockData.pid)) {
       throw new Error(
         `SafeJsonFile: cannot acquire lock on "${filePath}" — ` +
-        `process ${existingPid} already holds it and is still running. ` +
+        `process ${lockData.pid} already holds it and is still running. ` +
         `Only one process may mutate this file at a time.`
       )
     }
 
-    // Stale lock — take over.
+    // Stale lock (dead process or age exceeded) — take over.
   }
 
-  mkdirSync(dirname(lockPath), { recursive: true })
-  writeFileSync(lockPath, String(myPid), 'utf-8')
+  writeLockFile(lockPath, myPid, now)
   ownedLockFiles.add(lockPath)
+}
+
+function writeLockFile(lockPath: string, pid: number, createdAt: number): void {
+  mkdirSync(dirname(lockPath), { recursive: true })
+  const data: LockData = { pid, createdAt }
+  writeFileSync(lockPath, JSON.stringify(data), 'utf-8')
 }
 
 /** @internal exported for testing only */

@@ -6,6 +6,7 @@ import { runWithTestContext } from './test-context'
 import { createProxies } from './proxy'
 import type { CalledOps } from './proxy'
 import { enhanceWithTrace } from './trace-format'
+import { getTeardownFailureMode } from './config'
 import type { TestContext } from './suite'
 
 export async function runTestWithAdapter<D extends Domain>(
@@ -26,6 +27,8 @@ export async function runTestWithAdapter<D extends Domain>(
     protocolName: adapter.protocol.name,
   }
 
+  let testBodyFailed = false
+
   try {
     await adapter.protocol.onTestStart?.(ctx, metadata)
     await runWithTestContext(
@@ -40,6 +43,7 @@ export async function runTestWithAdapter<D extends Domain>(
     )
     await adapter.protocol.onTestEnd?.(ctx, { ...metadata, status: 'pass', trace: [...trace] })
   } catch (error) {
+    testBodyFailed = true
     let attachments: TraceAttachment[] | undefined
     try {
       const result = await adapter.protocol.onTestFail?.(ctx, { ...metadata, status: 'fail', error, trace: [...trace] })
@@ -89,6 +93,12 @@ export async function runTestWithAdapter<D extends Domain>(
         error: teardownError,
         correlationId,
       })
+      // When the test body passed, teardown failures should fail the test
+      // (unless configured to only warn). When the test body already failed,
+      // we preserve the original error and only record the teardown error in trace.
+      if (!testBodyFailed && getTeardownFailureMode() === 'fail') {
+        throw enhanceWithTrace(teardownError, trace, domain, adapter.protocol.name)
+      }
     }
   }
 }

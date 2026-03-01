@@ -5,6 +5,7 @@ import { registerDomain, getDomains } from '@aver/core'
 import { toKebabCase } from '@aver/core/scaffold'
 import type { Domain } from '@aver/core'
 import { log } from './logger.js'
+import { isProjectTrusted, logTrustWarning } from './trust.js'
 
 /**
  * Detect whether an import error is due to Node not having a TypeScript loader.
@@ -94,6 +95,11 @@ export function resetDiscoveryCache(): void {
 }
 
 export async function discoverDomains(rootDir: string): Promise<DiscoveredDomain[]> {
+  if (!isProjectTrusted()) {
+    logTrustWarning('discovery', { rootDir })
+    return []
+  }
+
   const domainDirs = await scanConventionDirs(rootDir, 'domains')
   const found: DiscoveredDomain[] = []
   const seen = new Set<string>()

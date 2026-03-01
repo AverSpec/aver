@@ -279,7 +279,9 @@ describe('AgentNetwork edge cases', () => {
 
       // The network should still have a valid session reference
       expect(network.currentSession).toBeDefined()
-      // isStopped should be false — error does NOT set stopped
+      // Malformed JSON triggers DecisionParseError which is caught and skipped
+      // (decision:invalid event logged) — handleError is NOT called, so stopped
+      // remains false. The session stays alive to handle future triggers.
       expect(network.isStopped).toBe(false)
     })
   })
@@ -715,7 +717,7 @@ describe('AgentNetwork edge cases', () => {
       expect(JSON.stringify(errors[0].data)).toContain('Network timeout')
     })
 
-    it('supervisorDispatch throwing does not set stopped to true', async () => {
+    it('supervisorDispatch throwing sets stopped to true via handleError', async () => {
       const dispatchers = createMockDispatchers([])
       dispatchers.supervisorDispatch = vi.fn(async () => {
         throw new Error('Network timeout')
@@ -729,9 +731,8 @@ describe('AgentNetwork edge cases', () => {
       })
       await new Promise((r) => setTimeout(r, 100))
 
-      // BUG DOCUMENTATION: Like cycle-depth exhaustion, handleError does not
-      // set this.stopped = true. New triggers could re-wake the supervisor.
-      expect(network.isStopped).toBe(false)
+      // handleError now sets stopped = true to prevent re-waking after errors
+      expect(network.isStopped).toBe(true)
     })
   })
 
@@ -739,10 +740,9 @@ describe('AgentNetwork edge cases', () => {
   // 8. ask_human with no callbacks
   // -------------------------------------------------------
   describe('ask_human with no callbacks', () => {
-    it('ask_human without callbacks silently swallows the question', async () => {
+    it('ask_human without callbacks pauses the session', async () => {
       const dispatchers = createMockDispatchers([
         '{"action":"ask_human","question":"Should we proceed?"}',
-        // No second response — the session will hang because no trigger is pushed
       ])
 
       // No callbacks provided
@@ -754,20 +754,17 @@ describe('AgentNetwork edge cases', () => {
       })
       await new Promise((r) => setTimeout(r, 200))
 
-      // Session should still be running — no stop, no error
+      // Session should be paused — not running, not error
       const sessionStore = new SessionStore(db)
       const session = await sessionStore.getSession(network.currentSession!.id)
-      expect(session!.status).toBe('running')
+      expect(session!.status).toBe('paused')
 
-      // The supervisor was called exactly once — no human:message trigger to re-wake it
-      // BUG DOCUMENTATION: When onQuestion is not provided, the ask_human action
-      // completes without pushing any trigger. The supervisor is never re-woken,
-      // effectively hanging the session. The session remains in 'running' state
-      // indefinitely with no way to progress.
+      // The supervisor was called exactly once — no trigger pushed, session paused
+      // so it can be resumed later via handleHumanMessage
       expect(dispatchers.supervisorDispatch).toHaveBeenCalledTimes(1)
     })
 
-    it('ask_human with only onMessage (no onQuestion) calls onMessage but does not push trigger', async () => {
+    it('ask_human with only onMessage (no onQuestion) calls onMessage and pauses session', async () => {
       const onMessage = vi.fn()
       const dispatchers = createMockDispatchers([
         '{"action":"ask_human","question":"Should we proceed?"}',
@@ -786,7 +783,12 @@ describe('AgentNetwork edge cases', () => {
       // onMessage should have been called
       expect(onMessage).toHaveBeenCalledWith('Should we proceed?')
 
-      // But no re-wake — session hangs
+      // Session should be paused, not hanging
+      const sessionStore = new SessionStore(db)
+      const session = await sessionStore.getSession(network.currentSession!.id)
+      expect(session!.status).toBe('paused')
+
+      // No re-wake — session paused awaiting human input
       expect(dispatchers.supervisorDispatch).toHaveBeenCalledTimes(1)
     })
   })
@@ -931,13 +933,9 @@ describe('AgentNetwork edge cases', () => {
       // Both workers completed (events logged before trigger debounce)
       expect(completionEvents.length).toBe(2)
 
-      // BUG DOCUMENTATION: Because TriggerQueue debounces by type, if two
-      // workers complete while the supervisor is active, only the LAST
-      // worker:goal_complete trigger is preserved (Map.set overwrites).
-      // The supervisor never learns about the first worker's completion.
-      // In the current MVP (sequential worker execution within handleCreateWorker),
-      // this may not be hit in practice, but it would be a real issue with
-      // concurrent worker execution.
+      // FIXED: TriggerQueue was refactored from Map to array, so same-type
+      // triggers are no longer collapsed. Both worker:goal_complete triggers
+      // are now preserved and delivered to the supervisor.
     })
   })
 

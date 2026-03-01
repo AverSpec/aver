@@ -364,6 +364,20 @@ export class AgentNetwork {
         data: { message: answer },
         timestamp: new Date().toISOString(),
       })
+    } else {
+      // No onQuestion handler — pause the session so it can be resumed later
+      // via handleHumanMessage. Without this, the session hangs indefinitely.
+      await this.logEvent('session:paused', {
+        reason: 'ask_human requires onQuestion callback; pausing until human message arrives',
+        question: decision.question,
+      })
+      if (this.session) {
+        try {
+          await this.sessionStore.updateSession(this.session.id, { status: 'paused' })
+        } catch {
+          // Swallow
+        }
+      }
     }
   }
 
@@ -423,7 +437,7 @@ export class AgentNetwork {
       const scenario = await this.workspaceOps.getScenario(decision.scenarioId)
       const fromStage = scenario?.stage ?? 'unknown'
 
-      await this.workspaceOps.revisitScenario(decision.scenarioId, {
+      const { clearedFields } = await this.workspaceOps.revisitScenario(decision.scenarioId, {
         targetStage: decision.targetStage as any,
         rationale: decision.rationale,
       })
@@ -433,6 +447,7 @@ export class AgentNetwork {
         fromStage,
         toStage: decision.targetStage,
         rationale: decision.rationale,
+        clearedFields,
       })
     } catch (err) {
       await this.logEvent('revisit:blocked', {
@@ -595,6 +610,7 @@ export class AgentNetwork {
   }
 
   private async handleError(message: string): Promise<void> {
+    this.stopped = true
     await this.logEvent('error', { message })
     if (this.session) {
       try {

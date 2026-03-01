@@ -10,6 +10,8 @@ import {
   type Stage,
   type Scenario,
   type AdvanceResult,
+  type BatchAdvanceResult,
+  type BatchRevisitResult,
   type ScenarioSummary,
   type Question,
   type Phase,
@@ -159,6 +161,22 @@ export async function importScenariosHandler(
 ): Promise<{ added: number; skipped: number }> {
   const store = createStore(basePath, projectId)
   return importJson(store, input.json)
+}
+
+export async function batchAdvanceScenariosHandler(
+  input: { ids: string[]; rationale: string; promotedBy: string },
+  basePath: string,
+  projectId: string,
+): Promise<BatchAdvanceResult> {
+  return createOps(basePath, projectId).batchAdvance(input)
+}
+
+export async function batchRevisitScenariosHandler(
+  input: { ids: string[]; targetStage: Stage; rationale: string },
+  basePath: string,
+  projectId: string,
+): Promise<BatchRevisitResult> {
+  return createOps(basePath, projectId).batchRevisit(input)
 }
 
 // --- MCP tool registration ---
@@ -406,4 +424,35 @@ export function registerWorkspaceTools(server: McpServer, config?: ToolsConfig):
     },
   )
 
+  server.registerTool(
+    'batch_advance_scenarios',
+    {
+      description: 'Advance multiple scenarios to the next maturity stage. Partial success — blocked/errored items are skipped, others succeed. Returns per-item results and summary counts.',
+      inputSchema: {
+        ids: z.array(z.string()).describe('IDs of scenarios to advance'),
+        rationale: z.string().describe('Reason for advancement'),
+        promotedBy: z.string().describe('Who is advancing the scenarios'),
+      },
+    },
+    async (input) => {
+      const result = await batchAdvanceScenariosHandler(input, resolveBasePath(), resolveProjectId())
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] }
+    },
+  )
+
+  server.registerTool(
+    'batch_revisit_scenarios',
+    {
+      description: 'Revisit multiple scenarios by moving them back to an earlier maturity stage. Partial success — errored items are skipped, others succeed. Returns per-item results and summary counts.',
+      inputSchema: {
+        ids: z.array(z.string()).describe('IDs of scenarios to revisit'),
+        targetStage: stageEnum.describe('The stage to revisit to'),
+        rationale: z.string().describe('Reason for revisiting'),
+      },
+    },
+    async (input) => {
+      const result = await batchRevisitScenariosHandler(input, resolveBasePath(), resolveProjectId())
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] }
+    },
+  )
 }

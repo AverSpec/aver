@@ -47,6 +47,43 @@ export interface ScenarioUpdateInput {
   seams?: Seam[]
 }
 
+export interface BatchAdvanceInput {
+  ids: string[]
+  rationale: string
+  promotedBy: string
+}
+
+export interface BatchAdvanceItemResult {
+  id: string
+  status: 'advanced' | 'blocked' | 'error'
+  scenario?: Scenario
+  warnings?: string[]
+  error?: string
+}
+
+export interface BatchAdvanceResult {
+  results: BatchAdvanceItemResult[]
+  summary: { advanced: number; blocked: number; errors: number }
+}
+
+export interface BatchRevisitInput {
+  ids: string[]
+  targetStage: Stage
+  rationale: string
+}
+
+export interface BatchRevisitItemResult {
+  id: string
+  status: 'revisited' | 'error'
+  scenario?: Scenario
+  error?: string
+}
+
+export interface BatchRevisitResult {
+  results: BatchRevisitItemResult[]
+  summary: { revisited: number; errors: number }
+}
+
 export interface ScenarioSummary {
   captured: number
   characterized: number
@@ -387,5 +424,53 @@ export class WorkspaceOps {
       const openQuestions = s.questions.filter(q => !q.answer).length
       return openQuestions === 0
     })
+  }
+
+  async batchAdvance(input: BatchAdvanceInput): Promise<BatchAdvanceResult> {
+    const results: BatchAdvanceItemResult[] = []
+    for (const id of input.ids) {
+      try {
+        const { scenario, warnings } = await this.advanceScenario(id, {
+          rationale: input.rationale,
+          promotedBy: input.promotedBy,
+        })
+        results.push({ id, status: 'advanced', scenario, warnings: warnings.length > 0 ? warnings : undefined })
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err)
+        const isBlock = msg.includes('Cannot advance') || msg.includes('confirmedBy is required')
+        results.push({ id, status: isBlock ? 'blocked' : 'error', error: msg })
+      }
+    }
+    return {
+      results,
+      summary: {
+        advanced: results.filter(r => r.status === 'advanced').length,
+        blocked: results.filter(r => r.status === 'blocked').length,
+        errors: results.filter(r => r.status === 'error').length,
+      },
+    }
+  }
+
+  async batchRevisit(input: BatchRevisitInput): Promise<BatchRevisitResult> {
+    const results: BatchRevisitItemResult[] = []
+    for (const id of input.ids) {
+      try {
+        const scenario = await this.revisitScenario(id, {
+          targetStage: input.targetStage,
+          rationale: input.rationale,
+        })
+        results.push({ id, status: 'revisited', scenario })
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err)
+        results.push({ id, status: 'error', error: msg })
+      }
+    }
+    return {
+      results,
+      summary: {
+        revisited: results.filter(r => r.status === 'revisited').length,
+        errors: results.filter(r => r.status === 'error').length,
+      },
+    }
   }
 }

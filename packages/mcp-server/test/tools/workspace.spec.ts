@@ -17,6 +17,8 @@ import {
   exportScenariosHandler,
   importScenariosHandler,
   updateScenarioHandler,
+  batchAdvanceScenariosHandler,
+  batchRevisitScenariosHandler,
   clearWorkspaceCache,
 } from '../../src/tools/workspace'
 
@@ -436,4 +438,116 @@ describe('workspace tool handlers', () => {
     })
   })
 
+  describe('batch_advance_scenarios', () => {
+    it('advances multiple scenarios', async () => {
+      const s1 = await captureScenarioHandler({ behavior: 'a' }, dir, projectId)
+      const s2 = await captureScenarioHandler({ behavior: 'b' }, dir, projectId)
+
+      const result = await batchAdvanceScenariosHandler(
+        { ids: [s1.id, s2.id], rationale: 'batch go', promotedBy: 'dev' },
+        dir, projectId,
+      )
+      expect(result.summary.advanced).toBe(2)
+      expect(result.summary.blocked).toBe(0)
+      expect(result.summary.errors).toBe(0)
+      expect(result.results).toHaveLength(2)
+      expect(result.results[0].scenario!.stage).toBe('characterized')
+      expect(result.results[1].scenario!.stage).toBe('characterized')
+    })
+
+    it('reports blocked scenarios without stopping others', async () => {
+      const s1 = await captureScenarioHandler({ behavior: 'a' }, dir, projectId)
+      const s2 = await captureScenarioHandler({ behavior: 'b' }, dir, projectId)
+      // Advance s1 to characterized, then try to batch-advance both — s1 will block (no confirmedBy)
+      await advanceScenarioHandler({ id: s1.id, rationale: 'go', promotedBy: 'dev' }, dir, projectId)
+
+      const result = await batchAdvanceScenariosHandler(
+        { ids: [s1.id, s2.id], rationale: 'batch', promotedBy: 'dev' },
+        dir, projectId,
+      )
+      expect(result.summary.advanced).toBe(1) // s2 advanced
+      expect(result.summary.blocked).toBe(1) // s1 blocked
+      expect(result.results.find(r => r.id === s1.id)!.status).toBe('blocked')
+      expect(result.results.find(r => r.id === s2.id)!.status).toBe('advanced')
+    })
+
+    it('reports error for nonexistent IDs', async () => {
+      const s1 = await captureScenarioHandler({ behavior: 'a' }, dir, projectId)
+
+      const result = await batchAdvanceScenariosHandler(
+        { ids: [s1.id, 'nonexistent'], rationale: 'go', promotedBy: 'dev' },
+        dir, projectId,
+      )
+      expect(result.summary.advanced).toBe(1)
+      expect(result.summary.errors).toBe(1)
+      expect(result.results.find(r => r.id === 'nonexistent')!.error).toContain('Scenario not found')
+    })
+
+    it('carries warnings through', async () => {
+      // observed mode without seams/constraints produces a warning on captured->characterized
+      const s1 = await captureScenarioHandler({ behavior: 'a', mode: 'observed' }, dir, projectId)
+
+      const result = await batchAdvanceScenariosHandler(
+        { ids: [s1.id], rationale: 'go', promotedBy: 'dev' },
+        dir, projectId,
+      )
+      expect(result.results[0].status).toBe('advanced')
+      expect(result.results[0].warnings).toBeDefined()
+      expect(result.results[0].warnings!.length).toBeGreaterThan(0)
+    })
+
+    it('handles empty array', async () => {
+      const result = await batchAdvanceScenariosHandler(
+        { ids: [], rationale: 'go', promotedBy: 'dev' },
+        dir, projectId,
+      )
+      expect(result.results).toHaveLength(0)
+      expect(result.summary.advanced).toBe(0)
+    })
+  })
+
+  describe('batch_revisit_scenarios', () => {
+    it('revisits multiple scenarios', async () => {
+      const s1 = await captureScenarioHandler({ behavior: 'a' }, dir, projectId)
+      const s2 = await captureScenarioHandler({ behavior: 'b' }, dir, projectId)
+      await advanceScenarioHandler({ id: s1.id, rationale: 'go', promotedBy: 'dev' }, dir, projectId)
+      await advanceScenarioHandler({ id: s2.id, rationale: 'go', promotedBy: 'dev' }, dir, projectId)
+
+      const result = await batchRevisitScenariosHandler(
+        { ids: [s1.id, s2.id], targetStage: 'captured', rationale: 'rethink' },
+        dir, projectId,
+      )
+      expect(result.summary.revisited).toBe(2)
+      expect(result.summary.errors).toBe(0)
+      expect(result.results[0].scenario!.stage).toBe('captured')
+    })
+
+    it('reports error for invalid target stage', async () => {
+      const s1 = await captureScenarioHandler({ behavior: 'a' }, dir, projectId)
+      // s1 is at 'captured', revisiting to 'captured' should fail (same stage)
+
+      const result = await batchRevisitScenariosHandler(
+        { ids: [s1.id], targetStage: 'captured', rationale: 'oops' },
+        dir, projectId,
+      )
+      expect(result.summary.errors).toBe(1)
+      expect(result.results[0].error).toContain('Cannot revisit to a later or same stage')
+    })
+
+    it('handles mixed success and error', async () => {
+      const s1 = await captureScenarioHandler({ behavior: 'a' }, dir, projectId)
+      const s2 = await captureScenarioHandler({ behavior: 'b' }, dir, projectId)
+      await advanceScenarioHandler({ id: s1.id, rationale: 'go', promotedBy: 'dev' }, dir, projectId)
+      // s1 is characterized, s2 is still captured
+
+      const result = await batchRevisitScenariosHandler(
+        { ids: [s1.id, s2.id], targetStage: 'captured', rationale: 'back' },
+        dir, projectId,
+      )
+      expect(result.summary.revisited).toBe(1)
+      expect(result.summary.errors).toBe(1)
+      expect(result.results.find(r => r.id === s1.id)!.status).toBe('revisited')
+      expect(result.results.find(r => r.id === s2.id)!.status).toBe('error')
+    })
+  })
 })

@@ -66,7 +66,22 @@ export async function importJson(
   store: WorkspaceStore,
   json: string
 ): Promise<{ added: number; skipped: number }> {
-  const source: Workspace = JSON.parse(json)
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(json)
+  } catch {
+    throw new Error('Import failed: input is not valid JSON')
+  }
+
+  if (
+    typeof parsed !== 'object' ||
+    parsed === null ||
+    !Array.isArray((parsed as Record<string, unknown>).scenarios)
+  ) {
+    throw new Error('Import failed: expected an object with a "scenarios" array')
+  }
+
+  const source = parsed as Workspace
   let added = 0
   let skipped = 0
 

@@ -58,6 +58,30 @@ describe('export', () => {
       expect(await ops2.getScenarios()).toHaveLength(2)
     })
 
+    it('throws a clear error for malformed JSON', async () => {
+      await expect(importJson(store, 'not json at all')).rejects.toThrow(
+        'Import failed: input is not valid JSON'
+      )
+    })
+
+    it('throws a clear error when scenarios array is missing', async () => {
+      await expect(importJson(store, '{}')).rejects.toThrow(
+        'Import failed: expected an object with a "scenarios" array'
+      )
+    })
+
+    it('throws a clear error when scenarios is not an array', async () => {
+      await expect(importJson(store, '{"scenarios": "oops"}')).rejects.toThrow(
+        'Import failed: expected an object with a "scenarios" array'
+      )
+    })
+
+    it('throws a clear error for non-object JSON values', async () => {
+      await expect(importJson(store, '"just a string"')).rejects.toThrow(
+        'Import failed: expected an object with a "scenarios" array'
+      )
+    })
+
     it('skips duplicate scenarios on import', async () => {
       await ops.captureScenario({ behavior: 'a' })
       const json = exportJson(await store.load())

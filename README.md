@@ -86,27 +86,56 @@ npx aver run
 
 See the [Getting Started guide](docs/guides/getting-started.md) for a complete walkthrough.
 
-## When to Use Aver
+## Two Ways to Use Aver
 
-**Single adapter:** You get tests in domain language that read like specifications, not implementation details.
+Both paths share the same domain vocabulary — that's the point. The domain is the behavioral contract regardless of who writes the code.
+
+### Traditional Development
+
+Define domains, write adapters, run tests. Works like any testing library — no AI required.
+
+```bash
+npm install @aver/core
+npx aver init --domain ShoppingCart --protocol unit
+npx aver run
+```
+
+**Single adapter:** Tests in domain language that read like specifications, not implementation details.
 
 **Multiple adapters:** The real multiplier — one test suite runs against unit code, HTTP APIs, and browser UIs with zero duplication.
 
-**AI-assisted teams:** The scenario pipeline (capture → specify → implement) structures AI-driven test development and keeps business intent front-and-center.
+**Legacy adoption:** Start from the outside — name the behaviors, write an E2E adapter, lock in the contract. Then grow the pyramid inward as you refactor. The tests don't change, only the adapters do.
+
+### AI-Assisted Development
+
+Add the agent plugin to Claude Code. The scenario pipeline, MCP tools, and workflow skills guide the AI through discovery, specification, and implementation — with human checkpoints at every stage.
+
+```bash
+npm install @aver/agent-plugin
+```
+
+The plugin provides 20+ MCP tools for managing scenarios and a maturity pipeline (capture → characterize → map → specify → implement) that structures AI-driven development. You define the intent; the agent implements against it; `aver run` returning green is the success criteria.
 
 **When not to use:** If you only need simple unit tests with no protocol variety, plain vitest is simpler.
 
 ## Packages
 
-| Package | Description | Maturity |
-|---------|-------------|----------|
-| [`@aver/core`](packages/core) | Core framework — domains, adapters, suite, CLI | Stable |
-| [`@aver/approvals`](packages/approvals) | Approval testing — structural diffs and visual screenshot comparison | Stable |
-| [`@aver/agent`](packages/agent) | AI agent platform — includes workspace, eval, and scenario pipeline | Experimental |
-| [`@aver/protocol-http`](packages/protocol-http) | HTTP protocol adapter (fetch-based) | Stable |
-| [`@aver/protocol-playwright`](packages/protocol-playwright) | Playwright browser protocol adapter | Stable |
-| [`@aver/mcp-server`](packages/mcp-server) | MCP server for AI-assisted testing | Experimental |
-| [`@aver/agent-plugin`](packages/agent-plugin) | Agent plugin — MCP server + maturity pipeline workflow skill | Experimental |
+### Core (Stable)
+
+| Package | Description |
+|---------|-------------|
+| [`@aver/core`](packages/core) | Core framework — domains, adapters, suite, CLI |
+| [`@aver/approvals`](packages/approvals) | Approval testing — structural diffs and visual screenshot comparison |
+| [`@aver/protocol-http`](packages/protocol-http) | HTTP protocol adapter (fetch-based) |
+| [`@aver/protocol-playwright`](packages/protocol-playwright) | Playwright browser protocol adapter |
+
+### AI-Assisted (Experimental)
+
+| Package | Description |
+|---------|-------------|
+| [`@aver/agent-plugin`](packages/agent-plugin) | Claude Code plugin — MCP server + maturity pipeline workflow skill |
+| [`@aver/mcp-server`](packages/mcp-server) | MCP server for AI-assisted testing |
+| [`@aver/agent`](packages/agent) | AI agent platform — workspace, eval, and scenario pipeline |
 
 ## Key Concepts
 

@@ -166,6 +166,16 @@ test('query cart contents', async ({ act, query }) => {
 
 Notice that `suite(shoppingCart)` gives you a typed `test` function. The test context provides `act`, `query`, and `assert` — all fully typed from your domain definition.
 
+> **Tip: Given-When-Then aliases.** The test context also provides `given`, `when`, and `then` as aliases for `act`, `act`, and `assert`. These read more naturally for BDD-style tests:
+>
+> ```typescript
+> test('add and verify item', async ({ given, when, then }) => {
+>   await given.addItem({ product: 'Widget', quantity: 2 })
+>   await when.addItem({ product: 'Gadget', quantity: 1 })
+>   await then.cartContains({ product: 'Widget', quantity: 2 })
+> })
+> ```
+
 ## Run your tests
 
 ```bash
@@ -201,4 +211,4 @@ tests/
 
 - [Multi-Adapter Testing](multi-adapter.md) — add HTTP and Playwright adapters so the same tests verify your API and UI
 - [CI Integration](ci-integration.md) — run Aver tests in your CI pipeline
-- [Key Concepts](../reference/) — deeper look at domains, adapters, protocols, and suites
+- [API Reference](../api.md) — deeper look at domains, adapters, protocols, and suites

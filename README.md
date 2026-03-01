@@ -98,15 +98,15 @@ See the [Getting Started guide](docs/guides/getting-started.md) for a complete w
 
 ## Packages
 
-| Package | Description |
-|---------|-------------|
-| [`@aver/core`](packages/core) | Core framework — domains, adapters, suite, CLI |
-| [`@aver/approvals`](packages/approvals) | Approval testing — structural diffs and visual screenshot comparison |
-| [`@aver/agent`](packages/agent) | AI agent platform — includes workspace, eval, and scenario pipeline |
-| [`@aver/protocol-http`](packages/protocol-http) | HTTP protocol adapter (fetch-based) |
-| [`@aver/protocol-playwright`](packages/protocol-playwright) | Playwright browser protocol adapter |
-| [`@aver/mcp-server`](packages/mcp-server) | MCP server for AI-assisted testing |
-| [`@aver/agent-plugin`](packages/agent-plugin) | Agent plugin — MCP server + maturity pipeline workflow skill |
+| Package | Description | Maturity |
+|---------|-------------|----------|
+| [`@aver/core`](packages/core) | Core framework — domains, adapters, suite, CLI | Stable |
+| [`@aver/approvals`](packages/approvals) | Approval testing — structural diffs and visual screenshot comparison | Stable |
+| [`@aver/agent`](packages/agent) | AI agent platform — includes workspace, eval, and scenario pipeline | Experimental |
+| [`@aver/protocol-http`](packages/protocol-http) | HTTP protocol adapter (fetch-based) | Stable |
+| [`@aver/protocol-playwright`](packages/protocol-playwright) | Playwright browser protocol adapter | Stable |
+| [`@aver/mcp-server`](packages/mcp-server) | MCP server for AI-assisted testing | Experimental |
+| [`@aver/agent-plugin`](packages/agent-plugin) | Agent plugin — MCP server + maturity pipeline workflow skill | Experimental |
 
 ## Key Concepts
 

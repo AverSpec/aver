@@ -47,10 +47,10 @@ export async function getScenarioSummaryHandler(
 }
 
 export async function getScenariosHandler(
-  input: { stage?: Stage; story?: string; keyword?: string },
+  input: { stage?: Stage; story?: string; keyword?: string; mode?: 'observed' | 'intended'; hasConfirmation?: boolean; domainOperation?: string; hasOpenQuestions?: boolean; createdAfter?: string; createdBefore?: string; fields?: string[] },
   basePath: string,
   projectId: string,
-): Promise<Scenario[]> {
+): Promise<Scenario[] | Partial<Scenario>[]> {
   return createOps(basePath, projectId).getScenarios(input)
 }
 
@@ -181,11 +181,18 @@ export function registerWorkspaceTools(server: McpServer, config?: ToolsConfig):
   server.registerTool(
     'get_scenarios',
     {
-      description: 'Get scenarios with optional filters by stage, story, or keyword',
+      description: 'Get scenarios with optional filters by stage, story, keyword, mode, confirmation status, domain operation, open questions, date range, and field projection',
       inputSchema: {
         stage: stageEnum.optional().describe('Filter by maturity stage'),
         story: z.string().optional().describe('Filter by story name'),
         keyword: z.string().optional().describe('Filter by keyword in behavior or context'),
+        mode: z.enum(['observed', 'intended']).optional().describe('Filter by mode'),
+        hasConfirmation: z.boolean().optional().describe('Filter by whether confirmedBy is set'),
+        domainOperation: z.string().optional().describe('Filter by domain operation (substring match)'),
+        hasOpenQuestions: z.boolean().optional().describe('Filter by whether scenario has unresolved questions'),
+        createdAfter: z.string().optional().describe('Filter scenarios created after this ISO date'),
+        createdBefore: z.string().optional().describe('Filter scenarios created before this ISO date'),
+        fields: z.array(z.string()).optional().describe('Project only these fields (e.g. ["id", "stage", "behavior"])'),
       },
     },
     async (input) => {
@@ -398,4 +405,5 @@ export function registerWorkspaceTools(server: McpServer, config?: ToolsConfig):
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] }
     },
   )
+
 }

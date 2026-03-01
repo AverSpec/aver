@@ -28,6 +28,13 @@ export interface ScenarioFilter {
   stage?: Stage
   story?: string
   keyword?: string
+  mode?: 'observed' | 'intended'
+  hasConfirmation?: boolean
+  domainOperation?: string
+  hasOpenQuestions?: boolean
+  createdAfter?: string
+  createdBefore?: string
+  fields?: string[]
 }
 
 export interface ScenarioUpdateInput {
@@ -311,7 +318,7 @@ export class WorkspaceOps {
     return ws.scenarios.find(s => s.id === id)
   }
 
-  async getScenarios(filter?: ScenarioFilter): Promise<Scenario[]> {
+  async getScenarios(filter?: ScenarioFilter): Promise<Scenario[] | Partial<Scenario>[]> {
     const ws = await this.store.load()
     let scenarios = ws.scenarios
     if (filter?.stage) scenarios = scenarios.filter(s => s.stage === filter.stage)
@@ -322,6 +329,35 @@ export class WorkspaceOps {
         s.behavior.toLowerCase().includes(kw) ||
         (s.context?.toLowerCase().includes(kw) ?? false)
       )
+    }
+    if (filter?.mode) scenarios = scenarios.filter(s => s.mode === filter.mode)
+    if (filter?.hasConfirmation !== undefined) {
+      scenarios = scenarios.filter(s => filter.hasConfirmation ? !!s.confirmedBy : !s.confirmedBy)
+    }
+    if (filter?.domainOperation) {
+      const op = filter.domainOperation.toLowerCase()
+      scenarios = scenarios.filter(s => s.domainOperation?.toLowerCase().includes(op) ?? false)
+    }
+    if (filter?.hasOpenQuestions !== undefined) {
+      scenarios = scenarios.filter(s => {
+        const hasOpen = s.questions.some(q => !q.answer)
+        return filter.hasOpenQuestions ? hasOpen : !hasOpen
+      })
+    }
+    if (filter?.createdAfter) {
+      scenarios = scenarios.filter(s => s.createdAt >= filter.createdAfter!)
+    }
+    if (filter?.createdBefore) {
+      scenarios = scenarios.filter(s => s.createdAt <= filter.createdBefore!)
+    }
+    if (filter?.fields && filter.fields.length > 0) {
+      return scenarios.map(s => {
+        const projected: Record<string, unknown> = {}
+        for (const f of filter.fields!) {
+          if (f in s) projected[f] = (s as unknown as Record<string, unknown>)[f]
+        }
+        return projected as Partial<Scenario>
+      })
     }
     return scenarios
   }

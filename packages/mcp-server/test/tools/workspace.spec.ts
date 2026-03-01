@@ -339,4 +339,101 @@ describe('workspace tool handlers', () => {
       expect(result.skipped).toBe(1)
     })
   })
+
+  describe('get_scenarios extended filters', () => {
+    it('filters by mode', async () => {
+      await captureScenarioHandler({ behavior: 'a', mode: 'observed' }, dir, projectId)
+      await captureScenarioHandler({ behavior: 'b', mode: 'intended' }, dir, projectId)
+
+      const observed = await getScenariosHandler({ mode: 'observed' }, dir, projectId)
+      expect(observed).toHaveLength(1)
+      expect(observed[0].behavior).toBe('a')
+
+      const intended = await getScenariosHandler({ mode: 'intended' }, dir, projectId)
+      expect(intended).toHaveLength(1)
+      expect(intended[0].behavior).toBe('b')
+    })
+
+    it('filters by hasConfirmation', async () => {
+      const s1 = await captureScenarioHandler({ behavior: 'a' }, dir, projectId)
+      await captureScenarioHandler({ behavior: 'b' }, dir, projectId)
+      await advanceScenarioHandler({ id: s1.id, rationale: 'go', promotedBy: 'dev' }, dir, projectId)
+      await confirmScenarioHandler({ id: s1.id, confirmer: 'po' }, dir, projectId)
+
+      const confirmed = await getScenariosHandler({ hasConfirmation: true }, dir, projectId)
+      expect(confirmed).toHaveLength(1)
+      expect(confirmed[0].behavior).toBe('a')
+
+      const unconfirmed = await getScenariosHandler({ hasConfirmation: false }, dir, projectId)
+      expect(unconfirmed).toHaveLength(1)
+      expect(unconfirmed[0].behavior).toBe('b')
+    })
+
+    it('filters by domainOperation substring', async () => {
+      const s1 = await captureScenarioHandler({ behavior: 'a' }, dir, projectId)
+      await captureScenarioHandler({ behavior: 'b' }, dir, projectId)
+      await linkToDomainHandler({ scenarioId: s1.id, domainOperation: 'Cart.addItem' }, dir, projectId)
+
+      const result = await getScenariosHandler({ domainOperation: 'cart' }, dir, projectId)
+      expect(result).toHaveLength(1)
+      expect(result[0].behavior).toBe('a')
+    })
+
+    it('filters by hasOpenQuestions', async () => {
+      const s1 = await captureScenarioHandler({ behavior: 'a' }, dir, projectId)
+      await captureScenarioHandler({ behavior: 'b' }, dir, projectId)
+      await addQuestionHandler({ scenarioId: s1.id, text: 'why?' }, dir, projectId)
+
+      const withQ = await getScenariosHandler({ hasOpenQuestions: true }, dir, projectId)
+      expect(withQ).toHaveLength(1)
+      expect(withQ[0].behavior).toBe('a')
+
+      const withoutQ = await getScenariosHandler({ hasOpenQuestions: false }, dir, projectId)
+      expect(withoutQ).toHaveLength(1)
+      expect(withoutQ[0].behavior).toBe('b')
+    })
+
+    it('filters by date range', async () => {
+      const s1 = await captureScenarioHandler({ behavior: 'old' }, dir, projectId)
+      // Scenarios are created with Date.now(), so both will have the same approximate time.
+      // We use the created timestamp of the first scenario to build a range.
+      const s2 = await captureScenarioHandler({ behavior: 'new' }, dir, projectId)
+
+      // Both should match a wide range
+      const all = await getScenariosHandler({ createdAfter: '2000-01-01T00:00:00.000Z' }, dir, projectId)
+      expect(all).toHaveLength(2)
+
+      // None should match a future range
+      const none = await getScenariosHandler({ createdAfter: '2099-01-01T00:00:00.000Z' }, dir, projectId)
+      expect(none).toHaveLength(0)
+
+      // createdBefore far past should return nothing
+      const noneBefore = await getScenariosHandler({ createdBefore: '2000-01-01T00:00:00.000Z' }, dir, projectId)
+      expect(noneBefore).toHaveLength(0)
+    })
+
+    it('projects specific fields', async () => {
+      await captureScenarioHandler({ behavior: 'test', context: 'ctx', story: 'epic' }, dir, projectId)
+
+      const result = await getScenariosHandler({ fields: ['id', 'stage', 'behavior'] }, dir, projectId)
+      expect(result).toHaveLength(1)
+      expect(result[0]).toHaveProperty('id')
+      expect(result[0]).toHaveProperty('stage')
+      expect(result[0]).toHaveProperty('behavior')
+      expect(result[0]).not.toHaveProperty('context')
+      expect(result[0]).not.toHaveProperty('rules')
+    })
+
+    it('returns full scenarios by default (no fields param)', async () => {
+      await captureScenarioHandler({ behavior: 'full', context: 'all fields' }, dir, projectId)
+
+      const result = await getScenariosHandler({}, dir, projectId)
+      expect(result).toHaveLength(1)
+      expect(result[0]).toHaveProperty('id')
+      expect(result[0]).toHaveProperty('rules')
+      expect(result[0]).toHaveProperty('questions')
+      expect(result[0]).toHaveProperty('createdAt')
+    })
+  })
+
 })

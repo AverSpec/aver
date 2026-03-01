@@ -46,7 +46,7 @@ Visual approvals capture a screenshot, compare it pixel-by-pixel against the bas
 To create or update baselines for either mode:
 
 ```bash
-AVER_APPROVE=1 npx vitest run <test-file>
+AVER_APPROVE=1 npx aver run <test-file>
 ```
 
 ## License

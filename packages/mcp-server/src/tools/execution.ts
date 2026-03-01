@@ -34,7 +34,7 @@ export function runTestsHandler(
   store: RunStore,
   opts?: { domain?: string; adapter?: string },
 ): RunSummary {
-  const vitestArgs = ['vitest', 'run', '--reporter=json']
+  const vitestArgs = ['aver', 'run', '--reporter=json']
 
   const env: Record<string, string> = { ...process.env as Record<string, string> }
   if (opts?.domain) env.AVER_DOMAIN = opts.domain

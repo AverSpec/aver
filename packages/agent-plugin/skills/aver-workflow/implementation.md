@@ -17,7 +17,7 @@ The acceptance test is the compass. The unit tests are the steps.
 
 ## Process
 
-1. Run the acceptance test to see the current failure (`run_tests` MCP tool or `pnpm exec vitest run`)
+1. Run the acceptance test to see the current failure (`run_tests` MCP tool or `pnpm exec aver run`)
 2. Read the error message and trace (`get_failure_details`, `get_test_trace` MCP tools)
 3. Identify the smallest change to make progress
 4. If the failure is in **app code**: write a unit test for just that behavior, make it pass, run the acceptance test again

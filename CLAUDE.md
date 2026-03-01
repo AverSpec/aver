@@ -21,7 +21,7 @@ CLI entry: `node packages/core/dist/cli.js` (ESM)
 ## Test
 
 ```
-pnpm exec vitest run
+pnpm exec aver run
 ```
 
 Expected failures: 5 eval/judge tests (need Claude Code auth), 7 Playwright tests (need browser).

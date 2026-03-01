@@ -81,7 +81,7 @@ export const directAdapter = implement(taskBoard, {
 ```bash
 npm install @aver/core
 npx aver init --domain ShoppingCart --protocol unit
-npx vitest run
+npx aver run
 ```
 
 ## Packages

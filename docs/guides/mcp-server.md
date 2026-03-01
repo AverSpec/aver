@@ -64,7 +64,7 @@ These tools let the AI understand your test vocabulary without reading source fi
 
 | Tool | Description |
 |:-----|:------------|
-| `run_tests` | Run tests and persist results |
+| `run_tests` | Run tests via `aver run` and persist results |
 | `get_failure_details` | Get failure details from the latest run |
 | `get_test_trace` | Get the action trace for a specific test |
 | `get_run_diff` | Compare two runs — shows newly passing/failing tests |

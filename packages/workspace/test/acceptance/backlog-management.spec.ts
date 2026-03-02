@@ -117,6 +117,26 @@ describe('Backlog Management', () => {
       expect(doneCount).toBe(1)
     })
 
+    test('filtering items by type', async ({ given, query }) => {
+      await given.createItem({ title: 'New feature', type: 'feature' })
+      await given.createItem({ title: 'Fix crash', type: 'bug' })
+      await given.createItem({ title: 'Another bug', type: 'bug' })
+      const bugCount = await query.itemCount({ type: 'bug' })
+      expect(bugCount).toBe(2)
+      const featureCount = await query.itemCount({ type: 'feature' })
+      expect(featureCount).toBe(1)
+    })
+
+    test('filtering items by tag', async ({ given, query }) => {
+      await given.createItem({ title: 'Urgent fix', tags: ['urgent', 'backend'] })
+      await given.createItem({ title: 'Nice to have', tags: ['frontend'] })
+      await given.createItem({ title: 'Also urgent', tags: ['urgent'] })
+      const urgentCount = await query.itemCount({ tag: 'urgent' })
+      expect(urgentCount).toBe(2)
+      const frontendCount = await query.itemCount({ tag: 'frontend' })
+      expect(frontendCount).toBe(1)
+    })
+
     test('counting items by priority', async ({ given, query }) => {
       await given.createItem({ title: 'Critical', priority: 'P0' })
       await given.createItem({ title: 'Normal', priority: 'P1' })
@@ -125,6 +145,44 @@ describe('Backlog Management', () => {
       expect(p0Count).toBe(1)
       const p1Count = await query.itemCount({ priority: 'P1' })
       expect(p1Count).toBe(2)
+    })
+  })
+
+  // --- Summary ---
+
+  describe('summary', () => {
+    test('counts items by status', async ({ given, when, query }) => {
+      await given.createItem({ title: 'Open 1' })
+      await given.createItem({ title: 'Open 2' })
+      await given.createItem({ title: 'Will close' })
+      await given.selectItem({ title: 'Will close' })
+      await given.updateItem({ status: 'done' })
+      const openCount = await query.summaryCount({ status: 'open' })
+      expect(openCount).toBe(2)
+      const doneCount = await query.summaryCount({ status: 'done' })
+      expect(doneCount).toBe(1)
+      const total = await query.summaryTotal()
+      expect(total).toBe(3)
+    })
+
+    test('byPriority counts only active items', async ({ given, when, query }) => {
+      await given.createItem({ title: 'Active P0', priority: 'P0' })
+      await given.createItem({ title: 'Done P1', priority: 'P1' })
+      await given.selectItem({ title: 'Done P1' })
+      await given.updateItem({ status: 'done' })
+      await given.createItem({ title: 'Active P1', priority: 'P1' })
+      const p0 = await query.summaryByPriority({ priority: 'P0' })
+      expect(p0).toBe(1)
+      const p1 = await query.summaryByPriority({ priority: 'P1' })
+      expect(p1).toBe(1)
+    })
+  })
+
+  // --- Item Not Found ---
+
+  describe('item not found', () => {
+    test('getItem returns undefined for non-existent ID', async ({ then }) => {
+      await then.itemNotFound({ id: 'non-existent-id' })
     })
   })
 })

@@ -23,13 +23,14 @@ export const backlogManagementAdapter = implement(backlogManagement, {
   }),
 
   actions: {
-    createItem: async (session, { title, priority, type }) => {
+    createItem: async (session, { title, priority, type, tags }) => {
       try {
         session.lastError = undefined
         const item = await session.ops.createItem({
           title,
           priority: priority as BacklogPriority | undefined,
           type: type as BacklogItemType | undefined,
+          tags,
         })
         session.currentItemId = item.id
       } catch (e: any) {
@@ -134,12 +135,29 @@ export const backlogManagementAdapter = implement(backlogManagement, {
       return item?.priority ?? 'unknown'
     },
 
-    itemCount: async (session, { status, priority }) => {
+    itemCount: async (session, { status, priority, type, tag }) => {
       const items = await session.ops.getItems({
         ...(status !== undefined && { status: status as BacklogStatus }),
         ...(priority !== undefined && { priority: priority as BacklogPriority }),
+        ...(type !== undefined && { type: type as BacklogItemType }),
+        ...(tag !== undefined && { tag }),
       })
       return items.length
+    },
+
+    summaryCount: async (session, { status }) => {
+      const summary = await session.ops.getSummary()
+      return summary[status as BacklogStatus] ?? 0
+    },
+
+    summaryTotal: async (session) => {
+      const summary = await session.ops.getSummary()
+      return summary.total
+    },
+
+    summaryByPriority: async (session, { priority }) => {
+      const summary = await session.ops.getSummary()
+      return summary.byPriority[priority as BacklogPriority] ?? 0
     },
 
     itemOrder: async (session, { priority }) => {
@@ -189,6 +207,17 @@ export const backlogManagementAdapter = implement(backlogManagement, {
       const item = await session.ops.getItem(session.currentItemId)
       expect(item).toBeDefined()
       expect(item!.scenarioIds).toContain(scenarioId)
+    },
+
+    itemNotFound: async (session, { id }) => {
+      const item = await session.ops.getItem(id)
+      expect(item).toBeUndefined()
+    },
+
+    itemHasType: async (session, { type }) => {
+      const item = await session.ops.getItem(session.currentItemId)
+      expect(item).toBeDefined()
+      expect(item!.type).toBe(type)
     },
 
     itemDeleted: async (session) => {

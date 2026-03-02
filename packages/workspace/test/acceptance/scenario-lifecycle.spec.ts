@@ -77,6 +77,66 @@ describe('Scenario Lifecycle', () => {
       await when.updateScenario({ behavior: 'ghost' })
       await then.operationFailed({ message: 'Scenario not found' })
     })
+
+    test('updates context without affecting behavior', async ({ given, when, then }) => {
+      await given.captureScenario({ behavior: 'original', context: 'old context' })
+      await when.updateScenario({ context: 'new context' })
+      await then.contextIs({ expected: 'new context' })
+      await then.behaviorIs({ behavior: 'original' })
+    })
+
+    test('updates story without affecting rules', async ({ given, when, then }) => {
+      await given.captureScenario({ behavior: 'with rules' })
+      await given.updateScenario({ rules: ['A', 'B'] })
+      await when.updateScenario({ story: 'new story' })
+      await then.storyIs({ expected: 'new story' })
+      await then.rulesReplaced({ count: 2 })
+    })
+
+    test('replaces examples array', async ({ given, when, then }) => {
+      await given.captureScenario({ behavior: 'has examples' })
+      await given.updateScenario({
+        examples: [
+          { description: 'ex1', expectedOutcome: 'ok' },
+          { description: 'ex2', expectedOutcome: 'ok' },
+        ],
+      })
+      await when.updateScenario({
+        examples: [
+          { description: 'new1', expectedOutcome: 'pass' },
+          { description: 'new2', expectedOutcome: 'pass' },
+          { description: 'new3', expectedOutcome: 'pass' },
+        ],
+      })
+      await then.examplesReplaced({ count: 3 })
+    })
+
+    test('replaces constraints array', async ({ given, when, then }) => {
+      await given.captureScenario({ behavior: 'has constraints' })
+      await given.updateScenario({ constraints: ['A'] })
+      await when.updateScenario({ constraints: ['B', 'C'] })
+      await then.constraintsReplaced({ count: 2 })
+    })
+
+    test('replaces seams array', async ({ given, when, then }) => {
+      await given.captureScenario({ behavior: 'has seams' })
+      await given.updateScenario({
+        seams: [{ type: 'api', location: '/old', description: 'old seam' }],
+      })
+      await when.updateScenario({
+        seams: [
+          { type: 'api', location: '/new1', description: 'seam 1' },
+          { type: 'db', location: '/new2', description: 'seam 2' },
+        ],
+      })
+      await then.seamsReplaced({ count: 2 })
+    })
+
+    test('sets context on scenario with no prior context', async ({ given, when, then }) => {
+      await given.captureScenario({ behavior: 'no context yet' })
+      await when.updateScenario({ context: 'now has context' })
+      await then.contextIs({ expected: 'now has context' })
+    })
   })
 
   // --- Deletion ---

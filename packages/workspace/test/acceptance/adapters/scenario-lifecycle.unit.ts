@@ -38,13 +38,14 @@ export const scenarioLifecycleAdapter = implement(scenarioLifecycle, {
       }
     },
 
-    updateScenario: async (session, { behavior, rules }) => {
+    updateScenario: async (session, { behavior, rules, context, story, examples, constraints, seams }) => {
       try {
         session.lastError = undefined
-        // Record stage before update to verify it doesn't change
         const before = await session.ops.getScenario(session.scenarioId)
         if (before) session.initialStage = before.stage
-        await session.ops.updateScenario(session.scenarioId, { behavior, rules })
+        await session.ops.updateScenario(session.scenarioId, {
+          behavior, rules, context, story, examples, constraints, seams,
+        })
       } catch (e: any) {
         session.lastError = e
       }
@@ -129,6 +130,31 @@ export const scenarioLifecycleAdapter = implement(scenarioLifecycle, {
       const s = await session.ops.getScenario(session.scenarioId)
       return s?.domainOperation
     },
+
+    scenarioContext: async (session) => {
+      const s = await session.ops.getScenario(session.scenarioId)
+      return s?.context ?? ''
+    },
+
+    scenarioStory: async (session) => {
+      const s = await session.ops.getScenario(session.scenarioId)
+      return s?.story ?? ''
+    },
+
+    examplesCount: async (session) => {
+      const s = await session.ops.getScenario(session.scenarioId)
+      return s?.examples.length ?? 0
+    },
+
+    constraintsCount: async (session) => {
+      const s = await session.ops.getScenario(session.scenarioId)
+      return s?.constraints.length ?? 0
+    },
+
+    seamsCount: async (session) => {
+      const s = await session.ops.getScenario(session.scenarioId)
+      return s?.seams.length ?? 0
+    },
   },
 
   assertions: {
@@ -202,6 +228,36 @@ export const scenarioLifecycleAdapter = implement(scenarioLifecycle, {
       expect(s).toBeDefined()
       const match = s!.transitions.find((t) => t.from === from && t.to === to)
       expect(match).toBeDefined()
+    },
+
+    contextIs: async (session, { expected }) => {
+      const s = await session.ops.getScenario(session.scenarioId)
+      expect(s).toBeDefined()
+      expect(s!.context).toBe(expected)
+    },
+
+    storyIs: async (session, { expected }) => {
+      const s = await session.ops.getScenario(session.scenarioId)
+      expect(s).toBeDefined()
+      expect(s!.story).toBe(expected)
+    },
+
+    examplesReplaced: async (session, { count }) => {
+      const s = await session.ops.getScenario(session.scenarioId)
+      expect(s).toBeDefined()
+      expect(s!.examples.length).toBe(count)
+    },
+
+    constraintsReplaced: async (session, { count }) => {
+      const s = await session.ops.getScenario(session.scenarioId)
+      expect(s).toBeDefined()
+      expect(s!.constraints.length).toBe(count)
+    },
+
+    seamsReplaced: async (session, { count }) => {
+      const s = await session.ops.getScenario(session.scenarioId)
+      expect(s).toBeDefined()
+      expect(s!.seams.length).toBe(count)
     },
 
     operationFailed: async (session, { message }) => {

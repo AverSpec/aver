@@ -31,6 +31,7 @@ export const scenarioLifecycle = defineDomain({
     examplesCount: query<void, number>(),
     constraintsCount: query<void, number>(),
     seamsCount: query<void, number>(),
+    exampleGiven: query<{ index: number }, string | undefined>(),
   },
   assertions: {
     scenarioCreated: assertion(),

@@ -155,6 +155,11 @@ export const scenarioLifecycleAdapter = implement(scenarioLifecycle, {
       const s = await session.ops.getScenario(session.scenarioId)
       return s?.seams.length ?? 0
     },
+
+    exampleGiven: async (session, { index }) => {
+      const s = await session.ops.getScenario(session.scenarioId)
+      return s?.examples[index]?.given
+    },
   },
 
   assertions: {

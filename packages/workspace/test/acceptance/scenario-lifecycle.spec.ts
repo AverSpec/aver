@@ -1,4 +1,4 @@
-import { describe } from 'vitest'
+import { describe, expect } from 'vitest'
 import { suite } from '@aver/core'
 import { scenarioLifecycle } from './domains/scenario-lifecycle'
 import { scenarioLifecycleAdapter } from './adapters/scenario-lifecycle.unit'
@@ -136,6 +136,20 @@ describe('Scenario Lifecycle', () => {
       await given.captureScenario({ behavior: 'no context yet' })
       await when.updateScenario({ context: 'now has context' })
       await then.contextIs({ expected: 'now has context' })
+    })
+
+    test('preserves given field on examples', async ({ given, when, query }) => {
+      await given.captureScenario({ behavior: 'has examples with given' })
+      await when.updateScenario({
+        examples: [
+          { description: 'ex1', expectedOutcome: 'pass', given: 'a user is logged in' },
+          { description: 'ex2', expectedOutcome: 'fail', given: 'a user is not logged in' },
+        ],
+      })
+      const given0 = await query.exampleGiven({ index: 0 })
+      const given1 = await query.exampleGiven({ index: 1 })
+      expect(given0).toBe('a user is logged in')
+      expect(given1).toBe('a user is not logged in')
     })
   })
 

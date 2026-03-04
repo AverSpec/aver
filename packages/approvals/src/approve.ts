@@ -90,11 +90,10 @@ approve.visual = async function visual(
   const screenshotter = context?.extensions.screenshotter as Screenshotter | undefined
 
   if (!screenshotter) {
-    console.warn(
-      `[aver] approve.visual() skipped: no screenshotter extension available. ` +
+    throw new Error(
+      `approve.visual() requires a screenshotter extension. ` +
       `Use a visual protocol (e.g., playwright) for visual approvals.`,
     )
-    return
   }
 
   const state = getTestState()

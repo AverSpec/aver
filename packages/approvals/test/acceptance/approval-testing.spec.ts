@@ -264,11 +264,10 @@ describe('Approval testing', () => {
       await then.visualDiffGenerated()
     })
 
-    test('skips with warning when no screenshotter available', async ({ given, when, then }) => {
+    test('throws when no screenshotter available', async ({ given, when, then }) => {
       await given.removeScreenshotter()
       await when.approveVisual({ name: 'screenshot' })
       await then.screenshotterSkipWarned()
-      await then.noError()
     })
 
     test('supports region-based visual approval', async ({ given, when, then }) => {

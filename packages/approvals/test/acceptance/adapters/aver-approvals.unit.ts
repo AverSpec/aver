@@ -1,3 +1,4 @@
+import { expect } from 'vitest'
 import { implement, unit, runWithTestContext } from '@aver/core'
 import type { TraceEntry, Screenshotter } from '@aver/core'
 import { mkdtempSync, existsSync, readFileSync, writeFileSync } from 'node:fs'
@@ -13,7 +14,7 @@ interface ApprovalSession {
   lastApprovalName: string
   trace: TraceEntry[]
   screenshotter?: Screenshotter
-  lastWarning?: string
+
 }
 
 function createMockPng(width: number, height: number, color: [number, number, number, number]): Buffer {
@@ -108,13 +109,7 @@ export const averApprovalsAdapter = implement(averApprovals, {
 
     approveVisual: async (session, { name, region }) => {
       session.lastError = undefined
-      session.lastWarning = undefined
       session.lastApprovalName = name
-
-      // Capture console.warn to detect skip warnings
-      const originalWarn = console.warn
-      let capturedWarning: string | undefined
-      console.warn = (...args: any[]) => { capturedWarning = args.join(' ') }
 
       try {
         const context = {
@@ -132,9 +127,6 @@ export const averApprovalsAdapter = implement(averApprovals, {
         })
       } catch (e: any) {
         session.lastError = e
-      } finally {
-        console.warn = originalWarn
-        session.lastWarning = capturedWarning
       }
     },
 
@@ -205,8 +197,8 @@ export const averApprovalsAdapter = implement(averApprovals, {
       return existsSync(join(dir, `${safeName(session.lastApprovalName)}.diff.png`))
     },
 
-    lastWarning: async (session) => {
-      return session.lastWarning
+    lastWarning: async () => {
+      return undefined
     },
   },
 
@@ -303,10 +295,8 @@ export const averApprovalsAdapter = implement(averApprovals, {
     },
 
     screenshotterSkipWarned: async (session) => {
-      if (!session.lastWarning)
-        throw new Error('Expected a warning to be captured')
-      if (!session.lastWarning.includes('approve.visual() skipped'))
-        throw new Error(`Expected warning to contain "approve.visual() skipped" but got: ${session.lastWarning}`)
+      expect(session.lastError).toBeDefined()
+      expect(session.lastError?.message).toContain('requires a screenshotter extension')
     },
   },
 })

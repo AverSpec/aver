@@ -185,4 +185,79 @@ describe('Backlog Management', () => {
       await then.itemNotFound({ id: 'non-existent-id' })
     })
   })
+
+  // --- Error Paths ---
+
+  describe('error paths', () => {
+    test('updateItem on a non-existent ID fails with a descriptive error', async ({ when, then }) => {
+      // Force currentItemId to a non-existent value by attempting a delete on unknown ID first,
+      // then verifying updateItem also fails for the same phantom ID.
+      // We do this by manipulating via the session through a prior failed delete,
+      // but the simplest approach is: create an item, delete it, then update it.
+      await when.createItem({ title: 'Soon gone' })
+      await when.deleteItem()
+      await when.updateItem({ title: 'Should not work' })
+      await then.operationFailed({ message: 'not found' })
+    })
+
+    test('deleteItem on a non-existent ID fails with a descriptive error', async ({ when, then }) => {
+      await when.createItem({ title: 'Phantom item' })
+      await when.deleteItem()
+      // currentItemId now refers to the already-deleted item
+      await when.deleteItem()
+      await then.operationFailed({ message: 'not found' })
+    })
+  })
+
+  // --- moveItem before ---
+
+  describe('moveItem before', () => {
+    test('moving before an item positions it correctly', async ({ given, when, then, query }) => {
+      await given.createItem({ title: 'Alpha', priority: 'P1' })
+      await given.createItem({ title: 'Beta', priority: 'P1' })
+      await given.createItem({ title: 'Gamma', priority: 'P1' })
+      // Gamma is current. Move it before Beta.
+      await when.moveItem({ before: 'Beta' })
+      await given.selectItem({ title: 'Gamma' })
+      await then.itemRankedBefore({ other: 'Beta' })
+    })
+  })
+
+  // --- getSummary in-progress and dismissed counts ---
+
+  describe('summary in-progress and dismissed', () => {
+    test('summary counts in-progress and dismissed items correctly', async ({ given, when, query }) => {
+      await given.createItem({ title: 'Active work' })
+      await given.updateItem({ status: 'in-progress' })
+      await given.createItem({ title: 'Dropped idea' })
+      await given.updateItem({ status: 'dismissed' })
+      await given.createItem({ title: 'Still open' })
+      const inProgressCount = await query.summaryCount({ status: 'in-progress' })
+      expect(inProgressCount).toBe(1)
+      const dismissedCount = await query.summaryCount({ status: 'dismissed' })
+      expect(dismissedCount).toBe(1)
+    })
+  })
+
+  // --- updateItem field mutations ---
+
+  describe('updateItem field mutations', () => {
+    test('updateItem changes type after creation', async ({ given, when, then }) => {
+      await given.createItem({ title: 'Type changer', type: 'feature' })
+      await when.updateItem({ type: 'bug' })
+      await then.itemHasType({ type: 'bug' })
+    })
+
+    test('updateItem changes tags after creation', async ({ given, when, then }) => {
+      await given.createItem({ title: 'Tag changer', tags: ['alpha'] })
+      await when.updateItem({ tags: ['beta', 'gamma'] })
+      await then.itemHasTags({ tags: ['beta', 'gamma'] })
+    })
+
+    test('updateItem changes externalUrl after creation', async ({ given, when, then }) => {
+      await given.createItem({ title: 'URL changer' })
+      await when.updateItem({ externalUrl: 'https://example.com/issues/42' })
+      await then.itemHasExternalUrl({ url: 'https://example.com/issues/42' })
+    })
+  })
 })

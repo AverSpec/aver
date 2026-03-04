@@ -50,13 +50,16 @@ export const backlogManagementAdapter = implement(backlogManagement, {
       }
     },
 
-    updateItem: async (session, { title, description, status }) => {
+    updateItem: async (session, { title, description, status, type, tags, externalUrl }) => {
       try {
         session.lastError = undefined
         await session.ops.updateItem(session.currentItemId, {
           ...(title !== undefined && { title }),
           ...(description !== undefined && { description }),
           ...(status !== undefined && { status: status as BacklogStatus }),
+          ...(type !== undefined && { type: type as BacklogItemType }),
+          ...(tags !== undefined && { tags }),
+          ...(externalUrl !== undefined && { externalUrl }),
         })
       } catch (e: any) {
         session.lastError = e
@@ -218,6 +221,18 @@ export const backlogManagementAdapter = implement(backlogManagement, {
       const item = await session.ops.getItem(session.currentItemId)
       expect(item).toBeDefined()
       expect(item!.type).toBe(type)
+    },
+
+    itemHasTags: async (session, { tags }) => {
+      const item = await session.ops.getItem(session.currentItemId)
+      expect(item).toBeDefined()
+      expect(item!.tags).toEqual(tags)
+    },
+
+    itemHasExternalUrl: async (session, { url }) => {
+      const item = await session.ops.getItem(session.currentItemId)
+      expect(item).toBeDefined()
+      expect(item!.externalUrl).toBe(url)
     },
 
     itemDeleted: async (session) => {

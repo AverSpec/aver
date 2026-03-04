@@ -5,7 +5,7 @@ export const backlogManagement = defineDomain({
   actions: {
     createItem: action<{ title: string; priority?: string; type?: string; tags?: string[] }>(),
     selectItem: action<{ title: string }>(),
-    updateItem: action<{ title?: string; description?: string; status?: string }>(),
+    updateItem: action<{ title?: string; description?: string; status?: string; type?: string; tags?: string[]; externalUrl?: string }>(),
     deleteItem: action<void>(),
     moveItem: action<{ priority?: string; after?: string; before?: string }>(),
     addReference: action<{ label: string; path: string }>(),
@@ -29,6 +29,8 @@ export const backlogManagement = defineDomain({
     itemHasScenarioLink: assertion<{ scenarioId: string }>(),
     itemNotFound: assertion<{ id: string }>(),
     itemHasType: assertion<{ type: string }>(),
+    itemHasTags: assertion<{ tags: string[] }>(),
+    itemHasExternalUrl: assertion<{ url: string }>(),
     itemDeleted: assertion<void>(),
     operationFailed: assertion<{ message: string }>(),
   },

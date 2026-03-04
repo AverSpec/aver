@@ -98,9 +98,19 @@ When dispatching parallel in-session subagents, follow this protocol exactly:
 
 Run all waves end-to-end without pausing for input.
 
+### Filtering for autonomy
+
+Before executing, assess each backlog item for autonomous suitability. **Only include items that don't require user decisions**:
+
+- **Include**: bugs with clear reproduction, refactors with defined scope, chores (dependency updates, linting), features with unambiguous specs
+- **Defer**: research items, items with open questions, features requiring design choices, anything tagged `needs-discussion`
+- **Defer**: items of type `research` — these inherently need human judgment
+
+Present the split: "I can autonomously handle X items. Y items need your input — deferring those."
+
 ### Procedure
 
-1. Call `get_backlog_items(status: 'open')` and group by priority (P0 first)
+1. Call `get_backlog_items(status: 'open')`, filter for autonomous suitability, and group by priority (P0 first)
 2. For each priority wave:
    - List the items and execution order
    - For items that can be parallelized (no file dependencies), dispatch subagents — one per item, each must write tests, implement, and verify the full suite passes

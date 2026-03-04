@@ -39,18 +39,15 @@ export async function runTestsHandler(
   store: RunStore,
   opts?: { domain?: string; adapter?: string },
 ): Promise<RunSummary> {
-  const vitestArgs = ['run', '--reporter=json']
+  const averArgs = ['run', '--reporter=json']
+  if (opts?.domain) averArgs.push('--domain', opts.domain)
+  if (opts?.adapter) averArgs.push('--adapter', opts.adapter)
 
-  const env: Record<string, string> = { ...process.env as Record<string, string> }
-  env.AVER_AUTOLOAD_CONFIG = 'true'
-  if (opts?.domain) env.AVER_DOMAIN = opts.domain
-  if (opts?.adapter) env.AVER_ADAPTER = opts.adapter
-
-  const vitest = resolve(process.cwd(), 'node_modules', '.bin', 'vitest')
+  const aver = resolve(process.cwd(), 'node_modules', '.bin', 'aver')
   let jsonOutput: string
   try {
-    const { stdout } = await execFileAsync(vitest, vitestArgs, {
-      env,
+    const { stdout } = await execFileAsync(aver, averArgs, {
+      env: process.env as Record<string, string>,
       encoding: 'utf-8',
       timeout: 5 * 60 * 1000,
       maxBuffer: 10 * 1024 * 1024,
@@ -60,7 +57,7 @@ export async function runTestsHandler(
     if (err.killed) {
       throw new Error('Test run timed out after 5 minutes')
     }
-    // vitest exits non-zero on test failures but still outputs JSON
+    // aver run exits non-zero on test failures but still outputs JSON
     jsonOutput = err.stdout ?? ''
   }
 

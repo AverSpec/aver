@@ -39,12 +39,17 @@ describe('Batch Operations', () => {
       await then.scenarioAtStage({ index: 2, stage: 'characterized' })
     })
 
-    test('non-existent ID reports error', async ({ given, when, then }) => {
+    test('non-existent ID reports error, real IDs still advance', async ({ given, when, then }) => {
       await given.captureScenario({ behavior: 'real scenario' })
+      await given.injectFakeId({ id: '00000000-0000-0000-0000-000000000000' })
       await given.captureScenario({ behavior: 'also real' })
       await when.batchAdvance({ rationale: 'test', promotedBy: 'tester' })
       await then.resultStatus({ index: 0, status: 'advanced' })
-      await then.resultStatus({ index: 1, status: 'advanced' })
+      await then.resultStatus({ index: 1, status: 'error' })
+      await then.resultStatus({ index: 2, status: 'advanced' })
+      await then.advanceSummaryIs({ advanced: 2, blocked: 0, errors: 1 })
+      await then.scenarioAtStage({ index: 0, stage: 'characterized' })
+      await then.scenarioAtStage({ index: 2, stage: 'characterized' })
     })
   })
 
@@ -74,6 +79,24 @@ describe('Batch Operations', () => {
       await then.resultStatus({ index: 0, status: 'error' })
       await then.resultStatus({ index: 1, status: 'revisited' })
       await then.revisitSummaryIs({ revisited: 1, errors: 1 })
+    })
+
+    test('non-existent ID reports error, real IDs still revisit', async ({ given, when, then }) => {
+      await given.captureScenario({ behavior: 'real one' })
+      await given.captureScenario({ behavior: 'real two' })
+      // Advance both individually to characterized so they can be revisited
+      // (advanceSingle does not set advanceResult, keeping resultStatus unambiguous)
+      await given.advanceSingle({ index: 0, rationale: 'setup', promotedBy: 'tester' })
+      await given.advanceSingle({ index: 1, rationale: 'setup', promotedBy: 'tester' })
+      // Inject fake ID after the two real IDs
+      await given.injectFakeId({ id: '00000000-0000-0000-0000-000000000001' })
+      await when.batchRevisit({ targetStage: 'captured', rationale: 'redo' })
+      await then.resultStatus({ index: 0, status: 'revisited' })
+      await then.resultStatus({ index: 1, status: 'revisited' })
+      await then.resultStatus({ index: 2, status: 'error' })
+      await then.revisitSummaryIs({ revisited: 2, errors: 1 })
+      await then.scenarioAtStage({ index: 0, stage: 'captured' })
+      await then.scenarioAtStage({ index: 1, stage: 'captured' })
     })
   })
 })

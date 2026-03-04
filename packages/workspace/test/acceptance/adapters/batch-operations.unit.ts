@@ -56,6 +56,10 @@ export const batchOperationsAdapter = implement(batchOperations, {
         rationale,
       })
     },
+
+    injectFakeId: async (session, { id }) => {
+      session.scenarioIds.push(id)
+    },
   },
 
   queries: {

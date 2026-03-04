@@ -9,6 +9,7 @@ export const batchOperations = defineDomain({
     addQuestion: action<{ index: number; text: string }>(),
     batchAdvance: action<{ rationale: string; promotedBy: string }>(),
     batchRevisit: action<{ targetStage: string; rationale: string }>(),
+    injectFakeId: action<{ id: string }>(),
   },
   queries: {
     advancedCount: query<void, number>(),

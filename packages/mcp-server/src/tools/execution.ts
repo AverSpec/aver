@@ -1,6 +1,7 @@
 import { execFile } from 'node:child_process'
 import { resolve } from 'node:path'
 import { promisify } from 'node:util'
+import { getDomains } from '@aver/core'
 
 const execFileAsync = promisify(execFile)
 import type { RunStore, RunData, TestResult } from '../runs.js'
@@ -63,12 +64,13 @@ export async function runTestsHandler(
     jsonOutput = err.stdout ?? ''
   }
 
-  const run = parseVitestJson(jsonOutput)
+  const knownDomains = getDomains().map(d => d.name)
+  const run = parseVitestJson(jsonOutput, knownDomains)
   store.save(run)
   return buildRunSummary(run)
 }
 
-export function parseVitestJson(jsonStr: string): RunData {
+export function parseVitestJson(jsonStr: string, knownDomains: string[] = []): RunData {
   const timestamp = new Date().toISOString()
   const results: TestResult[] = []
 
@@ -83,7 +85,7 @@ export function parseVitestJson(jsonStr: string): RunData {
       if (assertions.length === 0 && file.message) {
         results.push({
           testName: file.name ?? 'unknown file',
-          domain: extractDomainFromPath(file.name ?? ''),
+          domain: extractDomain(file.name ?? '', [], knownDomains),
           status: 'fail',
           failureMessage: file.message,
           trace: [{
@@ -99,9 +101,10 @@ export function parseVitestJson(jsonStr: string): RunData {
       for (const test of assertions) {
         const failureMessages: string[] = test.failureMessages ?? []
         const testName = test.fullName ?? test.title ?? 'unknown'
+        const ancestorTitles: string[] = test.ancestorTitles ?? []
         results.push({
           testName,
-          domain: extractDomainFromPath(file.name ?? ''),
+          domain: extractDomain(file.name ?? '', ancestorTitles, knownDomains),
           status: test.status === 'passed' ? 'pass' : test.status === 'failed' ? 'fail' : 'skip',
           failureMessage: failureMessages.length > 0 ? failureMessages.join('\n') : undefined,
           trace: failureMessages.map((msg: string) => ({
@@ -123,16 +126,32 @@ export function parseVitestJson(jsonStr: string): RunData {
   return { timestamp, results }
 }
 
-function extractDomainFromPath(filePath: string): string {
-  // 1. acceptance/<name> (aver's own test structure)
+export function extractDomain(
+  filePath: string,
+  ancestorTitles: string[],
+  knownDomains: string[],
+): string {
+  // 1. Match ancestor titles (describe blocks) against known domains
+  for (const title of ancestorTitles) {
+    if (knownDomains.includes(title)) return title
+  }
+
+  // 2. Match file path segments against known domains (case-insensitive)
+  if (knownDomains.length > 0) {
+    const segments = filePath.split('/')
+    for (const segment of segments) {
+      const match = knownDomains.find(d => d.toLowerCase() === segment.toLowerCase())
+      if (match) return match
+    }
+  }
+
+  // 3. Fallback: path heuristics
   const acceptanceMatch = filePath.match(/acceptance\/([^/]+)/)
   if (acceptanceMatch) return acceptanceMatch[1]
 
-  // 2. domains/<name> (common test directory pattern)
   const domainsMatch = filePath.match(/domains\/([^/]+)/)
   if (domainsMatch) return domainsMatch[1]
 
-  // 3. Spec filename without extensions (e.g., cart.spec.ts → cart)
   const fileMatch = filePath.match(/([^/]+?)\.(?:spec|test)\.[^/]+$/)
   if (fileMatch) return fileMatch[1]
 

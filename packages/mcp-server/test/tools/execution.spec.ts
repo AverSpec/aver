@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os'
 import { RunStore } from '../../src/runs'
 import {
   buildRunSummary,
+  extractDomain,
   getFailureDetailsHandler,
   getTestTraceHandler,
   parseVitestJson,
@@ -266,7 +267,29 @@ describe('parseVitestJson()', () => {
     expect(run.results).toHaveLength(0)
   })
 
-  it('extracts domain from acceptance path', () => {
+  it('extracts domain from ancestorTitles when known domains provided', () => {
+    const json = JSON.stringify({
+      testResults: [{
+        name: '/path/to/tests/cart.spec.ts',
+        assertionResults: [{ fullName: 'Cart > adds item', status: 'passed', ancestorTitles: ['Cart'] }],
+      }],
+    })
+    const run = parseVitestJson(json, ['Cart', 'Auth'])
+    expect(run.results[0].domain).toBe('Cart')
+  })
+
+  it('extracts domain from file path segments matching known domains', () => {
+    const json = JSON.stringify({
+      testResults: [{
+        name: '/path/to/tests/Cart/cart.spec.ts',
+        assertionResults: [{ fullName: 'test', status: 'passed' }],
+      }],
+    })
+    const run = parseVitestJson(json, ['Cart'])
+    expect(run.results[0].domain).toBe('Cart')
+  })
+
+  it('falls back to acceptance path heuristic when no known domains', () => {
     const json = JSON.stringify({
       testResults: [{
         name: '/path/to/acceptance/Cart/cart.spec.ts',
@@ -277,7 +300,7 @@ describe('parseVitestJson()', () => {
     expect(run.results[0].domain).toBe('Cart')
   })
 
-  it('extracts domain from domains/ path', () => {
+  it('falls back to domains/ path heuristic when no known domains', () => {
     const json = JSON.stringify({
       testResults: [{
         name: '/path/to/tests/domains/auth/auth.spec.ts',
@@ -288,7 +311,7 @@ describe('parseVitestJson()', () => {
     expect(run.results[0].domain).toBe('auth')
   })
 
-  it('extracts domain from spec filename when no known directory pattern', () => {
+  it('falls back to spec filename when no known domains or directory pattern', () => {
     const json = JSON.stringify({
       testResults: [{
         name: '/path/to/tests/cart.spec.ts',
@@ -405,6 +428,24 @@ describe('end-to-end: parseVitestJson -> store -> getFailureDetails', () => {
     expect(details.failures).toHaveLength(1)
     expect(details.failures[0].error).toContain('Cannot find module')
     expect(details.failures[0].trace[0].error).toContain('Cannot find module')
+  })
+})
+
+describe('extractDomain()', () => {
+  it('prefers ancestorTitles match over path heuristics', () => {
+    expect(extractDomain('/path/to/acceptance/OldName/test.spec.ts', ['Cart'], ['Cart'])).toBe('Cart')
+  })
+
+  it('matches path segments against known domains case-insensitively', () => {
+    expect(extractDomain('/path/to/cart/test.spec.ts', [], ['Cart'])).toBe('Cart')
+  })
+
+  it('falls back to path heuristics when no known domains match', () => {
+    expect(extractDomain('/path/to/acceptance/Cart/test.spec.ts', [], [])).toBe('Cart')
+  })
+
+  it('returns unknown when nothing matches', () => {
+    expect(extractDomain('/path/to/something', [], [])).toBe('unknown')
   })
 })
 

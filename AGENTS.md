@@ -57,7 +57,8 @@ See per-package AGENTS.md files for package-specific instructions.
 
 ## Parallel Work / Subagents
 
-- When working with git worktrees for parallel subagent tasks, ensure each agent writes to its own worktree directory, NOT the main worktree. Always verify the working directory before making changes.
+- When dispatching parallel subagents, each agent must: (1) `cd` into its assigned worktree as the FIRST action, (2) run `pwd` to confirm location, (3) only then begin work. If an agent's changes aren't in its worktree, kill it and retry in a fresh worktree.
+- After all agents complete, verify each worktree has the expected changes before merging. Merge one at a time, running the full test suite between merges. If any merge breaks tests, revert it and report.
 - When running parallel subagent waves, always verify CI passes after merging results. Common issues: missing lockfiles, incorrect import path depths after file moves, and test timeout values being too low.
 
 ## Project Conventions

@@ -1,4 +1,5 @@
 import { execFile } from 'node:child_process'
+import { resolve } from 'node:path'
 import { promisify } from 'node:util'
 
 const execFileAsync = promisify(execFile)
@@ -37,16 +38,17 @@ export async function runTestsHandler(
   store: RunStore,
   opts?: { domain?: string; adapter?: string },
 ): Promise<RunSummary> {
-  const vitestArgs = ['aver', 'run', '--reporter=json']
+  const vitestArgs = ['run', '--reporter=json']
 
   const env: Record<string, string> = { ...process.env as Record<string, string> }
+  env.AVER_AUTOLOAD_CONFIG = 'true'
   if (opts?.domain) env.AVER_DOMAIN = opts.domain
   if (opts?.adapter) env.AVER_ADAPTER = opts.adapter
 
-  const npx = process.platform === 'win32' ? 'npx.cmd' : 'npx'
+  const vitest = resolve(process.cwd(), 'node_modules', '.bin', 'vitest')
   let jsonOutput: string
   try {
-    const { stdout } = await execFileAsync(npx, vitestArgs, {
+    const { stdout } = await execFileAsync(vitest, vitestArgs, {
       env,
       encoding: 'utf-8',
       timeout: 5 * 60 * 1000,

@@ -5,10 +5,10 @@ export default defineConfig({
     projects: [
       'packages/core',
       'packages/approvals',
+      'packages/workspace',
       'packages/mcp-server',
       'packages/protocol-http',
       'packages/protocol-playwright',
-      'packages/agent',
       'examples/task-board',
     ],
     exclude: ['.worktrees/**'],

@@ -9,6 +9,19 @@ Execute open backlog items in priority-ordered waves. Each wave completes fully 
 
 Use `/backlog-sweep` first to populate the backlog from plan docs if needed.
 
+## Modes
+
+This skill has two modes:
+
+- **Interactive** (default): Checkpoints between waves, asks for execution strategy, user approves each step.
+- **Autonomous**: Runs all waves end-to-end without pausing. Parallelizes where possible, falls back to sequential when items have dependencies. Reports a full summary at the end.
+
+The user selects the mode at the start. If they say "clear the backlog" or "run all waves" without asking for input, use autonomous mode.
+
+---
+
+## Interactive Mode
+
 ## Step 1 — Present the backlog by wave
 
 Call `get_backlog_items(status: 'open')` and group by priority:
@@ -79,11 +92,54 @@ When dispatching parallel in-session subagents, follow this protocol exactly:
 - If a merge breaks tests, **revert the merge** and report the failure — do not proceed to the next merge
 - If worktree isolation fails entirely, fall back to sequential execution
 
+---
+
+## Autonomous Mode
+
+Run all waves end-to-end without pausing for input.
+
+### Procedure
+
+1. Call `get_backlog_items(status: 'open')` and group by priority (P0 first)
+2. For each priority wave:
+   - List the items and execution order
+   - For items that can be parallelized (no file dependencies), dispatch subagents — one per item, each must write tests, implement, and verify the full suite passes
+   - For items with dependencies, execute sequentially
+   - After all subagents in the wave complete, merge results, run the full test suite, and commit with a message listing all resolved backlog IDs
+   - Update each backlog item's status to `done`
+   - Push and verify CI
+   - Move to the next priority wave
+3. If any item fails after 2 attempts, mark it blocked with a note and continue
+4. At the end, report a wave-by-wave summary:
+
+```
+## Wave Summary
+
+### Wave 1 (P0)
+- [done] <item title> — <commit hash>
+- [blocked] <item title> — <reason>
+
+### Wave 2 (P1)
+- [done] <item title> — <commit hash>
+
+## Totals
+Shipped: X items
+Blocked: Y items
+Remaining: Z items
+```
+
+### Decision-making in autonomous mode
+
+- If you hit an ambiguity, make the simplest reasonable choice and document it in a code comment
+- If a test fails for the wrong reason, fix the test infrastructure first
+- If parallelized items conflict at merge time, revert the later merge and re-execute sequentially
+- Track all decisions for the final summary
+
 ## Rules
 
-- **Never auto-execute** — always ask before starting a wave
+- **Interactive mode**: always ask before starting a wave, checkpoint between waves
+- **Autonomous mode**: run all waves without pausing, report at the end
 - **Commit per item** — one commit per backlog item, not a batch commit
-- **Checkpoint between waves** — report results and ask before proceeding
 - **Parallel safety** — always use worktree isolation for parallel execution
 
 ## MCP Tools Used

@@ -3,19 +3,24 @@ import { defineDomain, action, query, assertion } from '@aver/core'
 export const stageAdvancement = defineDomain({
   name: 'StageAdvancement',
   actions: {
-    captureScenario: action<{ behavior: string }>(),
+    captureScenario: action<{ behavior: string; mode?: string }>(),
     confirmScenario: action<{ confirmer: string }>(),
     advanceScenario: action<{ rationale: string; promotedBy: string }>(),
     revisitScenario: action<{ targetStage: string; rationale: string }>(),
     addQuestion: action<{ text: string }>(),
     resolveQuestion: action<{ answer: string }>(),
-    linkToDomain: action<{ domainOperation?: string; testNames?: string[] }>(),
+    linkToDomain: action<{ domainOperation?: string; testNames?: string[]; approvalBaseline?: string }>(),
   },
   queries: {
     scenarioStage: query<void, string>(),
     scenarioConfirmation: query<void, string | null>(),
     openQuestionCount: query<void, number>(),
     domainLinks: query<void, { domainOperation?: string; testNames: string[] }>(),
+    advanceWarnings: query<void, string[]>(),
+    approvalBaseline: query<void, string | undefined>(),
+    promotedBy: query<void, string | undefined>(),
+    promotedFrom: query<void, string | undefined>(),
+    revisitRationale: query<void, string | undefined>(),
   },
   assertions: {
     scenarioIsAt: assertion<{ stage: string }>(),
@@ -26,5 +31,8 @@ export const stageAdvancement = defineDomain({
     transitionRecorded: assertion<{ from: string; to: string; by: string }>(),
     domainLinksAre: assertion<{ domainOperation?: string; testNames?: string[] }>(),
     operationFailed: assertion<{ message: string }>(),
+    warningsInclude: assertion<{ message: string }>(),
+    approvalBaselineIs: assertion<{ expected: string }>(),
+    approvalBaselineCleared: assertion(),
   },
 })

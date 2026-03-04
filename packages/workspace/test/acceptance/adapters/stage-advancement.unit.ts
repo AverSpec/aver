@@ -13,6 +13,7 @@ interface StageAdvancementSession {
   lastQuestionId: string
   lastError?: Error
   advancedTo?: string
+  lastWarnings: string[]
 }
 
 export const stageAdvancementAdapter = implement(stageAdvancement, {
@@ -20,15 +21,15 @@ export const stageAdvancementAdapter = implement(stageAdvancement, {
     const client = createClient({ url: ':memory:' })
     const store = new WorkspaceStore(client, 'test')
     const ops = new WorkspaceOps(store)
-    return { client, store, ops, scenarioId: '', lastQuestionId: '' }
+    return { client, store, ops, scenarioId: '', lastQuestionId: '', lastWarnings: [] }
   }),
 
   actions: {
-    captureScenario: async (session, { behavior }) => {
+    captureScenario: async (session, { behavior, mode }) => {
       try {
         session.lastError = undefined
         session.advancedTo = undefined
-        const scenario = await session.ops.captureScenario({ behavior })
+        const scenario = await session.ops.captureScenario({ behavior, mode: mode as any })
         session.scenarioId = scenario.id
       } catch (e: any) {
         session.lastError = e
@@ -48,8 +49,10 @@ export const stageAdvancementAdapter = implement(stageAdvancement, {
       try {
         session.lastError = undefined
         session.advancedTo = undefined
+        session.lastWarnings = []
         const before = await session.ops.getScenario(session.scenarioId)
-        await session.ops.advanceScenario(session.scenarioId, { rationale, promotedBy })
+        const { warnings } = await session.ops.advanceScenario(session.scenarioId, { rationale, promotedBy })
+        session.lastWarnings = warnings
         const after = await session.ops.getScenario(session.scenarioId)
         if (after && before && after.stage !== before.stage) {
           session.advancedTo = after.stage
@@ -90,10 +93,10 @@ export const stageAdvancementAdapter = implement(stageAdvancement, {
       }
     },
 
-    linkToDomain: async (session, { domainOperation, testNames }) => {
+    linkToDomain: async (session, { domainOperation, testNames, approvalBaseline }) => {
       try {
         session.lastError = undefined
-        await session.ops.linkToDomain(session.scenarioId, { domainOperation, testNames })
+        await session.ops.linkToDomain(session.scenarioId, { domainOperation, testNames, approvalBaseline })
       } catch (e: any) {
         session.lastError = e
       }
@@ -123,6 +126,30 @@ export const stageAdvancementAdapter = implement(stageAdvancement, {
         domainOperation: s?.domainOperation,
         testNames: s?.testNames ?? [],
       }
+    },
+
+    advanceWarnings: async (session) => {
+      return session.lastWarnings
+    },
+
+    approvalBaseline: async (session) => {
+      const s = await session.ops.getScenario(session.scenarioId)
+      return s?.approvalBaseline
+    },
+
+    promotedBy: async (session) => {
+      const s = await session.ops.getScenario(session.scenarioId)
+      return s?.promotedBy
+    },
+
+    promotedFrom: async (session) => {
+      const s = await session.ops.getScenario(session.scenarioId)
+      return s?.promotedFrom
+    },
+
+    revisitRationale: async (session) => {
+      const s = await session.ops.getScenario(session.scenarioId)
+      return s?.revisitRationale
     },
   },
 
@@ -179,6 +206,22 @@ export const stageAdvancementAdapter = implement(stageAdvancement, {
     operationFailed: async (session, { message }) => {
       expect(session.lastError).toBeDefined()
       expect(session.lastError!.message).toContain(message)
+    },
+
+    warningsInclude: async (session, { message }) => {
+      expect(session.lastWarnings.some(w => w.includes(message))).toBe(true)
+    },
+
+    approvalBaselineIs: async (session, { expected }) => {
+      const s = await session.ops.getScenario(session.scenarioId)
+      expect(s).toBeDefined()
+      expect(s!.approvalBaseline).toBe(expected)
+    },
+
+    approvalBaselineCleared: async (session) => {
+      const s = await session.ops.getScenario(session.scenarioId)
+      expect(s).toBeDefined()
+      expect(s!.approvalBaseline).toBeUndefined()
     },
   },
 })

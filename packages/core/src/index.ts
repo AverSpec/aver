@@ -19,6 +19,9 @@ export {
   findAdapter,
   findAdapters,
   resetRegistry,
+  getRegistrySnapshot,
+  restoreRegistrySnapshot,
+  withRegistry,
   getGlobalTest,
   getGlobalDescribe,
   resetCoverageConfig,
@@ -30,6 +33,7 @@ export type { Adapter } from './core/adapter'
 export type { Protocol, TestMetadata, TestCompletion } from './core/protocol'
 export type { RunningTestContext } from './core/test-context'
 export type { ProtocolExtensions, Screenshotter } from './core/extensions'
+export type { RegistrySnapshot } from './core/registry'
 export type { AverConfig, AverConfigInput, CoverageConfig, TeardownFailureMode } from './core/config'
 export { getCoverageConfig, getTeardownFailureMode } from './core/config'
 export type { VocabularyCoverage } from './core/coverage'

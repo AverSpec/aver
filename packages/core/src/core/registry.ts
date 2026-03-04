@@ -113,3 +113,65 @@ export function resetRegistry(): void {
   warnedDomains.clear()
   resetConfigAutoload()
 }
+
+/**
+ * Snapshot/restore primitives for test isolation.
+ * `getRegistrySnapshot()` captures the current state; `restoreRegistrySnapshot()`
+ * puts it back. Useful in `beforeEach`/`afterEach` when you need to layer state
+ * rather than fully reset it.
+ */
+export interface RegistrySnapshot {
+  adapters: Adapter[]
+  domains: Domain[]
+  warnedDomains: Set<string>
+}
+
+export function getRegistrySnapshot(): RegistrySnapshot {
+  return {
+    adapters: [...adapters],
+    domains: [...domains],
+    warnedDomains: new Set(warnedDomains),
+  }
+}
+
+export function restoreRegistrySnapshot(snapshot: RegistrySnapshot): void {
+  adapters = [...snapshot.adapters]
+  domains = [...snapshot.domains]
+  warnedDomains.clear()
+  for (const d of snapshot.warnedDomains) warnedDomains.add(d)
+}
+
+/**
+ * Run `fn` with a fresh, isolated registry. The current registry state is
+ * saved before the call and restored after it completes (or throws).
+ * Any registrations made inside `fn` are visible only within `fn`.
+ *
+ * Supports both sync and async callbacks.
+ */
+export function withRegistry<T>(fn: () => T): T {
+  const snapshot = getRegistrySnapshot()
+  adapters = []
+  domains = []
+  warnedDomains.clear()
+  try {
+    const result = fn()
+    // Handle async callbacks
+    if (result && typeof (result as any).then === 'function') {
+      return (result as any).then(
+        (value: T) => {
+          restoreRegistrySnapshot(snapshot)
+          return value
+        },
+        (err: unknown) => {
+          restoreRegistrySnapshot(snapshot)
+          throw err
+        },
+      )
+    }
+    restoreRegistrySnapshot(snapshot)
+    return result
+  } catch (err) {
+    restoreRegistrySnapshot(snapshot)
+    throw err
+  }
+}

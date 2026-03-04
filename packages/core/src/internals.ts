@@ -12,7 +12,12 @@ export {
   findAdapter,
   findAdapters,
   resetRegistry,
+  getRegistrySnapshot,
+  restoreRegistrySnapshot,
+  withRegistry,
 } from './core/registry'
+
+export type { RegistrySnapshot } from './core/registry'
 
 export { getGlobalTest, getGlobalDescribe } from './core/test-registration'
 

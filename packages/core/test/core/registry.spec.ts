@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import {
   registerDomain, getDomains, getDomain,
   registerAdapter, getAdapters, findAdapter, findAdapters, resetRegistry,
+  getRegistrySnapshot, restoreRegistrySnapshot, withRegistry,
 } from '../../src/core/registry'
 import { resetConfigAutoload } from '../../src/core/test-registration'
 import { defineDomain } from '../../src/core/domain'
@@ -355,5 +356,111 @@ describe('findAdapters', () => {
     expect(findAdapters(orders)).toEqual([])
     expect(warnSpy).not.toHaveBeenCalled()
     warnSpy.mockRestore()
+  })
+})
+
+describe('getRegistrySnapshot / restoreRegistrySnapshot', () => {
+  beforeEach(() => {
+    resetRegistry()
+  })
+
+  it('captures and restores registry state', () => {
+    registerDomain(cart)
+    const adapter = makeAdapter(cart)
+    registerAdapter(adapter)
+
+    const snapshot = getRegistrySnapshot()
+    expect(snapshot.adapters).toHaveLength(1)
+    expect(snapshot.domains).toHaveLength(1)
+
+    // Mutate registry
+    registerDomain(orders)
+    expect(getDomains()).toHaveLength(2)
+
+    // Restore
+    restoreRegistrySnapshot(snapshot)
+    expect(getDomains()).toHaveLength(1)
+    expect(getDomains()[0].name).toBe('Cart')
+    expect(getAdapters()).toHaveLength(1)
+  })
+
+  it('snapshot is a copy, not a reference to internal state', () => {
+    registerDomain(cart)
+    const snapshot = getRegistrySnapshot()
+
+    // Mutating the snapshot should not affect registry
+    snapshot.domains.push(orders)
+    expect(getDomains()).toHaveLength(1)
+  })
+})
+
+describe('withRegistry', () => {
+  beforeEach(() => {
+    resetRegistry()
+  })
+
+  it('provides an isolated empty registry for the callback', () => {
+    registerDomain(cart)
+    expect(getDomains()).toHaveLength(1)
+
+    withRegistry(() => {
+      expect(getDomains()).toHaveLength(0)
+      registerDomain(orders)
+      expect(getDomains()).toHaveLength(1)
+      expect(getDomains()[0].name).toBe('Orders')
+    })
+
+    // Original state restored
+    expect(getDomains()).toHaveLength(1)
+    expect(getDomains()[0].name).toBe('Cart')
+  })
+
+  it('restores state even when callback throws', () => {
+    registerDomain(cart)
+
+    expect(() =>
+      withRegistry(() => {
+        registerDomain(orders)
+        throw new Error('boom')
+      })
+    ).toThrow('boom')
+
+    expect(getDomains()).toHaveLength(1)
+    expect(getDomains()[0].name).toBe('Cart')
+  })
+
+  it('supports async callbacks', async () => {
+    registerDomain(cart)
+
+    await withRegistry(async () => {
+      expect(getDomains()).toHaveLength(0)
+      registerDomain(orders)
+      expect(getDomains()).toHaveLength(1)
+    })
+
+    expect(getDomains()).toHaveLength(1)
+    expect(getDomains()[0].name).toBe('Cart')
+  })
+
+  it('restores state when async callback rejects', async () => {
+    registerDomain(cart)
+
+    await expect(
+      withRegistry(async () => {
+        registerDomain(orders)
+        throw new Error('async boom')
+      })
+    ).rejects.toThrow('async boom')
+
+    expect(getDomains()).toHaveLength(1)
+    expect(getDomains()[0].name).toBe('Cart')
+  })
+
+  it('returns the callback return value', () => {
+    const result = withRegistry(() => {
+      registerDomain(cart)
+      return getDomains().length
+    })
+    expect(result).toBe(1)
   })
 })

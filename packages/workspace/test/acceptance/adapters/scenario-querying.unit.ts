@@ -11,6 +11,7 @@ interface ScenarioQueryingSession {
   scenarioId: string
   lastQuestionId: string
   lastFilterCount: number
+  lastProjectedKeys: string
 }
 
 export const scenarioQueryingAdapter = implement(scenarioQuerying, {
@@ -18,12 +19,12 @@ export const scenarioQueryingAdapter = implement(scenarioQuerying, {
     const client = createClient({ url: ':memory:' })
     const store = new WorkspaceStore(client, 'test')
     const ops = new WorkspaceOps(store)
-    return { client, store, ops, scenarioId: '', lastQuestionId: '', lastFilterCount: 0 }
+    return { client, store, ops, scenarioId: '', lastQuestionId: '', lastFilterCount: 0, lastProjectedKeys: '' }
   }),
 
   actions: {
-    captureScenario: async (session, { behavior, context, story }) => {
-      const scenario = await session.ops.captureScenario({ behavior, context, story })
+    captureScenario: async (session, { behavior, context, story, mode }) => {
+      const scenario = await session.ops.captureScenario({ behavior, context, story, mode })
       session.scenarioId = scenario.id
     },
 
@@ -55,10 +56,22 @@ export const scenarioQueryingAdapter = implement(scenarioQuerying, {
       return (summary as any)[stage] ?? 0
     },
 
+    summaryOpenQuestions: async (session) => {
+      const summary = await session.ops.getScenarioSummary()
+      return summary.openQuestions
+    },
+
     scenariosByFilter: async (session, filter) => {
       const results = await session.ops.getScenarios(filter as any)
       session.lastFilterCount = results.length
+      if (filter.fields && filter.fields.length > 0 && results.length > 0) {
+        session.lastProjectedKeys = Object.keys(results[0]).sort().join(',')
+      }
       return results.length
+    },
+
+    lastProjectedKeys: async (session) => {
+      return session.lastProjectedKeys
     },
 
     advanceCandidateCount: async (session) => {
@@ -75,6 +88,15 @@ export const scenarioQueryingAdapter = implement(scenarioQuerying, {
 
     filterReturns: async (session, { count }) => {
       expect(session.lastFilterCount).toBe(count)
+    },
+
+    openQuestionsCountIs: async (session, { count }) => {
+      const summary = await session.ops.getScenarioSummary()
+      expect(summary.openQuestions).toBe(count)
+    },
+
+    projectedKeysAre: async (session, { keys }) => {
+      expect(session.lastProjectedKeys).toBe(keys)
     },
 
     advanceCandidatesAre: async (session, { count }) => {

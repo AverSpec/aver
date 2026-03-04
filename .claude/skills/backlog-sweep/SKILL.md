@@ -73,12 +73,13 @@ Show the grouped list. Ask the user which priority tier or specific items to tac
 
 ### Step 2 — Execution strategy
 
-Ask the user: **"Parallel subagents or sequential for this wave?"**
+Ask the user: **"How should we execute this wave?"**
 
-- **Parallel**: Group items that touch non-overlapping files. Dispatch one subagent per item (or group). Each subagent must verify its working directory before making changes.
-- **Sequential**: Work through items one at a time in priority order.
+- **Sequential**: Work through items one at a time in priority order (safest, uses current session).
+- **Parallel (in-session)**: Dispatch subagents via the Agent tool. Good for 2-4 items touching non-overlapping files.
+- **Headless (fire-and-forget)**: Invoke the `/headless-dispatch` skill — spawns independent `claude -p` processes, each in its own worktree. Best for larger waves.
 
-### Step 3 — Execute items
+### Step 3 — Execute items (sequential / in-session parallel)
 
 For each item in the wave:
 

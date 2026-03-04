@@ -6,6 +6,7 @@ export default defineConfig({
       'packages/core',
       'packages/approvals',
       'packages/workspace',
+      'packages/eval',
       'packages/mcp-server',
       'packages/protocol-http',
       'packages/protocol-playwright',

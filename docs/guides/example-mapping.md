@@ -61,10 +61,10 @@ Someone reads the story aloud: "As a billing clerk, I need invoices to apply qua
 |-----------|---------|
 | Rule 1 | Orders with 10 or more total items receive a 10% discount |
 | Example 1a | 9 items at $10 each -- no discount, subtotal $90 |
-| Example 1b | 10 items at $10 each -- 10% off, subtotal becomes $90 |
+| Example 1b | 10 items at $10 each -- 10% off, total after discount $90 |
 | Rule 2 | Orders with 50 or more total items receive a 20% discount |
-| Example 2a | 49 items at $10 each -- 10% discount (not 20%), subtotal $441 |
-| Example 2b | 50 items at $10 each -- 20% off, subtotal becomes $400 |
+| Example 2a | 49 items at $10 each -- 10% discount (not 20%), total after discount $441 |
+| Example 2b | 50 items at $10 each -- 20% off, total after discount $400 |
 | Rule 3 | Only the highest applicable discount tier applies (they do not stack) |
 | Example 3a | 50 items -- 20% discount only, not 10% + 20% |
 | Rule 4 | Discounts apply to the subtotal before tax |

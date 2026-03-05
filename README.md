@@ -19,7 +19,7 @@ import { approve } from '@aver/approvals'
 
 test('order summary matches baseline', async () => {
   const result = await generateOrderSummary(sampleOrder)
-  await approve.text(result)
+  await approve(result)
 })
 ```
 
@@ -126,7 +126,7 @@ See the [Getting Started guide](docs/guides/getting-started.md) for a complete w
 |---------|-------------|
 | [`@aver/agent-plugin`](packages/agent-plugin) | Claude Code plugin — MCP server + maturity pipeline workflow skill |
 | [`@aver/mcp-server`](packages/mcp-server) | MCP server for AI-assisted testing |
-| [`@aver/agent`](packages/agent) | AI agent platform — workspace, eval, and scenario pipeline |
+| [`@aver/workspace`](packages/workspace) | Scenario workspace engine — storage, operations, and backlog |
 
 ## Key Concepts
 

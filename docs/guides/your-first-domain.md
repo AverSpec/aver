@@ -64,18 +64,18 @@ import { test } from 'vitest'
 import { approve } from '@aver/approvals'
 import { calculateInvoice } from '../invoice.js'
 
-test('invoice with quantity discount', () => {
+test('invoice with quantity discount', async () => {
   const result = calculateInvoice([
     { product: 'Widget', quantity: 15, unitPrice: 9.99 },
   ])
-  approve(result)
+  await approve(result)
 })
 
-test('invoice without discount', () => {
+test('invoice without discount', async () => {
   const result = calculateInvoice([
     { product: 'Gadget', quantity: 3, unitPrice: 24.99 },
   ])
-  approve(result)
+  await approve(result)
 })
 ```
 

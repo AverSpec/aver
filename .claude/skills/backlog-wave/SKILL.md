@@ -47,13 +47,15 @@ Ask the user: **"How should we execute this wave?"**
 
 ## Step 3 — Execute items
 
-For each item in the wave:
+**Sequential**: For each item in the wave:
 
 1. Mark `in-progress` via `update_backlog_item`
 2. Implement the fix/feature
 3. Run tests to verify (`run_tests` or `pnpm exec aver run`)
 4. Commit separately — message should reference the backlog item title
 5. Mark `done` via `update_backlog_item`
+
+**Parallel**: Follow the **Subagent Isolation Protocol** below. Each agent implements, tests, and commits. The orchestrator only merges and updates backlog status.
 
 If an item gets blocked after 2 attempts, mark it with a note describing the blocker and move on.
 
@@ -77,20 +79,20 @@ Repeat from Step 2 for the next wave until all waves are done or the user stops.
 
 When dispatching parallel in-session subagents, follow this protocol exactly:
 
-1. Create subagents for each task
-2. **CRITICAL**: Each agent must:
-   - `cd` into its assigned worktree as the **FIRST** action
-   - Run `pwd` to confirm location
-   - Only then begin work
-3. After all agents complete, verify each worktree has the expected changes before merging
-4. Merge worktree branches to main one at a time
-5. Run the full test suite between merges
+1. **Launch each subagent with `isolation: "worktree"`** on the Agent tool call. This creates a git worktree automatically — do NOT manually create worktrees or tell agents to `cd`.
+2. **Each subagent must commit its own work** in its worktree branch before finishing. The agent's prompt must include:
+   - Implement the change and run tests
+   - `git add` the relevant files and `git commit` with a message referencing the backlog item title
+   - Report the commit hash and branch name in its result
+3. **The orchestrator only merges** — after all agents complete:
+   - For each worktree branch, merge to main one at a time
+   - Run the full test suite between merges
+   - Do NOT pluck files from worktrees or re-commit work that agents already committed
 
 ### Recovery
 
-- If an agent's changes aren't in its worktree (wrote to main instead), **kill it and retry in a fresh worktree**
 - If a merge breaks tests, **revert the merge** and report the failure — do not proceed to the next merge
-- If worktree isolation fails entirely, fall back to sequential execution
+- If worktree isolation fails entirely, fall back to sequential execution on main
 
 ---
 
@@ -113,9 +115,9 @@ Present the split: "I can autonomously handle X items. Y items need your input �
 1. Call `get_backlog_items(status: 'open')`, filter for autonomous suitability, and group by priority (P0 first)
 2. For each priority wave:
    - List the items and execution order
-   - For items that can be parallelized (no file dependencies), dispatch subagents — one per item, each must write tests, implement, and verify the full suite passes
+   - For items that can be parallelized (no file dependencies), dispatch subagents with `isolation: "worktree"` — one per item. Each agent must write tests, implement, verify the suite passes, and **commit its own work** in the worktree branch
    - For items with dependencies, execute sequentially
-   - After all subagents in the wave complete, merge results, run the full test suite, and commit with a message listing all resolved backlog IDs
+   - After all subagents complete, merge each worktree branch to main one at a time, running the full test suite between merges
    - Update each backlog item's status to `done`
    - Push and verify CI
    - Move to the next priority wave

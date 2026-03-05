@@ -173,7 +173,8 @@ export function createProxies<D extends Domain>(
   const assertionNames = Object.keys(domain.vocabulary.assertions)
 
   const getTelemetryCollector = options?.getTelemetryCollector ?? (() => undefined)
-  const telemetryMode = options?.telemetryMode ?? (typeof process !== 'undefined' && process.env.CI ? 'fail' : 'warn')
+  const envMode = typeof process !== 'undefined' ? process.env.AVER_TELEMETRY_MODE as TelemetryVerificationMode | undefined : undefined
+  const telemetryMode = options?.telemetryMode ?? envMode ?? (typeof process !== 'undefined' && process.env.CI ? 'fail' : 'warn')
 
   const args = [getCtx, getAdapter, trace, calledOps, correlationId, clock, getTelemetryCollector, telemetryMode, domainName] as const
 

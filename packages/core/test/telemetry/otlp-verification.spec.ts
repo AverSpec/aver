@@ -107,11 +107,47 @@ test('greet action telemetry is verified over OTLP', async ({ act, assert }) => 
   await assert.greeted({ name: 'World' })
 })
 
-test('telemetry mismatch is detected over OTLP', async ({ act }) => {
-  // This action emits 'greeting.say_hello' but we'll check
-  // that the receiver captured it with the right attributes
-  await act.greet({ name: 'Aver' })
-  const spans = receiver.getSpans()
-  const match = spans.find(s => s.name === 'greeting.say_hello' && s.attributes['greeting.name'] === 'Aver')
-  expect(match).toBeDefined()
+// --- Prove mismatch detection: app emits wrong span name ---
+
+// Domain expects 'greeting.say_hello' but the app emits 'WRONG.span.name'
+async function brokenSayHello(name: string): Promise<string> {
+  return getTracer().startActiveSpan('WRONG.span.name', async (span) => {
+    span.setAttribute('greeting.name', name)
+    const result = `Hello, ${name}!`
+    span.end()
+    return result
+  })
+}
+
+const brokenProtocol: Protocol<void> = {
+  name: 'otlp-broken',
+  async setup() {},
+  async teardown() {},
+  get telemetry() { return receiver },
+}
+
+const brokenAdapter = implement(greetingDomain, {
+  protocol: brokenProtocol,
+  actions: {
+    greet: async (_ctx, { name }) => {
+      lastGreeting = await brokenSayHello(name)
+      await new Promise(r => setTimeout(r, 50))
+    },
+  },
+  queries: {},
+  assertions: {
+    greeted: async (_ctx, { name }) => {
+      expect(lastGreeting).toBe(`Hello, ${name}!`)
+    },
+  },
+})
+
+const broken = suite(greetingDomain, brokenAdapter)
+
+// Set fail mode via env var — read per-test by createProxies
+process.env.AVER_TELEMETRY_MODE = 'fail'
+
+broken.test('mismatch is caught when app emits wrong span name', async ({ act }) => {
+  receiver.reset()
+  await expect(act.greet({ name: 'Aver' })).rejects.toThrow('Telemetry mismatch')
 })

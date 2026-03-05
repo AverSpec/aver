@@ -12,8 +12,16 @@
   },
   "homepage": "https://github.com/njackson/aver",
   "bugs": "https://github.com/njackson/aver/issues",
-  "keywords": ["testing", "bdd", "acceptance-testing", "domain-driven", "tdd"],
-  "publishConfig": { "access": "public" },
+  "keywords": [
+    "testing",
+    "bdd",
+    "acceptance-testing",
+    "domain-driven",
+    "tdd"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "engines": {
     "node": ">=18.0.0"
   },
@@ -77,15 +85,20 @@
     "prepublishOnly": "pnpm run build"
   },
   "peerDependencies": {
-    "vitest": ">=2.0.0",
-    "@aver/workspace": ">=0.1.0"
+    "@aver/workspace": ">=0.1.0",
+    "vitest": ">=2.0.0"
   },
   "peerDependenciesMeta": {
-    "@aver/workspace": { "optional": true }
+    "@aver/workspace": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@aver/workspace": "workspace:*",
     "@clack/prompts": "^1.0.0",
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.213.0",
+    "@opentelemetry/sdk-trace-base": "^2.6.0",
     "@types/node": "^22.0.0",
     "tsup": "^8.0.0",
     "typescript": "^5.7.0",

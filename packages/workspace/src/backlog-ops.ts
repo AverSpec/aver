@@ -11,6 +11,7 @@ import {
   type BacklogItemType,
 } from './backlog-types.js'
 import type { WorkspaceStore } from './storage.js'
+import { withSpan } from './telemetry.js'
 
 const PRIORITY_ORDER: BacklogPriority[] = ['P0', 'P1', 'P2', 'P3']
 
@@ -36,42 +37,51 @@ export class BacklogOps {
     externalUrl?: string
     scenarioIds?: string[]
   }): Promise<BacklogItem> {
-    const priority = input.priority ?? 'P1'
-    const items = await this.store.loadBacklogItems()
+    return withSpan('workspace.backlog.create', {
+      'backlog.priority': input.priority ?? 'P1',
+      'backlog.type': input.type,
+    }, async (span) => {
+      const priority = input.priority ?? 'P1'
+      const items = await this.store.loadBacklogItems()
 
-    // Find last item in the same priority tier to append after
-    const tierItems = items.filter(i => i.priority === priority).sort((a, b) => a.rank.localeCompare(b.rank))
-    const rank = tierItems.length > 0
-      ? LexoRank.parse(tierItems[tierItems.length - 1].rank).genNext().toString()
-      : LexoRank.middle().toString()
+      const tierItems = items.filter(i => i.priority === priority).sort((a, b) => a.rank.localeCompare(b.rank))
+      const rank = tierItems.length > 0
+        ? LexoRank.parse(tierItems[tierItems.length - 1].rank).genNext().toString()
+        : LexoRank.middle().toString()
 
-    const item = createBacklogItem({ ...input, priority, rank })
+      const item = createBacklogItem({ ...input, priority, rank })
 
-    await this.store.mutateBacklog(existing => [...existing, item])
-    return item
+      await this.store.mutateBacklog(existing => [...existing, item])
+      span.setAttribute('backlog.id', item.id)
+      return item
+    })
   }
 
   async updateItem(id: string, updates: BacklogItemUpdateInput): Promise<BacklogItem> {
-    let found: BacklogItem | undefined
-    await this.store.mutateBacklog(items => {
-      return items.map(item => {
-        if (item.id !== id) return item
-        found = { ...item, ...updates, updatedAt: new Date().toISOString() }
-        return found
+    return withSpan('workspace.backlog.update', { 'backlog.id': id }, async () => {
+      let found: BacklogItem | undefined
+      await this.store.mutateBacklog(items => {
+        return items.map(item => {
+          if (item.id !== id) return item
+          found = { ...item, ...updates, updatedAt: new Date().toISOString() }
+          return found
+        })
       })
+      if (!found) throw new Error(`Backlog item "${id}" not found`)
+      return found
     })
-    if (!found) throw new Error(`Backlog item "${id}" not found`)
-    return found
   }
 
   async deleteItem(id: string): Promise<void> {
-    let deleted = false
-    await this.store.mutateBacklog(items => {
-      const filtered = items.filter(i => i.id !== id)
-      deleted = filtered.length < items.length
-      return filtered
+    return withSpan('workspace.backlog.delete', { 'backlog.id': id }, async () => {
+      let deleted = false
+      await this.store.mutateBacklog(items => {
+        const filtered = items.filter(i => i.id !== id)
+        deleted = filtered.length < items.length
+        return filtered
+      })
+      if (!deleted) throw new Error(`Backlog item "${id}" not found`)
     })
-    if (!deleted) throw new Error(`Backlog item "${id}" not found`)
   }
 
   async getItem(id: string): Promise<BacklogItem | undefined> {

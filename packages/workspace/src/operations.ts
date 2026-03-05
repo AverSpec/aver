@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { createScenario, type Scenario, type Stage, type Question, type Example, type Seam } from './types.js'
 import type { WorkspaceStore } from './storage.js'
+import { withSpan } from './telemetry.js'
 
 export const STAGE_ORDER: Stage[] = ['captured', 'characterized', 'mapped', 'specified', 'implemented']
 
@@ -175,19 +176,25 @@ export class WorkspaceOps {
     story?: string
     mode?: 'observed' | 'intended'
   }): Promise<Scenario> {
-    let captured!: Scenario
-    await this.store.mutate(ws => {
-      captured = createScenario({
-        stage: 'captured',
-        behavior: input.behavior,
-        context: input.context,
-        story: input.story,
-        mode: input.mode ?? 'observed'
+    return withSpan('workspace.scenario.capture', {
+      'scenario.mode': input.mode ?? 'observed',
+      'scenario.story': input.story,
+    }, async (span) => {
+      let captured!: Scenario
+      await this.store.mutate(ws => {
+        captured = createScenario({
+          stage: 'captured',
+          behavior: input.behavior,
+          context: input.context,
+          story: input.story,
+          mode: input.mode ?? 'observed'
+        })
+        ws.scenarios.push(captured)
+        return ws
       })
-      ws.scenarios.push(captured)
-      return ws
+      span.setAttribute('scenario.id', captured.id)
+      return captured
     })
-    return captured
   }
 
   async updateScenario(id: string, updates: ScenarioUpdateInput): Promise<Scenario> {
@@ -212,46 +219,56 @@ export class WorkspaceOps {
   }
 
   async advanceScenario(id: string, input: AdvanceInput): Promise<AdvanceResult> {
-    let advanced!: Scenario
-    let warnings: string[] = []
-    await this.store.mutate(ws => {
-      const scenario = ws.scenarios.find(s => s.id === id)
-      if (!scenario) throw new Error('Scenario not found: ' + id)
+    return withSpan('workspace.scenario.advance', {
+      'scenario.id': id,
+      'advance.promoted_by': input.promotedBy,
+    }, async (span) => {
+      let advanced!: Scenario
+      let warnings: string[] = []
+      await this.store.mutate(ws => {
+        const scenario = ws.scenarios.find(s => s.id === id)
+        if (!scenario) throw new Error('Scenario not found: ' + id)
 
-      const next = nextStage(scenario.stage)
-      if (!next) throw new Error('Cannot advance beyond implemented')
+        const next = nextStage(scenario.stage)
+        if (!next) throw new Error('Cannot advance beyond implemented')
 
-      const verification = verifyAdvancement(scenario, scenario.stage, next)
-      if (verification.blocked) {
-        throw new AdvancementBlockedError(verification.hardBlocks, verification)
-      }
-      warnings = verification.warnings
+        const verification = verifyAdvancement(scenario, scenario.stage, next)
+        if (verification.blocked) {
+          throw new AdvancementBlockedError(verification.hardBlocks, verification)
+        }
+        warnings = verification.warnings
 
-      const from = scenario.stage
-      const now = new Date().toISOString()
+        const from = scenario.stage
+        const now = new Date().toISOString()
 
-      // Ensure transitions array exists (backward compat with pre-existing data)
-      if (!scenario.transitions) scenario.transitions = []
+        if (!scenario.transitions) scenario.transitions = []
 
-      scenario.transitions.push({
-        from,
-        to: next,
-        at: now,
-        by: input.promotedBy,
-        rationale: input.rationale,
+        scenario.transitions.push({
+          from,
+          to: next,
+          at: now,
+          by: input.promotedBy,
+          rationale: input.rationale,
+        })
+
+        scenario.promotedFrom = from
+        scenario.promotedBy = input.promotedBy
+        scenario.stage = next
+        scenario.updatedAt = now
+        advanced = scenario
+        return ws
       })
-
-      scenario.promotedFrom = from
-      scenario.promotedBy = input.promotedBy
-      scenario.stage = next
-      scenario.updatedAt = now
-      advanced = scenario
-      return ws
+      span.setAttribute('scenario.stage.from', advanced.promotedFrom!)
+      span.setAttribute('scenario.stage.to', advanced.stage)
+      return { scenario: advanced, warnings }
     })
-    return { scenario: advanced, warnings }
   }
 
   async revisitScenario(id: string, input: RevisitInput): Promise<RevisitResult> {
+    return withSpan('workspace.scenario.revisit', {
+      'scenario.id': id,
+      'revisit.target_stage': input.targetStage,
+    }, async (span) => {
     let revisited!: Scenario
     const clearedFields: string[] = []
     await this.store.mutate(ws => {
@@ -299,47 +316,60 @@ export class WorkspaceOps {
       revisited = scenario
       return ws
     })
+    span.setAttribute('scenario.stage.from', revisited.promotedFrom!)
+    span.setAttribute('scenario.stage.to', revisited.stage)
     return { scenario: revisited, clearedFields }
+    })
   }
 
   async deleteScenario(id: string): Promise<void> {
-    await this.store.mutate(ws => {
-      const idx = ws.scenarios.findIndex(s => s.id === id)
-      if (idx === -1) throw new Error('Scenario not found: ' + id)
-      ws.scenarios.splice(idx, 1)
-      return ws
+    return withSpan('workspace.scenario.delete', { 'scenario.id': id }, async () => {
+      await this.store.mutate(ws => {
+        const idx = ws.scenarios.findIndex(s => s.id === id)
+        if (idx === -1) throw new Error('Scenario not found: ' + id)
+        ws.scenarios.splice(idx, 1)
+        return ws
+      })
     })
   }
 
   async addQuestion(scenarioId: string, text: string): Promise<Question> {
-    let question!: Question
-    await this.store.mutate(ws => {
-      const scenario = ws.scenarios.find(s => s.id === scenarioId)
-      if (!scenario) throw new Error('Scenario not found: ' + scenarioId)
+    return withSpan('workspace.question.add', { 'scenario.id': scenarioId }, async (span) => {
+      let question!: Question
+      await this.store.mutate(ws => {
+        const scenario = ws.scenarios.find(s => s.id === scenarioId)
+        if (!scenario) throw new Error('Scenario not found: ' + scenarioId)
 
-      question = {
-        id: randomUUID().replace(/-/g, '').slice(0, 8),
-        text
-      }
-      scenario.questions.push(question)
-      scenario.updatedAt = new Date().toISOString()
-      return ws
+        question = {
+          id: randomUUID().replace(/-/g, '').slice(0, 8),
+          text
+        }
+        scenario.questions.push(question)
+        scenario.updatedAt = new Date().toISOString()
+        return ws
+      })
+      span.setAttribute('question.id', question.id)
+      return question
     })
-    return question
   }
 
   async resolveQuestion(scenarioId: string, questionId: string, answer: string): Promise<void> {
-    await this.store.mutate(ws => {
-      const scenario = ws.scenarios.find(s => s.id === scenarioId)
-      if (!scenario) throw new Error('Scenario not found: ' + scenarioId)
+    return withSpan('workspace.question.resolve', {
+      'scenario.id': scenarioId,
+      'question.id': questionId,
+    }, async () => {
+      await this.store.mutate(ws => {
+        const scenario = ws.scenarios.find(s => s.id === scenarioId)
+        if (!scenario) throw new Error('Scenario not found: ' + scenarioId)
 
-      const question = scenario.questions.find(q => q.id === questionId)
-      if (!question) throw new Error('Question not found: ' + questionId)
+        const question = scenario.questions.find(q => q.id === questionId)
+        if (!question) throw new Error('Question not found: ' + questionId)
 
-      question.answer = answer
-      question.resolvedAt = new Date().toISOString()
-      scenario.updatedAt = new Date().toISOString()
-      return ws
+        question.answer = answer
+        question.resolvedAt = new Date().toISOString()
+        scenario.updatedAt = new Date().toISOString()
+        return ws
+      })
     })
   }
 
@@ -348,25 +378,32 @@ export class WorkspaceOps {
     testNames?: string[]
     approvalBaseline?: string
   }): Promise<void> {
-    await this.store.mutate(ws => {
-      const scenario = ws.scenarios.find(s => s.id === scenarioId)
-      if (!scenario) throw new Error('Scenario not found: ' + scenarioId)
+    return withSpan('workspace.scenario.link', { 'scenario.id': scenarioId }, async () => {
+      await this.store.mutate(ws => {
+        const scenario = ws.scenarios.find(s => s.id === scenarioId)
+        if (!scenario) throw new Error('Scenario not found: ' + scenarioId)
 
-      if (links.domainOperation !== undefined) scenario.domainOperation = links.domainOperation
-      if (links.testNames !== undefined) scenario.testNames = links.testNames
-      if (links.approvalBaseline !== undefined) scenario.approvalBaseline = links.approvalBaseline
-      scenario.updatedAt = new Date().toISOString()
-      return ws
+        if (links.domainOperation !== undefined) scenario.domainOperation = links.domainOperation
+        if (links.testNames !== undefined) scenario.testNames = links.testNames
+        if (links.approvalBaseline !== undefined) scenario.approvalBaseline = links.approvalBaseline
+        scenario.updatedAt = new Date().toISOString()
+        return ws
+      })
     })
   }
 
   async confirmScenario(id: string, confirmer: string): Promise<void> {
-    await this.store.mutate(ws => {
-      const scenario = ws.scenarios.find(s => s.id === id)
-      if (!scenario) throw new Error('Scenario not found: ' + id)
-      scenario.confirmedBy = confirmer
-      scenario.updatedAt = new Date().toISOString()
-      return ws
+    return withSpan('workspace.scenario.confirm', {
+      'scenario.id': id,
+      'scenario.confirmed_by': confirmer,
+    }, async () => {
+      await this.store.mutate(ws => {
+        const scenario = ws.scenarios.find(s => s.id === id)
+        if (!scenario) throw new Error('Scenario not found: ' + id)
+        scenario.confirmedBy = confirmer
+        scenario.updatedAt = new Date().toISOString()
+        return ws
+      })
     })
   }
 
@@ -420,21 +457,25 @@ export class WorkspaceOps {
   }
 
   async getScenarioSummary(): Promise<ScenarioSummary> {
-    const ws = await this.store.load()
-    const scenarios = ws.scenarios
-    const openQuestions = scenarios.reduce(
-      (count, scenario) => count + scenario.questions.filter(q => !q.answer).length,
-      0
-    )
-    return {
-      captured: scenarios.filter(s => s.stage === 'captured').length,
-      characterized: scenarios.filter(s => s.stage === 'characterized').length,
-      mapped: scenarios.filter(s => s.stage === 'mapped').length,
-      specified: scenarios.filter(s => s.stage === 'specified').length,
-      implemented: scenarios.filter(s => s.stage === 'implemented').length,
-      total: scenarios.length,
-      openQuestions
-    }
+    return withSpan('workspace.scenario.summary', {}, async (span) => {
+      const ws = await this.store.load()
+      const scenarios = ws.scenarios
+      const openQuestions = scenarios.reduce(
+        (count, scenario) => count + scenario.questions.filter(q => !q.answer).length,
+        0
+      )
+      span.setAttribute('scenario.total', scenarios.length)
+      span.setAttribute('scenario.open_questions', openQuestions)
+      return {
+        captured: scenarios.filter(s => s.stage === 'captured').length,
+        characterized: scenarios.filter(s => s.stage === 'characterized').length,
+        mapped: scenarios.filter(s => s.stage === 'mapped').length,
+        specified: scenarios.filter(s => s.stage === 'specified').length,
+        implemented: scenarios.filter(s => s.stage === 'implemented').length,
+        total: scenarios.length,
+        openQuestions
+      }
+    })
   }
 
   async getAdvanceCandidates(): Promise<Scenario[]> {
@@ -447,6 +488,10 @@ export class WorkspaceOps {
   }
 
   async batchAdvance(input: BatchAdvanceInput): Promise<BatchAdvanceResult> {
+    return withSpan('workspace.scenario.batch_advance', {
+      'batch.count': input.ids.length,
+      'advance.promoted_by': input.promotedBy,
+    }, async (span) => {
     const results: BatchAdvanceItemResult[] = []
     for (const id of input.ids) {
       try {
@@ -461,36 +506,43 @@ export class WorkspaceOps {
         results.push({ id, status: isBlock ? 'blocked' : 'error', error: msg })
       }
     }
-    return {
-      results,
-      summary: {
+    const summary = {
         advanced: results.filter(r => r.status === 'advanced').length,
         blocked: results.filter(r => r.status === 'blocked').length,
         errors: results.filter(r => r.status === 'error').length,
-      },
     }
+    span.setAttribute('batch.advanced', summary.advanced)
+    span.setAttribute('batch.blocked', summary.blocked)
+    span.setAttribute('batch.errors', summary.errors)
+    return { results, summary }
+    })
   }
 
   async batchRevisit(input: BatchRevisitInput): Promise<BatchRevisitResult> {
-    const results: BatchRevisitItemResult[] = []
-    for (const id of input.ids) {
-      try {
-        const { scenario } = await this.revisitScenario(id, {
-          targetStage: input.targetStage,
-          rationale: input.rationale,
-        })
-        results.push({ id, status: 'revisited', scenario })
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err)
-        results.push({ id, status: 'error', error: msg })
+    return withSpan('workspace.scenario.batch_revisit', {
+      'batch.count': input.ids.length,
+      'revisit.target_stage': input.targetStage,
+    }, async (span) => {
+      const results: BatchRevisitItemResult[] = []
+      for (const id of input.ids) {
+        try {
+          const { scenario } = await this.revisitScenario(id, {
+            targetStage: input.targetStage,
+            rationale: input.rationale,
+          })
+          results.push({ id, status: 'revisited', scenario })
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err)
+          results.push({ id, status: 'error', error: msg })
+        }
       }
-    }
-    return {
-      results,
-      summary: {
+      const summary = {
         revisited: results.filter(r => r.status === 'revisited').length,
         errors: results.filter(r => r.status === 'error').length,
-      },
-    }
+      }
+      span.setAttribute('batch.revisited', summary.revisited)
+      span.setAttribute('batch.errors', summary.errors)
+      return { results, summary }
+    })
   }
 }

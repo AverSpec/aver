@@ -6,5 +6,5 @@ export default defineConfig({
   dts: true,
   sourcemap: true,
   clean: true,
-  external: ['@libsql/client', 'lexorank'],
+  external: ['@libsql/client', 'lexorank', '@opentelemetry/api'],
 })

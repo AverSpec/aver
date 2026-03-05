@@ -224,6 +224,9 @@ importers:
       '@libsql/client':
         specifier: ^0.17.0
         version: 0.17.0
+      '@opentelemetry/api':
+        specifier: ^1.9.0
+        version: 1.9.0
       lexorank:
         specifier: ^1.0.5
         version: 1.0.5
@@ -833,6 +836,10 @@ packages:
 
   '@neon-rs/load@0.0.4':
     resolution: {integrity: sha512-kTPhdZyTQxB+2wpiRcFWrDcejc4JI6tkPuS7UZCG4l6Zvc5kU/gGQ/ozvHTh1XR5tS+UlfAfGuPajjzQjCiHCw==}
+
+  '@opentelemetry/api@1.9.0':
+    resolution: {integrity: sha512-3giAOQvZiH5F9bMlMiv8+GSPMeqg0dbaeo58/0SlA9sxSqZhnUtxzX9/2FzyhS9sWQf5S0GJE0AKBrFqjpeYcg==}
+    engines: {node: '>=8.0.0'}
 
   '@playwright/test@1.58.2':
     resolution: {integrity: sha512-akea+6bHYBBfA9uQqSYmlJXn61cTa+jbO87xVLCWbTqbWadRVmhxlXATaOjOgcBaWU4ePo0wB41KMFv3o35IXA==}
@@ -2447,6 +2454,8 @@ snapshots:
       - supports-color
 
   '@neon-rs/load@0.0.4': {}
+
+  '@opentelemetry/api@1.9.0': {}
 
   '@playwright/test@1.58.2':
     dependencies:

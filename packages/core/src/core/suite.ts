@@ -260,6 +260,11 @@ function suiteSingle<D extends Domain>(domain: D, adapter?: Adapter): SuiteRetur
     programmaticTrace,
     calledOps,
     correlationId,
+    Date.now,
+    undefined,
+    {
+      getTelemetryCollector: () => getProgrammaticAdapter().protocol.telemetry,
+    },
   )
 
   const testApi = buildTestApi(globalTest, domain, getEffectiveAdapters, globalTestSkip, calledOps)

@@ -31,7 +31,21 @@ export function formatTrace(trace: TraceEntry[], domainName: string): string {
         ? ` — ${(e.error as Error).message ?? e.error}`
         : ''
       const effectiveDomain = e.domainName ?? domainName
-      return `  ${icon} ${label} ${effectiveDomain}.${e.name}(${payloadStr})${durationStr}${errorStr}`
+      let line = `  ${icon} ${label} ${effectiveDomain}.${e.name}(${payloadStr})${durationStr}${errorStr}`
+
+      // Telemetry verification result — only show when telemetry was checked and step didn't fail from assertion
+      if (e.telemetry && !(e.status === 'fail' && e.error && !(e.error instanceof Error && e.error.message.startsWith('Telemetry mismatch')))) {
+        if (e.telemetry.matched) {
+          const attrs = e.telemetry.matchedSpan?.attributes
+          const attrStr = attrs && Object.keys(attrs).length > 0
+            ? ` ${JSON.stringify(attrs)}` : ''
+          line += `\n           ✓ telemetry: ${e.telemetry.expected.span}${attrStr}`
+        } else {
+          line += `\n           ⚠ telemetry: expected span '${e.telemetry.expected.span}' not found`
+        }
+      }
+
+      return line
     })
     .join('\n')
 }

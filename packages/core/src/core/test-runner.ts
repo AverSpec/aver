@@ -65,6 +65,9 @@ export async function runTest(
       correlationId,
       Date.now,
       domain.name,
+      {
+        getTelemetryCollector: () => adapter.protocol.telemetry,
+      },
     )
     namespaces[name] = {
       act: proxies.act,

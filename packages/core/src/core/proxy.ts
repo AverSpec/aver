@@ -1,6 +1,8 @@
 import type { Domain } from './domain'
 import type { Adapter } from './adapter'
-import type { TraceEntry } from './trace'
+import type { TraceEntry, TelemetryMatchResult } from './trace'
+import type { TelemetryCollector, CollectedSpan } from './protocol'
+import type { TelemetryExpectation, VocabMarker } from './types'
 
 export interface CalledOps {
   actions: Set<string>
@@ -45,9 +47,36 @@ export interface Proxies<D extends Domain> {
 
 export type Clock = () => number
 
+export type TelemetryVerificationMode = 'warn' | 'fail' | 'off'
+
+function matchSpan(span: CollectedSpan, expected: TelemetryExpectation): boolean {
+  if (span.name !== expected.span) return false
+  if (!expected.attributes) return true
+  for (const [key, value] of Object.entries(expected.attributes)) {
+    if (String(span.attributes[key]) !== String(value)) return false
+  }
+  return true
+}
+
+function verifyTelemetry(
+  collector: TelemetryCollector,
+  expected: TelemetryExpectation,
+): TelemetryMatchResult {
+  const spans = collector.getSpans()
+  const matched = spans.find(s => matchSpan(s, expected))
+  return {
+    expected: { span: expected.span, attributes: expected.attributes },
+    matched: !!matched,
+    matchedSpan: matched
+      ? { name: matched.name, attributes: { ...matched.attributes } }
+      : undefined,
+  }
+}
+
 function buildKindProxy(
   kind: 'action' | 'query' | 'assertion',
   category: StepCategory,
+  markers: Record<string, VocabMarker>,
   names: string[],
   getCtx: () => any,
   getAdapter: () => Adapter,
@@ -55,6 +84,8 @@ function buildKindProxy(
   calledOps: CalledOps | undefined,
   correlationId: string | undefined,
   clock: Clock,
+  getTelemetryCollector: () => TelemetryCollector | undefined,
+  telemetryMode: TelemetryVerificationMode,
   domainName?: string,
 ): any {
   const proxy: any = {}
@@ -87,12 +118,35 @@ function buildKindProxy(
       } finally {
         entry.endAt = clock()
         if (entry.startAt !== undefined) entry.durationMs = entry.endAt - entry.startAt
+
+        // Telemetry verification: only if step passed, collector is available, and marker declares telemetry
+        const marker = markers[name]
+        const collector = getTelemetryCollector()
+        if (entry.status === 'pass' && collector && marker?.telemetry && telemetryMode !== 'off') {
+          const result = verifyTelemetry(collector, marker.telemetry)
+          entry.telemetry = result
+          if (!result.matched && telemetryMode === 'fail') {
+            entry.status = 'fail'
+            const err = new Error(
+              `Telemetry mismatch: expected span '${marker.telemetry.span}' not found`
+            )
+            entry.error = err
+            trace.push(entry)
+            throw err
+          }
+        }
+
         trace.push(entry)
       }
     }
   }
 
   return proxy
+}
+
+export interface ProxyOptions {
+  getTelemetryCollector?: () => TelemetryCollector | undefined
+  telemetryMode?: TelemetryVerificationMode
 }
 
 export function createProxies<D extends Domain>(
@@ -104,19 +158,23 @@ export function createProxies<D extends Domain>(
   correlationId?: string,
   clock: Clock = Date.now,
   domainName?: string,
+  options?: ProxyOptions,
 ): Proxies<D> {
   const actionNames = Object.keys(domain.vocabulary.actions)
   const queryNames = Object.keys(domain.vocabulary.queries)
   const assertionNames = Object.keys(domain.vocabulary.assertions)
 
-  const args = [getCtx, getAdapter, trace, calledOps, correlationId, clock, domainName] as const
+  const getTelemetryCollector = options?.getTelemetryCollector ?? (() => undefined)
+  const telemetryMode = options?.telemetryMode ?? (typeof process !== 'undefined' && process.env.CI ? 'fail' : 'warn')
 
-  const act = buildKindProxy('action', 'act', actionNames, ...args)
-  const given = buildKindProxy('action', 'given', actionNames, ...args)
-  const when = buildKindProxy('action', 'when', actionNames, ...args)
-  const queryProxy = buildKindProxy('query', 'query', queryNames, ...args)
-  const assert = buildKindProxy('assertion', 'assert', assertionNames, ...args)
-  const then = buildKindProxy('assertion', 'then', assertionNames, ...args)
+  const args = [getCtx, getAdapter, trace, calledOps, correlationId, clock, getTelemetryCollector, telemetryMode, domainName] as const
+
+  const act = buildKindProxy('action', 'act', domain.vocabulary.actions, actionNames, ...args)
+  const given = buildKindProxy('action', 'given', domain.vocabulary.actions, actionNames, ...args)
+  const when = buildKindProxy('action', 'when', domain.vocabulary.actions, actionNames, ...args)
+  const queryProxy = buildKindProxy('query', 'query', domain.vocabulary.queries, queryNames, ...args)
+  const assert = buildKindProxy('assertion', 'assert', domain.vocabulary.assertions, assertionNames, ...args)
+  const then = buildKindProxy('assertion', 'then', domain.vocabulary.assertions, assertionNames, ...args)
 
   return { act, given, when, query: queryProxy, assert, then }
 }

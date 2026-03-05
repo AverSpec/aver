@@ -4,6 +4,12 @@ export interface TraceAttachment {
   mime?: string
 }
 
+export interface TelemetryMatchResult {
+  expected: { span: string; attributes?: Record<string, string | number | boolean> }
+  matched: boolean
+  matchedSpan?: { name: string; attributes: Record<string, unknown> }
+}
+
 export interface TraceEntry {
   kind: 'action' | 'query' | 'assertion' | 'test'
   category?: 'given' | 'when' | 'act' | 'query' | 'then' | 'assert'
@@ -19,4 +25,5 @@ export interface TraceEntry {
   metadata?: Record<string, unknown>
   correlationId?: string
   domainName?: string
+  telemetry?: TelemetryMatchResult
 }

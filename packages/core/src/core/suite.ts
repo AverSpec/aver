@@ -9,6 +9,8 @@ import { createProxies } from './proxy'
 import type { CalledOps, ActProxy, QueryProxy, AssertProxy } from './proxy'
 import { getGlobalTest, getGlobalDescribe, buildTestApi, shouldFilterOutDomain, buildMissingAdapterError } from './test-registration'
 import { getCoverageConfig } from './config'
+import { runTest } from './test-runner'
+import type { AdapterEntry } from './test-runner'
 
 export type { ActProxy, QueryProxy, AssertProxy } from './proxy'
 
@@ -47,7 +49,128 @@ export interface SuiteReturn<D extends Domain> {
   getPlannedTests(name: string): PlannedTest[]
 }
 
-export function suite<D extends Domain>(domain: D, adapter?: Adapter): SuiteReturn<D> {
+// ── Named config types ──
+
+export type SuiteConfig = Record<string, readonly [Domain, Adapter]>
+
+export type NamedContext<D extends Domain> = {
+  act: ActProxy<D>
+  given: ActProxy<D>
+  when: ActProxy<D>
+  query: QueryProxy<D>
+  assert: AssertProxy<D>
+  then: AssertProxy<D>
+}
+
+export type NamedTestContext<C extends SuiteConfig> = {
+  [K in keyof C]: C[K] extends readonly [infer D extends Domain, any]
+    ? NamedContext<D> : never
+} & { trace: () => TraceEntry[] }
+
+type NamedTestFn<C extends SuiteConfig> =
+  ((name: string, fn: (ctx: NamedTestContext<C>) => Promise<void>) => void)
+
+export interface NamedSuiteReturn<C extends SuiteConfig> {
+  test: NamedTestFn<C>
+  it: NamedTestFn<C>
+  describe: (name: string, fn: () => void) => void
+  context: (name: string, fn: () => void) => void
+}
+
+// ── Overload signatures ──
+
+export function suite<C extends SuiteConfig>(config: C): NamedSuiteReturn<C>
+export function suite<D extends Domain>(domain: D, adapter?: Adapter): SuiteReturn<D>
+export function suite(domainOrConfig: any, adapter?: Adapter): any {
+  // Detection: Domain has 'vocabulary', config record does not
+  if (domainOrConfig && typeof domainOrConfig === 'object' && 'vocabulary' in domainOrConfig) {
+    return suiteSingle(domainOrConfig, adapter)
+  }
+  return suiteConfig(domainOrConfig)
+}
+
+// ── Named config implementation ──
+
+function shouldFilterOutConfig(config: SuiteConfig): boolean {
+  if (typeof process === 'undefined') return false
+  const filter = process.env.AVER_DOMAIN
+  if (!filter) return false
+  return !Object.values(config).some(([domain]) => domain.name === filter)
+}
+
+function buildNamedTestApi<C extends SuiteConfig>(
+  testImpl: any,
+  config: C,
+  globalSkipImpl: any,
+  calledOpsMap: Map<string, CalledOps>,
+): NamedTestFn<C> {
+  const base: NamedTestFn<C> = (name, fn) => {
+    if (!testImpl) {
+      throw new Error('Aver requires a test runner. Did you forget to run Vitest or Jest?')
+    }
+
+    if (shouldFilterOutConfig(config)) {
+      if (typeof globalSkipImpl === 'function') {
+        globalSkipImpl(name, async () => {})
+      }
+      return
+    }
+
+    const entries: AdapterEntry[] = Object.entries(config).map(
+      ([key, [domain, adapter]]) => [key, domain, adapter],
+    )
+
+    testImpl(name, async () => {
+      await runTest(entries, name, fn as (ctx: any) => Promise<void>, calledOpsMap)
+    })
+  }
+
+  if (!testImpl) return base
+
+  return new Proxy(base, {
+    get(_, prop) {
+      const child = testImpl[prop]
+      if (child === undefined) return undefined
+
+      if (prop === 'todo') return child.bind(testImpl)
+
+      if (prop === 'each') {
+        return (...args: any[]) =>
+          buildNamedTestApi(testImpl.each(...args), config, globalSkipImpl, calledOpsMap)
+      }
+
+      if (typeof child === 'function') {
+        return buildNamedTestApi(child, config, globalSkipImpl, calledOpsMap)
+      }
+
+      return child
+    },
+  }) as NamedTestFn<C>
+}
+
+function suiteConfig<C extends SuiteConfig>(config: C): NamedSuiteReturn<C> {
+  const globalTest = getGlobalTest()
+  const globalSkipImpl = globalTest?.skip
+  const globalDescribe = getGlobalDescribe()
+
+  const calledOpsMap = new Map<string, CalledOps>()
+  for (const key of Object.keys(config)) {
+    calledOpsMap.set(key, { actions: new Set(), queries: new Set(), assertions: new Set() })
+  }
+
+  const testApi = buildNamedTestApi(globalTest, config, globalSkipImpl, calledOpsMap)
+
+  return {
+    test: testApi,
+    it: testApi,
+    describe: globalDescribe,
+    context: globalDescribe,
+  }
+}
+
+// ── Single domain implementation ──
+
+function suiteSingle<D extends Domain>(domain: D, adapter?: Adapter): SuiteReturn<D> {
   // Resolve adapters
   let resolvedAdapters: Adapter[] | undefined
   if (adapter) {

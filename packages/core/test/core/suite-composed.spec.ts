@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import { compose } from '../../src/core/compose'
+import { suite } from '../../src/core/suite'
 import { defineDomain } from '../../src/core/domain'
 import { implement } from '../../src/core/adapter'
 import { action, query, assertion } from '../../src/core/markers'
@@ -86,7 +86,7 @@ const userAdapter = implement(userDomain, {
 
 // --- Tests ---
 
-describe('compose()', () => {
+describe('suite(config) [composed]', () => {
   const originalTest = (globalThis as any).test
   const originalIt = (globalThis as any).it
 
@@ -97,7 +97,7 @@ describe('compose()', () => {
   })
 
   describe('namespace dispatch', () => {
-    const { test: composedTest } = compose({
+    const { test: composedTest } = suite({
       admin: [adminDomain, adminAdapter],
       user: [userDomain, userAdapter],
     })
@@ -174,7 +174,7 @@ describe('compose()', () => {
       fakeTest.skip = () => {}
       ;(globalThis as any).test = fakeTest
 
-      const { test: ct } = compose({ d1: [d1, a1], d2: [d2, a2] })
+      const { test: ct } = suite({ d1: [d1, a1], d2: [d2, a2] })
       ct('lifecycle test', async ({ d1: ns1 }) => {
         await ns1.act.go()
       })
@@ -207,7 +207,7 @@ describe('compose()', () => {
       fakeTest.skip = () => {}
       ;(globalThis as any).test = fakeTest
 
-      const { test: ct } = compose({ d1: [d1, a1], d2: [d2, a2] })
+      const { test: ct } = suite({ d1: [d1, a1], d2: [d2, a2] })
       ct('failing test', async ({ d1: ns1 }) => {
         await ns1.act.boom()
       })
@@ -238,7 +238,7 @@ describe('compose()', () => {
       fakeTest.skip = () => {}
       ;(globalThis as any).test = fakeTest
 
-      const { test: ct } = compose({ d1: [d1, a1], d2: [d2, a2], d3: [d3, a3] })
+      const { test: ct } = suite({ d1: [d1, a1], d2: [d2, a2], d3: [d3, a3] })
       ct('order test', async () => {})
 
       await pending
@@ -269,7 +269,7 @@ describe('compose()', () => {
       fakeTest.skip = () => {}
       ;(globalThis as any).test = fakeTest
 
-      const { test: ct } = compose({ d1: [d1, a1], d2: [d2, a2] })
+      const { test: ct } = suite({ d1: [d1, a1], d2: [d2, a2] })
       ct('partial setup test', async () => {})
 
       let caught: any
@@ -281,7 +281,7 @@ describe('compose()', () => {
 
   describe('test modifiers', () => {
     it('.only / .skip / .each work via recursive Proxy', () => {
-      const { test: ct } = compose({
+      const { test: ct } = suite({
         admin: [adminDomain, adminAdapter],
       })
 
@@ -301,7 +301,7 @@ describe('compose()', () => {
       ;(globalThis as any).test = fakeTest
 
       process.env.AVER_DOMAIN = 'OtherDomain'
-      const { test: ct } = compose({
+      const { test: ct } = suite({
         admin: [adminDomain, adminAdapter],
         user: [userDomain, userAdapter],
       })
@@ -320,7 +320,7 @@ describe('compose()', () => {
       ;(globalThis as any).test = fakeTest
 
       process.env.AVER_DOMAIN = 'Admin'
-      const { test: ct } = compose({
+      const { test: ct } = suite({
         admin: [adminDomain, adminAdapter],
         user: [userDomain, userAdapter],
       })
@@ -355,7 +355,7 @@ describe('compose()', () => {
         assertions: { boom: async () => { throw new Error('assertion failed') } },
       })
 
-      const { test: ct } = compose({
+      const { test: ct } = suite({
         admin: [adminDomain, adminAdapter],
         fail: [failDomain, failAdapter],
       })

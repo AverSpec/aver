@@ -26,7 +26,7 @@ export {
   resetCoverageConfig,
 } from './internals'
 
-export type { ActionMarker, QueryMarker, AssertionMarker, TelemetryExpectation } from './core/types'
+export type { ActionMarker, QueryMarker, AssertionMarker, TelemetryExpectation, TelemetryAttributeValue, AsymmetricMatcher } from './core/types'
 export type { MarkerOptions } from './core/markers'
 export type { Domain } from './core/domain'
 export type { Adapter } from './core/adapter'

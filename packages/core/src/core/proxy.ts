@@ -53,7 +53,12 @@ function matchSpan(span: CollectedSpan, expected: TelemetryExpectation): boolean
   if (span.name !== expected.span) return false
   if (!expected.attributes) return true
   for (const [key, value] of Object.entries(expected.attributes)) {
-    if (String(span.attributes[key]) !== String(value)) return false
+    const actual = span.attributes[key]
+    if (typeof value === 'object' && value !== null && 'asymmetricMatch' in value) {
+      if (!value.asymmetricMatch(actual)) return false
+    } else {
+      if (String(actual) !== String(value)) return false
+    }
   }
   return true
 }

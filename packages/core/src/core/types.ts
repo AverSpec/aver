@@ -1,9 +1,17 @@
+/** Duck-typed asymmetric matcher (compatible with Jest/Vitest expect.any(), expect.stringMatching(), etc.). */
+export interface AsymmetricMatcher {
+  asymmetricMatch(value: unknown): boolean
+}
+
+/** Attribute value: exact primitive match, or a duck-typed matcher for pattern matching. */
+export type TelemetryAttributeValue = string | number | boolean | AsymmetricMatcher
+
 /** Expected OTel span pattern for telemetry verification. */
 export interface TelemetryExpectation {
   /** OTel span name to match. */
   readonly span: string
-  /** Required span attributes (use dot-delimited OTel semantic convention keys). */
-  readonly attributes?: Readonly<Record<string, string | number | boolean>>
+  /** Required span attributes. Use primitives for exact match, or asymmetric matchers (e.g. expect.any(String)) for pattern match. */
+  readonly attributes?: Readonly<Record<string, TelemetryAttributeValue>>
 }
 
 /** Marker for an action declaration. P = payload type (void if no payload). */

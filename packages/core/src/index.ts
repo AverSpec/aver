@@ -7,6 +7,8 @@ export { defineConfig } from './core/config'
 export { unit } from './protocols/unit'
 export { withFixture } from './core/protocol'
 export { getTestContext, runWithTestContext } from './core/test-context'
+export { createOtlpReceiver } from './telemetry/otlp-receiver'
+export type { OtlpReceiver } from './telemetry/otlp-receiver'
 
 // Internals — also available via '@aver/core/internals'
 export {

@@ -12,10 +12,22 @@
   },
   "homepage": "https://github.com/njackson/aver",
   "bugs": "https://github.com/njackson/aver/issues",
-  "keywords": ["testing", "mcp", "model-context-protocol", "ai-testing", "aver"],
-  "publishConfig": { "access": "public" },
-  "engines": { "node": ">=18.0.0" },
-  "bin": { "aver-mcp": "./dist/index.js" },
+  "keywords": [
+    "testing",
+    "mcp",
+    "model-context-protocol",
+    "ai-testing",
+    "aver"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "bin": {
+    "aver-mcp": "./dist/index.js"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -26,7 +38,9 @@
       }
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "test": "vitest run",
@@ -42,10 +56,12 @@
     "@aver/core": "workspace:^"
   },
   "devDependencies": {
+    "@aver/core": "workspace:^",
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/sdk-trace-base": "^2.6.0",
+    "@types/node": "^22.0.0",
     "tsup": "^8.0.0",
     "typescript": "^5.7.0",
-    "vitest": "^3.0.0",
-    "@types/node": "^22.0.0",
-    "@aver/core": "workspace:^"
+    "vitest": "^3.0.0"
   }
 }

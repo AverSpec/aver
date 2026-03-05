@@ -14,13 +14,18 @@ export interface TelemetryExpectation {
   readonly attributes?: Readonly<Record<string, TelemetryAttributeValue>>
 }
 
+/** Static expectation or a function that derives the expectation from the operation's parameters. */
+export type TelemetryDeclaration<P = void> =
+  | TelemetryExpectation
+  | (P extends void ? never : (params: P) => TelemetryExpectation)
+
 /** Marker for an action declaration. P = payload type (void if no payload). */
 export interface ActionMarker<P = void> {
   readonly kind: 'action'
   /** Phantom type — never exists at runtime. */
   readonly __payload?: P
   /** Expected OTel telemetry for this operation. */
-  readonly telemetry?: TelemetryExpectation
+  readonly telemetry?: TelemetryDeclaration<P>
 }
 
 /** Marker for a query declaration. P = payload type (void if no payload), R = return type. */
@@ -29,7 +34,7 @@ export interface QueryMarker<P = void, R = unknown> {
   readonly __payload?: P
   readonly __return?: R
   /** Expected OTel telemetry for this operation. */
-  readonly telemetry?: TelemetryExpectation
+  readonly telemetry?: TelemetryDeclaration<P>
 }
 
 /** Marker for an assertion declaration. P = payload type (void if no payload). */
@@ -37,7 +42,7 @@ export interface AssertionMarker<P = void> {
   readonly kind: 'assertion'
   readonly __payload?: P
   /** Expected OTel telemetry for this operation. */
-  readonly telemetry?: TelemetryExpectation
+  readonly telemetry?: TelemetryDeclaration<P>
 }
 
 /** Any vocabulary marker. */

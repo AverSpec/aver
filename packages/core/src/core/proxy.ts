@@ -128,12 +128,15 @@ function buildKindProxy(
         const marker = markers[name]
         const collector = getTelemetryCollector()
         if (entry.status === 'pass' && collector && marker?.telemetry && telemetryMode !== 'off') {
-          const result = verifyTelemetry(collector, marker.telemetry)
+          const expected = typeof marker.telemetry === 'function'
+            ? marker.telemetry(payload)
+            : marker.telemetry
+          const result = verifyTelemetry(collector, expected)
           entry.telemetry = result
           if (!result.matched && telemetryMode === 'fail') {
             entry.status = 'fail'
             const err = new Error(
-              `Telemetry mismatch: expected span '${marker.telemetry.span}' not found`
+              `Telemetry mismatch: expected span '${expected.span}' not found`
             )
             entry.error = err
             trace.push(entry)

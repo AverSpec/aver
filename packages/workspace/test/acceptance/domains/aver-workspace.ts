@@ -1,5 +1,4 @@
 import { defineDomain, action, query, assertion } from '@aver/core'
-import { expect } from 'vitest'
 
 export const averWorkspace = defineDomain({
   name: 'AverWorkspace',
@@ -9,7 +8,12 @@ export const averWorkspace = defineDomain({
       context?: string
       story?: string
       mode?: 'observed' | 'intended'
-    }>({ telemetry: { span: 'workspace.scenario.capture' } }),
+    }>({
+      telemetry: (p) => ({
+        span: 'workspace.scenario.capture',
+        attributes: { 'scenario.mode': p.mode ?? 'observed' },
+      }),
+    }),
     updateScenario: action<{
       id: string
       behavior?: string
@@ -20,30 +24,53 @@ export const averWorkspace = defineDomain({
       constraints?: string[]
       seams?: { type: string; location: string; description: string }[]
     }>(),
-    advanceScenario: action<{ id: string; rationale: string; promotedBy: string }>(
-      { telemetry: { span: 'workspace.scenario.advance' } },
-    ),
-    revisitScenario: action<{ id: string; targetStage: string; rationale: string }>(
-      { telemetry: { span: 'workspace.scenario.revisit' } },
-    ),
-    confirmScenario: action<{ id: string; confirmer: string }>(
-      { telemetry: { span: 'workspace.scenario.confirm' } },
-    ),
-    deleteScenario: action<{ id: string }>(
-      { telemetry: { span: 'workspace.scenario.delete' } },
-    ),
-    addQuestion: action<{ scenarioId: string; text: string }>(
-      { telemetry: { span: 'workspace.question.add' } },
-    ),
-    resolveQuestion: action<{ scenarioId: string; questionId: string; answer: string }>(
-      { telemetry: { span: 'workspace.question.resolve' } },
-    ),
+    advanceScenario: action<{ id: string; rationale: string; promotedBy: string }>({
+      telemetry: (p) => ({
+        span: 'workspace.scenario.advance',
+        attributes: { 'scenario.id': p.id, 'advance.promoted_by': p.promotedBy },
+      }),
+    }),
+    revisitScenario: action<{ id: string; targetStage: string; rationale: string }>({
+      telemetry: (p) => ({
+        span: 'workspace.scenario.revisit',
+        attributes: { 'scenario.id': p.id, 'revisit.target_stage': p.targetStage },
+      }),
+    }),
+    confirmScenario: action<{ id: string; confirmer: string }>({
+      telemetry: (p) => ({
+        span: 'workspace.scenario.confirm',
+        attributes: { 'scenario.id': p.id, 'scenario.confirmed_by': p.confirmer },
+      }),
+    }),
+    deleteScenario: action<{ id: string }>({
+      telemetry: (p) => ({
+        span: 'workspace.scenario.delete',
+        attributes: { 'scenario.id': p.id },
+      }),
+    }),
+    addQuestion: action<{ scenarioId: string; text: string }>({
+      telemetry: (p) => ({
+        span: 'workspace.question.add',
+        attributes: { 'scenario.id': p.scenarioId },
+      }),
+    }),
+    resolveQuestion: action<{ scenarioId: string; questionId: string; answer: string }>({
+      telemetry: (p) => ({
+        span: 'workspace.question.resolve',
+        attributes: { 'scenario.id': p.scenarioId, 'question.id': p.questionId },
+      }),
+    }),
     linkToDomain: action<{
       scenarioId: string
       domainOperation?: string
       testNames?: string[]
       approvalBaseline?: string
-    }>({ telemetry: { span: 'workspace.scenario.link' } }),
+    }>({
+      telemetry: (p) => ({
+        span: 'workspace.scenario.link',
+        attributes: { 'scenario.id': p.scenarioId },
+      }),
+    }),
     importScenarios: action<{ json: string }>(),
   },
   queries: {
@@ -69,42 +96,78 @@ export const averWorkspace = defineDomain({
     exportedScenarios: query<{ format: string }, string>(),
   },
   assertions: {
-    scenarioIsAt: assertion<{ id: string; stage: string }>(
-      { telemetry: { span: 'workspace.scenario.advance', attributes: { 'scenario.stage.to': expect.any(String) } } },
-    ),
-    scenarioHasBehavior: assertion<{ id: string; behavior: string }>(
-      { telemetry: { span: 'workspace.scenario.capture', attributes: { 'scenario.id': expect.any(String) } } },
-    ),
-    scenarioHasConfirmation: assertion<{ id: string; confirmer: string }>(
-      { telemetry: { span: 'workspace.scenario.confirm', attributes: { 'scenario.confirmed_by': expect.any(String) } } },
-    ),
-    confirmationCleared: assertion<{ id: string }>(
-      { telemetry: { span: 'workspace.scenario.revisit', attributes: { 'scenario.stage.to': expect.any(String) } } },
-    ),
-    advancementBlocked: assertion<{ id: string; reason: string }>(
-      { telemetry: { span: 'workspace.scenario.advance', attributes: { 'scenario.id': expect.any(String) } } },
-    ),
-    advancementSucceeded: assertion<{ id: string; to: string }>(
-      { telemetry: { span: 'workspace.scenario.advance', attributes: { 'scenario.stage.to': expect.any(String) } } },
-    ),
-    transitionRecorded: assertion<{ id: string; from: string; to: string; by: string }>(
-      { telemetry: { span: 'workspace.scenario.advance', attributes: { 'scenario.stage.from': expect.any(String), 'scenario.stage.to': expect.any(String) } } },
-    ),
-    questionExists: assertion<{ scenarioId: string; text: string }>(
-      { telemetry: { span: 'workspace.question.add', attributes: { 'question.id': expect.any(String) } } },
-    ),
-    questionResolved: assertion<{ scenarioId: string; questionId: string; answer: string }>(
-      { telemetry: { span: 'workspace.question.resolve', attributes: { 'question.id': expect.any(String) } } },
-    ),
-    domainLinksAre: assertion<{ id: string; domainOperation?: string; testNames?: string[] }>(
-      { telemetry: { span: 'workspace.scenario.link', attributes: { 'scenario.id': expect.any(String) } } },
-    ),
-    scenarioCountIs: assertion<{ count: number }>(
-      { telemetry: { span: 'workspace.scenario.summary', attributes: { 'scenario.total': expect.any(Number) } } },
-    ),
-    stageCountIs: assertion<{ stage: string; count: number }>(
-      { telemetry: { span: 'workspace.scenario.summary', attributes: { 'scenario.total': expect.any(Number) } } },
-    ),
+    scenarioIsAt: assertion<{ id: string; stage: string }>({
+      telemetry: (p) => ({
+        span: 'workspace.scenario.advance',
+        attributes: { 'scenario.id': p.id, 'scenario.stage.to': p.stage },
+      }),
+    }),
+    scenarioHasBehavior: assertion<{ id: string; behavior: string }>({
+      telemetry: (p) => ({
+        span: 'workspace.scenario.capture',
+        attributes: { 'scenario.id': p.id },
+      }),
+    }),
+    scenarioHasConfirmation: assertion<{ id: string; confirmer: string }>({
+      telemetry: (p) => ({
+        span: 'workspace.scenario.confirm',
+        attributes: { 'scenario.id': p.id, 'scenario.confirmed_by': p.confirmer },
+      }),
+    }),
+    confirmationCleared: assertion<{ id: string }>({
+      telemetry: (p) => ({
+        span: 'workspace.scenario.revisit',
+        attributes: { 'scenario.id': p.id },
+      }),
+    }),
+    advancementBlocked: assertion<{ id: string; reason: string }>({
+      telemetry: (p) => ({
+        span: 'workspace.scenario.advance',
+        attributes: { 'scenario.id': p.id },
+      }),
+    }),
+    advancementSucceeded: assertion<{ id: string; to: string }>({
+      telemetry: (p) => ({
+        span: 'workspace.scenario.advance',
+        attributes: { 'scenario.stage.to': p.to },
+      }),
+    }),
+    transitionRecorded: assertion<{ id: string; from: string; to: string; by: string }>({
+      telemetry: (p) => ({
+        span: 'workspace.scenario.advance',
+        attributes: { 'scenario.stage.from': p.from, 'scenario.stage.to': p.to },
+      }),
+    }),
+    questionExists: assertion<{ scenarioId: string; text: string }>({
+      telemetry: (p) => ({
+        span: 'workspace.question.add',
+        attributes: { 'scenario.id': p.scenarioId },
+      }),
+    }),
+    questionResolved: assertion<{ scenarioId: string; questionId: string; answer: string }>({
+      telemetry: (p) => ({
+        span: 'workspace.question.resolve',
+        attributes: { 'scenario.id': p.scenarioId, 'question.id': p.questionId },
+      }),
+    }),
+    domainLinksAre: assertion<{ id: string; domainOperation?: string; testNames?: string[] }>({
+      telemetry: (p) => ({
+        span: 'workspace.scenario.link',
+        attributes: { 'scenario.id': p.id },
+      }),
+    }),
+    scenarioCountIs: assertion<{ count: number }>({
+      telemetry: (p) => ({
+        span: 'workspace.scenario.summary',
+        attributes: { 'scenario.total': p.count },
+      }),
+    }),
+    stageCountIs: assertion<{ stage: string; count: number }>({
+      telemetry: (p) => ({
+        span: 'workspace.scenario.summary',
+        attributes: { 'scenario.total': p.count },
+      }),
+    }),
     filterReturns: assertion<{ count: number }>(),
     importResultIs: assertion<{ added: number; skipped: number }>(),
     exportContains: assertion<{ format: string; text: string }>(),

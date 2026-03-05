@@ -4,21 +4,30 @@
 [![npm version](https://img.shields.io/npm/v/@aver/core)](https://www.npmjs.com/package/@aver/core)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Write tests once. Run them against unit code, HTTP APIs, and browser UIs — with zero duplication.
-
-Aver separates **what** you test from **how** you test it. Define your testing vocabulary in domain language, then swap adapters to run the same tests against any implementation.
+Domain-driven acceptance testing for TypeScript.
 
 ## The Problem
 
-Implementation-coupled tests break when code changes. A Playwright test that clicks specific buttons breaks when the UI changes. A unit test that calls specific methods breaks when the internals are refactored. The business intent — what you're actually verifying — gets buried in implementation details.
+You have code you need to change but can't test safely. The behavior is implicit — buried in tangled functions, framework callbacks, and undocumented side effects. Writing tests after the fact couples them to the current implementation, so they break the moment you refactor.
 
-## How Aver Works
+## Lock In What Exists
 
+Start with approval testing. Call a function, capture its output, and lock in the current behavior as a baseline:
+
+```typescript
+import { approve } from '@aver/approvals'
+
+test('order summary matches baseline', async () => {
+  const result = await generateOrderSummary(sampleOrder)
+  await approve.text(result)
+})
 ```
-Domain (what)  →  Adapter (how)  →  Test (verify)
-```
 
-**1. Define a domain** — your testing vocabulary:
+The first run saves the output. Every subsequent run compares against it. If the behavior changes, the test fails with a diff. Now you have a safety net.
+
+## Extract the Domain
+
+Once you have characterization coverage, name the behaviors. A domain is a vocabulary of actions, queries, and assertions — what your system does, independent of how it does it:
 
 ```typescript
 import { defineDomain, action, query, assertion } from '@aver/core'
@@ -38,7 +47,34 @@ export const taskBoard = defineDomain({
 })
 ```
 
-**2. Write tests** — in domain language, no implementation details:
+Actions change state. Queries read state. Assertions verify state. The domain says nothing about classes, endpoints, or selectors — only what the system does in business terms.
+
+## Adapters as Interaction Modes
+
+Your system has different interaction modes: direct function calls, an HTTP API, a browser UI. Each adapter binds the same domain vocabulary to a different protocol:
+
+```typescript
+import { implement, unit } from '@aver/core'
+
+export const directAdapter = implement(taskBoard, {
+  protocol: unit(() => new Board()),
+  actions: {
+    createTask: async (board, { title }) => board.create(title),
+    moveTask: async (board, { title, status }) => board.move(title, status),
+  },
+  queries: {
+    taskDetails: async (board, { title }) => board.getTask(title),
+  },
+  assertions: {
+    taskInStatus: async (board, { title, status }) => {
+      const task = board.getTask(title)
+      expect(task.status).toBe(status)
+    },
+  },
+})
+```
+
+Tests use domain language — no implementation details leak through:
 
 ```typescript
 import { suite } from '@aver/core'
@@ -53,28 +89,15 @@ test('move task through workflow', async ({ act, assert }) => {
 })
 ```
 
-**3. Implement adapters** — bind domain vocabulary to real systems:
-
-```typescript
-import { implement, unit } from '@aver/core'
-
-export const directAdapter = implement(taskBoard, {
-  protocol: unit(() => new Board()),
-  actions: {
-    createTask: async (board, { title }) => board.create(title),
-    moveTask: async (board, { title, status }) => board.move(title, status),
-  },
-  // ...
-})
-```
-
-**One test, multiple adapters.** Register a `unit` adapter, an `http` adapter, and a `playwright` adapter. Aver runs your tests against all of them:
+Register multiple adapters and the same tests run against all of them:
 
 ```
  ✓ move task through workflow [unit]          1ms
  ✓ move task through workflow [http]         12ms
  ✓ move task through workflow [playwright]  280ms
 ```
+
+The domain vocabulary stays the same. Adapters are interchangeable. Some scenarios test one adapter, some test several. The framework keeps domain language separate — tests compose vocabulary with adapters via the suite.
 
 ## Quick Start
 
@@ -85,38 +108,6 @@ npx aver run
 ```
 
 See the [Getting Started guide](docs/guides/getting-started.md) for a complete walkthrough.
-
-## Two Ways to Use Aver
-
-Both paths share the same domain vocabulary — that's the point. The domain is the behavioral contract regardless of who writes the code.
-
-### Traditional Development
-
-Define domains, write adapters, run tests. Works like any testing library — no AI required.
-
-```bash
-npm install @aver/core
-npx aver init --domain ShoppingCart --protocol unit
-npx aver run
-```
-
-**Single adapter:** Tests in domain language that read like specifications, not implementation details.
-
-**Multiple adapters:** The real multiplier — one test suite runs against unit code, HTTP APIs, and browser UIs with zero duplication.
-
-**Legacy adoption:** Start from the outside — name the behaviors, write an E2E adapter, lock in the contract. Then grow the pyramid inward as you refactor. The tests don't change, only the adapters do.
-
-### AI-Assisted Development
-
-Add the agent plugin to Claude Code. The scenario pipeline, MCP tools, and workflow skills guide the AI through discovery, specification, and implementation — with human checkpoints at every stage.
-
-```bash
-npm install @aver/agent-plugin
-```
-
-The plugin provides 20+ MCP tools for managing scenarios and a maturity pipeline (capture → characterize → map → specify → implement) that structures AI-driven development. You define the intent; the agent implements against it; `aver run` returning green is the success criteria.
-
-**When not to use:** If you only need simple unit tests with no protocol variety, plain vitest is simpler.
 
 ## Packages
 

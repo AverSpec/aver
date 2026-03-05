@@ -16,6 +16,18 @@ export interface TestCompletion extends TestMetadata {
 
 export type TestFailureResult = void | TraceAttachment[]
 
+/** Minimal span interface for telemetry verification (compatible with OTel ReadableSpan). */
+export interface CollectedSpan {
+  readonly name: string
+  readonly attributes: Readonly<Record<string, unknown>>
+}
+
+/** Provides access to spans collected during test execution. */
+export interface TelemetryCollector {
+  getSpans(): CollectedSpan[]
+  reset(): void
+}
+
 /**
  * A protocol defines how to create and tear down a context
  * that adapter handlers receive as their first argument.
@@ -28,6 +40,8 @@ export interface Protocol<Context> {
   onTestFail?(ctx: Context, meta: TestCompletion): Promise<TestFailureResult> | TestFailureResult
   onTestEnd?(ctx: Context, meta: TestCompletion): Promise<void> | void
   extensions?: ProtocolExtensions
+  /** If provided, enables telemetry verification during tests. */
+  telemetry?: TelemetryCollector
 }
 
 export function withFixture<C>(
@@ -51,5 +65,6 @@ export function withFixture<C>(
     onTestFail: protocol.onTestFail?.bind(protocol),
     onTestEnd: protocol.onTestEnd?.bind(protocol),
     extensions: protocol.extensions,
+    telemetry: protocol.telemetry,
   }
 }

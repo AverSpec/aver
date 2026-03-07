@@ -40,7 +40,7 @@ const protocol: Protocol<AverWorkspaceSession> = {
   async teardown() {
     await shutdown()
   },
-  telemetry: collector,
+  // telemetry: collector, — re-enable when WorkspaceOps is instrumented with OTel spans
 }
 
 export const averWorkspaceAdapter = implement(averWorkspace, {

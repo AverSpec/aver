@@ -191,6 +191,9 @@ describe('telemetry verification — programmatic API', () => {
   })
 
   it('records unmatched telemetry when span is missing (warn mode)', async () => {
+    const prev = process.env.AVER_TELEMETRY_MODE
+    process.env.AVER_TELEMETRY_MODE = 'warn'
+    try {
     const { collector } = createCollector()
     const domain = defineDomain({
       name: 'tel-miss',
@@ -219,8 +222,9 @@ describe('telemetry verification — programmatic API', () => {
       expected: { span: 'thing.done' },
       matched: false,
     })
-    // Should still pass (warn mode default)
+    // Should still pass (warn mode)
     expect(trace[0].status).toBe('pass')
+    } finally { process.env.AVER_TELEMETRY_MODE = prev }
   })
 
   it('does not add telemetry to trace when marker has no declaration', async () => {
@@ -308,6 +312,9 @@ describe('telemetry verification — programmatic API', () => {
   })
 
   it('fails to match when attributes differ', async () => {
+    const prev = process.env.AVER_TELEMETRY_MODE
+    process.env.AVER_TELEMETRY_MODE = 'warn'
+    try {
     const { collector, emit } = createCollector()
     const domain = defineDomain({
       name: 'tel-attrs-miss',
@@ -335,6 +342,7 @@ describe('telemetry verification — programmatic API', () => {
 
     const trace = s.getTrace()
     expect(trace[0].telemetry?.matched).toBe(false)
+    } finally { process.env.AVER_TELEMETRY_MODE = prev }
   })
 })
 

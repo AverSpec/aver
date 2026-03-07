@@ -144,10 +144,13 @@ const brokenAdapter = implement(greetingDomain, {
 
 const broken = suite(greetingDomain, brokenAdapter)
 
-// Set fail mode via env var — read per-test by createProxies
-process.env.AVER_TELEMETRY_MODE = 'fail'
-
 broken.test('mismatch is caught when app emits wrong span name', async ({ act }) => {
-  receiver.reset()
-  await expect(act.greet({ name: 'Aver' })).rejects.toThrow('Telemetry mismatch')
+  const prev = process.env.AVER_TELEMETRY_MODE
+  process.env.AVER_TELEMETRY_MODE = 'fail'
+  try {
+    receiver.reset()
+    await expect(act.greet({ name: 'Aver' })).rejects.toThrow('Telemetry mismatch')
+  } finally {
+    process.env.AVER_TELEMETRY_MODE = prev
+  }
 })

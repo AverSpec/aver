@@ -41,9 +41,9 @@ describe('OTLP receiver integration', () => {
       span.end()
     })
 
-    // SimpleSpanProcessor exports synchronously on span.end(),
-    // but the HTTP request is async — give it a moment
-    await new Promise(r => setTimeout(r, 50))
+    // SimpleSpanProcessor exports on span.end() but the HTTP
+    // request is async — forceFlush waits for it to complete
+    await provider.forceFlush()
 
     const spans = receiver.getSpans()
     expect(spans).toHaveLength(1)
@@ -72,7 +72,7 @@ describe('OTLP receiver integration', () => {
       span.end()
     })
 
-    await new Promise(r => setTimeout(r, 50))
+    await provider.forceFlush()
 
     const spans = receiver.getSpans()
     expect(spans).toHaveLength(2)
@@ -92,7 +92,7 @@ describe('OTLP receiver integration', () => {
       span.end()
     })
 
-    await new Promise(r => setTimeout(r, 50))
+    await provider.forceFlush()
 
     // Simulate what the proxy does: find a span matching a telemetry declaration
     const spans = receiver.getSpans()

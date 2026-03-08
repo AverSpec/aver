@@ -87,8 +87,8 @@ const adapter = implement(greetingDomain, {
   actions: {
     greet: async (_ctx, { name }) => {
       lastGreeting = await sayHello(name)
-      // Wait for the HTTP export to reach the receiver
-      await new Promise(r => setTimeout(r, 50))
+      // forceFlush waits for the HTTP export to reach the receiver
+      await provider.forceFlush()
     },
   },
   queries: {},
@@ -131,7 +131,7 @@ const brokenAdapter = implement(greetingDomain, {
   actions: {
     greet: async (_ctx, { name }) => {
       lastGreeting = await brokenSayHello(name)
-      await new Promise(r => setTimeout(r, 50))
+      await provider.forceFlush()
     },
   },
   queries: {},

@@ -90,7 +90,7 @@ function buildKindProxy(
   correlationId: string | undefined,
   clock: Clock,
   getTelemetryCollector: () => TelemetryCollector | undefined,
-  telemetryMode: TelemetryVerificationMode,
+  getTelemetryMode: () => TelemetryVerificationMode,
   domainName?: string,
 ): any {
   const proxy: any = {}
@@ -127,13 +127,14 @@ function buildKindProxy(
         // Telemetry verification: only if step passed, collector is available, and marker declares telemetry
         const marker = markers[name]
         const collector = getTelemetryCollector()
-        if (entry.status === 'pass' && collector && marker?.telemetry && telemetryMode !== 'off') {
+        const mode = getTelemetryMode()
+        if (entry.status === 'pass' && collector && marker?.telemetry && mode !== 'off') {
           const expected = typeof marker.telemetry === 'function'
             ? marker.telemetry(payload)
             : marker.telemetry
           const result = verifyTelemetry(collector, expected)
           entry.telemetry = result
-          if (!result.matched && telemetryMode === 'fail') {
+          if (!result.matched && mode === 'fail') {
             entry.status = 'fail'
             const err = new Error(
               `Telemetry mismatch: expected span '${expected.span}' not found`
@@ -173,10 +174,13 @@ export function createProxies<D extends Domain>(
   const assertionNames = Object.keys(domain.vocabulary.assertions)
 
   const getTelemetryCollector = options?.getTelemetryCollector ?? (() => undefined)
-  const envMode = typeof process !== 'undefined' ? process.env.AVER_TELEMETRY_MODE as TelemetryVerificationMode | undefined : undefined
-  const telemetryMode = options?.telemetryMode ?? envMode ?? (typeof process !== 'undefined' && process.env.CI ? 'fail' : 'warn')
+  const getTelemetryMode = (): TelemetryVerificationMode => {
+    if (options?.telemetryMode) return options.telemetryMode
+    const envMode = typeof process !== 'undefined' ? process.env.AVER_TELEMETRY_MODE as TelemetryVerificationMode | undefined : undefined
+    return envMode ?? (typeof process !== 'undefined' && process.env.CI ? 'fail' : 'warn')
+  }
 
-  const args = [getCtx, getAdapter, trace, calledOps, correlationId, clock, getTelemetryCollector, telemetryMode, domainName] as const
+  const args = [getCtx, getAdapter, trace, calledOps, correlationId, clock, getTelemetryCollector, getTelemetryMode, domainName] as const
 
   const act = buildKindProxy('action', 'act', domain.vocabulary.actions, actionNames, ...args)
   const given = buildKindProxy('action', 'given', domain.vocabulary.actions, actionNames, ...args)

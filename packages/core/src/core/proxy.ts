@@ -73,7 +73,13 @@ function verifyTelemetry(
     expected: { span: expected.span, attributes: expected.attributes },
     matched: !!matched,
     matchedSpan: matched
-      ? { name: matched.name, attributes: { ...matched.attributes } }
+      ? {
+          name: matched.name,
+          attributes: { ...matched.attributes },
+          traceId: matched.traceId,
+          spanId: matched.spanId,
+          links: matched.links ? [...matched.links] : undefined,
+        }
       : undefined,
   }
 }

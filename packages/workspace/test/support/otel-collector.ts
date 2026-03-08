@@ -24,10 +24,20 @@ export function createOtelCollector(): {
 
   const collector: TelemetryCollector = {
     getSpans() {
-      return exporter.getFinishedSpans().map(span => ({
-        name: span.name,
-        attributes: { ...span.attributes },
-      }))
+      return exporter.getFinishedSpans().map(span => {
+        const parentCtx = span.parentSpanContext
+        return {
+          traceId: span.spanContext().traceId,
+          spanId: span.spanContext().spanId,
+          parentSpanId: parentCtx && parentCtx.spanId !== '0000000000000000' ? parentCtx.spanId : undefined,
+          name: span.name,
+          attributes: { ...span.attributes },
+          links: span.links.map(l => ({
+            traceId: l.context.traceId,
+            spanId: l.context.spanId,
+          })),
+        }
+      })
     },
     reset() {
       exporter.reset()

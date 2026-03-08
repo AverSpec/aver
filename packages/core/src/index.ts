@@ -40,5 +40,7 @@ export type { AverConfig, AverConfigInput, CoverageConfig, TeardownFailureMode }
 export { getCoverageConfig, getTeardownFailureMode } from './core/config'
 export type { VocabularyCoverage } from './core/coverage'
 export type { TraceEntry, TraceAttachment, TelemetryMatchResult } from './core/trace'
+export { verifyCorrelation } from './core/correlation'
+export type { CorrelationResult, CorrelationGroup, CorrelationViolation } from './core/correlation'
 export type { ActProxy, QueryProxy, AssertProxy, TestContext, SuiteReturn, PlannedTest, SuiteConfig, NamedContext, NamedTestContext, NamedSuiteReturn } from './core/suite'
 export type { Clock, StepCategory, TelemetryVerificationMode, ProxyOptions } from './core/proxy'

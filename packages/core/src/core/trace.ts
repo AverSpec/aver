@@ -7,7 +7,7 @@ export interface TraceAttachment {
 export interface TelemetryMatchResult {
   expected: { span: string; attributes?: Record<string, string | number | boolean> }
   matched: boolean
-  matchedSpan?: { name: string; attributes: Record<string, unknown> }
+  matchedSpan?: { name: string; attributes: Record<string, unknown>; traceId?: string; spanId?: string; links?: ReadonlyArray<{ traceId: string; spanId: string }> }
 }
 
 export interface TraceEntry {

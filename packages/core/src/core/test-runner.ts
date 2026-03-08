@@ -4,7 +4,8 @@ import type { Adapter } from './adapter'
 import type { TraceEntry, TraceAttachment } from './trace'
 import { runWithTestContext } from './test-context'
 import { createProxies } from './proxy'
-import type { CalledOps } from './proxy'
+import type { CalledOps, TelemetryVerificationMode } from './proxy'
+import { verifyCorrelation } from './correlation'
 import { enhanceComposedWithTrace } from './trace-format'
 import { getTeardownFailureMode } from './config'
 import type { TestContext } from './suite'
@@ -120,6 +121,31 @@ export async function runTest(
       },
       async () => fn(testCtx),
     )
+
+    // ── End-of-test correlation verification ──
+    const hasTelemetry = entries.some(([, , adapter]) => adapter.protocol.telemetry)
+    if (hasTelemetry) {
+      const envMode = typeof process !== 'undefined' ? process.env.AVER_TELEMETRY_MODE as TelemetryVerificationMode | undefined : undefined
+      const mode = envMode ?? (typeof process !== 'undefined' && process.env.CI ? 'fail' : 'warn')
+      if (mode !== 'off') {
+        const result = verifyCorrelation(trace)
+        if (result.violations.length > 0) {
+          const messages = result.violations.map(v => v.message)
+          if (mode === 'fail') {
+            throw new Error(`Telemetry correlation failed:\n${messages.join('\n')}`)
+          }
+          // warn mode: record in trace but don't throw
+          trace.push({
+            kind: 'test',
+            name: 'correlation-warning',
+            payload: undefined,
+            status: 'pass',
+            metadata: { correlationViolations: result.violations },
+            correlationId,
+          })
+        }
+      }
+    }
 
     // ── onTestEnd(pass) for each adapter ──
     for (const entry of entries) {

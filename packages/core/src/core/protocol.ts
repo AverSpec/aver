@@ -16,10 +16,20 @@ export interface TestCompletion extends TestMetadata {
 
 export type TestFailureResult = void | TraceAttachment[]
 
-/** Minimal span interface for telemetry verification (compatible with OTel ReadableSpan). */
+/** Span link reference for cross-trace correlation. */
+export interface SpanLink {
+  readonly traceId: string
+  readonly spanId: string
+}
+
+/** Span interface for telemetry verification with correlation fields. */
 export interface CollectedSpan {
+  readonly traceId: string
+  readonly spanId: string
+  readonly parentSpanId?: string
   readonly name: string
   readonly attributes: Readonly<Record<string, unknown>>
+  readonly links?: ReadonlyArray<SpanLink>
 }
 
 /** Provides access to spans collected during test execution. */

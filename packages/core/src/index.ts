@@ -32,7 +32,7 @@ export type { ActionMarker, QueryMarker, AssertionMarker, TelemetryExpectation, 
 export type { MarkerOptions } from './core/markers'
 export type { Domain } from './core/domain'
 export type { Adapter } from './core/adapter'
-export type { Protocol, TestMetadata, TestCompletion, TelemetryCollector, CollectedSpan } from './core/protocol'
+export type { Protocol, TestMetadata, TestCompletion, TelemetryCollector, CollectedSpan, SpanLink } from './core/protocol'
 export type { RunningTestContext } from './core/test-context'
 export type { ProtocolExtensions, Screenshotter } from './core/extensions'
 export type { RegistrySnapshot } from './core/registry'

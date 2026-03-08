@@ -1,11 +1,23 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { createOtlpReceiver, type OtlpReceiver } from '../../src/telemetry/otlp-receiver'
 
-function otlpPayload(spans: Array<{ name: string; attributes?: Array<{ key: string; value: Record<string, unknown> }> }>) {
+function otlpPayload(spans: Array<{
+  name: string
+  traceId?: string
+  spanId?: string
+  parentSpanId?: string
+  attributes?: Array<{ key: string; value: Record<string, unknown> }>
+}>) {
   return {
     resourceSpans: [{
       scopeSpans: [{
-        spans: spans.map(s => ({ name: s.name, attributes: s.attributes ?? [] })),
+        spans: spans.map(s => ({
+          traceId: s.traceId ?? '',
+          spanId: s.spanId ?? '',
+          parentSpanId: s.parentSpanId ?? '',
+          name: s.name,
+          attributes: s.attributes ?? [],
+        })),
       }],
     }],
   }
@@ -37,9 +49,11 @@ describe('OtlpReceiver', () => {
     ]))
 
     expect(res.status).toBe(200)
-    expect(receiver.getSpans()).toEqual([
-      { name: 'my-span', attributes: { service: 'test' } },
-    ])
+    const [span] = receiver.getSpans()
+    expect(span.name).toBe('my-span')
+    expect(span.attributes).toEqual({ service: 'test' })
+    expect(span.traceId).toBe('')
+    expect(span.spanId).toBe('')
   })
 
   it('converts all attribute types', async () => {

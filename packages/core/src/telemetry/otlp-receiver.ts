@@ -45,9 +45,20 @@ export function createOtlpReceiver(): OtlpReceiver {
       for (const rs of body.resourceSpans ?? []) {
         for (const ss of rs.scopeSpans ?? []) {
           for (const span of ss.spans ?? []) {
+            const parentSpanId = span.parentSpanId && span.parentSpanId !== '' && span.parentSpanId !== '0000000000000000'
+              ? span.parentSpanId
+              : undefined
+            const links = (span.links ?? []).map((l: any) => ({
+              traceId: l.spanContext?.traceId ?? l.traceId ?? '',
+              spanId: l.spanContext?.spanId ?? l.spanId ?? '',
+            }))
             spans.push({
+              traceId: span.traceId ?? '',
+              spanId: span.spanId ?? '',
+              parentSpanId,
               name: span.name,
               attributes: parseAttributes(span.attributes),
+              links: links.length > 0 ? links : undefined,
             })
           }
         }

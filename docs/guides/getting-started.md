@@ -116,7 +116,8 @@ You don't need everything on day one. Start with `@aver/core` and a unit adapter
 
 ## Next steps
 
-- [Tutorial](../tutorial) — hands-on walkthrough from legacy code to multi-adapter tests
+- [Tutorial: Legacy Code](../tutorial) — from untested code to multi-adapter tests
+- [Tutorial: Greenfield](../tutorial-greenfield) — build a domain from scratch
 - [Multi-Adapter Testing](multi-adapter) — add HTTP and Playwright adapters
 - [Architecture](../architecture) — how the three-layer model works and why
 - [API Reference](../api) — domains, adapters, protocols, and suites

@@ -47,7 +47,8 @@ npx aver run
 
 ## Documentation
 
-- **[Tutorial](docs/tutorial.md)** — From legacy code to multi-adapter tests in 15 minutes
+- **[Tutorial: Legacy Code](docs/tutorial.md)** — From untested code to multi-adapter tests
+- **[Tutorial: Greenfield](docs/tutorial-greenfield.md)** — Build a domain from scratch
 - **[Architecture](docs/architecture.md)** — Three-layer model, design decisions, economics
 - **[Getting Started](docs/guides/getting-started.md)** — Install, scaffold, configure
 - **[Guides](docs/guides/)** — Multi-adapter, telemetry, CI, AI-assisted testing

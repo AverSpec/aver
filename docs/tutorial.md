@@ -8,6 +8,8 @@ nav_order: 2
 
 This tutorial takes you from untested legacy code to a domain-driven test suite running against two adapters. It takes about 15 minutes.
 
+> **Starting from scratch?** If you don't have existing code to characterize, try the [greenfield tutorial](tutorial-greenfield) instead.
+
 You'll build a real test suite that:
 1. Locks in existing behavior with approval tests
 2. Extracts a domain vocabulary

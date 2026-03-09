@@ -109,7 +109,7 @@ npx aver init --domain TaskBoard --protocol unit
 npx aver run
 ```
 
-Or follow the [tutorial](tutorial) for a hands-on walkthrough.
+Or follow a tutorial: [legacy code](tutorial) or [greenfield](tutorial-greenfield).
 
 ---
 

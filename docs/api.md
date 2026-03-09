@@ -23,7 +23,7 @@ const cart = defineDomain({
     addItem: action<{ name: string; qty: number }>(),
   },
   queries: {
-    cartTotal: query<void, number>(),
+    cartTotal: query<number>(),
   },
   assertions: {
     hasItems: assertion<{ count: number }>(),
@@ -33,25 +33,33 @@ const cart = defineDomain({
 
 **Returns:** `Domain` — a domain object with vocabulary metadata and an `extend()` method.
 
-### `action<Payload>()`
+### `action<Payload>(opts?)`
 
 Creates an action marker. Actions perform side effects and return void.
 
 ```typescript
 addItem: action<{ name: string }>()  // typed payload
-checkout: action()                    // no payload
+checkout: action()                    // no payload (void)
+addItem: action<{ name: string }>({  // with telemetry declaration
+  telemetry: (p) => ({ span: 'cart.add-item', attributes: { 'item.name': p.name } }),
+})
 ```
 
-### `query<Payload, Return>()`
+**Options:** `MarkerOptions<P>` — optional object with a `telemetry: TelemetryDeclaration<P>` property.
 
-Creates a query marker. Queries read data and return a typed result.
+### `query<Return>(opts?)` / `query<Payload, Return>(opts?)`
+
+Creates a query marker. Queries read data and return a typed result. Two overloads:
 
 ```typescript
-cartTotal: query<void, number>()                       // no input, returns number
-tasksByStatus: query<{ status: string }, Task[]>()     // input + return type
+cartTotal: query<number>()                          // no input, returns number
+tasksByStatus: query<{ status: string }, Task[]>()  // input + return type
+cartTotal: query<number>({                          // with telemetry
+  telemetry: { span: 'cart.total' },
+})
 ```
 
-### `assertion<Payload>()`
+### `assertion<Payload>(opts?)`
 
 Creates an assertion marker. Assertions verify expectations and throw on failure.
 
@@ -131,7 +139,7 @@ protocol: http({ baseUrl: 'http://localhost:3000' })
 
 Context provides `get`, `post`, `put`, `patch`, `delete` methods.
 
-### `playwright(options)` <small>from `@aver/protocol-playwright`</small>
+### `playwright(options?)` <small>from `@aver/protocol-playwright`</small>
 
 Playwright protocol providing a browser page.
 
@@ -142,6 +150,19 @@ protocol: playwright()
 ```
 
 Context is a Playwright `Page`. Browser is launched once and reused; a fresh page is created per test.
+
+### `withFixture(protocol, fixture)`
+
+Wraps a protocol with before/after hooks.
+
+```typescript
+import { withFixture } from '@aver/core'
+
+const wrapped = withFixture(myProtocol, {
+  before: async () => { /* runs before setup */ },
+  after: async () => { /* runs after teardown */ },
+})
+```
 
 ---
 
@@ -188,20 +209,21 @@ test('add item', async ({ given, when, query, assert, trace }) => {
   await when.checkout()
   await assert.hasItems({ count: 1 })
   const total = await query.cartTotal()
+  const entries = trace()  // trace is a function
 })
 ```
 
-The callback receives:
+The callback receives a `TestContext`:
 
-| Property | Description |
-|:---------|:------------|
-| `act` | Typed proxy for actions |
-| `given` | Alias for `act` — narrative clarity for setup steps (Given-When-Then) |
-| `when` | Alias for `act` — narrative clarity for trigger steps (Given-When-Then) |
-| `query` | Typed proxy for queries |
-| `assert` | Typed proxy for assertions |
-| `then` | Alias for `assert` — narrative clarity for verification steps (Given-When-Then) |
-| `trace` | Current action trace array |
+| Property | Type | Description |
+|:---------|:-----|:------------|
+| `act` | `ActProxy<D>` | Typed proxy for actions |
+| `given` | `ActProxy<D>` | Alias for `act` — setup steps (Given-When-Then) |
+| `when` | `ActProxy<D>` | Alias for `act` — trigger steps (Given-When-Then) |
+| `query` | `QueryProxy<D>` | Typed proxy for queries |
+| `assert` | `AssertProxy<D>` | Typed proxy for assertions |
+| `then` | `AssertProxy<D>` | Alias for `assert` — verification steps (Given-When-Then) |
+| `trace` | `() => TraceEntry[]` | Returns the current action trace (callable) |
 
 ---
 
@@ -218,9 +240,18 @@ import { httpAdapter } from './adapters/cart.http'
 
 export default defineConfig({
   adapters: [unitAdapter, httpAdapter],
-  testDir: './tests',  // optional, defaults to '.'
+  testDir: './tests',  // optional, defaults to './tests/acceptance'
 })
 ```
+
+**`AverConfigInput`:**
+
+| Property | Type | Default | Description |
+|:---------|:-----|:--------|:------------|
+| `adapters` | `Adapter[]` | *required* | Adapters to register |
+| `testDir` | `string` | `'./tests/acceptance'` | Test directory |
+| `coverage` | `{ minPercentage?: number }` | `{ minPercentage: 0 }` | Vocabulary coverage threshold |
+| `teardownFailureMode` | `'fail' \| 'warn'` | `'fail'` | Whether teardown errors fail the test |
 
 ### `registerAdapter(adapter)`
 
@@ -242,6 +273,119 @@ Returns all registered adapters.
 
 Clears all registered adapters. Useful in test setup.
 
+### `getRegistrySnapshot()` / `restoreRegistrySnapshot(snapshot)`
+
+Capture and restore registry state. Useful for test isolation.
+
+### `withRegistry(fn)`
+
+Runs a function with an isolated registry that resets afterward.
+
+---
+
+## Telemetry
+
+### `TelemetryCollector`
+
+Interface for providing spans to the framework. Set on `Protocol.telemetry`.
+
+```typescript
+interface TelemetryCollector {
+  getSpans(): CollectedSpan[]
+  reset(): void
+}
+```
+
+### `CollectedSpan`
+
+Span data for telemetry verification.
+
+```typescript
+interface CollectedSpan {
+  readonly traceId: string
+  readonly spanId: string
+  readonly parentSpanId?: string
+  readonly name: string
+  readonly attributes: Readonly<Record<string, unknown>>
+  readonly links?: ReadonlyArray<SpanLink>
+}
+
+interface SpanLink {
+  readonly traceId: string
+  readonly spanId: string
+}
+```
+
+### `createOtlpReceiver()`
+
+Creates an OTLP HTTP receiver for cross-process telemetry testing.
+
+```typescript
+import { createOtlpReceiver } from '@aver/core'
+
+const receiver = await createOtlpReceiver()
+// receiver.port — port the OTLP HTTP endpoint listens on
+// receiver.getSpans() — returns CollectedSpan[]
+// receiver.reset() — clears collected spans
+// receiver.close() — shuts down the server
+```
+
+The receiver implements `TelemetryCollector` so it can be set directly on a protocol's `telemetry` property.
+
+### `verifyCorrelation(trace, spans)`
+
+Verifies that correlated trace entries have causally connected spans.
+
+```typescript
+import { verifyCorrelation } from '@aver/core'
+```
+
+### Telemetry Declarations
+
+Declared on domain markers via the `telemetry` option:
+
+```typescript
+// Static — fixed span name and attributes
+action({ telemetry: { span: 'order.checkout' } })
+
+// Parameterized — attributes derived from payload
+action<{ orderId: string }>({
+  telemetry: (p) => ({
+    span: 'order.checkout',
+    attributes: { 'order.id': p.orderId },
+  }),
+})
+```
+
+**`TelemetryExpectation`:**
+
+| Property | Type | Description |
+|:---------|:-----|:------------|
+| `span` | `string` | OTel span name to match |
+| `attributes` | `Record<string, TelemetryAttributeValue>` | Required span attributes. Primitives for exact match, or asymmetric matchers (e.g. `expect.any(String)`) |
+
+### `AVER_TELEMETRY_MODE`
+
+Environment variable controlling telemetry verification:
+
+| Value | Behavior | Default when |
+|:------|:---------|:-------------|
+| `fail` | Missing/mismatched spans fail the test | `CI` is set |
+| `warn` | Mismatches recorded but tests pass | `CI` is not set |
+| `off` | No telemetry verification | — |
+
+---
+
+## Test Context
+
+### `getTestContext()`
+
+Returns the current test context from async-local storage, or `undefined` if not in a test.
+
+### `runWithTestContext(context, fn)`
+
+Runs a function within a test context (for framework-level use).
+
 ---
 
 ## Registry Lifecycle
@@ -249,17 +393,6 @@ Clears all registered adapters. Useful in test setup.
 ### How Adapters Are Registered
 
 `defineConfig({ adapters })` calls `registerAdapter()` for each adapter when the config module is evaluated. This is the standard path — your `aver.config.ts` runs once and registers all adapters for the process.
-
-```typescript
-// aver.config.ts
-import { defineConfig } from '@aver/core'
-import { unitAdapter } from './adapters/cart.unit'
-import { httpAdapter } from './adapters/cart.http'
-
-export default defineConfig({
-  adapters: [unitAdapter, httpAdapter],
-})
-```
 
 You can also call `registerAdapter()` directly in test files or setup files.
 
@@ -312,19 +445,57 @@ beforeEach(() => {
 
 ```typescript
 import type {
+  // Domain & markers
   Domain,
-  Adapter,
-  Protocol,
-  AverConfig,
-  TraceEntry,
-  ActProxy,
-  QueryProxy,
-  AssertProxy,
-  TestContext,
-  SuiteReturn,
   ActionMarker,
   QueryMarker,
   AssertionMarker,
+  MarkerOptions,
+  TelemetryExpectation,
+  TelemetryDeclaration,
+  TelemetryAttributeValue,
+  AsymmetricMatcher,
+
+  // Adapters & protocols
+  Adapter,
+  Protocol,
+  TestMetadata,
+  TestCompletion,
+  ProtocolExtensions,
+  Screenshotter,
+
+  // Telemetry
+  TelemetryCollector,
+  CollectedSpan,
+  SpanLink,
+  TelemetryMatchResult,
+  OtlpReceiver,
+  CorrelationResult,
+  CorrelationGroup,
+  CorrelationViolation,
+
+  // Suite & testing
+  TestContext,
+  SuiteReturn,
+  ActProxy,
+  QueryProxy,
+  AssertProxy,
+  PlannedTest,
+  RunningTestContext,
+
+  // Config
+  AverConfig,
+  AverConfigInput,
+  CoverageConfig,
+  TeardownFailureMode,
+
+  // Trace
+  TraceEntry,
+  TraceAttachment,
+  VocabularyCoverage,
+
+  // Registry
+  RegistrySnapshot,
 } from '@aver/core'
 ```
 
@@ -333,7 +504,9 @@ import type {
 ```typescript
 interface TraceEntry {
   kind: 'action' | 'query' | 'assertion' | 'test'
+  category?: 'given' | 'when' | 'act' | 'query' | 'then' | 'assert'
   name: string
+  domainName?: string
   payload: unknown
   status: 'pass' | 'fail'
   result?: unknown
@@ -344,6 +517,7 @@ interface TraceEntry {
   attachments?: TraceAttachment[]
   metadata?: Record<string, unknown>
   correlationId?: string
+  telemetry?: TelemetryMatchResult
 }
 ```
 
@@ -358,6 +532,7 @@ interface Protocol<Context> {
   onTestFail?(ctx: Context, meta: TestCompletion): Promise<TestFailureResult> | TestFailureResult
   onTestEnd?(ctx: Context, meta: TestCompletion): Promise<void> | void
   extensions?: ProtocolExtensions
+  telemetry?: TelemetryCollector
 }
 ```
 
@@ -369,16 +544,19 @@ The lifecycle hooks are optional. `onTestStart` runs before each test body. `onT
 
 ### `approve(value, options?)`
 
-Approves a value against a stored baseline. Auto-detects serializer: objects use JSON, strings use text.
+Approves a value against a stored baseline. Auto-detects serializer: objects use JSON, strings use text. Also exported as `characterize` for characterization test contexts.
 
 ```typescript
 import { approve } from '@aver/approvals'
+// or: import { characterize } from '@aver/approvals'
 
 await approve({ count: 42 })                    // default name "approval"
 await approve(reportText, { name: 'report' })   // named approval
 ```
 
-First run fails with "Baseline missing". Run `aver approve` to create it.
+First run fails with "Baseline missing". Run `AVER_APPROVE=1 npx vitest run` or `npx aver approve` to create baselines.
+
+Baselines are stored in `__approvals__/<test-name>/` next to the test file. Commit `.approved` files; gitignore `.received` and `.diff` files.
 
 **Options:**
 
@@ -393,7 +571,7 @@ First run fails with "Baseline missing". Run `aver approve` to create it.
 
 ### `approve.visual(nameOrOptions)`
 
-Approves a screenshot against a stored baseline image. Requires a protocol with `screenshotter` extension (e.g., Playwright). Skips with warning on protocols without one.
+Approves a screenshot against a stored baseline image. Requires a protocol with `screenshotter` extension (e.g., Playwright). Throws an error on protocols without one.
 
 ```typescript
 await approve.visual('board-state')                          // full page
@@ -408,7 +586,7 @@ await approve.visual({ name: 'backlog', region: 'backlog' }) // scoped region
 | `region` | `string` | no | Named region (maps to CSS selector in adapter) |
 | `threshold` | `number` | no | Pixel difference threshold (0-1) for visual comparison |
 
-### `Screenshotter` <small>from `aver`</small>
+### `Screenshotter` <small>from `@aver/core`</small>
 
 Extension interface for visual approval support. Protocols implement this.
 
@@ -455,17 +633,15 @@ npx aver run --watch                 # watch mode
 
 ### `aver init`
 
-Scaffolds a new domain with adapter and test files.
+Interactive scaffolding wizard. Prompts for domain name and protocol, then generates:
+- `domains/<kebab>.ts`
+- `adapters/<kebab>.<protocol>.ts`
+- `tests/<kebab>.spec.ts`
+- `aver.config.ts` (if it doesn't exist)
 
 ```bash
-npx aver init --domain ShoppingCart --protocol unit
+npx aver init
 ```
-
-Generates:
-- `domains/shopping-cart.ts`
-- `adapters/shopping-cart.unit.ts`
-- `tests/shopping-cart.spec.ts`
-- `aver.config.ts` (if it doesn't exist)
 
 ### `aver approve`
 

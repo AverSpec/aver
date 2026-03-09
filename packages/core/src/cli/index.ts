@@ -19,16 +19,6 @@ switch (command) {
     await runApprove(args)
     break
   }
-  case 'workspace': {
-    const { runWorkspace } = await import('./workspace.js')
-    await runWorkspace(args)
-    break
-  }
-  case 'agent': {
-    const { runAgentCommand } = await import('./agent.js')
-    await runAgentCommand({ command: args[0] as any ?? 'help' })
-    break
-  }
   case '--help':
   case '-h':
   case undefined: {
@@ -39,14 +29,11 @@ Commands:
   aver run       Run acceptance tests (flags forwarded to vitest)
   aver init      Scaffold a new domain
   aver approve   Update approvals
-  aver workspace Manage scenario workspaces
-  aver agent     (moved to aver-experimental)
 
 Options:
   --help         Show this help message
 
 Run "aver run --help" for run options.
-Run "aver workspace --help" for workspace options.
 `)
     break
   }

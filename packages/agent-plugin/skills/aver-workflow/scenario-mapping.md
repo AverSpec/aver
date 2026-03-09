@@ -48,7 +48,7 @@ Say to the human:
 > **Confirmed** (directly evident):
 > - [rule] — This is explicit in [code/test/schema]."
 
-**Speculative rules generate questions automatically.** For each speculative rule, immediately call `add_question` with the uncertainty. Don't wait.
+**Speculative rules generate questions automatically.** For each speculative rule, immediately run `packages/agent-plugin/scripts/gh/scenario-question.sh <number> --body "..."` with the uncertainty. Don't wait.
 
 Present 1-3 rules at a time. Large batches cause rubber-stamping. Ask:
 > "Do these match your understanding? Anything missing? Anything wrong?"
@@ -70,7 +70,7 @@ Generate at least two examples per rule — one satisfying, one violating. The h
 
 ### 4. Capture Questions Immediately
 
-Any ambiguity becomes a question, not a guess. Call `add_question` the moment uncertainty surfaces.
+Any ambiguity becomes a question, not a guess. Run `packages/agent-plugin/scripts/gh/scenario-question.sh <number> --body "..."` the moment uncertainty surfaces.
 
 Say to the human:
 > "I'm not sure about [X]. I've captured it as a question on the scenario. We can't advance until it's resolved — but we can keep mapping other rules in the meantime."
@@ -97,28 +97,19 @@ Splitting signals:
 
 ### 6. Persist Rules and Examples
 
-Use `update_scenario` to save rules and examples directly on the scenario object.
+Update the GitHub Issue body via `gh issue edit <number> --body "..."` to save rules and examples directly on the scenario issue.
 
 ```
-Call update_scenario with:
-  id: "<scenario ID>"
-  rules: [
-    "A task must have a title",
-    "New tasks default to the 'todo' stage",
-    "Task titles must be unique within a board"
-  ]
-  examples: [
-    {
-      description: "Empty title rejected",
-      given: "No title provided",
-      expectedOutcome: "Rejected with 'title is required'"
-    },
-    {
-      description: "Valid task created with default stage",
-      given: "Title 'Fix bug' with no stage specified",
-      expectedOutcome: "Task exists in 'todo' stage"
-    }
-  ]
+Edit the issue body to include:
+
+## Rules
+- A task must have a title
+- New tasks default to the 'todo' stage
+- Task titles must be unique within a board
+
+## Examples
+- **Empty title rejected** — Given: No title provided → Rejected with 'title is required'
+- **Valid task created with default stage** — Given: Title 'Fix bug' with no stage specified → Task exists in 'todo' stage
 ```
 
 Rules are **business constraints in domain language** — what a product owner would say.
@@ -144,7 +135,7 @@ Say to the human:
 > Are you confident enough to move to domain design, or do we need more investigation?"
 
 Prerequisites for advancement to `mapped`:
-1. Rules and examples saved on the scenario via `update_scenario`
+1. Rules and examples saved in the scenario issue body via `gh issue edit`
 2. All questions on the scenario are resolved
 3. The human confirms the rules and examples reflect their intent
 

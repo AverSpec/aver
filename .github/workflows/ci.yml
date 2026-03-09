@@ -24,8 +24,6 @@ jobs:
         run: |
           pnpm --filter @aver/core run build
           pnpm --filter @aver/approvals run build
-          pnpm --filter @aver/workspace run build
-          pnpm --filter @aver/mcp-server run build
           pnpm --filter @aver/protocol-http run build
           pnpm --filter @aver/protocol-playwright run build
           pnpm --filter @aver/example-task-board run build
@@ -37,8 +35,6 @@ jobs:
           path: |
             packages/core/dist
             packages/approvals/dist
-            packages/workspace/dist
-            packages/mcp-server/dist
             packages/protocol-http/dist
             packages/protocol-playwright/dist
             examples/task-board/dist
@@ -75,16 +71,6 @@ jobs:
         if: ${{ !cancelled() }}
         run: pnpm exec vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/approvals.xml
         working-directory: packages/approvals
-
-      - name: Test workspace
-        if: ${{ !cancelled() }}
-        run: pnpm exec vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/workspace.xml
-        working-directory: packages/workspace
-
-      - name: Test mcp-server
-        if: ${{ !cancelled() }}
-        run: pnpm exec vitest run --reporter=junit --reporter=github-actions --reporter=default --outputFile.junit=../../test-results/mcp-server.xml
-        working-directory: packages/mcp-server
 
       - name: Test protocol-http
         if: ${{ !cancelled() }}

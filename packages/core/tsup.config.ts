@@ -25,6 +25,6 @@ export default defineConfig([
     sourcemap: true,
     splitting: true,
     shims: true,
-    external: ['vitest', '@aver/workspace'],
+    external: ['vitest'],
   },
 ])

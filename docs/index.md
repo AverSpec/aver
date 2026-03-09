@@ -115,8 +115,6 @@ Or follow a tutorial: [legacy code](tutorial), [greenfield](tutorial-greenfield)
 
 ## Packages
 
-### Core
-
 | Package | Description |
 |:--------|:------------|
 | [`@aver/core`](https://github.com/njackson/aver/tree/main/packages/core) | Domains, adapters, suite, CLI. Zero runtime dependencies. |
@@ -124,11 +122,4 @@ Or follow a tutorial: [legacy code](tutorial), [greenfield](tutorial-greenfield)
 | [`@aver/telemetry`](https://github.com/njackson/aver/tree/main/packages/telemetry) | Dev-to-prod telemetry verification — contract extraction and conformance checking |
 | [`@aver/protocol-http`](https://github.com/njackson/aver/tree/main/packages/protocol-http) | HTTP protocol adapter (fetch-based) |
 | [`@aver/protocol-playwright`](https://github.com/njackson/aver/tree/main/packages/protocol-playwright) | Playwright browser protocol adapter |
-
-### AI-assisted testing
-
-| Package | Description |
-|:--------|:------------|
-| [`@aver/agent-plugin`](https://github.com/njackson/aver/tree/main/packages/agent-plugin) | Claude Code plugin — MCP server + workflow and telemetry skills |
-| [`@aver/mcp-server`](https://github.com/njackson/aver/tree/main/packages/mcp-server) | MCP server for AI-assisted scenario management |
-| [`@aver/workspace`](https://github.com/njackson/aver/tree/main/packages/workspace) | Scenario workspace — storage, operations, backlog |
+| [`@aver/agent-plugin`](https://github.com/njackson/aver/tree/main/packages/agent-plugin) | Claude Code plugin — workflow and telemetry skills |

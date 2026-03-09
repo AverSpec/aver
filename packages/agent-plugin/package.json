@@ -1,7 +1,7 @@
 {
   "name": "@aver/agent-plugin",
   "version": "0.1.1",
-  "description": "Agent plugin for Aver — MCP server + maturity pipeline workflow skill",
+  "description": "Agent plugin for Aver — workflow skills + GitHub Issues scripts",
   "license": "MIT",
   "author": "Nate Jackson",
   "repository": {
@@ -11,20 +11,17 @@
   },
   "homepage": "https://github.com/njackson/aver",
   "bugs": "https://github.com/njackson/aver/issues",
-  "keywords": ["testing", "claude-code", "ai-agent", "mcp", "aver"],
+  "keywords": ["testing", "claude-code", "ai-agent", "aver"],
   "publishConfig": { "access": "public" },
   "engines": {
     "node": ">=18.0.0"
   },
-  "files": [".claude-plugin", "skills", ".mcp.json"],
+  "files": [".claude-plugin", "skills", "scripts"],
   "dependencies": {
     "@aver/skills": "workspace:^"
   },
   "scripts": {
     "sync-skills": "cp node_modules/@aver/skills/*.md skills/aver-workflow/",
     "prepublishOnly": "pnpm run sync-skills"
-  },
-  "peerDependencies": {
-    "@aver/mcp-server": "workspace:^"
   }
 }

@@ -13,7 +13,7 @@ User Story Mapping (Jeff Patton) for slicing large features into scenarios. The 
 
 ## What Story Mapping Produces
 
-A **map** of user activities → steps → details, organized left-to-right (time) and top-to-bottom (priority). Each detail below the MVP line becomes a candidate scenario via `capture_scenario`.
+A **map** of user activities → steps → details, organized left-to-right (time) and top-to-bottom (priority). Each detail below the MVP line becomes a candidate scenario via `scenario-capture.sh`.
 
 ## Facilitation Flow
 
@@ -90,11 +90,11 @@ Say to the human:
 >
 > Should I capture these? Any that should be combined or split differently?"
 
-For each confirmed behavior, call `capture_scenario`:
-- `behavior`: the detail description in domain language
-- `context`: the backbone step it belongs to
-- `story`: the backlog item / feature name
-- `mode`: `intended` (these are new behaviors, not observed ones)
+For each confirmed behavior, run `packages/agent-plugin/scripts/gh/scenario-capture.sh --title "..." --body "..."` with:
+- the detail description in domain language
+- the backbone step it belongs to
+- the backlog item / feature name
+- mode: `intended` (these are new behaviors, not observed ones)
 
 ### 6. Bridge to Example Mapping
 
@@ -105,7 +105,7 @@ Say to the human:
 >
 > Which one should we start with? I'd suggest **[scenario]** because [reason — foundational behavior, most uncertain, blocking others]."
 
-Link each scenario to the backlog item using `update_backlog_item` with the `scenarioIds` field.
+Link each scenario to the backlog item using `packages/agent-plugin/scripts/gh/backlog-update.sh` with the scenario issue numbers.
 
 ## When Story Mapping Surfaces Questions
 

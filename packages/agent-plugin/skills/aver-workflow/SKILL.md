@@ -9,10 +9,10 @@ Aver is a domain-driven acceptance testing framework. This skill facilitates **c
 
 ## On Session Start
 
-1. Call `get_workflow_phase` to determine the current phase.
-2. Load the corresponding guide from this directory based on the phase.
-3. Call `get_scenario_summary` to see scenario counts by stage.
-4. Call `get_backlog_items` (status: `in-progress`) to see what's actively being worked.
+1. Run `packages/agent-plugin/scripts/gh/scenario-list.sh` to see all scenarios and their stages.
+2. Count scenarios by stage to determine the current workflow phase (see Phase Detection below).
+3. Load the corresponding guide from this directory based on the phase.
+4. Run `packages/agent-plugin/scripts/gh/backlog-list.sh --status open` to see active backlog items.
 
 ## Three Session Types
 
@@ -21,7 +21,7 @@ The agent facilitates three types of collaborative session. Choose based on cont
 ### Discovery
 Explore what exists, capture observations as scenarios. Use when investigating a legacy system or when behaviors are unknown.
 - Read code, trace paths, capture approval baselines
-- Each distinct behavior observed → `capture_scenario` (mode: `observed`)
+- Each distinct behavior observed → `scenario-capture.sh --title "..." --body "..."`
 - Feeds into Example Mapping once the human reviews findings
 - Guide: `investigation.md`
 
@@ -35,7 +35,7 @@ Structured conversation for a single behavior: story → rules → examples → 
 ### Story Mapping
 Broader technique for slicing large features into scenarios. Map user activities → steps → details, then slice into stories that each become Example Mapping sessions.
 - Use for large features, unclear scope, or when a backlog item covers many behaviors
-- Each slice → `capture_scenario` → Example Mapping
+- Each slice → `scenario-capture.sh --title "..."` → Example Mapping
 - Guide: `story-mapping.md`
 
 ## Backlog → Scenario Bridge
@@ -45,8 +45,8 @@ Backlog items drive scenario creation. When a backlog item moves to `in-progress
 1. **Assess scope**: Is this one behavior or many?
    - One behavior → start an Example Mapping session directly
    - Many behaviors → start a Story Mapping session to slice first
-2. **Capture scenarios**: Each distinct behavior becomes a scenario via `capture_scenario`
-3. **Link**: Use `update_backlog_item` with `scenarioIds` to connect scenarios back to the backlog item
+2. **Capture scenarios**: Each distinct behavior becomes a scenario via `scenario-capture.sh --title "..." --body "..."`
+3. **Link**: Reference scenarios from the backlog item by adding issue links in comments or the backlog item body (e.g., `gh issue comment <backlog-number> --body "Scenarios: #1, #2, #3"`)
 4. **Facilitate**: Run Example Mapping for each captured scenario
 
 Ask the human:
@@ -83,7 +83,7 @@ The agent's job is to **facilitate**, not decide:
 - **Ask the right questions** — "What should happen when X?" not "X should do Y."
 - **Present evidence** — approval baselines, code traces, existing tests
 - **Propose rules and examples** — offer candidates for the human to confirm, refine, or reject
-- **Capture uncertainty** — any ambiguity → `add_question` immediately. Never guess.
+- **Capture uncertainty** — any ambiguity → `scenario-question.sh <number> --body "..."` immediately. Never guess.
 - **Lead with what you don't know** — present uncertain items first. Confirmed items can wait.
 - **Pause at checkpoints** — never advance a scenario without human confirmation
 
@@ -95,7 +95,7 @@ Three confidence levels affect how rules are handled:
 |-------|---------|--------|
 | **Confirmed** | Directly evident — explicit validation, schema constraint, test | Present as proposed rule |
 | **Inferred** | Pattern-based — naming conventions, similar modules | Present with caveat, ask for confirmation |
-| **Speculative** | Partial evidence, could be wrong | Present as question. Auto-generate `add_question` |
+| **Speculative** | Partial evidence, could be wrong | Present as question. Auto-generate `scenario-question.sh <number> --body "..."` |
 
 Speculative rules generate questions automatically. The scenario cannot advance until all questions (including speculative-rule questions) are resolved.
 
@@ -123,63 +123,96 @@ This skill facilitates the outer loop. It does NOT own:
 
 When a scenario reaches `specified`, load `implementation.md` for the ATDD double loop. When investigating legacy code, load `characterization.md` for locking existing behavior.
 
-## MCP Tool Reference
+## Phase Detection
 
-### Scenario Tools
+Run `scenario-list.sh` and count scenarios per stage to determine the current phase:
 
-| Tool | Purpose |
-|------|---------|
-| `capture_scenario` | Record an observed or intended behavior |
-| `get_scenarios` | List scenarios, filter by stage/story/keyword |
-| `get_scenario_summary` | Counts per stage, open questions |
-| `advance_scenario` | Move a scenario to the next stage |
-| `revisit_scenario` | Move a scenario back to an earlier stage |
-| `get_advance_candidates` | Scenarios eligible for advancement |
-| `add_question` | Attach an open question to a scenario |
-| `resolve_question` | Mark a question as answered |
-| `link_to_domain` | Connect a scenario to domain operations and tests |
-| `update_scenario` | Update scenario fields (rules, examples, seams, constraints, behavior, context, story) |
-| `confirm_scenario` | Human-only gate — sets confirmedBy required before characterized → mapped |
-| `delete_scenario` | Remove a scenario from the workspace |
-| `export_scenarios` | Export as markdown or JSON |
-| `import_scenarios` | Import from JSON |
+| Phase | Condition |
+|-------|-----------|
+| kickoff | No scenarios exist |
+| investigation | Most scenarios at captured |
+| mapping | Most scenarios at characterized or captured→mapped transition |
+| specification | Most scenarios at mapped |
+| implementation | Most scenarios at specified |
+| verification | Most scenarios at implemented |
+| discovery | Mix of stages, ongoing work |
 
-### Backlog Tools
+## Structured Issue Body
 
-| Tool | Purpose |
-|------|---------|
-| `create_backlog_item` | Create a new backlog item |
-| `update_backlog_item` | Update status, priority, description, etc. |
-| `delete_backlog_item` | Remove a backlog item |
-| `get_backlog_items` | List items with filters (status, priority, type) |
-| `get_backlog_summary` | Counts by status and priority |
-| `move_backlog_item` | Reorder or reprioritize |
+Scenario content is stored in the GitHub Issue body using structured markdown. The skill constructs this body when creating/updating scenarios and parses the sections when reading.
 
-### Domain Tools
+```markdown
+## Behavior
+[description]
 
-| Tool | Purpose |
-|------|---------|
-| `list_domains` | All registered domains |
-| `get_domain_vocabulary` | Actions, queries, assertions for a domain |
-| `list_adapters` | Which protocols are implemented |
-| `describe_domain_structure` | Generate a CRUD domain template |
-| `describe_adapter_structure` | Handler signatures for a domain + protocol |
-| `get_project_context` | File paths and naming conventions |
+## Context
+[context]
 
-### Testing Tools
+## Rules
+- [rule 1]
+- [rule 2]
 
-| Tool | Purpose |
-|------|---------|
-| `run_tests` | Run the test suite (filter by domain or adapter) |
-| `get_failure_details` | Inspect failures with error messages and traces |
-| `get_test_trace` | Execution trace for a specific test |
-| `get_run_diff` | Compare last two runs |
+## Examples
+- [example 1]
+- [example 2]
 
-### Phase
+## Questions
+- [ ] [open question]
+- [x] [resolved question] → [resolution]
 
-| Tool | Purpose |
-|------|---------|
-| `get_workflow_phase` | Detect current phase from scenario state |
+## Seams
+- [seam 1]
+
+## Domain Link
+- Domain: [name]
+- Operations: [list]
+- Test: [path]
+```
+
+When updating a scenario, construct the full body and run `gh issue edit <number> --body "..."`. When reading, parse the sections from the issue body returned by `scenario-get.sh <number>`.
+
+## Script Reference
+
+All scripts are in `packages/agent-plugin/scripts/gh/` relative to the project root.
+
+### Setup
+
+| Script | Purpose |
+|--------|---------|
+| `setup-labels.sh` | One-time setup of GitHub labels for stages, priorities, and types |
+
+### Scenario Scripts
+
+| Script | Purpose |
+|--------|---------|
+| `scenario-capture.sh --title "..." [--body "..."]` | Record an observed or intended behavior. Returns `{number, url}` |
+| `scenario-list.sh [--stage X] [--search "..."]` | List scenarios, filter by stage or keyword. Returns JSON array |
+| `scenario-get.sh <number>` | Get full issue JSON for a scenario |
+| `scenario-advance.sh <number> --to <stage>` | Move a scenario to the next stage. Returns `{number, url, stage}` |
+| `scenario-question.sh <number> --body "..."` | Attach an open question as a comment. Returns comment URL |
+| `scenario-resolve.sh <number> --comment-id <id> --body "..."` | Resolve a question comment. Returns updated comment URL |
+
+### Backlog Scripts
+
+| Script | Purpose |
+|--------|---------|
+| `backlog-create.sh --title "..." [--priority P1] [--type feature] [--body "..."]` | Create a new backlog item. Returns `{number, url}` |
+| `backlog-list.sh [--status open] [--priority P1] [--type feature]` | List backlog items with filters. Returns JSON array |
+| `backlog-update.sh <number> [--add-label ...] [--remove-label ...] [--body "..."]` | Update labels or body of a backlog item. Returns URL |
+| `backlog-close.sh <number>` | Close a backlog item. Returns URL |
+
+### Direct `gh` Commands
+
+For operations without a dedicated script, use `gh` directly:
+
+| Operation | Command |
+|-----------|---------|
+| Update scenario body | `gh issue edit <number> --body "..."` |
+| Confirm scenario (human gate) | `gh issue comment <number> --body "Confirmed by: <name>"` |
+| Link scenario to domain | Update the "Domain Link" section via `gh issue edit <number> --body "..."` |
+| Delete scenario | `gh issue close <number> --reason "not planned"` |
+| Run tests | `pnpm exec aver run` (filter with `--domain` or `--adapter`) |
+| Inspect domain vocabulary | Read the domain source file directly |
 
 ## File References
 

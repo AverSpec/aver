@@ -6,68 +6,61 @@ Agent plugin for [Aver](https://github.com/njackson/aver) — domain-driven acce
 
 ## What's Included
 
-- **MCP Server** — pre-configured `aver-mcp` with tools for exploring domains, managing scenarios, running tests, and scaffolding code
-- **Skill** — `aver-workflow` facilitates scenario mapping and domain design, delegates implementation to other skills (5-stage pipeline: captured → characterized → mapped → specified → implemented)
+- **Skills** — `aver-workflow` facilitates scenario mapping and domain design (5-stage pipeline: captured → characterized → mapped → specified → implemented). `telemetry` augments the workflow with OTel observability patterns.
+- **Scripts** — Bash scripts wrapping `gh` CLI for managing scenarios and backlog items as GitHub Issues
 
 ## Installation
 
-Install the MCP server (peer dependency) and the plugin:
+Register the plugin in `.claude/settings.json`:
 
-```bash
-npm install @aver/mcp-server
-claude plugin add @aver/agent-plugin
+```json
+{
+  "permissions": {
+    "allow": ["Bash(packages/agent-plugin/scripts/gh/*)"]
+  }
+}
 ```
 
-Or point Claude Code at the plugin directory:
+## Setup
+
+Run the label setup script once per repository:
 
 ```bash
-claude --plugin-dir path/to/node_modules/@aver/agent-plugin
+packages/agent-plugin/scripts/gh/setup-labels.sh
 ```
 
 ## Usage
 
 Once installed, Claude Code can:
 
-1. Explore your Aver domains and adapters via MCP tools
-2. Follow the scenario mapping workflow when adding features
+1. Follow the scenario mapping workflow when adding features
+2. Manage scenarios and backlog items as GitHub Issues via scripts
 3. Use `/aver:aver-workflow` to invoke the skill directly
 
-## MCP Tools
+## Scripts
 
-### Scenario Tools
+### Scenario Scripts
 
-| Tool | Description |
-|------|-------------|
-| `get_workflow_phase` | Determine current workflow phase |
-| `get_scenario_summary` | Overview of scenarios by stage |
-| `get_scenarios` | List scenarios, optionally filtered by stage |
-| `capture_scenario` | Capture a new scenario (observed behavior or confirmed intent) |
-| `advance_scenario` | Move scenario to next maturity stage |
-| `revisit_scenario` | Move scenario back to a previous stage |
-| `add_question` | Attach a question to a scenario |
-| `resolve_question` | Mark a question as answered |
-| `link_to_domain` | Connect scenario to an Aver domain |
-| `get_advance_candidates` | Find scenarios ready to advance |
-| `export_scenarios` | Export scenarios as portable JSON |
-| `import_scenarios` | Import scenarios from JSON |
+| Script | Description |
+|--------|-------------|
+| `scenario-capture.sh` | Capture a new scenario as a GitHub Issue |
+| `scenario-list.sh` | List scenarios, filter by stage or keyword |
+| `scenario-get.sh` | Get full details for a scenario |
+| `scenario-advance.sh` | Move scenario to the next pipeline stage |
+| `scenario-question.sh` | Attach an open question to a scenario |
+| `scenario-resolve.sh` | Mark a question as resolved |
 
-### Domain & Testing Tools
+### Backlog Scripts
 
-| Tool | Description |
-|------|-------------|
-| `list_domains` | List all registered domains |
-| `get_domain_vocabulary` | Get actions, queries, assertions for a domain |
-| `list_adapters` | List all adapters with domain and protocol |
-| `get_project_context` | Get project file paths and conventions |
-| `run_tests` | Run the test suite |
-| `get_failure_details` | Inspect test failures |
-| `get_test_trace` | Get execution trace for a test |
-| `get_run_diff` | Compare last two test runs |
-| `describe_domain_structure` | Generate a domain template |
-| `describe_adapter_structure` | Describe adapter handler structure |
+| Script | Description |
+|--------|-------------|
+| `backlog-create.sh` | Create a new backlog item |
+| `backlog-list.sh` | List backlog items with filters |
+| `backlog-update.sh` | Update labels, title, or body |
+| `backlog-close.sh` | Close a backlog item |
 
 ## Requirements
 
 - Node.js >= 18
 - An Aver project with `aver.config.ts`
-- `@aver/mcp-server` installed (peer dependency)
+- `gh` CLI authenticated (`gh auth status`)

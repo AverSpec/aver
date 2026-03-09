@@ -8,18 +8,16 @@ New features skip investigation/characterization: `captured` -> `mapped` -> `spe
 
 ## 1. Capture Intent
 
-```json
-// Tool: capture_scenario
-{ "behavior": "Users can cancel a task, making it visible but frozen",
-  "context": "Human requested feature addition to task-board domain",
-  "mode": "intended" }
-// -> { "id": "sc_001", "stage": "captured" }
+```bash
+// Run: scenario-capture.sh --title "Users can cancel a task, making it visible but frozen"
+//   (body includes context: Human requested feature addition to task-board domain, mode: intended)
+// -> creates issue #1, stage: captured
 ```
 
 ## 2. Scenario Mapping
 
-```json
-// Tool: get_domain_vocabulary { "domain": "task-board" }
+```bash
+// Read the domain source file for task-board vocabulary
 // -> actions: createTask, deleteTask, moveTask, assignTask
 //    assertions: taskInStatus, taskAssignedTo, taskCount
 ```
@@ -31,14 +29,10 @@ New features skip investigation/characterization: `captured` -> `mapped` -> `spe
 4. Cancelling an already-cancelled task is idempotent
 5. Un-cancelling restores to "todo"
 
-```json
-// Tool: add_question
-{ "scenarioId": "sc_001",
-  "text": "Un-cancel: restore original status or always reset to 'todo'?" }
+```bash
+// Run: scenario-question.sh 1 --body "Un-cancel: restore original status or always reset to 'todo'?"
 // Human: "Always reset to 'todo'."
-// Tool: resolve_question
-{ "scenarioId": "sc_001", "questionId": "q_001",
-  "answer": "Always resets to 'todo', regardless of previous status." }
+// Run: scenario-resolve.sh 1 --comment-id <id> --body "Always resets to 'todo', regardless of previous status."
 ```
 
 | Rule | Given | When | Then |
@@ -50,12 +44,11 @@ New features skip investigation/characterization: `captured` -> `mapped` -> `spe
 | Idempotent | Already cancelled | cancelTask again | Still cancelled |
 | Un-cancel | Task cancelled | uncancelTask | Status is "todo" |
 
-```json
-// Tool: advance_scenario
-{ "id": "sc_001",
-  "rationale": "Example Mapping complete. 5 rules, 6 examples. Question resolved. Human confirmed.",
-  "promotedBy": "agent" }
-// -> { "stage": "mapped" }
+```bash
+// Run: scenario-advance.sh 1 --to mapped
+//   (comment includes rationale: Example Mapping complete. 5 rules, 6 examples.
+//    Question resolved. Human confirmed.)
+// -> issue #1 label updated to stage:mapped
 ```
 
 ## 3. Specification
@@ -64,25 +57,25 @@ New features skip investigation/characterization: `captured` -> `mapped` -> `spe
 
 **Human:** "Yes."
 
-```json
-// Tool: advance_scenario
-{ "id": "sc_001",
-  "rationale": "Vocabulary confirmed: cancelTask, uncancelTask, taskIsCancelled, actionRejected.",
-  "promotedBy": "agent" }
-// -> { "stage": "specified" }
+```bash
+// Run: scenario-advance.sh 1 --to specified
+//   (comment includes rationale: Vocabulary confirmed: cancelTask, uncancelTask,
+//    taskIsCancelled, actionRejected.)
+// -> issue #1 label updated to stage:specified
 ```
 
 ## 4. Handoff
 
 Dispatch to TDD skill. Subagent writes domain additions, tests, and adapters.
 
-```json
-// Tool: run_tests { "domain": "task-board" } -> { "passed": 11, "failed": 0 }
-// Tool: link_to_domain
-{ "scenarioId": "sc_001", "domainOperation": "taskBoard.cancelTask",
-  "testNames": ["cancel a task", "cancelled task cannot be moved",
-    "cancelled task cannot be reassigned", "cancelling already cancelled is idempotent",
-    "un-cancel restores task to todo", "cancelled task appears in cancelled count"] }
+```bash
+// Run: pnpm exec aver run   -> 11 passed, 0 failed
+
+// Run: gh issue edit 1 --body "..."
+//   (update Domain Link section: taskBoard.cancelTask ->
+//    "cancel a task", "cancelled task cannot be moved",
+//    "cancelled task cannot be reassigned", "cancelling already cancelled is idempotent",
+//    "un-cancel restores task to todo", "cancelled task appears in cancelled count")
 ```
 
 **Agent:** "11 tests passing (5 existing + 6 new). No regressions. All scenarios linked."

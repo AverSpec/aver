@@ -9,7 +9,7 @@ nav_order: 5
 
 The scenario pipeline is a maturity model for behavioral specifications. It tracks what you know about a behavior -- from a vague observation all the way to a verified implementation. The pipeline exists to enforce one discipline: **you cannot implement what you have not yet understood.**
 
-This is not an AI feature. It is a team workflow tool. You can use it with sticky notes on a wall, a CLI, or MCP tools connected to an agent. The stages are the discipline; the tooling is optional.
+This is not an AI feature. It is a team workflow tool. You can use it with sticky notes on a wall, shell scripts, or an AI agent. The stages are the discipline; the tooling is optional.
 
 ## Why stages matter
 
@@ -75,35 +75,29 @@ These blocks are the pipeline's teeth. Without them, stages become suggestions. 
 
 ## Using the pipeline
 
-### With the CLI
+### With GitHub Issues scripts
 
-The `aver workspace` commands manage scenarios through the pipeline:
+The `@aver/agent-plugin` package includes shell scripts that manage scenarios as GitHub Issues through the pipeline:
 
 ```bash
 # Capture a new scenario
-aver workspace capture "users can reset password via email"
+./packages/agent-plugin/scripts/gh/scenario-capture.sh "users can reset password via email"
 
-# See where everything stands
-aver workspace status
+# List all scenarios (filter by stage to see where everything stands)
+./packages/agent-plugin/scripts/gh/scenario-list.sh
+./packages/agent-plugin/scripts/gh/scenario-list.sh --stage captured
 
 # Advance after investigation
-aver workspace advance <id> --rationale "traced auth flow, found seam in AuthService" --by developer
+./packages/agent-plugin/scripts/gh/scenario-advance.sh <id> --rationale "traced auth flow, found seam in AuthService" --by developer
 
 # Record a question that blocks advancement
-aver workspace question <id> "does the reset link expire after first use?"
+./packages/agent-plugin/scripts/gh/scenario-question.sh <id> "does the reset link expire after first use?"
 
 # Resolve the question when answered
-aver workspace resolve <id> <question-id> "yes, single-use, 24h expiry"
-
-# Check which scenarios are ready to advance
-aver workspace candidates
+./packages/agent-plugin/scripts/gh/scenario-resolve.sh <id> <question-id> "yes, single-use, 24h expiry"
 ```
 
-See the [Workspace CLI](workspace-cli) guide for the full command reference.
-
-### With MCP tools
-
-The same operations are available as MCP tools: `capture_scenario`, `advance_scenario`, `add_question`, `resolve_question`, `confirm_scenario`, and others. These are designed for AI agents but work from any MCP client.
+Scenarios are tracked as GitHub Issues with a `scenario` label and `stage:captured`, `stage:characterized`, `stage:mapped`, `stage:specified`, or `stage:implemented` labels. The scripts enforce the same hard blocks described above.
 
 ### Manually
 
@@ -132,4 +126,4 @@ The pipeline keeps an AI agent honest. Without it, an agent will happily generat
 
 The pipeline turns the agent from an autonomous code generator into a constrained collaborator. It writes code only for behaviors that have been understood, agreed upon, and specified.
 
-See the [AI-Assisted Testing](ai-assisted) guide for setup and detailed usage with Claude Code and MCP tools.
+See the [AI-Assisted Testing](ai-assisted) guide for setup and detailed usage with Claude Code.

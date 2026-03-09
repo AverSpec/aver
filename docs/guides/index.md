@@ -18,7 +18,5 @@ Task-oriented how-to guides for common Aver tasks.
 | [Scenario Pipeline](scenario-pipeline) | Manage scenario maturity from capture through implementation |
 | [Telemetry](telemetry) | Add observability declarations to your domain |
 | [CI Integration](ci-integration) | Run Aver tests in your CI pipeline |
-| [AI-Assisted Testing](ai-assisted) | Use MCP tools and agent skills for scenario management |
-| [Workspace CLI](workspace-cli) | Manage scenarios from the command line |
-| [MCP Server](mcp-server) | Detailed MCP tool reference for AI assistants |
+| [AI-Assisted Testing](ai-assisted) | Use agent skills and GitHub Issues for scenario management |
 | [Example App](example-app) | Full working task board example |

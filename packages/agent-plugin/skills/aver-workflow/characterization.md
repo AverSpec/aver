@@ -38,7 +38,7 @@ Implementation details (which function, which line, which table) go in **seams**
 
 ## From Characterization to Scenario Capture
 
-Characterization tests document what the system DOES. Each characterized behavior is a candidate for scenario capture — call `capture_scenario` with `mode: "observed"` for each distinct behavior found. These scenarios carry characterization evidence (approval baselines, seams, constraints) into the Example Mapping session, where the human confirms whether the behavior is intended. Behaviors confirmed as intended advance through mapping to specification. Behaviors identified as bugs become new `intended` mode scenarios for correction.
+Characterization tests document what the system DOES. Each characterized behavior is a candidate for scenario capture — run `packages/agent-plugin/scripts/gh/scenario-capture.sh --title "..." --body "..."` for each distinct behavior found. These scenarios carry characterization evidence (approval baselines, seams, constraints) into the Example Mapping session, where the human confirms whether the behavior is intended. Behaviors confirmed as intended advance through mapping to specification. Behaviors identified as bugs become new `intended` mode scenarios for correction.
 
 ## Anti-Patterns
 

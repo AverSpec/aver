@@ -63,9 +63,7 @@ npx aver run
 | [`@aver/telemetry`](packages/telemetry) | Dev-to-prod telemetry verification — contract extraction and conformance checking |
 | [`@aver/protocol-http`](packages/protocol-http) | HTTP protocol adapter |
 | [`@aver/protocol-playwright`](packages/protocol-playwright) | Playwright browser protocol adapter |
-| [`@aver/workspace`](packages/workspace) | Scenario workspace — storage, operations, backlog |
-| [`@aver/mcp-server`](packages/mcp-server) | MCP server for AI-assisted scenario management |
-| [`@aver/agent-plugin`](packages/agent-plugin) | Claude Code plugin — MCP + workflow/telemetry skills |
+| [`@aver/agent-plugin`](packages/agent-plugin) | Claude Code plugin — workflow and telemetry skills |
 
 ## License
 

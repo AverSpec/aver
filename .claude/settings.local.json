@@ -76,7 +76,21 @@
       "Bash(pnpm:*)",
       "Bash(gh run view:*)",
       "Bash(xargs -I{} sh -c 'echo \"\"=== {} ===\"\" && cat {} | node -e \"\"const j=JSON.parse\\(require\\(\\\\\"\"fs\\\\\"\"\\).readFileSync\\(\\\\\"\"/dev/stdin\\\\\"\",\\\\\"\"utf8\\\\\"\"\\)\\); console.log\\(j.name, j.version, \\\\\"\"deps:\\\\\"\", Object.keys\\(j.dependencies||{}\\).join\\(\\\\\"\",\\\\\"\"\\) || \\\\\"\"none\\\\\"\", \\\\\"\"peerDeps:\\\\\"\", Object.keys\\(j.peerDependencies||{}\\).join\\(\\\\\"\",\\\\\"\"\\) || \\\\\"\"none\\\\\"\"\\)\"\"')",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "WebFetch(domain:registry.npmjs.org)",
+      "Bash(git:*)",
+      "Bash(gh run:*)",
+      "mcp__aver__update_scenario",
+      "mcp__aver__confirm_scenario",
+      "mcp__aver__get_backlog_summary",
+      "mcp__aver__create_backlog_item",
+      "mcp__aver__get_backlog_items",
+      "mcp__aver__move_backlog_item",
+      "mcp__aver__update_backlog_item",
+      "mcp__aver__run_tests",
+      "mcp__aver__batch_advance_scenarios",
+      "Bash(CI=1 npx vitest:*)",
+      "mcp__aver__add_question"
     ]
   },
   "enableAllProjectMcpServers": true,
@@ -114,5 +128,9 @@
         ]
       }
     ]
+  },
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true
   }
 }

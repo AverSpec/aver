@@ -57,7 +57,7 @@ Wait for explicit approval. Names become the shared language between tests, adap
 
 ## Define Adapter Interfaces
 
-After human approves names, use `describe_adapter_structure` MCP tool to show handler signatures. Review with the human if the handler shapes look correct.
+After human approves names, read the domain file to see the current vocabulary, then design adapter handler signatures based on the domain operations. Review with the human if the handler shapes look correct.
 
 ## Adapter-First Design
 

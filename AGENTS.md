@@ -2,20 +2,20 @@
 
 ## Workflow
 
-Always use the `aver:aver-workflow` skill for development work. This drives the scenario maturity pipeline (captured → characterized → mapped → specified → implemented) through MCP tools and phase-specific skill guides.
+Always use the `aver:aver-workflow` skill for development work. This drives the scenario maturity pipeline (captured → characterized → mapped → specified → implemented) through GitHub Issues and phase-specific skill guides.
 
 On session start:
-1. Call `get_workflow_phase` to determine the current phase
-2. Load the corresponding guide from the aver-workflow skill
-3. Call `get_scenario_summary` to see scenario counts by stage
+1. Run `packages/agent-plugin/scripts/gh/scenario-list.sh` to see scenarios and their stages
+2. Count scenarios by stage to determine the current workflow phase
+3. Load the corresponding guide from the aver-workflow skill
+4. Run `packages/agent-plugin/scripts/gh/backlog-list.sh --status open` to see active backlog items
 
 After completing backlog items or bug fixes, always commit separately per item, push to remote, and update the backlog tracking system before moving on.
 
 ## Build
 
-Must build workspace THEN core before running CLI:
 ```
-pnpm --filter @aver/workspace run build && pnpm --filter @aver/core run build
+pnpm --filter @aver/core run build
 ```
 
 CLI entry: `node packages/core/dist/cli.js` (ESM)
@@ -33,15 +33,16 @@ Expected failures: 7 Playwright tests (need browser).
 - Filter by adapter: `aver run --adapter unit`
 - Filter by domain: `aver run --domain TaskBoard`
 - Run specific file: `aver run tests/my-test.spec.ts`
-- Build core before running MCP server or example tests: `pnpm build --filter aver`
 - Only `*.approved.*` files are committed to git. `*.received.*` and `*.diff.*` are gitignored.
 
 ## Architecture
 
-- `@aver/workspace` — scenario workspace engine (WorkspaceOps, BacklogOps, storage)
 - `@aver/core` — domain-driven acceptance testing framework
-- `@aver/mcp-server` — MCP server for workspace tools
-- `@aver/eval` — LLM verdict scoring against rubrics
+- `@aver/approvals` — approval testing (structural diffs, visual screenshots)
+- `@aver/telemetry` — dev-to-prod telemetry verification
+- `@aver/protocol-http` — HTTP protocol adapter
+- `@aver/protocol-playwright` — Playwright browser protocol adapter
+- `@aver/agent-plugin` — Claude Code plugin (workflow skills + GitHub Issues scripts)
 - `@aver/agent` — moved to [aver-experimental](https://github.com/njackson/aver-experimental)
 
 ## Package Manager
@@ -77,8 +78,7 @@ All plans, design docs, and working documents go in `.aver/` (gitignored — nev
 │   ├── master-plan.md
 │   ├── roadmap.md
 │   └── YYYY-MM-DD-description.md
-├── backlog.md      # Improvements, ideas, and DX issues to address later
-└── runs/           # Test run snapshots (managed by MCP server)
+└── backlog.md      # Improvements, ideas, and DX issues to address later
 ```
 
 - **Plans** (`.aver/plans/`): Detailed implementation plans, design documents, and specs. Name with date prefix: `YYYY-MM-DD-description.md`. These are working documents for development workflow, not committed.

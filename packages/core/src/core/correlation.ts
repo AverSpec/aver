@@ -1,4 +1,4 @@
-import type { TraceEntry } from './trace'
+import type { TraceEntry, TelemetryMatchResult } from './trace'
 
 export interface CorrelationGroup {
   key: string
@@ -33,8 +33,8 @@ export function verifyCorrelation(trace: ReadonlyArray<TraceEntry>): Correlation
   const stepsWithTelemetry: Array<{
     name: string
     index: number
-    expected: Record<string, string | number | boolean>
-    matchedSpan?: TraceEntry['telemetry'] extends { matchedSpan?: infer M } ? M : never
+    expected: Record<string, unknown>
+    matchedSpan?: TelemetryMatchResult['matchedSpan']
   }> = []
 
   for (let i = 0; i < trace.length; i++) {

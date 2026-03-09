@@ -2,7 +2,7 @@
 layout: default
 title: MCP Server
 parent: Guides
-nav_order: 2
+nav_order: 9
 ---
 
 # MCP Server
@@ -99,3 +99,5 @@ For debugging existing failures:
 3. **Verify:** `run_tests` → `get_run_diff` → confirms failures are now passing
 
 The plugin's `aver-workflow` skill teaches this pattern automatically, so the AI follows it without needing manual guidance.
+
+See [AI-Assisted Testing](ai-assisted) for an overview of all AI integration options.

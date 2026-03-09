@@ -6,17 +6,39 @@ nav_order: 1
 
 # Aver
 
-Domain-driven acceptance testing for TypeScript.
+Know your system works.
 {: .fs-6 .fw-300 }
+
+Domain-driven acceptance testing for TypeScript.
+{: .fs-5 .fw-300 }
 
 [Tutorial](tutorial){: .btn .btn-primary .fs-5 .mb-4 .mb-md-0 .mr-2 }
 [GitHub](https://github.com/njackson/aver){: .btn .fs-5 .mb-4 .mb-md-0 }
 
 ---
 
-## Define once, verify everywhere
+## Lock it down. Name it. Prove it.
 
-Write tests in domain language. Run them against any adapter — in-memory, HTTP, browser.
+Most teams don't start with a green field. They start with code that works — probably — and the mandate to change it without breaking anything. Aver meets you wherever you are in that journey.
+
+### Lock it down — start with what you have
+
+Legacy systems have it worst. The test pyramid is inverted, most coverage lives at the E2E level because the code wasn't designed for unit testing. The usual advice is to add unit tests, but that requires refactoring, which requires tests you don't have.
+
+Aver breaks the cycle. Start with `approve()` to lock in current behavior as a snapshot. You don't need to understand the system yet — just capture what it does today so you'll know when something changes tomorrow.
+
+```typescript
+test('checkout flow produces order confirmation', async () => {
+  const result = await checkout(cart)
+  await approve(result, 'checkout-confirmation')
+})
+```
+
+First you lock in what the system does. Then you name what it *should* do.
+
+### Name it — extract a shared vocabulary
+
+As understanding deepens, patterns emerge. "Create a task," "move it to in-progress," "verify it landed" — these are domain operations, not implementation details. Aver gives you a spine to name them once and run them at every level.
 
 ```typescript
 const { test } = suite(taskBoard)
@@ -34,39 +56,48 @@ test('move task through workflow', async ({ given, when, then }) => {
  ✓ move task through workflow [playwright]  280ms
 ```
 
-Same test. Three adapters. Zero code duplication.
+Same test. Three adapters. Zero code duplication. When two adapters disagree on a behavior, that disagreement surfaces a real bug — not a flaky test.
 
----
-
-## Why this matters
-
-Every project of sufficient complexity builds a domain language for its tests. Page objects, test data factories, service layer abstractions, custom assertion helpers — every team arrives at some subset of this infrastructure, builds it from scratch, and rebuilds it on the next project.
-
-The testing pyramid tells you to write tests at multiple levels. What it doesn't tell you is how to stop duplicating behavioral intent across those levels. "Creating a task puts it in backlog" is the same requirement whether you're verifying it against a class, an API, or a browser. Three tests, one requirement, three places to update when the requirement changes.
-
-Aver gives you the missing spine: a shared domain vocabulary that runs at every level through adapters. You still write unit tests for TDD design feedback. You still write level-specific tests for concerns unique to each layer. But the core behavioral contract gets described once and verified everywhere.
-
-### The three layers
+**Domains** declare vocabulary — actions, queries, and assertions in business language. **Adapters** bind that vocabulary to real systems. **Tests** speak only domain language and run against any adapter.
 
 ```
 Domain (what)  →  Adapter (how)  →  Test (verify)
 ```
 
-**Domains** declare vocabulary — actions, queries, and assertions in business language. **Adapters** bind that vocabulary to real systems. **Tests** speak only domain language and run against any adapter.
+The pyramid grows *inward*, from E2E toward unit, instead of the usual advice of building from unit outward. Start with an E2E adapter — that's the only handle you have into a tightly coupled system. As you refactor and create clean internal boundaries, add adapters at each new seam.
 
-### Legacy code: start from the outside in
+### Prove it — verify your system is observable
 
-Legacy systems have it worst — the test pyramid is inverted, with most coverage at the end-to-end level because the code wasn't designed for unit testing. The usual advice is to add unit tests, but that requires refactoring production code, which requires tests you don't have.
+Correct behavior isn't enough. Your system can pass every test and still be a black box in production — spans missing, traces disconnected, the relationships between operations silently destroyed. Observability data is made powerful by context: the connections between a checkout span, a payment span, and a fulfillment span are worth more than any of them alone. When those connections break, your dashboards go dark and your agents can't validate what they shipped.
 
-Aver breaks the cycle. Start with `approve()` to lock in current behavior. Extract a domain vocabulary as understanding deepens. Write an E2E adapter first — that's the only handle you have into a tightly coupled system. As you refactor and create clean internal boundaries, add adapters at each new seam. The pyramid grows *inward*, from E2E toward unit, instead of the usual advice of building from unit outward.
+Aver lets you declare expected telemetry alongside domain operations and verify that the relational seams hold.
 
-First you lock in what the system does. Then you name what it *should* do. The tools are different; the impulse is the same.
+```typescript
+checkout: action<{ orderId: string }>({
+  telemetry: (p) => ({
+    span: 'order.checkout',
+    attributes: { 'order.id': p.orderId },
+  }),
+}),
+fulfillOrder: action<{ orderId: string }>({
+  telemetry: (p) => ({
+    span: 'order.fulfill',
+    attributes: { 'order.id': p.orderId },
+  }),
+}),
+```
 
-### Economics
+Both operations declare `order.id`. When a test calls both with the same value, Aver automatically verifies two things: each span carries the right attributes, and the spans are causally connected — same trace or linked. If someone refactors the fulfillment handler and breaks the trace propagation, the test fails before it ships.
+
+The same test that proves "checkout creates an order" also proves "checkout and fulfillment are connected in the trace." Observability becomes a testable contract — not just "do the spans exist?" but "are the relationships intact?"
+
+---
+
+## Economics
 
 Five domain operations can support fifty tests that compose them in different ways. Vocabulary grows with *domain surface area* (slowly). Tests grow with *scenarios* (fast). The adapter investment is amortized across every scenario.
 
-With a single adapter, Aver's overhead matches well-structured page objects — you'd extract those anyway. The cross-adapter benefit kicks in at the second adapter: when two adapters disagree on a behavior, that disagreement surfaces a real bug.
+With a single adapter, Aver's overhead matches well-structured page objects — you'd extract those anyway. The cross-adapter benefit kicks in at the second adapter, and the telemetry verification benefit is there from the first test.
 
 ---
 
@@ -84,10 +115,13 @@ Or follow the [tutorial](tutorial) for a hands-on walkthrough.
 
 ## Packages
 
+### Core
+
 | Package | Description |
 |:--------|:------------|
 | [`@aver/core`](https://github.com/njackson/aver/tree/main/packages/core) | Domains, adapters, suite, CLI. Zero runtime dependencies. |
 | [`@aver/approvals`](https://github.com/njackson/aver/tree/main/packages/approvals) | Approval testing — structural diffs and visual screenshots |
+| [`@aver/telemetry`](https://github.com/njackson/aver/tree/main/packages/telemetry) | Dev-to-prod telemetry verification — contract extraction and conformance checking |
 | [`@aver/protocol-http`](https://github.com/njackson/aver/tree/main/packages/protocol-http) | HTTP protocol adapter (fetch-based) |
 | [`@aver/protocol-playwright`](https://github.com/njackson/aver/tree/main/packages/protocol-playwright) | Playwright browser protocol adapter |
 

@@ -7,7 +7,7 @@ nav_order: 2
 
 # Multi-Adapter Testing
 
-Run the same test against multiple implementations — in-memory, HTTP API, and browser UI. This is Aver's core value proposition: write once, verify everywhere.
+Run the same test against multiple implementations — in-memory, HTTP API, and browser UI. Define behavior once, verify it everywhere.
 
 ## Setup
 
@@ -38,6 +38,7 @@ Tests against in-memory objects. Runs in ~1ms.
 ```typescript
 // adapters/task-board.unit.ts
 import { implement, unit } from '@aver/core'
+import { expect } from 'vitest'
 import { Board } from '../src/board'
 import { taskBoard } from '../domains/task-board'
 
@@ -50,8 +51,7 @@ export const unitAdapter = implement(taskBoard, {
   assertions: {
     taskInStatus: async (board, { title, status }) => {
       const task = board.details(title)
-      if (task?.status !== status)
-        throw new Error(`Expected "${title}" in "${status}"`)
+      expect(task?.status).toBe(status)
     },
   },
 })
@@ -64,6 +64,7 @@ Tests against a REST API. Runs in ~10ms.
 ```typescript
 // adapters/task-board.http.ts
 import { implement } from '@aver/core'
+import { expect } from 'vitest'
 import { http } from '@aver/protocol-http'
 import { taskBoard } from '../domains/task-board'
 
@@ -81,8 +82,7 @@ export const httpAdapter = implement(taskBoard, {
     taskInStatus: async (ctx, { title, status }) => {
       const res = await ctx.get(`/tasks/${encodeURIComponent(title)}`)
       const task = await res.json()
-      if (task.status !== status)
-        throw new Error(`Expected "${title}" in "${status}"`)
+      expect(task.status).toBe(status)
     },
   },
 })

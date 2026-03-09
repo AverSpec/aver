@@ -1,7 +1,8 @@
 ---
 layout: default
 title: Approval Testing
-nav_order: 5
+parent: Guides
+nav_order: 4
 ---
 
 # Approval Testing

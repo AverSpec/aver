@@ -2,7 +2,7 @@
 layout: default
 title: AI-Assisted Testing
 parent: Guides
-nav_order: 6
+nav_order: 7
 ---
 
 # AI-Assisted Testing

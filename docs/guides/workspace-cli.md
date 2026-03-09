@@ -2,7 +2,7 @@
 layout: default
 title: Workspace CLI
 parent: Guides
-nav_order: 4
+nav_order: 8
 ---
 
 # Workspace CLI
@@ -11,25 +11,15 @@ The `aver workspace` command manages a **scenario workspace** -- a local store o
 
 ## Install
 
-The workspace is part of `@aver/agent`, which the core CLI imports dynamically. Install it alongside `@aver/core`:
+The workspace is part of `@aver/workspace`, which the core CLI imports dynamically. It's included when you install the agent plugin:
 
 ```bash
-npm install @aver/agent
+npm install --save-dev @aver/agent-plugin
 ```
 
 ## Storage
 
-Workspace data is stored as JSON at:
-
-```
-~/.aver/workspaces/<project-id>/workspace.json
-```
-
-`<project-id>` is the basename of the current working directory. Override the storage location with `--workspace-path`:
-
-```bash
-aver workspace status --workspace-path /tmp/my-workspace
-```
+Workspace data is stored in a SQLite database at `.aver/workspace/` in your project directory.
 
 ## The Stage Pipeline
 

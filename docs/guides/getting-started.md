@@ -7,13 +7,6 @@ nav_order: 1
 
 # Getting Started
 
-This guide walks you through creating your first Aver domain, adapter, and test in about five minutes.
-
-## Prerequisites
-
-- Node.js 18+
-- A package manager (npm, pnpm, or yarn)
-
 ## Install
 
 ```bash
@@ -22,108 +15,81 @@ npm install --save-dev @aver/core vitest
 
 Aver uses [Vitest](https://vitest.dev) as its test runner.
 
-## Option A: Scaffold with `aver init`
+## Where are you starting from?
 
-The fastest way to start is the interactive scaffold:
+Your entry point depends on what you have today.
+
+### I have existing code with no tests
+
+Start by locking in what exists. Install the approvals package and capture current behavior before changing anything:
 
 ```bash
-npx aver init --domain ShoppingCart --protocol unit
+npm install --save-dev @aver/approvals
 ```
 
-This creates the project structure, a starter domain, adapter, and config file. Skip ahead to [Run your tests](#run-your-tests) if you use this path.
-
-## Option B: Manual setup
-
-If you prefer to understand each piece, follow along below.
-
-### 1. Define a domain
-
-A domain is a named vocabulary that describes **what** your system does, without any implementation details. Create `domains/shopping-cart.ts`:
-
 ```typescript
-import { defineDomain, action, query, assertion } from '@aver/core'
+import { test } from 'vitest'
+import { approve } from '@aver/approvals'
+import { processOrder } from '../src/orders.js'
 
-export const shoppingCart = defineDomain({
-  name: 'shopping-cart',
-  actions: {
-    addItem: action<{ product: string; quantity: number }>(),
-    removeItem: action<{ product: string }>(),
-  },
-  queries: {
-    cartContents: query<void, Array<{ product: string; quantity: number }>>(),
-  },
-  assertions: {
-    cartContains: assertion<{ product: string; quantity: number }>(),
-    cartIsEmpty: assertion<void>(),
-  },
+test('order processing output', async () => {
+  const result = processOrder({ items: [{ sku: 'W-100', qty: 3 }] })
+  await approve(result)
 })
 ```
 
-Three building blocks:
+Run `AVER_APPROVE=1 npx vitest run` to create baselines, then run normally to verify against them. You now have a safety net.
 
-- **Actions** change state (`addItem`, `removeItem`)
-- **Queries** read state (`cartContents`)
-- **Assertions** verify state (`cartContains`, `cartIsEmpty`)
+From here, extract a domain vocabulary as patterns emerge. The [tutorial](../tutorial) walks through this process end-to-end with a complete example.
 
-### 2. Implement an adapter
+### I have existing code with tests I want to restructure
 
-An adapter binds your domain vocabulary to a real implementation. The `unit` protocol runs everything in-memory — no servers, no browsers. Create `adapters/shopping-cart.unit.ts`:
+If you already have tests but they're scattered across page objects, test helpers, and ad-hoc abstractions, Aver gives you a spine to consolidate them.
 
-```typescript
-import { implement, unit } from '@aver/core'
-import { expect } from 'vitest'
-import { shoppingCart } from '../domains/shopping-cart.js'
+Look at your existing test helpers. They probably already encode domain operations — `createUser()`, `loginAs()`, `verifyOrderStatus()`. Those are your domain vocabulary candidates. Define them as a domain, write adapters that delegate to your existing infrastructure, and your old tests become acceptance tests.
 
-export const unitAdapter = implement(shoppingCart, {
-  protocol: unit(() => {
-    const items: Map<string, number> = new Map()
-    return { items }
-  }),
-  actions: {
-    addItem: async (ctx, { product, quantity }) => {
-      ctx.items.set(product, (ctx.items.get(product) ?? 0) + quantity)
-    },
-    removeItem: async (ctx, { product }) => {
-      ctx.items.delete(product)
-    },
-  },
-  queries: {
-    cartContents: async (ctx) => {
-      return [...ctx.items.entries()].map(([product, quantity]) => ({
-        product,
-        quantity,
-      }))
-    },
-  },
-  assertions: {
-    cartContains: async (ctx, { product, quantity }) => {
-      expect(ctx.items.get(product)).toBe(quantity)
-    },
-    cartIsEmpty: async (ctx) => {
-      expect(ctx.items.size).toBe(0)
-    },
-  },
-})
+Start with the [tutorial](../tutorial) to see the pattern, then apply it to your own test helpers.
+
+### I'm building something new
+
+Scaffold a project:
+
+```bash
+npx aver init --domain TaskBoard --protocol unit
 ```
 
-The `unit()` function creates a fresh context for each test. Here it returns a `Map` that acts as our in-memory cart. Assertions use Vitest's `expect` for clear failure messages.
+This generates:
+- `domains/task-board.ts` — starter domain with actions and assertions
+- `adapters/task-board.unit.ts` — unit adapter with handler stubs
+- `tests/task-board.spec.ts` — example test
+- `aver.config.ts` — adapter registration
 
-### 3. Configure Aver
+Run `npx aver run` to verify the scaffold works, then replace the stubs with your real domain.
 
-Register your adapter so Aver knows about it. Create `aver.config.ts`:
+For greenfield projects, consider starting with an [Example Mapping](example-mapping) session to discover your domain vocabulary before writing code.
 
-```typescript
-import { defineConfig } from '@aver/core'
-import { unitAdapter } from './adapters/shopping-cart.unit.js'
+## The pieces
 
-export default defineConfig({
-  adapters: [unitAdapter],
-})
+Regardless of starting point, every Aver project has four pieces:
+
+```
+domains/          # What — vocabulary in business language
+adapters/         # How — binds vocabulary to implementations
+tests/            # Verify — scenarios using domain language
+aver.config.ts    # Wiring — registers adapters
 ```
 
-### 4. Configure Vitest
+**Domain** — declares actions (do something), queries (read something), and assertions (check something). No implementation details. See [API Reference](../api#domain-definition).
 
-Create or update `vitest.config.ts` to load the Aver config as a setup file:
+**Adapter** — implements every domain operation for a specific protocol. The `unit` protocol runs in-memory. `http` and `playwright` are separate packages. TypeScript enforces that every domain operation has a handler — miss one and you get a compile error.
+
+**Tests** — import the domain, never the adapter. `suite(domain)` gives you a typed test function. Tests use `given`/`when`/`then` (or `act`/`query`/`assert`) to compose domain operations into scenarios.
+
+**Config** — `defineConfig({ adapters: [...] })` registers adapters. When multiple adapters are registered for the same domain, every test runs against all of them automatically.
+
+## Configure Vitest
+
+Create or update `vitest.config.ts` to load the Aver config:
 
 ```typescript
 import { defineConfig } from 'vitest/config'
@@ -135,80 +101,22 @@ export default defineConfig({
 })
 ```
 
-### 5. Write a test
+## When to add what
 
-Tests use domain language only — no implementation details leak in. Create `tests/shopping-cart.spec.ts`:
+| When you need... | Add... |
+|:-----------------|:-------|
+| A safety net for existing code | `@aver/approvals` — approval testing |
+| API-level testing | `@aver/protocol-http` — HTTP adapter |
+| Browser testing | `@aver/protocol-playwright` — Playwright adapter |
+| Telemetry verification | Telemetry declarations on domain markers. See [Telemetry Tutorial](telemetry-tutorial) |
+| AI-assisted workflow | `@aver/agent-plugin` — MCP tools + scenario pipeline. See [AI-Assisted](ai-assisted) |
+| CI integration | No extra packages — `npx aver run` in your pipeline. See [CI Integration](ci-integration) |
 
-```typescript
-import { suite } from '@aver/core'
-import { expect } from 'vitest'
-import { shoppingCart } from '../domains/shopping-cart.js'
-
-const { test } = suite(shoppingCart)
-
-test('add items to cart', async ({ act, assert }) => {
-  await act.addItem({ product: 'Widget', quantity: 2 })
-  await assert.cartContains({ product: 'Widget', quantity: 2 })
-})
-
-test('remove items from cart', async ({ act, assert }) => {
-  await act.addItem({ product: 'Gadget', quantity: 1 })
-  await act.removeItem({ product: 'Gadget' })
-  await assert.cartIsEmpty()
-})
-
-test('query cart contents', async ({ act, query }) => {
-  await act.addItem({ product: 'Widget', quantity: 3 })
-  const contents = await query.cartContents()
-  expect(contents).toEqual([{ product: 'Widget', quantity: 3 }])
-})
-```
-
-Notice that `suite(shoppingCart)` gives you a typed `test` function. The test context provides `act`, `query`, and `assert` — all fully typed from your domain definition.
-
-> **Tip: Given-When-Then aliases.** The test context also provides `given`, `when`, and `then` as aliases for `act`, `act`, and `assert`. These read more naturally for BDD-style tests:
->
-> ```typescript
-> test('add and verify item', async ({ given, when, then }) => {
->   await given.addItem({ product: 'Widget', quantity: 2 })
->   await when.addItem({ product: 'Gadget', quantity: 1 })
->   await then.cartContains({ product: 'Widget', quantity: 2 })
-> })
-> ```
-
-## Run your tests
-
-```bash
-npx aver run
-```
-
-You should see output like:
-
-```
- ✓ add items to cart [unit]
- ✓ remove items from cart [unit]
- ✓ query cart contents [unit]
-```
-
-The `[unit]` suffix shows which adapter ran. When you add more adapters later, each test runs against all of them automatically.
-
-## Project structure
-
-Your project should now look like this:
-
-```
-aver.config.ts
-vitest.config.ts
-domains/
-  shopping-cart.ts
-adapters/
-  shopping-cart.unit.ts
-tests/
-  shopping-cart.spec.ts
-```
+You don't need everything on day one. Start with `@aver/core` and a unit adapter. Add packages as your needs grow.
 
 ## Next steps
 
-- [Multi-Adapter Testing](multi-adapter.md) — add HTTP and Playwright adapters so the same tests verify your API and UI
-- [CI Integration](ci-integration.md) — run Aver tests in your CI pipeline
-- [API Reference](../api.md) — deeper look at domains, adapters, protocols, and suites
+- [Tutorial](../tutorial) — hands-on walkthrough from legacy code to multi-adapter tests
+- [Multi-Adapter Testing](multi-adapter) — add HTTP and Playwright adapters
+- [Architecture](../architecture) — how the three-layer model works and why
+- [API Reference](../api) — domains, adapters, protocols, and suites

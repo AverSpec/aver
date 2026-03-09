@@ -121,13 +121,15 @@ The trace is recorded automatically as the suite proxies domain calls through th
 
 ## Telemetry verification
 
-Domains can declare expected OTel spans on operations. The framework verifies that the system under test emits the right telemetry — not just that it produces the right output, but that it's observable.
+Observability data is made powerful by context — the relationships between spans matter more than any individual span. A checkout span alone tells you little. A checkout span causally connected to a payment span and a fulfillment span, all sharing an order ID within the same trace, tells you the whole story. When those relational seams break — a refactor drops the trace propagation, a renamed attribute disconnects two spans — your dashboards go dark and your agents can't validate what they shipped.
+
+Aver treats these relationships as a testable contract. Domains declare expected OTel spans on operations, and the framework verifies both the spans and their connections.
 
 Two verification layers run automatically:
 1. **Per-step**: After each operation, verify a matching span exists with the expected name and attributes
 2. **End-of-test correlation**: After all steps, verify that correlated steps (shared attribute key + value) are causally connected — same traceId or span links
 
-This catches instrumentation bugs: the API returns the right data, but the spans are missing, misnamed, or disconnected. See the [telemetry guide](guides/telemetry) for details.
+This catches instrumentation bugs that behavioral tests miss: the API returns the right data, but the spans are missing, misnamed, or disconnected. The `@aver/telemetry` package extends this to production — extract a behavioral contract from passing tests, then verify that production traces conform to the same contract. See the [telemetry guide](guides/telemetry) for details.
 
 ## Design principles
 

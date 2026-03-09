@@ -1,7 +1,8 @@
 ---
 layout: default
 title: Example App
-nav_order: 7
+nav_order: 10
+parent: Guides
 ---
 
 # Example: Task Board

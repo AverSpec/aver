@@ -30,7 +30,7 @@ Aver breaks the cycle. Start with `approve()` to lock in current behavior as a s
 ```typescript
 test('checkout flow produces order confirmation', async () => {
   const result = await checkout(cart)
-  await approve(result, 'checkout-confirmation')
+  await approve(result)
 })
 ```
 
@@ -105,11 +105,11 @@ With a single adapter, Aver's overhead matches well-structured page objects — 
 
 ```bash
 npm install --save-dev @aver/core vitest
-npx aver init --domain TaskBoard --protocol unit
+npx aver init
 npx aver run
 ```
 
-Or follow a tutorial: [legacy code](tutorial) or [greenfield](tutorial-greenfield).
+Or follow a tutorial: [legacy code](tutorial), [greenfield](tutorial-greenfield), or [telemetry verification](tutorial-telemetry).
 
 ---
 

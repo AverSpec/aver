@@ -38,7 +38,9 @@ test('order processing output', async () => {
 })
 ```
 
-Run `AVER_APPROVE=1 npx vitest run` to create baselines, then run normally to verify against them. You now have a safety net.
+Run `AVER_APPROVE=1 npx vitest run` to create baselines, then run normally to verify against them. Baselines are stored in `__approvals__/` next to your test file — commit them to source control. You now have a safety net.
+
+> `approve()` is also exported as `characterize()` if that reads better for your characterization tests.
 
 From here, extract a domain vocabulary as patterns emerge. The [tutorial](../tutorial) walks through this process end-to-end with a complete example.
 
@@ -55,7 +57,7 @@ Start with the [tutorial](../tutorial) to see the pattern, then apply it to your
 Scaffold a project:
 
 ```bash
-npx aver init --domain TaskBoard --protocol unit
+npx aver init
 ```
 
 This generates:
@@ -108,7 +110,7 @@ export default defineConfig({
 | A safety net for existing code | `@aver/approvals` — approval testing |
 | API-level testing | `@aver/protocol-http` — HTTP adapter |
 | Browser testing | `@aver/protocol-playwright` — Playwright adapter |
-| Telemetry verification | Telemetry declarations on domain markers. See [Telemetry Tutorial](telemetry-tutorial) |
+| Telemetry verification | Telemetry declarations on domain markers. See [Telemetry Tutorial](../tutorial-telemetry) |
 | AI-assisted workflow | `@aver/agent-plugin` — MCP tools + scenario pipeline. See [AI-Assisted](ai-assisted) |
 | CI integration | No extra packages — `npx aver run` in your pipeline. See [CI Integration](ci-integration) |
 
@@ -118,6 +120,7 @@ You don't need everything on day one. Start with `@aver/core` and a unit adapter
 
 - [Tutorial: Legacy Code](../tutorial) — from untested code to multi-adapter tests
 - [Tutorial: Greenfield](../tutorial-greenfield) — build a domain from scratch
+- [Tutorial: Telemetry](../tutorial-telemetry) — verify observability contracts alongside behavior
 - [Multi-Adapter Testing](multi-adapter) — add HTTP and Playwright adapters
 - [Architecture](../architecture) — how the three-layer model works and why
 - [API Reference](../api) — domains, adapters, protocols, and suites

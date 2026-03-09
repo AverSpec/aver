@@ -2,7 +2,7 @@
 layout: default
 title: Workspace CLI
 parent: Guides
-nav_order: 8
+nav_order: 9
 ---
 
 # Workspace CLI
@@ -19,7 +19,7 @@ npm install --save-dev @aver/agent-plugin
 
 ## Storage
 
-Workspace data is stored in a SQLite database at `.aver/workspace/` in your project directory.
+Workspace data is stored in a SQLite database at `~/.aver/workspaces/<project-id>/workspace.db` in your home directory. Use the `--workspace-path` global option to override the location.
 
 ## The Stage Pipeline
 
@@ -33,8 +33,8 @@ captured -> characterized -> mapped -> specified -> implemented
 |:------|:--------|
 | **captured** | Raw behavior observed or intended, not yet investigated |
 | **characterized** | Investigated -- code paths traced, seams and constraints identified |
-| **mapped** | Confirmed by a human perspective; rules and examples attached |
-| **specified** | All questions resolved; ready for domain vocabulary and adapter design |
+| **mapped** | Example Mapping complete — rules, examples, and questions captured |
+| **specified** | Domain vocabulary named — actions, queries, and assertions approved |
 | **implemented** | Linked to domain operations and/or test names in the codebase |
 
 Advancement between stages enforces hard blocks:

@@ -25,6 +25,7 @@ export const taskBoard = defineDomain({
     createTask: action<{ title: string }>(),
     moveTask: action<{ title: string; status: string }>(),
   },
+  queries: {},
   assertions: {
     taskInStatus: assertion<{ title: string; status: string }>(),
   },
@@ -48,6 +49,7 @@ export const unitAdapter = implement(taskBoard, {
     createTask: async (board, { title }) => board.create(title),
     moveTask: async (board, { title, status }) => board.move(title, status),
   },
+  queries: {},
   assertions: {
     taskInStatus: async (board, { title, status }) => {
       const task = board.details(title)
@@ -78,6 +80,7 @@ export const httpAdapter = implement(taskBoard, {
       await ctx.patch(`/tasks/${encodeURIComponent(title)}`, { status })
     },
   },
+  queries: {},
   assertions: {
     taskInStatus: async (ctx, { title, status }) => {
       const res = await ctx.get(`/tasks/${encodeURIComponent(title)}`)
@@ -95,6 +98,7 @@ Tests against a browser UI. Runs in ~300ms.
 ```typescript
 // adapters/task-board.playwright.ts
 import { implement } from '@aver/core'
+import { expect } from '@playwright/test'
 import { playwright } from '@aver/protocol-playwright'
 import { taskBoard } from '../domains/task-board'
 
@@ -111,6 +115,7 @@ export const playwrightAdapter = implement(taskBoard, {
       )
     },
   },
+  queries: {},
   assertions: {
     taskInStatus: async (page, { title, status }) => {
       const column = page.getByTestId(`column-${status}`)

@@ -2,7 +2,7 @@
 layout: default
 title: Scenario Pipeline
 parent: Guides
-nav_order: 12
+nav_order: 5
 ---
 
 # Scenario Pipeline
@@ -93,7 +93,7 @@ aver workspace advance <id> --rationale "traced auth flow, found seam in AuthSer
 aver workspace question <id> "does the reset link expire after first use?"
 
 # Resolve the question when answered
-aver workspace resolve <id> <question-id> --resolution "yes, single-use, 24h expiry"
+aver workspace resolve <id> <question-id> "yes, single-use, 24h expiry"
 
 # Check which scenarios are ready to advance
 aver workspace candidates

@@ -1,8 +1,7 @@
 ---
 layout: default
 title: "Tutorial: Telemetry Verification"
-parent: Guides
-nav_order: 11
+nav_order: 4
 ---
 
 # Tutorial: Telemetry Verification
@@ -17,7 +16,7 @@ This tutorial shows how Aver treats those relationships as a testable contract. 
 3. Fix the instrumentation so tests pass
 4. See Aver automatically detect broken trace correlation — the relational seams between operations
 
-This builds on the pricing domain from the [main tutorial](../tutorial). If you have not done that tutorial, skim Step 2 (domain) and Step 4 (unit adapter) first.
+This builds on the pricing domain from the [main tutorial](tutorial). If you have not done that tutorial, skim Step 2 (domain) and Step 4 (unit adapter) first.
 
 ---
 
@@ -50,10 +49,10 @@ export const pricing = defineDomain({
     }),
   },
   queries: {
-    invoiceTotal: query<void, number>({
+    invoiceTotal: query<number>({
       telemetry: { span: 'pricing.invoice-total' },
     }),
-    appliedDiscount: query<void, number>(),
+    appliedDiscount: query<number>(),
   },
   assertions: {
     totalEquals: assertion<{ expected: number }>(),
@@ -424,6 +423,6 @@ No new test assertions. No telemetry-specific test code. The declarations live o
 
 ## Next steps
 
-- [Telemetry reference](telemetry) — collector setup, correlation design, span naming conventions
-- [Multi-Adapter Testing](multi-adapter) — run the same domain against unit, HTTP, and browser adapters
-- [Architecture](../architecture) — the three-layer model and how telemetry fits in
+- [Telemetry reference](guides/telemetry) — collector setup, correlation design, span naming conventions
+- [Multi-Adapter Testing](guides/multi-adapter) — run the same domain against unit, HTTP, and browser adapters
+- [Architecture](architecture) — the three-layer model and how telemetry fits in

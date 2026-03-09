@@ -41,7 +41,7 @@ Five domain operations support fifty tests. Vocabulary grows slowly, scenarios g
 
 ```bash
 npm install --save-dev @aver/core vitest
-npx aver init --domain TaskBoard --protocol unit
+npx aver init
 npx aver run
 ```
 
@@ -49,6 +49,7 @@ npx aver run
 
 - **[Tutorial: Legacy Code](docs/tutorial.md)** — From untested code to multi-adapter tests
 - **[Tutorial: Greenfield](docs/tutorial-greenfield.md)** — Build a domain from scratch
+- **[Tutorial: Telemetry](docs/tutorial-telemetry.md)** — Verify observability contracts alongside behavior
 - **[Architecture](docs/architecture.md)** — Three-layer model, design decisions, economics
 - **[Getting Started](docs/guides/getting-started.md)** — Install, scaffold, configure
 - **[Guides](docs/guides/)** — Multi-adapter, telemetry, CI, AI-assisted testing
@@ -62,6 +63,8 @@ npx aver run
 | [`@aver/telemetry`](packages/telemetry) | Dev-to-prod telemetry verification — contract extraction and conformance checking |
 | [`@aver/protocol-http`](packages/protocol-http) | HTTP protocol adapter |
 | [`@aver/protocol-playwright`](packages/protocol-playwright) | Playwright browser protocol adapter |
+| [`@aver/workspace`](packages/workspace) | Scenario workspace — storage, operations, backlog |
+| [`@aver/mcp-server`](packages/mcp-server) | MCP server for AI-assisted scenario management |
 | [`@aver/agent-plugin`](packages/agent-plugin) | Claude Code plugin — MCP + workflow/telemetry skills |
 
 ## License

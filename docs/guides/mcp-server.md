@@ -2,7 +2,7 @@
 layout: default
 title: MCP Server
 parent: Guides
-nav_order: 9
+nav_order: 10
 ---
 
 # MCP Server
@@ -11,17 +11,11 @@ The `@aver/mcp-server` package lets AI assistants (Claude Code, Cursor, etc.) ex
 
 ## Install
 
-### Agent Plugin (Recommended)
+### With the Agent Plugin (Recommended)
 
-The easiest way to get started is with the agent plugin, which bundles the MCP server and a workflow skill:
+The easiest way to get started is with the agent plugin, which bundles the MCP server and workflow skills. See the [AI-Assisted Testing](ai-assisted) guide for full setup instructions.
 
-```bash
-claude plugin add @aver/agent-plugin
-```
-
-This gives you all MCP tools plus the `aver-workflow` skill — a scenario mapping workflow that moves behaviors through five stages: captured → characterized → mapped → specified → implemented.
-
-### Manual Setup
+### Standalone
 
 Install the MCP server package:
 
@@ -50,6 +44,39 @@ The server auto-detects `aver.config.ts` in the working directory. Use `--config
 
 ## Available Tools
 
+### Scenario Management
+
+| Tool | Description |
+|:-----|:------------|
+| `capture_scenario` | Record an observed or intended behavior |
+| `get_scenarios` | List scenarios, filter by stage/story/keyword |
+| `get_scenario_summary` | Counts per stage, open questions |
+| `advance_scenario` | Move a scenario to the next stage |
+| `batch_advance_scenarios` | Advance multiple scenarios at once |
+| `revisit_scenario` | Move a scenario back to an earlier stage |
+| `batch_revisit_scenarios` | Revisit multiple scenarios at once |
+| `confirm_scenario` | Human-only gate — sets `confirmedBy` |
+| `update_scenario` | Update scenario fields (rules, examples, context, etc.) |
+| `delete_scenario` | Remove a scenario |
+| `add_question` | Attach an open question to a scenario |
+| `resolve_question` | Mark a question as answered |
+| `link_to_domain` | Connect a scenario to domain operations and tests |
+| `get_advance_candidates` | Find scenarios ready to advance |
+| `get_workflow_phase` | Detect current phase from scenario state |
+| `export_scenarios` | Export as markdown or JSON |
+| `import_scenarios` | Import from JSON |
+
+### Backlog
+
+| Tool | Description |
+|:-----|:------------|
+| `create_backlog_item` | Create a new backlog item |
+| `get_backlog_items` | List items with filters (status, priority, type) |
+| `get_backlog_summary` | Counts by status and priority |
+| `update_backlog_item` | Update status, priority, description, etc. |
+| `delete_backlog_item` | Remove a backlog item |
+| `move_backlog_item` | Reorder or reprioritize |
+
 ### Domain Exploration
 
 | Tool | Description |
@@ -68,8 +95,6 @@ These tools let the AI understand your test vocabulary without reading source fi
 | `get_failure_details` | Get failure details from the latest run |
 | `get_test_trace` | Get the action trace for a specific test |
 | `get_run_diff` | Compare two runs — shows newly passing/failing tests |
-
-Results are persisted in `.aver/runs/` (JSON files, 10-run retention).
 
 ### Scaffolding
 

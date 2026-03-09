@@ -1,7 +1,7 @@
 ---
 layout: default
 title: "Tutorial: Greenfield"
-nav_order: 2.5
+nav_order: 3
 ---
 
 # Tutorial: Building a Domain from Scratch
@@ -68,6 +68,7 @@ export const taskBoard = defineDomain({
     createTask: action<{ title: string }>(),
     moveTask: action<{ title: string; status: string }>(),
   },
+  queries: {},
   assertions: {
     taskInStatus: assertion<{ title: string; status: string }>(),
     taskCount: assertion<{ status: string; count: number }>(),
@@ -147,6 +148,7 @@ export const unitAdapter = implement(taskBoard, {
       task.status = status
     },
   },
+  queries: {},
   assertions: {
     taskInStatus: async (ctx, { title, status }) => {
       const task = ctx.tasks.find(t => t.title === title)
@@ -297,6 +299,7 @@ export const httpAdapter = implement(taskBoard, {
       })
     },
   },
+  queries: {},
   assertions: {
     taskInStatus: async (ctx, { title, status }) => {
       const res = await fetch(`${ctx.baseUrl}/tasks`)
@@ -364,5 +367,5 @@ The domain vocabulary is the stable center. Tests compose vocabulary into scenar
 - [Tutorial: Legacy Code](tutorial) — start from untested code with characterization tests
 - [Architecture](architecture) — how the three-layer model works and why
 - [Multi-Adapter Testing](guides/multi-adapter) — adding Playwright, filtering by adapter
-- [Telemetry Tutorial](guides/telemetry-tutorial) — add observability verification
+- [Telemetry Tutorial](tutorial-telemetry) — add observability verification
 - [Example Mapping](guides/example-mapping) — discover domain vocabulary through structured conversation

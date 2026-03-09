@@ -2,14 +2,14 @@
 layout: default
 title: Telemetry
 parent: Guides
-nav_order: 5
+nav_order: 6
 ---
 
 # Adding Telemetry to a Domain
 
 Aver can verify that your system emits the right OTel spans — not just that it produces the right output, but that it's observable. More importantly, it verifies that the *relationships* between spans are intact: operations that belong to the same business flow share a trace, carry correlated attributes, and remain causally connected. When those relational seams break, your dashboards and AI agents lose the context that makes observability data powerful.
 
-This guide shows how to add telemetry declarations to a domain and set up verification. For a hands-on walkthrough with failure examples, see the [Telemetry Tutorial](telemetry-tutorial).
+This guide shows how to add telemetry declarations to a domain and set up verification. For a hands-on walkthrough with failure examples, see the [Telemetry Tutorial](../tutorial-telemetry).
 
 ## When to add telemetry
 

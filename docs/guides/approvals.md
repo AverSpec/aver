@@ -2,7 +2,7 @@
 layout: default
 title: Approval Testing
 parent: Guides
-nav_order: 4
+nav_order: 3
 ---
 
 # Approval Testing
@@ -25,6 +25,8 @@ await approve(taskList, { name: 'tasks' })
 // Visual: approve what the screen looks like
 await approve.visual('board-with-task')
 ```
+
+> `approve` is also exported as `characterize` — same function, alternative name for characterization test contexts: `import { characterize } from '@aver/approvals'`
 
 ## Workflow
 
@@ -61,7 +63,7 @@ await approve.visual('board-state')
 await approve.visual({ name: 'backlog', region: 'backlog' })
 ```
 
-On protocols without a screenshotter (unit, http), `approve.visual()` logs a warning and skips.
+On protocols without a screenshotter (unit, http), `approve.visual()` throws an error. Only use it with visual protocols like Playwright.
 
 ## Visual Diff Demo (Playwright)
 

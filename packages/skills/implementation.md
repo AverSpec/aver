@@ -17,12 +17,12 @@ The acceptance test is the compass. The unit tests are the steps.
 
 ## Process
 
-1. Run the acceptance test to see the current failure (`run_tests` MCP tool or `pnpm exec aver run`)
-2. Read the error message and trace (`get_failure_details`, `get_test_trace` MCP tools)
+1. Run the acceptance test to see the current failure (`pnpm exec aver run`)
+2. Read the error message and trace from the test output
 3. Identify the smallest change to make progress
 4. If the failure is in **app code**: write a unit test for just that behavior, make it pass, run the acceptance test again
 5. If the failure is in the **adapter**: fix the adapter binding, run again
-6. If **GREEN**: run the full suite to check regressions (`get_run_diff` MCP tool)
+6. If **GREEN**: run the full suite to check for regressions (`pnpm exec aver run`)
 7. If still RED with the **same error** after 3 attempts: report status as "stuck"
 8. If RED with a **different error**: that's progress — go to step 2
 
@@ -64,11 +64,20 @@ Use the tests as your refactoring safety net. Run after every move.
 
 ## Domain Linking
 
-After tests are GREEN, link the scenario to domain artifacts:
+After tests are GREEN, update the GitHub Issue body's "Domain Link" section with:
 - `domainOperation`: the primary domain operation (e.g., "Cart.addItem")
 - `testNames`: the test names that verify this scenario
 
 Without domain links, the scenario cannot advance to `implemented`.
+
+## Parallel Dispatch
+
+When multiple independent scenarios are at `specified`:
+- **1 scenario:** Work directly on the current tree. No isolation needed.
+- **2+ independent scenarios:** Dispatch each as a separate subagent with worktree isolation. Each subagent runs the full ATDD double loop independently.
+- **Dependent scenarios** (shared domain, overlapping files): Work sequentially on the current tree to avoid merge conflicts.
+
+Independence heuristic: scenarios targeting different domains or different adapter protocols are independent. Scenarios sharing a domain should be sequential.
 
 ## Anti-Patterns
 

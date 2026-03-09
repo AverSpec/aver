@@ -10,7 +10,7 @@ An existing system has behavior that is unknown, undocumented, or untested. Buil
 
 1. Trace the code path from entry point (route, event listener, UI component) to effect (database write, API response, DOM update)
 2. Identify seams where tests can attach
-3. Note constraints that shape the behavior (schemas, validation, config)
+3. Note constraints that shape the behavior — express these as **business rules in domain language** (see Output section for format)
 4. Capture current behavior with approval tests as evidence
 5. Record findings as artifacts
 
@@ -59,7 +59,19 @@ Present uncertain items prominently. They become the starting agenda for the map
 A characterized scenario has:
 - Execution path documented (entry point through to effect)
 - Seams identified with test attachment strategy
-- Constraints noted (schemas, validation, config)
+- Constraints framed as **business rules in domain language**, not implementation details. Implementation locations belong in **seams**, not constraints.
+
+**Good constraints** (domain language — what a product owner would say):
+- "A task must have a title"
+- "New tasks default to the 'todo' stage"
+- "A human must confirm intent before domain design begins"
+
+**Bad constraints** (implementation details — what a developer would grep for):
+- "Validation in TaskService.create() checks title is non-empty"
+- "Default status set in database migration 003"
+- "confirmedBy field must be non-falsy string"
+
+The implementation details go in **seams** — that's where you document which function validates, which table stores, which config controls the behavior.
 - Approval baselines captured as evidence
 - Confidence level for each finding
 - Questions posted for anything requiring human judgment
@@ -79,6 +91,31 @@ Approval tests are a starting point, not a destination. As scenarios advance thr
 - Named assertions check specific properties (resilient, but targeted)
 - Graduate incrementally — keep approvals alongside named assertions until coverage is confirmed
 
+## Crossing Point: Investigation → Scenario Capture
+
+After presenting findings, **immediately propose scenarios to capture**. Don't wait for the human to ask — every distinct behavior you observed is a candidate.
+
+Say to the human:
+> "Before I share findings — who else should review these? A product owner for intent, a tester for edge cases, a developer for feasibility?"
+
+Then present findings:
+
+> "Based on this investigation, I see [N] distinct behaviors:
+>
+> 1. **[behavior]** — [confidence level]. [one-line evidence summary]
+> 2. **[behavior]** — [confidence level]. [one-line evidence summary]
+> 3. **[behavior]** — [confidence level]. [one-line evidence summary]
+>
+> Should I capture these as scenarios? Any that should be combined, split, or skipped?"
+
+For each behavior the human confirms:
+- Run `packages/agent-plugin/scripts/gh/scenario-capture.sh --title "..." --body "..."` with `mode: observed` and the behavior description
+- Attach seams and constraints by updating the structured issue body via `gh issue edit <number> --body "..."`
+- Link approval baselines by updating the "Domain Link" section in the issue body via `gh issue edit`
+- Post open questions via `packages/agent-plugin/scripts/gh/scenario-question.sh <number> --body "..."` for speculative findings
+
+Then transition to Example Mapping for each captured scenario. The investigation evidence becomes input to the mapping session — approval baselines show what the system does, seams show where tests attach, constraints become candidate rules.
+
 ## Anti-Patterns
 
 - **Approving baselines without reviewing.** First run captures whatever the system does. Inspect before accepting.
@@ -86,5 +123,4 @@ Approval tests are a starting point, not a destination. As scenarios advance thr
 - **Testing through only one seam.** Legacy systems often have inconsistencies between API, UI, and internal logic. Capture at multiple seams.
 - **Skipping seam analysis.** Without seams, tests require the full system running. Find the narrowest seam that exercises the behavior.
 - **Presenting findings without confidence levels.** The human needs to know which findings are solid vs speculative.
-
-> **Human interaction:** In the CycleEngine, set `suggestedNext` to describe what needs human input — the supervisor will issue `ask_user`. In Claude Code, interact directly or use `add_question` MCP tool.
+- **Waiting for the human to ask for scenarios.** Proactively propose scenario captures after presenting findings. The investigation's purpose is to feed the pipeline.

@@ -13,6 +13,8 @@ docs/plans/
 docs/.jekyll-cache/
 docs/Gemfile.lock
 .worktrees/
+.env
+.env.local
 
 # Approval testing transients (only .approved.* files are committed)
 **/__approvals__/**/*.received.*

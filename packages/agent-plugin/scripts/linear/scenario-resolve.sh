@@ -44,13 +44,13 @@ if [[ -z "$body" ]]; then
 fi
 
 # Get the original comment
-result=$(linear_query '
-  query($id: String!) {
-    comment(id: $id) {
-      id body url
-    }
-  }
-' "{\"id\": \"$comment_id\"}")
+_tmp=$(mktemp)
+jq -n --arg id "$comment_id" '{
+  query: "query($id: String!) { comment(id: $id) { id body url } }",
+  variables: {id: $id}
+}' > "$_tmp"
+result=$(linear_gql "$_tmp")
+rm -f "$_tmp"
 
 original_body=$(echo "$result" | jq -r '.data.comment.body // empty')
 if [[ -z "$original_body" ]]; then
@@ -63,17 +63,13 @@ new_body=$(echo "$original_body" | sed 's/❓/✅/')
 new_body=$(printf '%s\n\n---\n\n**Resolution:** %s' "$new_body" "$body")
 
 # Update the comment
-variables=$(jq -n --arg id "$comment_id" --arg body "$new_body" \
-  '{id: $id, input: {body: $body}}')
-
-update_result=$(linear_query '
-  mutation($id: String!, $input: CommentUpdateInput!) {
-    commentUpdate(id: $id, input: $input) {
-      success
-      comment { id url }
-    }
-  }
-' "$variables")
+_tmp=$(mktemp)
+jq -n --arg id "$comment_id" --arg body "$new_body" '{
+  query: "mutation($id: String!, $input: CommentUpdateInput!) { commentUpdate(id: $id, input: $input) { success comment { id url } } }",
+  variables: {id: $id, input: {body: $body}}
+}' > "$_tmp"
+update_result=$(linear_gql "$_tmp")
+rm -f "$_tmp"
 
 success=$(echo "$update_result" | jq -r '.data.commentUpdate.success')
 if [[ "$success" != "true" ]]; then
@@ -96,11 +92,13 @@ if [[ "$remaining" -eq 0 ]]; then
   has_question_id=$(resolve_label_id "has-question")
   if [[ -n "$has_question_id" ]]; then
     updated_label_ids=$(echo "$issue" | jq --arg id "$has_question_id" '[.labels.nodes[].id | select(. != $id)]')
-    linear_query '
-      mutation($id: String!, $input: IssueUpdateInput!) {
-        issueUpdate(id: $id, input: $input) { success }
-      }
-    ' "{\"id\": \"$issue_id\", \"input\": {\"labelIds\": $updated_label_ids}}" > /dev/null
+    _tmp=$(mktemp)
+    jq -n --arg id "$issue_id" --argjson lids "$updated_label_ids" '{
+      query: "mutation($id: String!, $input: IssueUpdateInput!) { issueUpdate(id: $id, input: $input) { success } }",
+      variables: {id: $id, input: {labelIds: $lids}}
+    }' > "$_tmp"
+    linear_gql "$_tmp" > /dev/null
+    rm -f "$_tmp"
   fi
 fi
 

@@ -33,22 +33,18 @@ fi
 # Resolve label IDs
 label_ids=$(resolve_label_ids "scenario,stage:captured")
 
-# Build variables JSON
-variables=$(jq -n \
+# Build request body and execute
+_tmp=$(mktemp)
+jq -n \
   --arg title "$title" \
   --arg body "$body" \
   --arg teamId "$LINEAR_TEAM_ID" \
-  --argjson labelIds "$label_ids" \
-  '{input: {title: $title, description: $body, teamId: $teamId, labelIds: $labelIds}}')
-
-result=$(linear_query '
-  mutation($input: IssueCreateInput!) {
-    issueCreate(input: $input) {
-      success
-      issue { id identifier url }
-    }
-  }
-' "$variables")
+  --argjson labelIds "$label_ids" '{
+  query: "mutation($input: IssueCreateInput!) { issueCreate(input: $input) { success issue { id identifier url } } }",
+  variables: {input: {title: $title, description: $body, teamId: $teamId, labelIds: $labelIds}}
+}' > "$_tmp"
+result=$(linear_gql "$_tmp")
+rm -f "$_tmp"
 
 success=$(echo "$result" | jq -r '.data.issueCreate.success')
 if [[ "$success" != "true" ]]; then

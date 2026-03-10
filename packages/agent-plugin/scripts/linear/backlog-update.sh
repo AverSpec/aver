@@ -93,14 +93,13 @@ if [[ -n "$add_labels" || -n "$remove_labels" ]]; then
 fi
 
 # Execute the update
-result=$(linear_query '
-  mutation($id: String!, $input: IssueUpdateInput!) {
-    issueUpdate(id: $id, input: $input) {
-      success
-      issue { identifier url }
-    }
-  }
-' "{\"id\": \"$issue_id\", \"input\": $input}")
+_tmp=$(mktemp)
+jq -n --arg id "$issue_id" --argjson inp "$input" '{
+  query: "mutation($id: String!, $input: IssueUpdateInput!) { issueUpdate(id: $id, input: $input) { success issue { identifier url } } }",
+  variables: {id: $id, input: $inp}
+}' > "$_tmp"
+result=$(linear_gql "$_tmp")
+rm -f "$_tmp"
 
 success=$(echo "$result" | jq -r '.data.issueUpdate.success')
 if [[ "$success" != "true" ]]; then

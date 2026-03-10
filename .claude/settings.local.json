@@ -64,7 +64,9 @@
       "Bash(CI=1 npx vitest:*)",
       "Bash(packages/agent-plugin/scripts/gh/*:*)",
       "WebFetch(domain:developers.linear.app)",
-      "WebFetch(domain:linear.app)"
+      "WebFetch(domain:linear.app)",
+      "Bash(packages/agent-plugin/scripts/linear/setup-labels.sh:*)",
+      "Bash(packages/agent-plugin/scripts/linear/scenario-advance.sh AI-7:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

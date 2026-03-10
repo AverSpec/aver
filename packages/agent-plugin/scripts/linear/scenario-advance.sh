@@ -77,14 +77,13 @@ fi
 updated_label_ids=$(echo "$current_label_ids" | jq --arg id "$new_stage_id" '. + [$id]')
 
 # Update the issue
-result=$(linear_query '
-  mutation($id: String!, $input: IssueUpdateInput!) {
-    issueUpdate(id: $id, input: $input) {
-      success
-      issue { identifier url }
-    }
-  }
-' "{\"id\": \"$issue_id\", \"input\": {\"labelIds\": $updated_label_ids}}")
+_tmp=$(mktemp)
+jq -n --arg id "$issue_id" --argjson lids "$updated_label_ids" '{
+  query: "mutation($id: String!, $input: IssueUpdateInput!) { issueUpdate(id: $id, input: $input) { success issue { identifier url } } }",
+  variables: {id: $id, input: {labelIds: $lids}}
+}' > "$_tmp"
+result=$(linear_gql "$_tmp")
+rm -f "$_tmp"
 
 success=$(echo "$result" | jq -r '.data.issueUpdate.success')
 if [[ "$success" != "true" ]]; then

@@ -35,14 +35,13 @@ if [[ -z "$done_state_id" ]]; then
 fi
 
 # Update the issue state
-result=$(linear_query '
-  mutation($id: String!, $input: IssueUpdateInput!) {
-    issueUpdate(id: $id, input: $input) {
-      success
-      issue { identifier url state { name } }
-    }
-  }
-' "{\"id\": \"$issue_id\", \"input\": {\"stateId\": \"$done_state_id\"}}")
+_tmp=$(mktemp)
+jq -n --arg id "$issue_id" --arg sid "$done_state_id" '{
+  query: "mutation($id: String!, $input: IssueUpdateInput!) { issueUpdate(id: $id, input: $input) { success issue { identifier url state { name } } } }",
+  variables: {id: $id, input: {stateId: $sid}}
+}' > "$_tmp"
+result=$(linear_gql "$_tmp")
+rm -f "$_tmp"
 
 success=$(echo "$result" | jq -r '.data.issueUpdate.success')
 if [[ "$success" != "true" ]]; then

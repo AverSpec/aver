@@ -47,17 +47,14 @@ issue_id=$(echo "$issue" | jq -r '.id')
 
 # Create the comment
 comment_body=$(printf '❓ **Question**\n\n%s' "$body")
-variables=$(jq -n --arg issueId "$issue_id" --arg body "$comment_body" \
-  '{input: {issueId: $issueId, body: $body}}')
 
-result=$(linear_query '
-  mutation($input: CommentCreateInput!) {
-    commentCreate(input: $input) {
-      success
-      comment { id body url }
-    }
-  }
-' "$variables")
+_tmp=$(mktemp)
+jq -n --arg issueId "$issue_id" --arg body "$comment_body" '{
+  query: "mutation($input: CommentCreateInput!) { commentCreate(input: $input) { success comment { id body url } } }",
+  variables: {input: {issueId: $issueId, body: $body}}
+}' > "$_tmp"
+result=$(linear_gql "$_tmp")
+rm -f "$_tmp"
 
 success=$(echo "$result" | jq -r '.data.commentCreate.success')
 if [[ "$success" != "true" ]]; then
@@ -72,11 +69,13 @@ if [[ -n "$has_question_id" ]]; then
   # Add has-question if not already present
   updated_label_ids=$(echo "$current_label_ids" | jq --arg id "$has_question_id" 'if index($id) then . else . + [$id] end')
 
-  linear_query '
-    mutation($id: String!, $input: IssueUpdateInput!) {
-      issueUpdate(id: $id, input: $input) { success }
-    }
-  ' "{\"id\": \"$issue_id\", \"input\": {\"labelIds\": $updated_label_ids}}" > /dev/null
+  _tmp2=$(mktemp)
+  jq -n --arg id "$issue_id" --argjson lids "$updated_label_ids" '{
+    query: "mutation($id: String!, $input: IssueUpdateInput!) { issueUpdate(id: $id, input: $input) { success } }",
+    variables: {id: $id, input: {labelIds: $lids}}
+  }' > "$_tmp2"
+  linear_gql "$_tmp2" > /dev/null
+  rm -f "$_tmp2"
 fi
 
 # Output the comment URL or ID

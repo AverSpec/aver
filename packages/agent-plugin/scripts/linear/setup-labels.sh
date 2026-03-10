@@ -9,13 +9,14 @@ source "$SCRIPT_DIR/_linear.sh"
 require_env
 
 # Get existing labels for the team.
-existing=$(linear_query '
-  query($filter: IssueLabelFilter) {
-    issueLabels(filter: $filter) {
-      nodes { id name color }
-    }
-  }
-' "{\"filter\": {\"team\": {\"id\": {\"eq\": \"$LINEAR_TEAM_ID\"}}}}")
+# Build label query body to a tmpfile (avoids bash $() brace corruption).
+_labels_tmp=$(mktemp)
+jq -n --arg tid "$LINEAR_TEAM_ID" '{
+  query: "query($filter: IssueLabelFilter) { issueLabels(filter: $filter) { nodes { id name color } } }",
+  variables: {filter: {team: {id: {eq: $tid}}}}
+}' > "$_labels_tmp"
+existing=$(linear_gql "$_labels_tmp")
+rm -f "$_labels_tmp"
 
 existing_names=$(echo "$existing" | jq -r '.data.issueLabels.nodes[].name')
 
@@ -27,15 +28,14 @@ ensure_label() {
   if echo "$existing_names" | grep -qx "$name"; then
     echo "  exists: $name"
   else
-    local result
-    result=$(linear_query '
-      mutation($input: IssueLabelCreateInput!) {
-        issueLabelCreate(input: $input) {
-          success
-          issueLabel { id name }
-        }
-      }
-    ' "{\"input\": {\"name\": \"$name\", \"color\": \"$color\", \"description\": \"$description\", \"teamId\": \"$LINEAR_TEAM_ID\"}}")
+    local result _tmp
+    _tmp=$(mktemp)
+    jq -n --arg n "$name" --arg c "$color" --arg d "$description" --arg tid "$LINEAR_TEAM_ID" '{
+      query: "mutation($input: IssueLabelCreateInput!) { issueLabelCreate(input: $input) { success issueLabel { id name } } }",
+      variables: {input: {name: $n, color: $c, description: $d, teamId: $tid}}
+    }' > "$_tmp"
+    result=$(linear_gql "$_tmp")
+    rm -f "$_tmp"
 
     local success
     success=$(echo "$result" | jq -r '.data.issueLabelCreate.success')

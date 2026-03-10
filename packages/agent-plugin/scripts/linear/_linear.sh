@@ -2,9 +2,18 @@
 # Shared Linear API helper — sourced by all scripts, not executed directly.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 LINEAR_API="https://api.linear.app/graphql"
 
+# Auto-load .env from project root if env vars aren't already set.
+if [[ -z "${LINEAR_API_KEY:-}" && -f "$PROJECT_ROOT/.env" ]]; then
+  set -a
+  source "$PROJECT_ROOT/.env"
+  set +a
+fi
+
 # Validate required environment variables.
+# If LINEAR_TEAM_ID is a short key (e.g. "AI"), resolve it to a UUID.
 require_env() {
   if [[ -z "${LINEAR_API_KEY:-}" ]]; then
     echo "Error: LINEAR_API_KEY environment variable is required" >&2
@@ -14,32 +23,63 @@ require_env() {
     echo "Error: LINEAR_TEAM_ID environment variable is required" >&2
     exit 1
   fi
+
+  # Resolve team key to UUID if it doesn't look like a UUID
+  if [[ ! "$LINEAR_TEAM_ID" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]]; then
+    local team_key="$LINEAR_TEAM_ID"
+    LINEAR_TEAM_ID=$(curl -s -X POST "$LINEAR_API" \
+      -H "Authorization: $LINEAR_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d "{\"query\": \"{ teams { nodes { id key } } }\"}" \
+      | jq -r --arg key "$team_key" '.data.teams.nodes[] | select(.key == $key) | .id // empty')
+    if [[ -z "$LINEAR_TEAM_ID" ]]; then
+      echo "Error: team key '$team_key' not found" >&2
+      exit 1
+    fi
+    export LINEAR_TEAM_ID
+  fi
 }
 
 # Execute a GraphQL query against the Linear API.
 # Usage: linear_query '<graphql>' '{"key":"value"}'
-linear_query() {
-  local query="$1"
-  local variables="${2:-{}}"
-
+# Execute a GraphQL query against the Linear API.
+# Usage: linear_gql <tmpfile>
+# The tmpfile must contain a JSON body with {query, variables}.
+# All callers build the body themselves and write to a tmpfile.
+linear_gql() {
   curl -s -X POST "$LINEAR_API" \
     -H "Authorization: $LINEAR_API_KEY" \
     -H "Content-Type: application/json" \
-    -d "{\"query\": $(echo "$query" | jq -Rs .), \"variables\": $variables}"
+    -d @"$1"
+}
+
+# Execute a GraphQL query against the Linear API.
+# Usage: linear_query '<graphql>' '<variables_json>'
+# NOTE: Due to a bash parsing issue, callers inside $() should use
+# linear_gql with a pre-built tmpfile instead.
+linear_query() {
+  local query="$1"
+  local variables="${2:-{}}"
+  local tmpfile
+  tmpfile=$(mktemp)
+  jq -n --arg q "$query" --argjson v "$variables" '{query: $q, variables: $v}' > "$tmpfile"
+  linear_gql "$tmpfile"
+  rm -f "$tmpfile"
 }
 
 # Resolve a single label name to its UUID for the current team.
 # Usage: resolve_label_id "scenario"
 resolve_label_id() {
   local name="$1"
+  local _tmp
+  _tmp=$(mktemp)
+  jq -n --arg n "$name" --arg tid "$LINEAR_TEAM_ID" '{
+    query: "query($filter: IssueLabelFilter) { issueLabels(filter: $filter) { nodes { id name } } }",
+    variables: {filter: {name: {eq: $n}, team: {id: {eq: $tid}}}}
+  }' > "$_tmp"
   local result
-  result=$(linear_query '
-    query($filter: IssueLabelFilter) {
-      issueLabels(filter: $filter) {
-        nodes { id name }
-      }
-    }
-  ' "{\"filter\": {\"name\": {\"eq\": \"$name\"}, \"team\": {\"id\": {\"eq\": \"$LINEAR_TEAM_ID\"}}}}")
+  result=$(linear_gql "$_tmp")
+  rm -f "$_tmp"
 
   echo "$result" | jq -r '.data.issueLabels.nodes[0].id // empty'
 }
@@ -69,19 +109,17 @@ resolve_label_ids() {
 # Returns the full issue JSON node.
 get_issue_by_identifier() {
   local identifier="$1"
+  # Extract the numeric part from identifier (e.g., "AI-7" -> 7)
+  local num="${identifier##*-}"
+  local _tmp
+  _tmp=$(mktemp)
+  jq -n --argjson num "$num" '{
+    query: "query($filter: IssueFilter) { issues(filter: $filter) { nodes { id identifier title description url labels { nodes { id name } } comments { nodes { id body createdAt url user { name } } } state { name type } } } }",
+    variables: {filter: {number: {eq: $num}}}
+  }' > "$_tmp"
   local result
-  result=$(linear_query '
-    query($filter: IssueFilter) {
-      issues(filter: $filter) {
-        nodes {
-          id identifier title description url
-          labels { nodes { id name } }
-          comments { nodes { id body createdAt url user { name } } }
-          state { name type }
-        }
-      }
-    }
-  ' "{\"filter\": {\"identifier\": {\"eq\": \"$identifier\"}}}")
+  result=$(linear_gql "$_tmp")
+  rm -f "$_tmp"
 
   echo "$result" | jq '.data.issues.nodes[0] // empty'
 }
@@ -90,14 +128,15 @@ get_issue_by_identifier() {
 # Usage: get_state_id "Done"
 get_state_id() {
   local state_name="$1"
+  local _tmp
+  _tmp=$(mktemp)
+  jq -n --arg n "$state_name" --arg tid "$LINEAR_TEAM_ID" '{
+    query: "query($filter: WorkflowStateFilter) { workflowStates(filter: $filter) { nodes { id name type } } }",
+    variables: {filter: {name: {eq: $n}, team: {id: {eq: $tid}}}}
+  }' > "$_tmp"
   local result
-  result=$(linear_query '
-    query($filter: WorkflowStateFilter) {
-      workflowStates(filter: $filter) {
-        nodes { id name type }
-      }
-    }
-  ' "{\"filter\": {\"name\": {\"eq\": \"$state_name\"}, \"team\": {\"id\": {\"eq\": \"$LINEAR_TEAM_ID\"}}}}")
+  result=$(linear_gql "$_tmp")
+  rm -f "$_tmp"
 
   echo "$result" | jq -r '.data.workflowStates.nodes[0].id // empty'
 }

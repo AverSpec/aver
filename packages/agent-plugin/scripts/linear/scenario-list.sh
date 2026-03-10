@@ -26,14 +26,14 @@ done
 
 # Build filter: must have "scenario" label, optionally also "stage:<stage>"
 if [[ -n "$stage" ]]; then
-  filter=$(jq -n --arg stage "stage:$stage" '{
+  filter=$(jq -nc --arg stage "stage:$stage" --arg tid "$LINEAR_TEAM_ID" '{
     labels: { every: { name: { in: ["scenario", $stage] } } },
-    team: { id: { eq: env.LINEAR_TEAM_ID } }
+    team: { id: { eq: $tid } }
   }')
 else
-  filter=$(jq -n '{
+  filter=$(jq -nc --arg tid "$LINEAR_TEAM_ID" '{
     labels: { some: { name: { eq: "scenario" } } },
-    team: { id: { eq: env.LINEAR_TEAM_ID } }
+    team: { id: { eq: $tid } }
   }')
 fi
 
@@ -42,16 +42,13 @@ if [[ -n "$search" ]]; then
   filter=$(echo "$filter" | jq --arg search "$search" '. + {title: {contains: $search}}')
 fi
 
-result=$(linear_query '
-  query($filter: IssueFilter) {
-    issues(filter: $filter, first: 200) {
-      nodes {
-        identifier title url
-        labels { nodes { name } }
-      }
-    }
-  }
-' "{\"filter\": $filter}")
+_tmp=$(mktemp)
+jq -n --argjson f "$filter" '{
+  query: "query($filter: IssueFilter) { issues(filter: $filter, first: 200) { nodes { identifier title url labels { nodes { name } } } } }",
+  variables: {filter: $f}
+}' > "$_tmp"
+result=$(linear_gql "$_tmp")
+rm -f "$_tmp"
 
 echo "$result" | jq '[.data.issues.nodes[] | {
   number: .identifier,

@@ -32,9 +32,9 @@ label_names='["backlog"]'
 [[ -n "$type" ]]     && label_names=$(echo "$label_names" | jq --arg t "$type" '. + [$t]')
 
 # Build the filter object
-filter=$(jq -n --argjson labels "$label_names" '{
+filter=$(jq -nc --argjson labels "$label_names" --arg tid "$LINEAR_TEAM_ID" '{
   labels: { every: { name: { in: $labels } } },
-  team: { id: { eq: env.LINEAR_TEAM_ID } }
+  team: { id: { eq: $tid } }
 }')
 
 # Add state filter based on status
@@ -55,17 +55,13 @@ case "$status" in
     ;;
 esac
 
-result=$(linear_query '
-  query($filter: IssueFilter) {
-    issues(filter: $filter, first: 200) {
-      nodes {
-        identifier title url
-        labels { nodes { name } }
-        state { name type }
-      }
-    }
-  }
-' "{\"filter\": $filter}")
+_tmp=$(mktemp)
+jq -n --argjson f "$filter" '{
+  query: "query($filter: IssueFilter) { issues(filter: $filter, first: 200) { nodes { identifier title url labels { nodes { name } } state { name type } } } }",
+  variables: {filter: $f}
+}' > "$_tmp"
+result=$(linear_gql "$_tmp")
+rm -f "$_tmp"
 
 echo "$result" | jq '[.data.issues.nodes[] | {
   number: .identifier,

@@ -62,6 +62,14 @@ Refactor only on GREEN. Every refactoring move keeps tests passing. Common moves
 
 Use the tests as your refactoring safety net. Run after every move.
 
+## Telemetry Verification
+
+If the domain has telemetry declarations, behavioral tests passing is not enough — telemetry verification must also pass. Run with `AVER_TELEMETRY_MODE=fail` to ensure spans are emitted correctly.
+
+If telemetry tests fail with `Telemetry mismatch` or `causal-break` errors, load the **telemetry** skill (`aver:telemetry`) — its debugging section covers lost context, missing propagation, and async boundary fixes.
+
+If the domain has no telemetry declarations, skip this.
+
 ## Domain Linking
 
 After tests are GREEN, update the GitHub Issue body's "Domain Link" section with:

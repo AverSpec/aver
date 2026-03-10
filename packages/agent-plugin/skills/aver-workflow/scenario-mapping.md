@@ -115,7 +115,20 @@ Edit the issue body to include:
 Rules are **business constraints in domain language** — what a product owner would say.
 Examples read like **Example Mapping cards** with Given/When/Then in domain language.
 
-### 7. Confidence Check and Advancement
+### 7. Telemetry Gate
+
+Before advancing, ask whether this domain warrants observability:
+
+> "Does this domain involve business-critical flows, cross-system boundaries, or operations you'd want to verify in production? If so, we should add telemetry declarations during specification."
+
+If yes, load the **telemetry** skill (`aver:telemetry`) — it adds three questions to capture here:
+1. What identifies a transaction? (the correlation key)
+2. Which steps share that identifier?
+3. Where are the async boundaries?
+
+Capture the answers in the scenario's rules. If telemetry isn't warranted, skip this and proceed.
+
+### 8. Confidence Check and Advancement
 
 Present a summary with confidence levels before asking to advance.
 

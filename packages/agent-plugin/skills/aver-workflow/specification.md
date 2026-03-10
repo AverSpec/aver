@@ -55,6 +55,14 @@ Do these names match how you talk about this domain?
 
 Wait for explicit approval. Names become the shared language between tests, adapters, and documentation. Getting them wrong is expensive to fix later.
 
+## Telemetry Declarations
+
+If the mapping session identified this domain as telemetry-worthy (correlation key, correlated steps, async boundaries), now is the time to add declarations to the vocabulary.
+
+Load the **telemetry** skill (`aver:telemetry`) — it covers declaration forms (static vs. parameterized), span naming conventions, and correlation design. Add `telemetry` to the `MarkerOptions` for each operation that warrants it.
+
+If telemetry wasn't flagged during mapping, skip this section.
+
 ## Define Adapter Interfaces
 
 After human approves names, read the domain file to see the current vocabulary, then design adapter handler signatures based on the domain operations. Review with the human if the handler shapes look correct.

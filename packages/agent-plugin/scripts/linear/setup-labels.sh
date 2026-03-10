@@ -65,8 +65,8 @@ ensure_label "P2" "#FBCA04" "Medium priority"
 ensure_label "P3" "#0E8A16" "Low priority"
 
 # Item type labels
-ensure_label "feature"  "#A2EEEF" "Feature"
-ensure_label "bug"      "#D73A4A" "Bug"
+ensure_label "Feature"  "#A2EEEF" "Feature"
+ensure_label "Bug"      "#D73A4A" "Bug"
 ensure_label "research" "#D4C5F9" "Research"
 ensure_label "refactor" "#C2E0C6" "Refactor"
 ensure_label "chore"    "#EDEDED" "Chore"

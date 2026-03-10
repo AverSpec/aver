@@ -72,7 +72,7 @@ echo "$result" | jq '[.data.issues.nodes[] | {
   number: .identifier,
   title,
   priority: (.labels.nodes | map(select(.name | test("^P[0-3]$"))) | .[0].name // "none"),
-  type: (.labels.nodes | map(select(.name | test("^(feature|bug|research|refactor|chore)$"))) | .[0].name // "none"),
+  type: (.labels.nodes | map(select(.name | test("^(feature|bug|research|refactor|chore)$"; "i"))) | .[0].name // "none"),
   status: (if .state.type == "completed" or .state.type == "canceled" then "closed" else "open" end),
   url
 }]'

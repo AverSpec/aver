@@ -56,17 +56,30 @@ linear_gql() {
 # Usage: resolve_label_id "scenario"
 resolve_label_id() {
   local name="$1"
-  local _tmp
+  local _tmp id
+
+  # Try team-scoped labels first
   _tmp=$(mktemp)
   jq -n --arg n "$name" --arg tid "$LINEAR_TEAM_ID" '{
     query: "query($filter: IssueLabelFilter) { issueLabels(filter: $filter) { nodes { id name } } }",
     variables: {filter: {name: {eq: $n}, team: {id: {eq: $tid}}}}
   }' > "$_tmp"
-  local result
-  result=$(linear_gql "$_tmp")
+  id=$(linear_gql "$_tmp" | jq -r '.data.issueLabels.nodes[0].id // empty')
   rm -f "$_tmp"
 
-  echo "$result" | jq -r '.data.issueLabels.nodes[0].id // empty'
+  # Fall back to workspace-level labels (e.g., built-in Bug, Feature)
+  # Uses containsIgnoreCase for case-insensitive matching
+  if [[ -z "$id" ]]; then
+    _tmp=$(mktemp)
+    jq -n --arg n "$name" '{
+      query: "query($filter: IssueLabelFilter) { issueLabels(filter: $filter) { nodes { id name } } }",
+      variables: {filter: {name: {containsIgnoreCase: $n}, team: {null: true}}}
+    }' > "$_tmp"
+    id=$(linear_gql "$_tmp" | jq -r '[.data.issueLabels.nodes[] | select(.name | ascii_downcase == ($n | ascii_downcase))][0].id // empty' --arg n "$name")
+    rm -f "$_tmp"
+  fi
+
+  echo "$id"
 }
 
 # Resolve multiple label names (comma-separated) to a JSON array of UUIDs.

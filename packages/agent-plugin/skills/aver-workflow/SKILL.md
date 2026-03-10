@@ -7,12 +7,22 @@ description: Scenario-driven acceptance testing — facilitates Example Mapping,
 
 Aver is a domain-driven acceptance testing framework. This skill facilitates **collaborative sessions** between the agent and the human/team — Example Mapping, Story Mapping, investigation, and domain design. The agent's role is to ask questions, present evidence, propose rules and examples, and let the human confirm, refine, or reject.
 
+## Backend Selection
+
+Scripts live in `packages/agent-plugin/scripts/<backend>/` where `<backend>` is either `gh` (GitHub Issues) or `linear` (Linear). Check the `AVER_BACKEND` environment variable to determine which backend to use. Default to `gh` if unset.
+
+- **`gh`** — GitHub Issues. Requires `gh` CLI authenticated. Good for open-source projects.
+- **`linear`** — Linear. Requires `LINEAR_API_KEY` and `LINEAR_TEAM_ID` env vars. Good for teams and closed-source projects.
+
+Both backends expose the **same script names with the same arguments and output format**. All script references in this skill use the path `packages/agent-plugin/scripts/<backend>/` — substitute the active backend.
+
 ## On Session Start
 
-1. Run `packages/agent-plugin/scripts/gh/scenario-list.sh` to see all scenarios and their stages.
-2. Count scenarios by stage to determine the current workflow phase (see Phase Detection below).
-3. Load the corresponding guide from this directory based on the phase.
-4. Run `packages/agent-plugin/scripts/gh/backlog-list.sh --status open` to see active backlog items.
+1. Determine the backend: check `AVER_BACKEND` env var (default: `gh`).
+2. Run `packages/agent-plugin/scripts/<backend>/scenario-list.sh` to see all scenarios and their stages.
+3. Count scenarios by stage to determine the current workflow phase (see Phase Detection below).
+4. Load the corresponding guide from this directory based on the phase.
+5. Run `packages/agent-plugin/scripts/<backend>/backlog-list.sh --status open` to see active backlog items.
 
 ## Three Session Types
 
@@ -173,13 +183,13 @@ When updating a scenario, construct the full body and run `gh issue edit <number
 
 ## Script Reference
 
-All scripts are in `packages/agent-plugin/scripts/gh/` relative to the project root.
+All scripts are in `packages/agent-plugin/scripts/<backend>/` relative to the project root. Both `gh` and `linear` backends expose the same scripts with the same arguments.
 
 ### Setup
 
 | Script | Purpose |
 |--------|---------|
-| `setup-labels.sh` | One-time setup of GitHub labels for stages, priorities, and types |
+| `setup-labels.sh` | One-time setup of labels for stages, priorities, and types |
 
 ### Scenario Scripts
 
@@ -201,16 +211,12 @@ All scripts are in `packages/agent-plugin/scripts/gh/` relative to the project r
 | `backlog-update.sh <number> [--add-label ...] [--remove-label ...] [--body "..."]` | Update labels or body of a backlog item. Returns URL |
 | `backlog-close.sh <number>` | Close a backlog item. Returns URL |
 
-### Direct `gh` Commands
-
-For operations without a dedicated script, use `gh` directly:
+### Additional Operations
 
 | Operation | Command |
 |-----------|---------|
-| Update scenario body | `gh issue edit <number> --body "..."` |
-| Confirm scenario (human gate) | `gh issue comment <number> --body "Confirmed by: <name>"` |
-| Link scenario to domain | Update the "Domain Link" section via `gh issue edit <number> --body "..."` |
-| Delete scenario | `gh issue close <number> --reason "not planned"` |
+| Update scenario body | **gh**: `gh issue edit <number> --body "..."` / **linear**: use `scenario-get.sh` then update via API |
+| Confirm scenario (human gate) | Add a comment: `scenario-question.sh` pattern with "Confirmed by:" prefix |
 | Run tests | `pnpm exec aver run` (filter with `--domain` or `--adapter`) |
 | Inspect domain vocabulary | Read the domain source file directly |
 

@@ -15,7 +15,6 @@
       "Bash(git push:*)",
       "Bash(npm test:*)",
       "Bash(npm run test:*)",
-      "mcp__ide__getDiagnostics",
       "Bash(npm run build:*)",
       "Bash(npm run typecheck:*)",
       "Bash(AVER_ADAPTER=direct npx vitest run:*)",
@@ -23,7 +22,6 @@
       "Bash(npx playwright install:*)",
       "Bash(npx vite build:*)",
       "Bash(git checkout:*)",
-      "mcp__aver__get_project_context",
       "Bash(pnpm vitest run:*)",
       "Bash(pnpm run build:*)",
       "Bash(pnpm --filter aver run build:*)",
@@ -39,28 +37,11 @@
       "Bash(git check-ignore:*)",
       "Bash(git worktree:*)",
       "Bash(pnpm --filter @aver/protocol-http run build:*)",
-      "Bash(pnpm --filter @aver/mcp-server run build:*)",
-      "Bash(pnpm --filter @aver/workspace run build:*)",
-      "Bash(pnpm --filter @aver/workspace run typecheck:*)",
       "Bash(npm run:*)",
-      "Bash(git -C /Users/natejackson/Documents/Code/aver/.worktrees/workspace-workflow status)",
-      "Bash(git -C /Users/natejackson/Documents/Code/aver/.worktrees/workspace-workflow diff -- packages/mcp-server/ pnpm-lock.yaml)",
       "Bash(wc:*)",
       "Bash(pnpm -r run typecheck:*)",
-      "mcp__aver__list_adapters",
-      "mcp__aver__get_domain_vocabulary",
       "Bash(pnpm --filter @aver/core run test:*)",
-      "mcp__aver__resolve_question",
-      "mcp__aver__advance_scenario",
-      "mcp__aver__link_to_domain",
-      "Bash(pnpm --filter @aver/mcp-server run test -- --run test/acceptance/config-and-discovery.spec.ts)",
       "Bash(pnpm -r run test:*)",
-      "mcp__aver__get_scenario_summary",
-      "mcp__aver__get_workflow_phase",
-      "mcp__aver__list_domains",
-      "mcp__aver__get_scenarios",
-      "mcp__aver__capture_scenario",
-      "mcp__aver__regress_scenario",
       "Bash(pnpm --filter @aver/core run build:*)",
       "Bash(pnpm --filter @aver/agent exec vitest run:*)",
       "Bash(git -C /Users/natejackson/Documents/Code/aver status packages/agent/test/unit/hooks.spec.ts)",
@@ -80,55 +61,13 @@
       "WebFetch(domain:registry.npmjs.org)",
       "Bash(git:*)",
       "Bash(gh run:*)",
-      "mcp__aver__update_scenario",
-      "mcp__aver__confirm_scenario",
-      "mcp__aver__get_backlog_summary",
-      "mcp__aver__create_backlog_item",
-      "mcp__aver__get_backlog_items",
-      "mcp__aver__move_backlog_item",
-      "mcp__aver__update_backlog_item",
-      "mcp__aver__run_tests",
-      "mcp__aver__batch_advance_scenarios",
       "Bash(CI=1 npx vitest:*)",
-      "mcp__aver__add_question"
+      "Bash(packages/agent-plugin/scripts/gh/*:*)",
+      "WebFetch(domain:developers.linear.app)",
+      "WebFetch(domain:linear.app)"
     ]
   },
   "enableAllProjectMcpServers": true,
-  "hooks": {
-    "Stop": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "curl -s -X POST \"http://localhost:${MCP_VOICE_HOOKS_PORT:-5111}/api/hooks/stop\" || echo '{}'"
-          }
-        ]
-      }
-    ],
-    "PreToolUse": [
-      {
-        "matcher": "_voice-hooks__speak$",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "curl -s -X POST \"http://localhost:${MCP_VOICE_HOOKS_PORT:-5111}/api/hooks/pre-speak\" || echo '{}'"
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "^(?!.*_voice-hooks__)",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "curl -s -X POST \"http://localhost:${MCP_VOICE_HOOKS_PORT:-5111}/api/hooks/post-tool\" || echo '{}'"
-          }
-        ]
-      }
-    ]
-  },
   "sandbox": {
     "enabled": true,
     "autoAllowBashIfSandboxed": true

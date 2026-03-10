@@ -109,10 +109,10 @@ Then present findings:
 > Should I capture these as scenarios? Any that should be combined, split, or skipped?"
 
 For each behavior the human confirms:
-- Run `packages/agent-plugin/scripts/gh/scenario-capture.sh --title "..." --body "..."` with `mode: observed` and the behavior description
+- Run `packages/agent-plugin/scripts/&lt;backend&gt;/scenario-capture.sh --title "..." --body "..."` with `mode: observed` and the behavior description
 - Attach seams and constraints by updating the structured issue body via `gh issue edit <number> --body "..."`
 - Link approval baselines by updating the "Domain Link" section in the issue body via `gh issue edit`
-- Post open questions via `packages/agent-plugin/scripts/gh/scenario-question.sh <number> --body "..."` for speculative findings
+- Post open questions via `packages/agent-plugin/scripts/&lt;backend&gt;/scenario-question.sh <number> --body "..."` for speculative findings
 
 Then transition to Example Mapping for each captured scenario. The investigation evidence becomes input to the mapping session — approval baselines show what the system does, seams show where tests attach, constraints become candidate rules.
 

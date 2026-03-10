@@ -48,7 +48,7 @@ Say to the human:
 > **Confirmed** (directly evident):
 > - [rule] — This is explicit in [code/test/schema]."
 
-**Speculative rules generate questions automatically.** For each speculative rule, immediately run `packages/agent-plugin/scripts/gh/scenario-question.sh <number> --body "..."` with the uncertainty. Don't wait.
+**Speculative rules generate questions automatically.** For each speculative rule, immediately run `packages/agent-plugin/scripts/&lt;backend&gt;/scenario-question.sh <number> --body "..."` with the uncertainty. Don't wait.
 
 Present 1-3 rules at a time. Large batches cause rubber-stamping. Ask:
 > "Do these match your understanding? Anything missing? Anything wrong?"
@@ -70,7 +70,7 @@ Generate at least two examples per rule — one satisfying, one violating. The h
 
 ### 4. Capture Questions Immediately
 
-Any ambiguity becomes a question, not a guess. Run `packages/agent-plugin/scripts/gh/scenario-question.sh <number> --body "..."` the moment uncertainty surfaces.
+Any ambiguity becomes a question, not a guess. Run `packages/agent-plugin/scripts/&lt;backend&gt;/scenario-question.sh <number> --body "..."` the moment uncertainty surfaces.
 
 Say to the human:
 > "I'm not sure about [X]. I've captured it as a question on the scenario. We can't advance until it's resolved — but we can keep mapping other rules in the meantime."

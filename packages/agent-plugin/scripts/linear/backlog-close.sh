@@ -27,10 +27,10 @@ fi
 issue_id=$(echo "$issue" | jq -r '.id')
 issue_url=$(echo "$issue" | jq -r '.url')
 
-# Get the "Done" state ID for this team
-done_state_id=$(get_state_id "Done")
+# Get the first "completed" type state for this team (works with custom state names)
+done_state_id=$(get_state_id_by_type "completed")
 if [[ -z "$done_state_id" ]]; then
-  echo "Error: could not find 'Done' workflow state for team — check LINEAR_TEAM_ID" >&2
+  echo "Error: could not find a completed workflow state for team — check LINEAR_TEAM_ID" >&2
   exit 1
 fi
 

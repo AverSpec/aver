@@ -125,3 +125,21 @@ get_state_id() {
 
   echo "$result" | jq -r '.data.workflowStates.nodes[0].id // empty'
 }
+
+# Get the first workflow state ID by type (e.g., "completed", "canceled", "started").
+# Works regardless of custom state names.
+# Usage: get_state_id_by_type "completed"
+get_state_id_by_type() {
+  local state_type="$1"
+  local _tmp
+  _tmp=$(mktemp)
+  jq -n --arg t "$state_type" --arg tid "$LINEAR_TEAM_ID" '{
+    query: "query($filter: WorkflowStateFilter) { workflowStates(filter: $filter) { nodes { id name type } } }",
+    variables: {filter: {type: {eq: $t}, team: {id: {eq: $tid}}}}
+  }' > "$_tmp"
+  local result
+  result=$(linear_gql "$_tmp")
+  rm -f "$_tmp"
+
+  echo "$result" | jq -r '.data.workflowStates.nodes[0].id // empty'
+}

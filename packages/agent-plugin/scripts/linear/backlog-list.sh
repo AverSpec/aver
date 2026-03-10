@@ -31,9 +31,14 @@ label_names='["backlog"]'
 [[ -n "$priority" ]] && label_names=$(echo "$label_names" | jq --arg p "$priority" '. + [$p]')
 [[ -n "$type" ]]     && label_names=$(echo "$label_names" | jq --arg t "$type" '. + [$t]')
 
-# Build the filter object
-filter=$(jq -nc --argjson labels "$label_names" --arg tid "$LINEAR_TEAM_ID" '{
-  labels: { every: { name: { in: $labels } } },
+# Build the filter object — use "and" to require ALL labels via multiple "some" conditions
+label_filters="[]"
+for label in $(echo "$label_names" | jq -r '.[]'); do
+  label_filters=$(echo "$label_filters" | jq --arg n "$label" '. + [{labels: {some: {name: {eq: $n}}}}]')
+done
+
+filter=$(jq -nc --argjson ands "$label_filters" --arg tid "$LINEAR_TEAM_ID" '{
+  and: $ands,
   team: { id: { eq: $tid } }
 }')
 

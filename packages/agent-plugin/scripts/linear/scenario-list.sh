@@ -25,17 +25,16 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Build filter: must have "scenario" label, optionally also "stage:<stage>"
+label_filters='[{"labels": {"some": {"name": {"eq": "scenario"}}}}]'
 if [[ -n "$stage" ]]; then
-  filter=$(jq -nc --arg stage "stage:$stage" --arg tid "$LINEAR_TEAM_ID" '{
-    labels: { every: { name: { in: ["scenario", $stage] } } },
-    team: { id: { eq: $tid } }
-  }')
-else
-  filter=$(jq -nc --arg tid "$LINEAR_TEAM_ID" '{
-    labels: { some: { name: { eq: "scenario" } } },
-    team: { id: { eq: $tid } }
-  }')
+  label_filters=$(echo "$label_filters" | jq --arg s "stage:$stage" '. + [{"labels": {"some": {"name": {"eq": $s}}}}]')
 fi
+
+filter=$(jq -nc --argjson ands "$label_filters" --arg tid "$LINEAR_TEAM_ID" '{
+  and: $ands,
+  team: { id: { eq: $tid } },
+  state: { type: { nin: ["completed", "canceled"] } }
+}')
 
 # Add title search if provided
 if [[ -n "$search" ]]; then

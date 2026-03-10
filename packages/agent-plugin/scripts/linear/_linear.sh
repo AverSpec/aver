@@ -41,8 +41,6 @@ require_env() {
 }
 
 # Execute a GraphQL query against the Linear API.
-# Usage: linear_query '<graphql>' '{"key":"value"}'
-# Execute a GraphQL query against the Linear API.
 # Usage: linear_gql <tmpfile>
 # The tmpfile must contain a JSON body with {query, variables}.
 # All callers build the body themselves and write to a tmpfile.
@@ -53,19 +51,6 @@ linear_gql() {
     -d @"$1"
 }
 
-# Execute a GraphQL query against the Linear API.
-# Usage: linear_query '<graphql>' '<variables_json>'
-# NOTE: Due to a bash parsing issue, callers inside $() should use
-# linear_gql with a pre-built tmpfile instead.
-linear_query() {
-  local query="$1"
-  local variables="${2:-{}}"
-  local tmpfile
-  tmpfile=$(mktemp)
-  jq -n --arg q "$query" --argjson v "$variables" '{query: $q, variables: $v}' > "$tmpfile"
-  linear_gql "$tmpfile"
-  rm -f "$tmpfile"
-}
 
 # Resolve a single label name to its UUID for the current team.
 # Usage: resolve_label_id "scenario"

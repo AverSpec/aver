@@ -96,6 +96,70 @@ function verifyTelemetry(
   }
 }
 
+function buildTraceEntry(
+  kind: 'action' | 'query' | 'assertion',
+  category: StepCategory,
+  name: string,
+  payload: unknown,
+  correlationId: string | undefined,
+  domainName: string | undefined,
+  clock: Clock,
+): TraceEntry {
+  return { kind, category, name, payload, status: 'pass', startAt: clock(), correlationId, domainName }
+}
+
+function finalizeTraceEntry(entry: TraceEntry, clock: Clock): void {
+  entry.endAt = clock()
+  if (entry.startAt !== undefined) entry.durationMs = entry.endAt - entry.startAt
+}
+
+/**
+ * Runs telemetry verification for a step that has passed. Attaches the match
+ * result to `entry`. On a mismatch with mode === 'fail', sets entry status to
+ * 'fail', pushes the entry to `trace`, and throws — propagating out of the
+ * caller's `finally` block so the normal `trace.push` at the end is skipped.
+ * On mode === 'warn', emits a console warning and returns normally.
+ * No-ops when `marker` has no telemetry declaration or mode === 'off'.
+ */
+function applyTelemetryVerification(
+  entry: TraceEntry,
+  payload: unknown,
+  marker: VocabMarker | undefined,
+  collector: TelemetryCollector,
+  mode: TelemetryVerificationMode,
+  trace: TraceEntry[],
+): void {
+  if (!marker?.telemetry || mode === 'off') return
+
+  const expected = typeof marker.telemetry === 'function'
+    ? marker.telemetry(payload)
+    : marker.telemetry
+  const result = verifyTelemetry(collector, expected)
+  entry.telemetry = result
+
+  if (!result.matched) {
+    if (mode === 'fail') {
+      entry.status = 'fail'
+      const err = new Error(
+        `Telemetry mismatch: expected span '${expected.span}' not found`
+      )
+      entry.error = err
+      trace.push(entry)
+      throw err
+    }
+    if (mode === 'warn') {
+      const attrInfo = expected.attributes
+        ? ` with attributes ${JSON.stringify(expected.attributes)}`
+        : ''
+      const available = collector.getSpans().map(s => s.name)
+      console.warn(
+        `[aver] Telemetry warning: expected span '${expected.span}'${attrInfo} not found. ` +
+        `Available spans: [${available.join(', ')}]`
+      )
+    }
+  }
+}
+
 function buildKindProxy(
   kind: 'action' | 'query' | 'assertion',
   category: StepCategory,
@@ -126,7 +190,7 @@ function buildKindProxy(
           : getAdapter().handlers.assertions
 
       const handler = (handlers as any)[name]
-      const entry: TraceEntry = { kind, category, name, payload, status: 'pass', startAt: clock(), correlationId, domainName }
+      const entry = buildTraceEntry(kind, category, name, payload, correlationId, domainName, clock)
 
       try {
         const result = await handler(getCtx(), payload)
@@ -139,40 +203,14 @@ function buildKindProxy(
         entry.error = error
         throw error
       } finally {
-        entry.endAt = clock()
-        if (entry.startAt !== undefined) entry.durationMs = entry.endAt - entry.startAt
+        finalizeTraceEntry(entry, clock)
 
-        // Telemetry verification: only if step passed, collector is available, and marker declares telemetry
-        const marker = markers[name]
+        // Telemetry verification: only when step passed and a collector is available.
+        // On mode==='fail' mismatch, applyTelemetryVerification pushes the entry and
+        // throws, propagating out of this finally block before the push below runs.
         const collector = getTelemetryCollector()
-        const mode = getTelemetryMode()
-        if (entry.status === 'pass' && collector && marker?.telemetry && mode !== 'off') {
-          const expected = typeof marker.telemetry === 'function'
-            ? marker.telemetry(payload)
-            : marker.telemetry
-          const result = verifyTelemetry(collector, expected)
-          entry.telemetry = result
-          if (!result.matched) {
-            if (mode === 'fail') {
-              entry.status = 'fail'
-              const err = new Error(
-                `Telemetry mismatch: expected span '${expected.span}' not found`
-              )
-              entry.error = err
-              trace.push(entry)
-              throw err
-            }
-            if (mode === 'warn') {
-              const attrInfo = expected.attributes
-                ? ` with attributes ${JSON.stringify(expected.attributes)}`
-                : ''
-              const available = collector.getSpans().map(s => s.name)
-              console.warn(
-                `[aver] Telemetry warning: expected span '${expected.span}'${attrInfo} not found. ` +
-                `Available spans: [${available.join(', ')}]`
-              )
-            }
-          }
+        if (entry.status === 'pass' && collector) {
+          applyTelemetryVerification(entry, payload, markers[name], collector, getTelemetryMode(), trace)
         }
 
         trace.push(entry)

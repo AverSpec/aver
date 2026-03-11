@@ -14,11 +14,11 @@ npx playwright install chromium
 ## Usage
 
 ```typescript
-import { implement } from '@aver/core'
+import { adapt } from '@aver/core'
 import { playwright } from '@aver/protocol-playwright'
 import { cart } from './domains/cart'
 
-export const playwrightAdapter = implement(cart, {
+export const playwrightAdapter = adapt(cart, {
   protocol: playwright(),
   actions: {
     addItem: async (page, { name }) => {

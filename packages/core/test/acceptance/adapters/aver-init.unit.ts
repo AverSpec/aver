@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, readdirSync, mkdtempSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { implement, unit } from '../../../src/index'
+import { adapt, unit } from '../../../src/index'
 import { averInit } from '../domains/aver-init'
 import { initProjectFiles, initDomainFiles } from '../../../src/cli/scaffold'
 
@@ -10,7 +10,7 @@ interface InitTestSession {
   lastError?: Error
 }
 
-export const averInitAdapter = implement(averInit, {
+export const averInitAdapter = adapt(averInit, {
   protocol: unit<InitTestSession>(() => {
     const dir = mkdtempSync(join(tmpdir(), 'aver-init-'))
     return { dir }

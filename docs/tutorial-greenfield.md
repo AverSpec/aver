@@ -127,7 +127,7 @@ An adapter binds domain vocabulary to a real implementation. Start with the `uni
 
 ```typescript
 // adapters/task-board.unit.ts
-import { implement, unit } from '@aver/core'
+import { adapt, unit } from '@aver/core'
 import { expect } from 'vitest'
 import { taskBoard } from '../domains/task-board.js'
 
@@ -136,7 +136,7 @@ interface Task {
   status: string
 }
 
-export const unitAdapter = implement(taskBoard, {
+export const unitAdapter = adapt(taskBoard, {
   protocol: unit((): { tasks: Task[] } => ({ tasks: [] })),
   actions: {
     createTask: async (ctx, { title }) => {
@@ -257,7 +257,7 @@ Write an HTTP adapter for the same domain:
 
 ```typescript
 // adapters/task-board.http.ts
-import { implement } from '@aver/core'
+import { adapt } from '@aver/core'
 import { expect } from 'vitest'
 import { taskBoard } from '../domains/task-board.js'
 import { createApp } from '../src/server.js'
@@ -281,7 +281,7 @@ const protocol: Protocol<HttpContext> = {
   },
 }
 
-export const httpAdapter = implement(taskBoard, {
+export const httpAdapter = adapt(taskBoard, {
   protocol,
   actions: {
     createTask: async (ctx, { title }) => {

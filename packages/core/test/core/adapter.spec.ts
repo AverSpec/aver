@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { implement } from '../../src/core/adapter'
+import { adapt } from '../../src/core/adapter'
 import { defineDomain } from '../../src/core/domain'
 import { action, query, assertion } from '../../src/core/markers'
 import type { Protocol } from '../../src/core/protocol'
@@ -25,9 +25,9 @@ const cart = defineDomain({
   },
 })
 
-describe('implement()', () => {
+describe('adapt()', () => {
   it('creates an adapter with domain, protocol, and handlers', () => {
-    const adapter = implement(cart, {
+    const adapter = adapt(cart, {
       protocol: testProtocol,
       actions: {
         addItem: async (ctx, { name }) => { ctx.calls.push(`add:${name}`) },
@@ -47,7 +47,7 @@ describe('implement()', () => {
   })
 
   it('exposes executable handlers', async () => {
-    const adapter = implement(cart, {
+    const adapter = adapt(cart, {
       protocol: testProtocol,
       actions: {
         addItem: async (ctx, { name }) => { ctx.calls.push(`add:${name}`) },

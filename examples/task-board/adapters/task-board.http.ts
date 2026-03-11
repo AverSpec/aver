@@ -1,5 +1,5 @@
 import { expect } from 'vitest'
-import { implement } from '@aver/core'
+import { adapt } from '@aver/core'
 import { http } from '@aver/protocol-http'
 import { taskBoard } from '../domains/task-board.js'
 import { createServer } from '../src/server/index.js'
@@ -29,7 +29,7 @@ const httpProtocol: Protocol<HttpContext> = {
   },
 }
 
-export const httpAdapter = implement(taskBoard, {
+export const httpAdapter = adapt(taskBoard, {
   protocol: httpProtocol,
 
   actions: {

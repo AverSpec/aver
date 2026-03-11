@@ -1,4 +1,4 @@
-import { implement, withFixture } from '@aver/core'
+import { adapt, withFixture } from '@aver/core'
 import { playwright } from '@aver/protocol-playwright'
 import { taskBoard } from '../domains/task-board.js'
 import { createServer } from '../src/server/index.js'
@@ -46,7 +46,7 @@ protocolWithServer.setup = async function (): Promise<Page> {
   return page
 }
 
-export const playwrightAdapter = implement(taskBoard, {
+export const playwrightAdapter = adapt(taskBoard, {
   protocol: protocolWithServer,
 
   actions: {

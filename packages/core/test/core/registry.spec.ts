@@ -6,7 +6,7 @@ import {
 } from '../../src/core/registry'
 import { resetConfigAutoload } from '../../src/core/test-registration'
 import { defineDomain } from '../../src/core/domain'
-import { implement } from '../../src/core/adapter'
+import { adapt } from '../../src/core/adapter'
 import { unit } from '../../src/protocols/unit'
 import { action, query, assertion } from '../../src/core/markers'
 
@@ -32,7 +32,7 @@ function makeAdapter(domain: ReturnType<typeof defineDomain>, protocolName = 'un
       handlers[section][key] = async () => {}
     }
   }
-  return implement(domain, {
+  return adapt(domain, {
     protocol: { name: protocolName, async setup() { return null }, async teardown() {} },
     ...handlers,
   } as any)
@@ -90,7 +90,7 @@ describe('registerAdapter auto-registers domain', () => {
   })
 
   it('auto-registers the domain when registering an adapter', () => {
-    const adapter = implement(cart, {
+    const adapter = adapt(cart, {
       protocol: unit(() => null),
       actions: { addItem: async () => {} },
       queries: { total: async () => 0 },
@@ -102,7 +102,7 @@ describe('registerAdapter auto-registers domain', () => {
   })
 
   it('does not duplicate domain when adapter registered twice', () => {
-    const adapter = implement(cart, {
+    const adapter = adapt(cart, {
       protocol: unit(() => null),
       actions: { addItem: async () => {} },
       queries: { total: async () => 0 },
@@ -117,7 +117,7 @@ describe('registerAdapter auto-registers domain', () => {
 describe('resetRegistry', () => {
   it('clears both adapters and domains', () => {
     registerDomain(cart)
-    const adapter = implement(cart, {
+    const adapter = adapt(cart, {
       protocol: unit(() => null),
       actions: { addItem: async () => {} },
       queries: { total: async () => 0 },

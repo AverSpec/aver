@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { defineDomain, action, query, assertion, implement, suite } from '../../src/index'
+import { defineDomain, action, query, assertion, adapt, suite } from '../../src/index'
 import type { Protocol } from '../../src/core/protocol'
 
 const testProtocol: Protocol<void> = {
@@ -16,7 +16,7 @@ describe('correlation IDs', () => {
     assertions: { checkSomething: assertion<void>() },
   })
 
-  const adapter = implement(testDomain, {
+  const adapter = adapt(testDomain, {
     protocol: testProtocol,
     actions: {
       doSomething: async () => {},

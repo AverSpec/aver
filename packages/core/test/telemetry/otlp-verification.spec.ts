@@ -2,7 +2,7 @@ import { beforeAll, afterAll, expect } from 'vitest'
 import { trace } from '@opentelemetry/api'
 import { BasicTracerProvider, SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base'
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http'
-import { defineDomain, action, assertion, implement, suite } from '../../src/index'
+import { defineDomain, action, assertion, adapt, suite } from '../../src/index'
 import { createOtlpReceiver, type OtlpReceiver } from '../../src/telemetry/otlp-receiver'
 import type { Protocol } from '../../src/core/protocol'
 
@@ -82,7 +82,7 @@ const protocol: Protocol<void> = {
   get telemetry() { return receiver },
 }
 
-const adapter = implement(greetingDomain, {
+const adapter = adapt(greetingDomain, {
   protocol,
   actions: {
     greet: async (_ctx, { name }) => {
@@ -126,7 +126,7 @@ const brokenProtocol: Protocol<void> = {
   get telemetry() { return receiver },
 }
 
-const brokenAdapter = implement(greetingDomain, {
+const brokenAdapter = adapt(greetingDomain, {
   protocol: brokenProtocol,
   actions: {
     greet: async (_ctx, { name }) => {

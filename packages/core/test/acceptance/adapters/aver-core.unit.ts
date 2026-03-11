@@ -1,6 +1,6 @@
 import { isDeepStrictEqual } from 'node:util'
 import {
-  implement,
+  adapt,
   defineDomain as realDefineDomain,
   action as realAction,
   query as realQuery,
@@ -24,7 +24,7 @@ interface AverTestSession {
   lastSetupError?: string
 }
 
-export const averCoreAdapter = implement(averCore, {
+export const averCoreAdapter = adapt(averCore, {
   protocol: unit<AverTestSession>(() => {
     // Do NOT call resetRegistry() here -- that would wipe
     // the outer adapter registration needed by the outer suite.
@@ -93,7 +93,7 @@ export const averCoreAdapter = implement(averCore, {
         async teardown() {},
       }
 
-      session.adapter = implement(dom as any, {
+      session.adapter = adapt(dom as any, {
         protocol: proto,
         actions: actionHandlers,
         queries: queryHandlers,
@@ -158,7 +158,7 @@ export const averCoreAdapter = implement(averCore, {
         assertionHandlers[name] = async () => {}
       }
 
-      const secondAdapter = implement(dom as any, {
+      const secondAdapter = adapt(dom as any, {
         protocol: proto,
         actions: actionHandlers,
         queries: queryHandlers,

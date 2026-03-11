@@ -20,3 +20,4 @@ Task-oriented how-to guides for common Aver tasks.
 | [CI Integration](ci-integration) | Run Aver tests in your CI pipeline |
 | [AI-Assisted Testing](ai-assisted) | Use agent skills and GitHub Issues for scenario management |
 | [Example App](example-app) | Full working task board example |
+| [Troubleshooting](troubleshooting) | When to use Aver, when not to, common issues, incremental adoption |

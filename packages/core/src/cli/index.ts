@@ -19,6 +19,11 @@ switch (command) {
     await runApprove(args)
     break
   }
+  case 'telemetry': {
+    const { runTelemetryCommand } = await import('./telemetry.js')
+    await runTelemetryCommand(args)
+    break
+  }
   case '--help':
   case '-h':
   case undefined: {
@@ -26,14 +31,16 @@ switch (command) {
 aver - Domain-driven acceptance testing
 
 Commands:
-  aver run       Run acceptance tests (flags forwarded to vitest)
-  aver init      Scaffold a new domain
-  aver approve   Update approvals
+  aver run           Run acceptance tests (flags forwarded to vitest)
+  aver init          Scaffold a new domain
+  aver approve       Update approvals
+  aver telemetry     Telemetry utilities (diagnose, check)
 
 Options:
   --help         Show this help message
 
 Run "aver run --help" for run options.
+Run "aver telemetry --help" for telemetry options.
 `)
     break
   }

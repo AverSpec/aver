@@ -1,10 +1,8 @@
 import { defineConfig } from 'tsup'
+import { baseConfig } from '../../tsup.preset'
 
 export default defineConfig({
+  ...baseConfig,
   entry: { index: 'src/index.ts' },
-  format: ['esm', 'cjs'],
-  dts: true,
-  sourcemap: true,
-  clean: true,
   external: ['@aver/core'],
 })

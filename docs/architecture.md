@@ -73,6 +73,22 @@ The `unit` protocol is built into core (zero dependencies). HTTP and Playwright 
 
 You can write custom protocols for any interaction mode — WebSocket, gRPC, CLI, whatever your system exposes.
 
+### Protocol composition with `withFixture`
+
+`withFixture(protocol, { before?, after? })` wraps a protocol with setup/teardown hooks — useful when an adapter needs external infrastructure (a database, a server process) that sits outside the protocol's own context:
+
+```typescript
+import { withFixture } from '@aver/core'
+import { http } from '@aver/protocol-http'
+
+const httpWithServer = withFixture(http({ baseUrl: 'http://localhost:3000' }), {
+  before: () => startServer(),
+  after: () => stopServer(),
+})
+```
+
+`before` runs before `protocol.setup()`. `after` runs after `protocol.teardown()`, even if teardown throws. All other protocol behavior (lifecycle hooks, telemetry) passes through unchanged.
+
 ## Multi-adapter resolution
 
 When you register multiple adapters for the same domain, every test runs against all of them automatically:
@@ -86,6 +102,25 @@ When you register multiple adapters for the same domain, every test runs against
 Each test gets an isolated protocol context. Test names are parameterized with the protocol name. When two adapters disagree on a behavior, that disagreement surfaces a real bug.
 
 You can filter adapters at runtime with `AVER_ADAPTER=unit` to run only the fast tests during development.
+
+### Cross-domain composition with named-config `suite()`
+
+When a test scenario spans multiple bounded contexts, `suite()` accepts a named config object instead of a single domain. Each key maps to a `[domain, adapter]` tuple, and the test callback receives a context with a namespace per key:
+
+```typescript
+const { test } = suite({
+  cart: [shoppingCart, cartAdapter],
+  payments: [paymentGateway, paymentAdapter],
+})
+
+test('checkout charges the card', async ({ cart, payments }) => {
+  await cart.given.addItem({ name: 'Widget', qty: 1 })
+  await cart.when.checkout()
+  await payments.then.chargeRecorded({ amount: 25 })
+})
+```
+
+Each domain gets its own protocol lifecycle. The shared `trace()` function on the context collects trace entries from all domains in execution order.
 
 ## Domain extensions
 
@@ -159,4 +194,4 @@ The cost model determines when Aver earns its keep.
 
 This works with Claude Code, Cursor, Cline, Aider, or any agent that can run tests. The domain vocabulary defines correctness; `aver run` verifies it.
 
-Aver also ships an `@aver/agent-plugin` for Claude Code that provides MCP tools for scenario management and workflow skills for telemetry design and OTel context propagation.
+Aver also ships an `@aver/agent-plugin` for Claude Code that provides workflow skills for scenario management, telemetry design, and OTel context propagation, plus bash scripts for issue tracking via GitHub Issues or Linear.

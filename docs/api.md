@@ -319,7 +319,7 @@ interface SpanLink {
 Creates an OTLP HTTP receiver for cross-process telemetry testing.
 
 ```typescript
-import { createOtlpReceiver } from '@aver/core'
+import { createOtlpReceiver } from '@aver/telemetry'
 
 const receiver = await createOtlpReceiver()
 // receiver.port — port the OTLP HTTP endpoint listens on
@@ -467,7 +467,6 @@ import type {
   CollectedSpan,
   SpanLink,
   TelemetryMatchResult,
-  OtlpReceiver,
   CorrelationResult,
   CorrelationGroup,
   CorrelationViolation,

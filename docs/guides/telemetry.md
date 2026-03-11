@@ -82,7 +82,7 @@ const protocol: Protocol<MyContext> = {
 **Cross-process (integration adapter):**
 
 ```typescript
-import { createOtlpReceiver } from '@aver/core'
+import { createOtlpReceiver } from '@aver/telemetry'
 
 const receiver = createOtlpReceiver()
 const port = await receiver.start()

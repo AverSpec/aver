@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { trace } from '@opentelemetry/api'
 import { BasicTracerProvider, SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base'
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http'
-import { createOtlpReceiver, type OtlpReceiver } from '../../src/telemetry/otlp-receiver'
+import { createOtlpReceiver, type OtlpReceiver } from '../src/otlp-receiver'
 
 /**
  * End-to-end integration test: a real OTel SDK exporting spans

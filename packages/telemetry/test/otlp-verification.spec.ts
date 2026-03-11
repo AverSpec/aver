@@ -2,9 +2,9 @@ import { beforeAll, afterAll, expect } from 'vitest'
 import { trace } from '@opentelemetry/api'
 import { BasicTracerProvider, SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base'
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http'
-import { defineDomain, action, assertion, implement, suite } from '../../src/index'
-import { createOtlpReceiver, type OtlpReceiver } from '../../src/telemetry/otlp-receiver'
-import type { Protocol } from '../../src/core/protocol'
+import { defineDomain, action, assertion, implement, suite } from '@aver/core'
+import { createOtlpReceiver, type OtlpReceiver } from '../src/otlp-receiver'
+import type { Protocol } from '@aver/core'
 
 /**
  * Full aver verification pipeline over OTLP:

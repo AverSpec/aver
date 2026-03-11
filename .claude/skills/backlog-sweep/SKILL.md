@@ -17,7 +17,6 @@ Call `get_backlog_summary` and `get_backlog_items(status: 'open')` to show the c
 
 Glob for plan docs in both locations:
 - `.aver/plans/*.md`
-- `docs/plans/*.md`
 
 Present the full list with dates and filenames. Ask the user which docs to scan (multi-select). If the user says "all", scan everything.
 

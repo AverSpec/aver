@@ -182,7 +182,7 @@ Overall assessment — ship / ship with caveats / needs work. State the vote (e.
 
 ## Output
 
-Save the review to `docs/plans/YYYY-MM-DD-<topic>-<review-type>-review.md` by default. If the user asks to skip saving, just present the review conversationally.
+Save the review to `.aver/plans/YYYY-MM-DD-<topic>-<review-type>-review.md` by default. If the user asks to skip saving, just present the review conversationally.
 
 The saved file should use the format:
 

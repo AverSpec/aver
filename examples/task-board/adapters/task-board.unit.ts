@@ -1,3 +1,4 @@
+import { expect } from 'vitest'
 import { implement, unit } from '@aver/core'
 import { Board } from '../src/server/board.js'
 import { taskBoard } from '../domains/task-board.js'
@@ -32,23 +33,17 @@ export const unitAdapter = implement(taskBoard, {
   assertions: {
     taskInStatus: async (board, { title, status }) => {
       const task = board.details(title)
-      if (!task) throw new Error(`Task "${title}" not found`)
-      if (task.status !== status) {
-        throw new Error(`Expected task "${title}" in "${status}" but was in "${task.status}"`)
-      }
+      expect(task).toBeDefined()
+      expect(task!.status).toBe(status)
     },
     taskAssignedTo: async (board, { title, assignee }) => {
       const task = board.details(title)
-      if (!task) throw new Error(`Task "${title}" not found`)
-      if (task.assignee !== assignee) {
-        throw new Error(`Expected task "${title}" assigned to "${assignee}" but was "${task.assignee}"`)
-      }
+      expect(task).toBeDefined()
+      expect(task!.assignee).toBe(assignee)
     },
     taskCount: async (board, { status, count }) => {
       const tasks = board.byStatus(status)
-      if (tasks.length !== count) {
-        throw new Error(`Expected ${count} tasks in "${status}" but found ${tasks.length}`)
-      }
+      expect(tasks).toHaveLength(count)
     },
   },
 })

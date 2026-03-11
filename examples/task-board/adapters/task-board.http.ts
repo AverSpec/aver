@@ -1,3 +1,4 @@
+import { expect } from 'vitest'
 import { implement } from '@aver/core'
 import { http } from '@aver/protocol-http'
 import { taskBoard } from '../domains/task-board.js'
@@ -65,26 +66,20 @@ export const httpAdapter = implement(taskBoard, {
   assertions: {
     taskInStatus: async (ctx, { title, status }) => {
       const res = await ctx.get(`/api/tasks/${encodeURIComponent(title)}`)
-      if (!res.ok) throw new Error(`Task "${title}" not found`)
+      expect(res.ok).toBe(true)
       const task = await res.json()
-      if (task.status !== status) {
-        throw new Error(`Expected task "${title}" in "${status}" but was in "${task.status}"`)
-      }
+      expect(task.status).toBe(status)
     },
     taskAssignedTo: async (ctx, { title, assignee }) => {
       const res = await ctx.get(`/api/tasks/${encodeURIComponent(title)}`)
-      if (!res.ok) throw new Error(`Task "${title}" not found`)
+      expect(res.ok).toBe(true)
       const task = await res.json()
-      if (task.assignee !== assignee) {
-        throw new Error(`Expected task "${title}" assigned to "${assignee}" but was "${task.assignee}"`)
-      }
+      expect(task.assignee).toBe(assignee)
     },
     taskCount: async (ctx, { status, count }) => {
       const res = await ctx.get(`/api/tasks?status=${encodeURIComponent(status)}`)
       const tasks = await res.json()
-      if (tasks.length !== count) {
-        throw new Error(`Expected ${count} tasks in "${status}" but found ${tasks.length}`)
-      }
+      expect(tasks).toHaveLength(count)
     },
   },
 })

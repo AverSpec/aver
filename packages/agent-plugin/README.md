@@ -44,7 +44,7 @@ packages/agent-plugin/scripts/gh/setup-labels.sh
 Run the interactive setup:
 
 ```bash
-bash packages/agent-plugin/scripts/linear/setup.sh
+npx @aver/agent-plugin setup
 ```
 
 This will:

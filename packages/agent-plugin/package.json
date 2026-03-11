@@ -16,7 +16,10 @@
   "engines": {
     "node": ">=18.0.0"
   },
-  "files": [".claude-plugin", "skills", "scripts"],
+  "bin": {
+    "aver-plugin": "bin/aver-plugin.sh"
+  },
+  "files": [".claude-plugin", "skills", "scripts", "bin"],
   "dependencies": {
     "@aver/skills": "workspace:^"
   },

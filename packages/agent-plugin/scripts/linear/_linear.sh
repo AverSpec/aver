@@ -2,14 +2,16 @@
 # Shared Linear API helper — sourced by all scripts, not executed directly.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 LINEAR_API="https://api.linear.app/graphql"
 
-# Auto-load .env from project root if env vars aren't already set.
-if [[ -z "${LINEAR_API_KEY:-}" && -f "$PROJECT_ROOT/.env" ]]; then
-  set -a
-  source "$PROJECT_ROOT/.env"
-  set +a
+# Auto-load .env if LINEAR_API_KEY isn't already set.
+# Lookup order: cwd .env → ~/.config/aver/.env
+if [[ -z "${LINEAR_API_KEY:-}" ]]; then
+  if [[ -f "$PWD/.env" ]]; then
+    set -a; source "$PWD/.env"; set +a
+  elif [[ -f "${XDG_CONFIG_HOME:-$HOME/.config}/aver/.env" ]]; then
+    set -a; source "${XDG_CONFIG_HOME:-$HOME/.config}/aver/.env"; set +a
+  fi
 fi
 
 # Validate required environment variables.

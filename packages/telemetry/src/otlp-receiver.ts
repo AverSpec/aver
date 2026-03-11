@@ -1,5 +1,5 @@
 import { createServer, type Server, type IncomingMessage, type ServerResponse } from 'node:http'
-import type { CollectedSpan, TelemetryCollector } from '../core/protocol'
+import type { CollectedSpan, TelemetryCollector } from '@aver/core'
 
 export interface OtlpReceiver extends TelemetryCollector {
   start(): Promise<number>

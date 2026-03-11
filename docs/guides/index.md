@@ -21,3 +21,4 @@ Task-oriented how-to guides for common Aver tasks.
 | [AI-Assisted Testing](ai-assisted) | Use agent skills and GitHub Issues for scenario management |
 | [Example App](example-app) | Full working task board example |
 | [Test Styles](test-styles) | When to use given/when/then vs act/assert |
+| [Troubleshooting](troubleshooting) | When to use Aver, when not to, common issues, incremental adoption |

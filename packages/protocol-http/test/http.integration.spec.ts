@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { createServer, type Server } from 'node:http'
-import { http } from '../src/index'
+import { http, withAction } from '../src/index'
 
 describe('http() integration', () => {
   let server: Server | undefined
@@ -109,6 +109,62 @@ describe('http() integration', () => {
 
     const res = await ctx.get('/fast')
     expect(res.status).toBe(200)
+  })
+
+  it('wraps network errors with fetch URL context', async () => {
+    // Use a port that is definitely not listening
+    const protocol = http({ baseUrl: 'http://localhost:1' })
+    const ctx = await protocol.setup()
+
+    await expect(ctx.get('/api/items')).rejects.toSatisfy((err: unknown) => {
+      return (
+        err instanceof Error &&
+        err.message.includes('fetch to http://localhost:1/api/items failed') &&
+        err.cause instanceof Error
+      )
+    })
+  })
+
+  it('wraps timeout errors with fetch URL context', async () => {
+    const port = await startServer((_req, _res) => {
+      // Intentionally never respond
+    })
+
+    const protocol = http({
+      baseUrl: `http://localhost:${port}`,
+      timeout: 50,
+    })
+    const ctx = await protocol.setup()
+
+    await expect(ctx.get('/slow')).rejects.toSatisfy((err: unknown) => {
+      return (
+        err instanceof Error &&
+        err.message.includes(`fetch to http://localhost:${port}/slow failed`) &&
+        err.cause instanceof Error
+      )
+    })
+  })
+
+  it('withAction wraps fetch errors with action name and URL context', async () => {
+    const port = await startServer((_req, _res) => {
+      // Never respond — triggers timeout
+    })
+
+    const protocol = http({
+      baseUrl: `http://localhost:${port}`,
+      timeout: 50,
+    })
+    const ctx = await protocol.setup()
+    const wrapped = withAction('load cart', ctx)
+
+    await expect(wrapped.get('/api/cart')).rejects.toSatisfy((err: unknown) => {
+      return (
+        err instanceof Error &&
+        err.message.startsWith('Action "load cart" failed:') &&
+        err.message.includes(`fetch to http://localhost:${port}/api/cart failed`) &&
+        err.cause instanceof Error
+      )
+    })
   })
 
   it('supports all HTTP methods', async () => {

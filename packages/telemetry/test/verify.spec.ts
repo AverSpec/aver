@@ -220,6 +220,22 @@ describe('verifyContract', () => {
       expect(report.results[0].tracesMatched).toBe(1)
     })
 
+    it('backward compatible — contracts without parentName still work', () => {
+      // Existing contracts without parentName should behave exactly as before
+      const traces: ProductionTrace[] = [
+        {
+          traceId: 'trace-1',
+          spans: [
+            { name: 'order.cancel', attributes: { 'order.status': 'cancelled' } },
+          ],
+        },
+      ]
+
+      const report = verifyContract(orderContract, traces)
+      expect(report.totalViolations).toBe(0)
+      expect(report.results[0].tracesMatched).toBe(1)
+    })
+
     it('traces without anchor span are not checked', () => {
       const traces: ProductionTrace[] = [
         {
@@ -234,6 +250,135 @@ describe('verifyContract', () => {
       expect(report.results[0].tracesMatched).toBe(0)
       expect(report.results[0].tracesChecked).toBe(1)
       expect(report.totalViolations).toBe(0)
+    })
+  })
+
+  describe('span-hierarchy: parentName disambiguation', () => {
+    it('disambiguates same-named spans with different parents', () => {
+      // Contract expects two db.query spans under different parents
+      const contract: BehavioralContract = {
+        domain: 'layered-service',
+        entries: [{
+          testName: 'two queries from different layers',
+          spans: [
+            {
+              name: 'service.handle',
+              attributes: {},
+            },
+            {
+              name: 'db.query',
+              attributes: { 'db.statement': { kind: 'literal', value: 'SELECT users' } },
+              parentName: 'service.handle',
+            },
+            {
+              name: 'cache.check',
+              attributes: {},
+            },
+            {
+              name: 'db.query',
+              attributes: { 'db.statement': { kind: 'literal', value: 'SELECT cache_keys' } },
+              parentName: 'cache.check',
+            },
+          ],
+        }],
+      }
+
+      const traces: ProductionTrace[] = [
+        {
+          traceId: 'trace-1',
+          spans: [
+            { name: 'service.handle', attributes: {}, spanId: 'span-1' },
+            { name: 'db.query', attributes: { 'db.statement': 'SELECT users' }, spanId: 'span-2', parentSpanId: 'span-1' },
+            { name: 'cache.check', attributes: {}, spanId: 'span-3' },
+            { name: 'db.query', attributes: { 'db.statement': 'SELECT cache_keys' }, spanId: 'span-4', parentSpanId: 'span-3' },
+          ],
+        },
+      ]
+
+      const report = verifyContract(contract, traces)
+      expect(report.totalViolations).toBe(0)
+    })
+
+    it('reports missing-span when parent constraint rejects candidate', () => {
+      // Contract expects db.query under service.handle, but production has it under cache.check
+      const contract: BehavioralContract = {
+        domain: 'layered-service',
+        entries: [{
+          testName: 'query under wrong parent',
+          spans: [
+            {
+              name: 'service.handle',
+              attributes: {},
+            },
+            {
+              name: 'db.query',
+              attributes: { 'db.statement': { kind: 'literal', value: 'SELECT users' } },
+              parentName: 'service.handle',
+            },
+          ],
+        }],
+      }
+
+      const traces: ProductionTrace[] = [
+        {
+          traceId: 'trace-1',
+          spans: [
+            { name: 'service.handle', attributes: {}, spanId: 'span-1' },
+            { name: 'cache.check', attributes: {}, spanId: 'span-2' },
+            { name: 'db.query', attributes: { 'db.statement': 'SELECT users' }, spanId: 'span-3', parentSpanId: 'span-2' },
+          ],
+        },
+      ]
+
+      const report = verifyContract(contract, traces)
+      expect(report.totalViolations).toBe(1)
+      expect(report.results[0].violations[0]).toEqual({
+        kind: 'missing-span',
+        spanName: 'db.query',
+        traceId: 'trace-1',
+      })
+    })
+
+    it('does not reuse the same production span for multiple expectations', () => {
+      // Contract expects two db.query spans, but production only has one
+      const contract: BehavioralContract = {
+        domain: 'layered-service',
+        entries: [{
+          testName: 'needs two queries',
+          spans: [
+            {
+              name: 'service.handle',
+              attributes: {},
+            },
+            {
+              name: 'db.query',
+              attributes: { 'db.statement': { kind: 'literal', value: 'SELECT a' } },
+              parentName: 'service.handle',
+            },
+            {
+              name: 'db.query',
+              attributes: { 'db.statement': { kind: 'literal', value: 'SELECT b' } },
+              parentName: 'service.handle',
+            },
+          ],
+        }],
+      }
+
+      const traces: ProductionTrace[] = [
+        {
+          traceId: 'trace-1',
+          spans: [
+            { name: 'service.handle', attributes: {}, spanId: 'span-1' },
+            { name: 'db.query', attributes: { 'db.statement': 'SELECT a' }, spanId: 'span-2', parentSpanId: 'span-1' },
+          ],
+        },
+      ]
+
+      const report = verifyContract(contract, traces)
+      // The second db.query expectation should fail as missing
+      const missing = report.results[0].violations.filter(v => v.kind === 'missing-span')
+      expect(missing).toHaveLength(1)
+      expect(missing[0].spanName).toBe('db.query')
     })
   })
 })

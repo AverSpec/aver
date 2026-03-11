@@ -9,6 +9,8 @@ export interface SpanExpectation {
   readonly name: string
   /** Attribute bindings — literal values or correlation symbols. */
   readonly attributes: Record<string, AttributeBinding>
+  /** When present, the matched production span's parent must have this name. */
+  readonly parentName?: string
 }
 
 /** A single contract entry — one test example's expected trace pattern. */

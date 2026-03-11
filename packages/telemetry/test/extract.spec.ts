@@ -174,6 +174,76 @@ describe('extractContract', () => {
       expect(result.entries).toHaveLength(0)
     })
 
+    it('extraction captures parentName from matched span hierarchy', () => {
+      const result = extractContract({
+        domain: testDomain,
+        results: [{
+          testName: 'signup with parent hierarchy',
+          trace: [
+            traceEntry({
+              kind: 'action',
+              name: 'signUp',
+              payload: { email: 'test@example.com' },
+              telemetry: {
+                expected: { span: 'user.signup', attributes: { 'user.email': 'test@example.com' } },
+                matched: true,
+                matchedSpan: {
+                  name: 'user.signup',
+                  attributes: { 'user.email': 'test@example.com' },
+                  spanId: 'span-1',
+                },
+              },
+            }),
+            traceEntry({
+              kind: 'assertion',
+              name: 'accountCreated',
+              payload: { email: 'test@example.com' },
+              telemetry: {
+                expected: { span: 'account.created', attributes: { 'account.email': 'test@example.com' } },
+                matched: true,
+                matchedSpan: {
+                  name: 'account.created',
+                  attributes: { 'account.email': 'test@example.com' },
+                  spanId: 'span-2',
+                  parentSpanId: 'span-1',
+                },
+              },
+            }),
+          ],
+        }],
+      })
+
+      expect(result.entries[0].spans[0].parentName).toBeUndefined()
+      expect(result.entries[0].spans[1].parentName).toBe('user.signup')
+    })
+
+    it('extraction omits parentName when matchedSpan has no parentSpanId', () => {
+      const result = extractContract({
+        domain: testDomain,
+        results: [{
+          testName: 'no hierarchy info',
+          trace: [
+            traceEntry({
+              kind: 'action',
+              name: 'signUp',
+              payload: { email: 'test@example.com' },
+              telemetry: {
+                expected: { span: 'user.signup', attributes: { 'user.email': 'test@example.com' } },
+                matched: true,
+                matchedSpan: {
+                  name: 'user.signup',
+                  attributes: { 'user.email': 'test@example.com' },
+                  spanId: 'span-1',
+                },
+              },
+            }),
+          ],
+        }],
+      })
+
+      expect(result.entries[0].spans[0].parentName).toBeUndefined()
+    })
+
     it('parameterized tests produce multiple contract entries', () => {
       const results = [
         {

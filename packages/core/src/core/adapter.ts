@@ -43,7 +43,7 @@ export interface AdapterConfig<
 > {
   protocol: Protocol<Ctx>
   actions: ActionHandlers<Ctx, A>
-  queries: QueryHandlers<Ctx, Q>
+  queries: [keyof Q] extends [never] ? QueryHandlers<Ctx, Q> | undefined : QueryHandlers<Ctx, Q>
   assertions: AssertionHandlers<Ctx, S>
 }
 
@@ -76,7 +76,7 @@ export function implement<
     protocol: config.protocol,
     handlers: {
       actions: config.actions,
-      queries: config.queries,
+      queries: (config.queries ?? {}) as QueryHandlers<Ctx, Q>,
       assertions: config.assertions,
     },
   }

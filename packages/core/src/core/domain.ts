@@ -7,7 +7,7 @@ export interface DomainConfig<
 > {
   name: string
   actions: A
-  queries: Q
+  queries?: Q
   assertions: S
 }
 
@@ -91,12 +91,12 @@ function makeDomain<
 
 export function defineDomain<
   A extends Record<string, ActionMarker<any>>,
-  Q extends Record<string, QueryMarker<any, any>>,
-  S extends Record<string, AssertionMarker<any>>,
+  Q extends Record<string, QueryMarker<any, any>> = Record<string, never>,
+  S extends Record<string, AssertionMarker<any>> = Record<string, never>,
 >(config: DomainConfig<A, Q, S>): Domain<A, Q, S> {
   return makeDomain(config.name, {
     actions: config.actions,
-    queries: config.queries,
+    queries: (config.queries ?? {}) as Q,
     assertions: config.assertions,
   })
 }

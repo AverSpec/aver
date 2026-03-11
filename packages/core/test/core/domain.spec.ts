@@ -39,6 +39,22 @@ describe('defineDomain()', () => {
     expect(minimal.vocabulary.actions).toEqual({})
   })
 
+  it('allows omitting queries — defaults to empty object', () => {
+    const noQueries = defineDomain({
+      name: 'NoQueries',
+      actions: {
+        doThing: action(),
+      },
+      assertions: {
+        thingDone: assertion(),
+      },
+    })
+
+    expect(noQueries.name).toBe('NoQueries')
+    expect(noQueries.vocabulary.queries).toEqual({})
+    expect(Object.keys(noQueries.vocabulary.queries)).toHaveLength(0)
+  })
+
   it('exposes vocabulary keys for runtime enumeration', () => {
     const cart = defineDomain({
       name: 'Cart',

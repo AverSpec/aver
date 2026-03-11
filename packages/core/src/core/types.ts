@@ -48,13 +48,3 @@ export interface AssertionMarker<P = void> {
 /** Any vocabulary marker. */
 export type VocabMarker = ActionMarker<any> | QueryMarker<any, any> | AssertionMarker<any>
 
-/** Extract payload type from an ActionMarker or AssertionMarker. */
-export type PayloadOf<M> =
-  M extends ActionMarker<infer P> ? P :
-  M extends AssertionMarker<infer P> ? P :
-  never
-
-/** Extract return type from a QueryMarker. */
-export type ReturnOf<M> =
-  M extends QueryMarker<any, infer R> ? R :
-  never

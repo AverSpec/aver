@@ -1,4 +1,3 @@
-import type { Domain } from './domain'
 import type { TraceEntry } from './trace'
 
 function categoryLabel(entry: TraceEntry): string {
@@ -70,16 +69,3 @@ export function enhanceComposedWithTrace(
   return enhanced
 }
 
-export function enhanceWithTrace(error: unknown, trace: TraceEntry[], domain: Domain, protocolName?: string): Error {
-  if (trace.length === 0) {
-    return error instanceof Error ? error : new Error(String(error))
-  }
-  const traceStr = formatTrace(trace, domain.name)
-  const header = protocolName ? `Action trace (${protocolName}):` : 'Action trace:'
-  const msg = error instanceof Error ? error.message : String(error)
-  const enhanced = new Error(
-    `${msg}\n\n${header}\n${traceStr}`
-  )
-  enhanced.cause = error
-  return enhanced
-}

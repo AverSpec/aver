@@ -429,7 +429,7 @@ If no adapter is registered for a domain, `findAdapter()` walks the `domain.pare
 The registry is process-global state. If your tests register their own adapters (common in framework-level testing), call `resetRegistry()` in `beforeEach` to prevent cross-test leakage:
 
 ```typescript
-import { resetRegistry, registerAdapter } from '@aver/core'
+import { resetRegistry, registerAdapter } from '@aver/core/internals'
 
 beforeEach(() => {
   resetRegistry()

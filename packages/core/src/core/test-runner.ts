@@ -5,6 +5,7 @@ import type { TraceEntry, TraceAttachment } from './trace'
 import { runWithTestContext } from './test-context'
 import { createProxies } from './proxy'
 import type { CalledOps, TelemetryVerificationMode } from './proxy'
+import { parseTelemetryMode } from './proxy'
 import { verifyCorrelation } from './correlation'
 import { enhanceComposedWithTrace } from './trace-format'
 import { getTeardownFailureMode } from './config'
@@ -125,7 +126,7 @@ export async function runTest(
     // ── End-of-test correlation verification ──
     const hasTelemetry = entries.some(([, , adapter]) => adapter.protocol.telemetry)
     if (hasTelemetry) {
-      const envMode = typeof process !== 'undefined' ? process.env.AVER_TELEMETRY_MODE as TelemetryVerificationMode | undefined : undefined
+      const envMode = typeof process !== 'undefined' ? parseTelemetryMode(process.env.AVER_TELEMETRY_MODE) : undefined
       const mode = envMode ?? (typeof process !== 'undefined' && process.env.CI ? 'fail' : 'warn')
       if (mode !== 'off') {
         const result = verifyCorrelation(trace)
@@ -134,7 +135,8 @@ export async function runTest(
           if (mode === 'fail') {
             throw new Error(`Telemetry correlation failed:\n${messages.join('\n')}`)
           }
-          // warn mode: record in trace but don't throw
+          // warn mode: record in trace and emit visible warning
+          console.warn(`[aver] Telemetry correlation warning:\n${messages.join('\n')}`)
           trace.push({
             kind: 'test',
             name: 'correlation-warning',

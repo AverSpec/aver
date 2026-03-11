@@ -224,7 +224,10 @@ describe('telemetry verification — programmatic API', () => {
     })
     // Should still pass (warn mode)
     expect(trace[0].status).toBe('pass')
-    } finally { process.env.AVER_TELEMETRY_MODE = prev }
+    } finally {
+      if (prev === undefined) delete process.env.AVER_TELEMETRY_MODE
+      else process.env.AVER_TELEMETRY_MODE = prev
+    }
   })
 
   it('does not add telemetry to trace when marker has no declaration', async () => {
@@ -342,7 +345,10 @@ describe('telemetry verification — programmatic API', () => {
 
     const trace = s.getTrace()
     expect(trace[0].telemetry?.matched).toBe(false)
-    } finally { process.env.AVER_TELEMETRY_MODE = prev }
+    } finally {
+      if (prev === undefined) delete process.env.AVER_TELEMETRY_MODE
+      else process.env.AVER_TELEMETRY_MODE = prev
+    }
   })
 })
 

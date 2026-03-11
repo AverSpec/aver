@@ -31,7 +31,8 @@ function makeTrace(overrides: Partial<TraceEntry> = {}): TraceEntry {
   }
 }
 
-const testDomain = defineDomain('Cart', {
+const testDomain = defineDomain({
+  name: 'Cart',
   actions: { addItem: action<{ id: number }>() },
   queries: { itemCount: query<void, number>() },
   assertions: { isEmpty: assertion() },
@@ -155,7 +156,8 @@ describe('buildMissingAdapterError', () => {
 
   test('other adapters registered', async () => {
     resetRegistry()
-    const otherDomain = defineDomain('Auth', {
+    const otherDomain = defineDomain({
+      name: 'Auth',
       actions: { login: action() },
       queries: {},
       assertions: {},

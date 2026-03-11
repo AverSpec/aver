@@ -49,6 +49,18 @@ export type Clock = () => number
 
 export type TelemetryVerificationMode = 'warn' | 'fail' | 'off'
 
+const VALID_TELEMETRY_MODES: readonly TelemetryVerificationMode[] = ['warn', 'fail', 'off']
+
+export function parseTelemetryMode(value: string | undefined): TelemetryVerificationMode | undefined {
+  if (value === undefined || value === '') return undefined
+  if (VALID_TELEMETRY_MODES.includes(value as TelemetryVerificationMode)) {
+    return value as TelemetryVerificationMode
+  }
+  throw new Error(
+    `Invalid AVER_TELEMETRY_MODE: '${value}'. Valid values are: ${VALID_TELEMETRY_MODES.join(', ')}`
+  )
+}
+
 function matchSpan(span: CollectedSpan, expected: TelemetryExpectation): boolean {
   if (span.name !== expected.span) return false
   if (!expected.attributes) return true
@@ -140,14 +152,26 @@ function buildKindProxy(
             : marker.telemetry
           const result = verifyTelemetry(collector, expected)
           entry.telemetry = result
-          if (!result.matched && mode === 'fail') {
-            entry.status = 'fail'
-            const err = new Error(
-              `Telemetry mismatch: expected span '${expected.span}' not found`
-            )
-            entry.error = err
-            trace.push(entry)
-            throw err
+          if (!result.matched) {
+            if (mode === 'fail') {
+              entry.status = 'fail'
+              const err = new Error(
+                `Telemetry mismatch: expected span '${expected.span}' not found`
+              )
+              entry.error = err
+              trace.push(entry)
+              throw err
+            }
+            if (mode === 'warn') {
+              const attrInfo = expected.attributes
+                ? ` with attributes ${JSON.stringify(expected.attributes)}`
+                : ''
+              const available = collector.getSpans().map(s => s.name)
+              console.warn(
+                `[aver] Telemetry warning: expected span '${expected.span}'${attrInfo} not found. ` +
+                `Available spans: [${available.join(', ')}]`
+              )
+            }
           }
         }
 
@@ -182,7 +206,7 @@ export function createProxies<D extends Domain>(
   const getTelemetryCollector = options?.getTelemetryCollector ?? (() => undefined)
   const getTelemetryMode = (): TelemetryVerificationMode => {
     if (options?.telemetryMode) return options.telemetryMode
-    const envMode = typeof process !== 'undefined' ? process.env.AVER_TELEMETRY_MODE as TelemetryVerificationMode | undefined : undefined
+    const envMode = typeof process !== 'undefined' ? parseTelemetryMode(process.env.AVER_TELEMETRY_MODE) : undefined
     return envMode ?? (typeof process !== 'undefined' && process.env.CI ? 'fail' : 'warn')
   }
 

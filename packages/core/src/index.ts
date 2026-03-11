@@ -9,25 +9,6 @@ export { withFixture } from './core/protocol'
 export { getTestContext, runWithTestContext } from './core/test-context'
 export { createOtlpReceiver } from './telemetry/otlp-receiver'
 export type { OtlpReceiver } from './telemetry/otlp-receiver'
-
-// Internals — also available via '@aver/core/internals'
-export {
-  registerDomain,
-  registerAdapter,
-  getDomains,
-  getDomain,
-  getAdapters,
-  findAdapter,
-  findAdapters,
-  resetRegistry,
-  getRegistrySnapshot,
-  restoreRegistrySnapshot,
-  withRegistry,
-  getGlobalTest,
-  getGlobalDescribe,
-  resetCoverageConfig,
-} from './internals'
-
 export type { ActionMarker, QueryMarker, AssertionMarker, TelemetryExpectation, TelemetryDeclaration, TelemetryAttributeValue, AsymmetricMatcher } from './core/types'
 export type { MarkerOptions } from './core/markers'
 export type { Domain } from './core/domain'

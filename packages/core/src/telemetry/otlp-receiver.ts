@@ -41,7 +41,20 @@ export function createOtlpReceiver(): OtlpReceiver {
 
   const handler = async (req: IncomingMessage, res: ServerResponse) => {
     if (req.method === 'POST' && req.url === '/v1/traces') {
-      const body = JSON.parse(await readBody(req))
+      let body: any
+      try {
+        body = JSON.parse(await readBody(req))
+      } catch (err) {
+        const contentType = req.headers['content-type'] ?? '(none)'
+        console.warn(
+          `[aver] OTLP receiver: failed to parse request body as JSON (content-type: ${contentType}).`,
+          'If your exporter is sending protobuf, configure it to use JSON (OTLP/HTTP JSON).',
+          err,
+        )
+        res.writeHead(400, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ error: 'Invalid JSON body' }))
+        return
+      }
       for (const rs of body.resourceSpans ?? []) {
         for (const ss of rs.scopeSpans ?? []) {
           for (const span of ss.spans ?? []) {
@@ -63,9 +76,13 @@ export function createOtlpReceiver(): OtlpReceiver {
           }
         }
       }
+      res.writeHead(200, { 'Content-Type': 'application/json' })
+      res.end('{}')
+      return
     }
-    res.writeHead(200, { 'Content-Type': 'application/json' })
-    res.end('{}')
+
+    res.writeHead(404, { 'Content-Type': 'application/json' })
+    res.end(JSON.stringify({ error: `Unsupported path: ${req.method} ${req.url}` }))
   }
 
   return {

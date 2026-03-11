@@ -1,1 +1,1 @@
-No adapter registered for domain "undefined". Registered: undefined (unit). Pass an adapter to suite() or register one via defineConfig().
+No adapter registered for domain "Cart". Registered: Auth (unit). Pass an adapter to suite() or register one via defineConfig().

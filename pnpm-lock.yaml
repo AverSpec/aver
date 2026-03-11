@@ -195,11 +195,10 @@ importers:
   packages/skills: {}
 
   packages/telemetry:
-    dependencies:
+    devDependencies:
       '@aver/core':
         specifier: workspace:^
         version: link:../core
-    devDependencies:
       '@types/node':
         specifier: ^22.0.0
         version: 22.19.13

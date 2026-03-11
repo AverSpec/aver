@@ -45,10 +45,11 @@
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "pnpm run build"
   },
-  "dependencies": {
+  "peerDependencies": {
     "@aver/core": "workspace:^"
   },
   "devDependencies": {
+    "@aver/core": "workspace:^",
     "@types/node": "^22.0.0",
     "tsup": "^8.0.0",
     "typescript": "^5.7.0",

@@ -1,7 +1,7 @@
 /**
  * Framework internals — registry functions and test-runner globals.
  * Import from '@aver/core/internals' to keep your imports explicit.
- * These are also re-exported from '@aver/core' for backward compatibility.
+ * These are NOT re-exported from '@aver/core' — use this subpath entry.
  */
 export {
   registerDomain,

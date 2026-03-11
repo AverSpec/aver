@@ -151,6 +151,7 @@ broken.test('mismatch is caught when app emits wrong span name', async ({ act })
     receiver.reset()
     await expect(act.greet({ name: 'Aver' })).rejects.toThrow('Telemetry mismatch')
   } finally {
-    process.env.AVER_TELEMETRY_MODE = prev
+    if (prev === undefined) delete process.env.AVER_TELEMETRY_MODE
+    else process.env.AVER_TELEMETRY_MODE = prev
   }
 })

@@ -1,1 +1,1 @@
-No adapter registered for domain "undefined". No adapters are registered. Pass an adapter to suite() or register one via defineConfig().
+No adapter registered for domain "Cart". No adapters are registered. Pass an adapter to suite() or register one via defineConfig().

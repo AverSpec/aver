@@ -104,8 +104,6 @@ export function playwright(options?: PlaywrightOptions): Protocol<Page> {
   }
 }
 
-export type PlaywrightProtocol = ReturnType<typeof playwright>
-
 function toSafeFileName(input: string): string {
   return input
     .toLowerCase()

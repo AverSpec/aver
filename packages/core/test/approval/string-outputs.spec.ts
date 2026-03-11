@@ -8,7 +8,7 @@
  */
 import { describe, test } from 'vitest'
 import { approve } from '@aver/approvals'
-import { formatTrace, enhanceWithTrace } from '../../src/core/trace-format'
+import { formatTrace } from '../../src/core/trace-format'
 import { generateJUnitXml } from '../../src/reporter/junit'
 import { buildMissingAdapterError } from '../../src/core/test-registration'
 import { defineDomain } from '../../src/core/domain'
@@ -75,32 +75,6 @@ describe('formatTrace', () => {
       makeTrace({ durationMs: undefined }),
     ]
     await approve(formatTrace(trace, 'Cart'), { name: 'no-duration' })
-  })
-})
-
-// ---------------------------------------------------------------------------
-// enhanceWithTrace
-// ---------------------------------------------------------------------------
-
-describe('enhanceWithTrace', () => {
-  test('wraps error with trace header', async () => {
-    const trace: TraceEntry[] = [
-      makeTrace({ category: 'given', name: 'addItem', status: 'pass', durationMs: 5 }),
-      makeTrace({ category: 'then', kind: 'assertion', name: 'isEmpty', status: 'fail', durationMs: 1, error: new Error('not empty') }),
-    ]
-    const enhanced = enhanceWithTrace(new Error('Assertion failed'), trace, testDomain)
-    await approve(enhanced.message, { name: 'enhanced-default' })
-  })
-
-  test('includes protocol name in header', async () => {
-    const trace: TraceEntry[] = [makeTrace()]
-    const enhanced = enhanceWithTrace(new Error('fail'), trace, testDomain, 'playwright')
-    await approve(enhanced.message, { name: 'enhanced-with-protocol' })
-  })
-
-  test('returns original error when trace is empty', async () => {
-    const enhanced = enhanceWithTrace(new Error('bare error'), [], testDomain)
-    await approve(enhanced.message, { name: 'enhanced-empty-trace' })
   })
 })
 

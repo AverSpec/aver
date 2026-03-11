@@ -43,7 +43,7 @@ test('add item', async ({ act, assert }) => {
 ## CLI
 
 ```bash
-npx aver init --domain ShoppingCart --protocol unit
+npx aver init    # interactive — prompts for domain name and protocol
 npx aver run
 ```
 

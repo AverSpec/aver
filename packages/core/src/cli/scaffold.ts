@@ -94,6 +94,7 @@ function buildAdapterTemplate(name: string, kebab: string, protocol: string): st
 
   if (protocol === 'unit') {
     return `${protocolImport}
+import { expect } from 'vitest'
 import { ${name} } from '../domains/${kebab}.js'
 
 export const unitAdapter = implement(${name}, {
@@ -113,9 +114,7 @@ export const unitAdapter = implement(${name}, {
   },
   assertions: {
     exists: async (ctx, { name }) => {
-      if (!ctx.items.includes(name)) {
-        throw new Error(\`Expected "\${name}" to exist\`)
-      }
+      expect(ctx.items).toContain(name)
     },
   },
 })

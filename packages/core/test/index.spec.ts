@@ -79,18 +79,11 @@ describe('defineConfig()', () => {
     resetRegistry()
   })
 
-  it('creates a config with adapters and testDir', () => {
+  it('creates a config with adapters', () => {
     const config = defineConfig({
-      testDir: './tests/acceptance',
       adapters: [],
     })
-    expect(config.testDir).toBe('./tests/acceptance')
     expect(config.adapters).toEqual([])
-  })
-
-  it('defaults testDir', () => {
-    const config = defineConfig({ adapters: [] })
-    expect(config.testDir).toBe('./tests/acceptance')
   })
 
   it('auto-registers adapters', () => {

@@ -8,7 +8,7 @@ nav_order: 10
 
 *February 2026 — Nate Jackson*
 
-## The Testing Infrastructure Everyone Rebuilds
+## The Testing Infrastructure Everyone Keeps Rebuilding
 
 Every project of sufficient complexity eventually builds a domain language for its tests. You've seen it happen — probably more than once. The Playwright suite grows to forty tests and someone says, "We should extract a page object." The API tests start sharing setup functions and someone builds a test data factory. The integration suite gets its own little DSL for describing workflows: `createUser`, `loginAs`, `submitOrder`, `verifyOrderStatus`.
 
@@ -244,11 +244,11 @@ Aver earns its keep when the test suite is large enough to feel the pain of dupl
 ## Try It
 
 ```bash
-npm install aver
-npx aver init --domain TaskBoard --protocol unit
+npm install @aver/core
+npx aver init
 ```
 
-This creates three files:
+The `init` command is interactive — it will prompt you for a domain name and protocol. It creates three files:
 
 ```
 domains/task-board.ts        # Your domain vocabulary
@@ -262,14 +262,7 @@ The domain defines what your system does. The adapter maps those operations to a
 npx aver run
 ```
 
-When you're ready for a second level — say, an HTTP adapter for your Express API — add one adapter file. The tests don't change:
-
-```bash
-npx aver init --adapter http --domain TaskBoard
-npx aver run
-```
-
-Now every test runs at both levels. Add a Playwright adapter when the UI exists. The test suite grows in depth without growing in duplication.
+When you're ready for a second level — say, an HTTP adapter for your Express API — run `npx aver init` again and select the HTTP protocol. The tests don't change. Now every test runs at both levels. Add a Playwright adapter when the UI exists. The test suite grows in depth without growing in duplication.
 
 For a complete example, explore the [task board](https://github.com/njackson/aver/tree/main/examples/task-board) — a React + Express app tested across unit, HTTP, and Playwright adapters with a single test suite.
 

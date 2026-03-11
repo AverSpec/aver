@@ -240,7 +240,6 @@ import { httpAdapter } from './adapters/cart.http'
 
 export default defineConfig({
   adapters: [unitAdapter, httpAdapter],
-  testDir: './tests',  // optional, defaults to './tests/acceptance'
 })
 ```
 
@@ -249,7 +248,6 @@ export default defineConfig({
 | Property | Type | Default | Description |
 |:---------|:-----|:--------|:------------|
 | `adapters` | `Adapter[]` | *required* | Adapters to register |
-| `testDir` | `string` | `'./tests/acceptance'` | Test directory |
 | `coverage` | `{ minPercentage?: number }` | `{ minPercentage: 0 }` | Vocabulary coverage threshold |
 | `teardownFailureMode` | `'fail' \| 'warn'` | `'fail'` | Whether teardown errors fail the test |
 

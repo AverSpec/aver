@@ -8,14 +8,12 @@ export interface CoverageConfig {
 export type TeardownFailureMode = 'fail' | 'warn'
 
 export interface AverConfig {
-  testDir: string
   adapters: Adapter[]
   coverage: CoverageConfig
   teardownFailureMode: TeardownFailureMode
 }
 
 export interface AverConfigInput {
-  testDir?: string
   adapters: Adapter[]
   coverage?: {
     minPercentage?: number
@@ -57,7 +55,6 @@ export function defineConfig(input: AverConfigInput): AverConfig {
   teardownMode = input.teardownFailureMode ?? 'fail'
 
   return {
-    testDir: input.testDir ?? './tests/acceptance',
     adapters: input.adapters,
     coverage: coverageConfig,
     teardownFailureMode: teardownMode,

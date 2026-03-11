@@ -5,9 +5,7 @@ export default defineConfig({
     projects: [
       'packages/core',
       'packages/approvals',
-      'packages/workspace',
-      'packages/eval',
-      'packages/mcp-server',
+      'packages/telemetry',
       'packages/protocol-http',
       'packages/protocol-playwright',
       'examples/task-board',

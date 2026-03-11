@@ -82,7 +82,7 @@ describe('adapt()', () => {
   })
 
   it('allows omitting queries when domain has no queries', () => {
-    const adapter = implement(noQueriesDomain, {
+    const adapter = adapt(noQueriesDomain, {
       protocol: testProtocol,
       actions: {
         doThing: async (ctx) => { ctx.calls.push('doThing') },
@@ -97,7 +97,7 @@ describe('adapt()', () => {
   })
 
   it('can omit queries field and still execute actions and assertions', async () => {
-    const adapter = implement(noQueriesDomain, {
+    const adapter = adapt(noQueriesDomain, {
       protocol: testProtocol,
       actions: {
         doThing: async (ctx) => { ctx.calls.push('doThing') },

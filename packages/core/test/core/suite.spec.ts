@@ -807,7 +807,7 @@ describe('suite() — domain without queries', () => {
     })
 
     let fired = false
-    const actionOnlyAdapter = implement(actionOnlyDomain, {
+    const actionOnlyAdapter = adapt(actionOnlyDomain, {
       protocol: testProtocol,
       actions: {
         fire: async () => { fired = true },

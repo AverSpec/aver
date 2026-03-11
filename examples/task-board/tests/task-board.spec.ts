@@ -41,13 +41,11 @@ test('track full task lifecycle', async ({ act, query }) => {
   expect(task?.assignee).toBe('Alice')
 })
 
-test('demo failure artifacts (set AVER_DEMO_FAIL=1)', async ({ assert }) => {
-  if (process.env.AVER_DEMO_FAIL !== '1') return
+test.skipIf(process.env.AVER_DEMO_FAIL !== '1')('demo failure artifacts (set AVER_DEMO_FAIL=1)', async ({ assert }) => {
   await assert.taskInStatus({ title: 'Nonexistent', status: 'done' })
 })
 
-test('visual approval of task board', async ({ act }) => {
-  if (process.env.AVER_DEMO_APPROVAL !== '1' && process.env.AVER_DEMO_DIFF !== '1') return
+test.skipIf(process.env.AVER_DEMO_APPROVAL !== '1' && process.env.AVER_DEMO_DIFF !== '1')('visual approval of task board', async ({ act }) => {
   await act.createTask({ title: 'Review homepage' })
   if (process.env.AVER_DEMO_DIFF === '1') {
     await act.moveTask({ title: 'Review homepage', status: 'in-progress' })

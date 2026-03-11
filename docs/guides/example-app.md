@@ -47,7 +47,7 @@ export const taskBoard = defineDomain({
 Tests the `Board` class directly. Sub-millisecond execution.
 
 ```typescript
-const unitAdapter = implement(taskBoard, {
+const unitAdapter = adapt(taskBoard, {
   protocol: unit(() => new Board()),
   actions: {
     createTask: async (board, { title, status }) => board.create(title, status),
@@ -64,7 +64,7 @@ const unitAdapter = implement(taskBoard, {
 Tests the Express API via fetch. Spins up a server per test on a random port.
 
 ```typescript
-const httpAdapter = implement(taskBoard, {
+const httpAdapter = adapt(taskBoard, {
   protocol: httpProtocol,  // custom protocol wrapping http()
   actions: {
     createTask: async (ctx, { title, status }) => {
@@ -84,7 +84,7 @@ const httpAdapter = implement(taskBoard, {
 Tests the React UI in a headless Chromium browser. Serves the built frontend.
 
 ```typescript
-const playwrightAdapter = implement(taskBoard, {
+const playwrightAdapter = adapt(taskBoard, {
   protocol: playwrightProtocol,  // launches browser + Express server
   actions: {
     createTask: async (page, { title }) => {

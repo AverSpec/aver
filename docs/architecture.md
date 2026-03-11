@@ -18,7 +18,7 @@ Domain (what)  →  Adapter (how)  →  Test (verify)
 
 **Domain** declares the vocabulary of a bounded context — what the system does, in business language. No implementation details. Just names and type signatures for actions, queries, and assertions.
 
-**Adapter** binds the vocabulary to a real implementation via a protocol. One adapter per interaction mode: unit (in-memory), HTTP (API), Playwright (browser). The `implement()` function enforces at compile time that every domain operation has a handler.
+**Adapter** binds the vocabulary to a real implementation via a protocol. One adapter per interaction mode: unit (in-memory), HTTP (API), Playwright (browser). The `adapt()` function enforces at compile time that every domain operation has a handler.
 
 **Test** composes domain operations into scenarios. Tests never import adapters — they speak only domain language. The suite resolves adapters from configuration at runtime.
 

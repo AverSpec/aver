@@ -1,4 +1,4 @@
-import { implement, unit } from '../../../src/index'
+import { adapt, unit } from '../../../src/index'
 import { averReporter } from '../domains/aver-reporter'
 import { generateJUnitXml } from '../../../src/reporter/junit'
 import type { JUnitReport } from '../../../src/reporter/junit'
@@ -7,7 +7,7 @@ interface ReporterSession {
   lastXml?: string
 }
 
-export const averReporterAdapter = implement(averReporter, {
+export const averReporterAdapter = adapt(averReporter, {
   protocol: unit<ReporterSession>(() => ({})),
 
   actions: {

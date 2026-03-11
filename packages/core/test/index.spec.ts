@@ -4,6 +4,7 @@ import {
   action,
   query,
   assertion,
+  adapt,
   implement,
   suite,
   defineConfig,
@@ -30,6 +31,7 @@ describe('public API', () => {
     expect(typeof action).toBe('function')
     expect(typeof query).toBe('function')
     expect(typeof assertion).toBe('function')
+    expect(typeof adapt).toBe('function')
     expect(typeof implement).toBe('function')
     expect(typeof suite).toBe('function')
     expect(typeof defineConfig).toBe('function')
@@ -69,7 +71,7 @@ describe('defineConfig()', () => {
       queries: {},
       assertions: {},
     })
-    const adapter = implement(dom, {
+    const adapter = adapt(dom, {
       protocol: unit(() => null),
       actions: {},
       queries: {},

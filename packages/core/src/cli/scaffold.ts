@@ -85,19 +85,19 @@ test('create and verify', async ({ act, query, assert }) => {
 
 function buildAdapterTemplate(name: string, kebab: string, protocol: string): string {
   const protocolImport = protocol === 'unit'
-    ? `import { implement, unit } from '@aver/core'`
+    ? `import { adapt, unit } from '@aver/core'`
     : protocol === 'http'
-      ? `import { implement } from '@aver/core'\nimport { http } from '@aver/protocol-http'`
+      ? `import { adapt } from '@aver/core'\nimport { http } from '@aver/protocol-http'`
       : protocol === 'playwright'
-        ? `import { implement } from '@aver/core'\nimport { playwright } from '@aver/protocol-playwright'`
-        : `import { implement, ${protocol} } from '@aver/core'`
+        ? `import { adapt } from '@aver/core'\nimport { playwright } from '@aver/protocol-playwright'`
+        : `import { adapt, ${protocol} } from '@aver/core'`
 
   if (protocol === 'unit') {
     return `${protocolImport}
 import { expect } from 'vitest'
 import { ${name} } from '../domains/${kebab}.js'
 
-export const unitAdapter = implement(${name}, {
+export const unitAdapter = adapt(${name}, {
   protocol: unit(() => {
     const items: string[] = []
     return { items }
@@ -124,7 +124,7 @@ export const unitAdapter = implement(${name}, {
   return `${protocolImport}
 import { ${name} } from '../domains/${kebab}.js'
 
-export const ${protocol}Adapter = implement(${name}, {
+export const ${protocol}Adapter = adapt(${name}, {
   protocol: ${protocol}({
     // TODO: configure your ${protocol} protocol options (e.g., baseUrl)
   }),

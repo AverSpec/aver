@@ -4,7 +4,7 @@ import { suite } from '../../src/core/suite'
 import { resetRegistry } from '../../src/core/registry'
 import { defineDomain } from '../../src/core/domain'
 import { action, query, assertion } from '../../src/core/markers'
-import { implement } from '../../src/core/adapter'
+import { adapt } from '../../src/core/adapter'
 import { unit } from '../../src/protocols/unit'
 
 beforeEach(() => {
@@ -76,7 +76,7 @@ describe('suite() coverage threshold enforcement', () => {
     },
   })
 
-  const cartAdapter = implement(cartDomain, {
+  const cartAdapter = adapt(cartDomain, {
     protocol: unit(() => ({})),
     actions: {
       addItem: async () => {},
@@ -205,7 +205,7 @@ describe('suite() coverage threshold enforcement', () => {
       queries: {},
       assertions: {},
     })
-    const emptyAdapter = implement(emptyDomain, {
+    const emptyAdapter = adapt(emptyDomain, {
       protocol: unit(() => ({})),
       actions: {},
       queries: {},

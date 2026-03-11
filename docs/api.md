@@ -84,14 +84,14 @@ const cartUI = cart.extend('shopping-cart-ui', {
 
 ## Adapters
 
-### `implement(domain, config)`
+### `adapt(domain, config)`
 
 Creates an adapter binding a domain to a protocol with handler implementations.
 
 ```typescript
-import { implement, unit } from '@aver/core'
+import { adapt, unit } from '@aver/core'
 
-const adapter = implement(cart, {
+const adapter = adapt(cart, {
   protocol: unit(() => []),
   actions: {
     addItem: async (ctx, payload) => { /* ... */ },

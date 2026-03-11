@@ -79,7 +79,7 @@ For in-process testing, use the OTel SDK's `InMemorySpanExporter`:
 
 ```typescript
 // adapters/pricing.unit.ts
-import { implement, unit } from '@aver/core'
+import { adapt, unit } from '@aver/core'
 import { expect } from 'vitest'
 import { pricing } from '../domains/pricing.js'
 import {
@@ -142,7 +142,7 @@ const protocol: Protocol<PricingContext> = {
   telemetry: collector,
 }
 
-export const unitAdapter = implement(pricing, {
+export const unitAdapter = adapt(pricing, {
   protocol,
   actions: {
     addLineItem: async (ctx, item) => {
@@ -228,7 +228,7 @@ function getTracer() {
 // Register the provider globally (do this once, e.g., in setup)
 trace.setGlobalTracerProvider(provider)
 
-export const unitAdapter = implement(pricing, {
+export const unitAdapter = adapt(pricing, {
   protocol,
   actions: {
     addLineItem: async (ctx, item) => {
@@ -348,7 +348,7 @@ const protocol: Protocol<OtelContext> = {
   telemetry: collector,
 }
 
-export const unitAdapter = implement(orderPricing, {
+export const unitAdapter = adapt(orderPricing, {
   protocol,
   actions: {
     addLineItem: async (ctx, { orderId, product, quantity, unitPrice }) => {

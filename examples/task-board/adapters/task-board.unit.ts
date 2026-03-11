@@ -1,9 +1,9 @@
 import { expect } from 'vitest'
-import { implement, unit } from '@aver/core'
+import { adapt, unit } from '@aver/core'
 import { Board } from '../src/server/board.js'
 import { taskBoard } from '../domains/task-board.js'
 
-export const unitAdapter = implement(taskBoard, {
+export const unitAdapter = adapt(taskBoard, {
   protocol: unit(() => new Board()),
 
   actions: {

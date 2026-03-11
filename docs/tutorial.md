@@ -157,7 +157,7 @@ An adapter binds domain vocabulary to a real implementation. Start with the `uni
 
 ```typescript
 // adapters/pricing.unit.ts
-import { implement, unit } from '@aver/core'
+import { adapt, unit } from '@aver/core'
 import { expect } from 'vitest'
 import { pricing } from '../domains/pricing.js'
 
@@ -173,7 +173,7 @@ function calculate(ctx: PricingContext) {
   return { subtotal, discountPct, total: afterDiscount * 1.08 }
 }
 
-export const unitAdapter = implement(pricing, {
+export const unitAdapter = adapt(pricing, {
   protocol: unit((): PricingContext => ({ items: [] })),
   actions: {
     addLineItem: async (ctx, item) => { ctx.items.push(item) },
@@ -271,7 +271,7 @@ Write an HTTP adapter for the same domain:
 
 ```typescript
 // adapters/pricing.http.ts
-import { implement } from '@aver/core'
+import { adapt } from '@aver/core'
 import { expect } from 'vitest'
 import { pricing } from '../domains/pricing.js'
 import type { Protocol } from '@aver/core'
@@ -298,7 +298,7 @@ const protocol: Protocol<HttpContext> = {
   },
 }
 
-export const httpAdapter = implement(pricing, {
+export const httpAdapter = adapt(pricing, {
   protocol,
   actions: {
     addLineItem: async (ctx, item) => {

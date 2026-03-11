@@ -95,7 +95,7 @@ The test doesn't know if it's talking to a class, an API, or a browser. It names
 *Adapters* provide the handles into the application. Here's the Playwright adapter for the operations in that test:
 
 ```typescript
-export const playwrightAdapter = implement(taskBoard, {
+export const playwrightAdapter = adapt(taskBoard, {
   protocol: playwright(),
 
   actions: {
@@ -128,7 +128,7 @@ export const playwrightAdapter = implement(taskBoard, {
 That's where the selectors live. All of them. In one place. The full adapter — including server lifecycle, teardown, and every handler — is about 80 lines. The same operations in the unit adapter are three lines each:
 
 ```typescript
-export const unitAdapter = implement(taskBoard, {
+export const unitAdapter = adapt(taskBoard, {
   protocol: unit(() => new Board()),
 
   actions: {

@@ -13,11 +13,11 @@ npm install @aver/protocol-http
 ## Usage
 
 ```typescript
-import { implement } from '@aver/core'
+import { adapt } from '@aver/core'
 import { http } from '@aver/protocol-http'
 import { cart } from './domains/cart'
 
-export const httpAdapter = implement(cart, {
+export const httpAdapter = adapt(cart, {
   protocol: http({ baseUrl: 'http://localhost:3000' }),
   actions: {
     addItem: async (ctx, { name }) => {

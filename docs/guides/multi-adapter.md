@@ -38,12 +38,12 @@ Tests against in-memory objects. Runs in ~1ms.
 
 ```typescript
 // adapters/task-board.unit.ts
-import { implement, unit } from '@aver/core'
+import { adapt, unit } from '@aver/core'
 import { expect } from 'vitest'
 import { Board } from '../src/board'
 import { taskBoard } from '../domains/task-board'
 
-export const unitAdapter = implement(taskBoard, {
+export const unitAdapter = adapt(taskBoard, {
   protocol: unit(() => new Board()),
   actions: {
     createTask: async (board, { title }) => board.create(title),
@@ -65,12 +65,12 @@ Tests against a REST API. Runs in ~10ms.
 
 ```typescript
 // adapters/task-board.http.ts
-import { implement } from '@aver/core'
+import { adapt } from '@aver/core'
 import { expect } from 'vitest'
 import { http } from '@aver/protocol-http'
 import { taskBoard } from '../domains/task-board'
 
-export const httpAdapter = implement(taskBoard, {
+export const httpAdapter = adapt(taskBoard, {
   protocol: http({ baseUrl: 'http://localhost:3000' }),
   actions: {
     createTask: async (ctx, { title }) => {
@@ -97,12 +97,12 @@ Tests against a browser UI. Runs in ~300ms.
 
 ```typescript
 // adapters/task-board.playwright.ts
-import { implement } from '@aver/core'
+import { adapt } from '@aver/core'
 import { expect } from '@playwright/test'
 import { playwright } from '@aver/protocol-playwright'
 import { taskBoard } from '../domains/task-board'
 
-export const playwrightAdapter = implement(taskBoard, {
+export const playwrightAdapter = adapt(taskBoard, {
   protocol: playwright(),
   actions: {
     createTask: async (page, { title }) => {

@@ -6,6 +6,7 @@ import { join, dirname } from 'node:path'
 import { tmpdir } from 'node:os'
 import { PNG } from 'pngjs'
 import { approve } from '../../../src/approve'
+import { safeName } from '../../../src/paths'
 import { averApprovals } from '../domains/aver-approvals'
 
 interface ApprovalSession {
@@ -301,10 +302,3 @@ export const averApprovalsAdapter = implement(averApprovals, {
   },
 })
 
-function safeName(input: string): string {
-  return input
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 80) || 'approval'
-}

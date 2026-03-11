@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { compareValues, generateDiff } from './compare'
 import { resolveSerializer, type SerializerName } from './serializers'
 import { resolveApprovalPaths } from './paths'
@@ -58,7 +58,10 @@ export async function approve(value: unknown, options: ApproveOptions = {}): Pro
     )
   }
 
-  if (comparison.equal) return
+  if (comparison.equal) {
+    deleteIfExists(paths.receivedPath)
+    return
+  }
 
   const diff = comparison.diff ?? generateDiff(approved, received)
   writeFileSync(paths.diffPath, diff, 'utf-8')
@@ -142,7 +145,10 @@ approve.visual = async function visual(
   // Check if images match (0 diff pixels)
   const match = await imagesMatch(paths, pixelThreshold)
 
-  if (match) return
+  if (match) {
+    deleteIfExists(paths.receivedImagePath)
+    return
+  }
 
   allAttachments.unshift(
     { name: 'approved', path: paths.approvedImagePath, mime: 'image/png' },
@@ -186,6 +192,12 @@ async function imagesMatch(
 
 function copyFileSync(src: string, dest: string): void {
   writeFileSync(dest, readFileSync(src))
+}
+
+function deleteIfExists(filePath: string): void {
+  if (existsSync(filePath)) {
+    rmSync(filePath)
+  }
 }
 
 function pushTrace(

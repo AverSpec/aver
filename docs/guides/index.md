@@ -22,3 +22,4 @@ Task-oriented how-to guides for common Aver tasks.
 | [Example App](example-app) | Full working task board example |
 | [Test Styles](test-styles) | When to use given/when/then vs act/assert |
 | [Troubleshooting](troubleshooting) | When to use Aver, when not to, common issues, incremental adoption |
+| [Glossary](../glossary) | Look up definitions of Aver-specific terminology |

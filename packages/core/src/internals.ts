@@ -1,5 +1,6 @@
 /**
- * Framework internals — registry functions and test-runner globals.
+ * Framework internals — registry functions, test-runner globals, and
+ * implementation details used by sibling @aver/* packages and tests.
  * Import from '@aver/core/internals' to keep your imports explicit.
  * These are NOT re-exported from '@aver/core' — use this subpath entry.
  */
@@ -21,4 +22,21 @@ export type { RegistrySnapshot } from './core/registry'
 
 export { getGlobalTest, getGlobalDescribe } from './core/test-registration'
 
-export { resetCoverageConfig } from './core/config'
+export { resetCoverageConfig, getCoverageConfig, getTeardownFailureMode } from './core/config'
+export type { CoverageConfig, TeardownFailureMode } from './core/config'
+
+export type { VocabularyCoverage } from './core/coverage'
+
+export { createOtlpReceiver } from './telemetry/otlp-receiver'
+export type { OtlpReceiver } from './telemetry/otlp-receiver'
+
+export { verifyCorrelation } from './core/correlation'
+export type { CorrelationResult, CorrelationGroup, CorrelationViolation } from './core/correlation'
+
+export type { RunningTestContext } from './core/test-context'
+
+export type { ActionMarker, QueryMarker, AssertionMarker, TelemetryExpectation, TelemetryDeclaration, TelemetryAttributeValue, AsymmetricMatcher } from './core/types'
+
+export type { ActProxy, QueryProxy, AssertProxy, PlannedTest, SuiteConfig, NamedContext, NamedTestContext, NamedSuiteReturn } from './core/suite'
+
+export type { Clock, StepCategory, TelemetryVerificationMode, ProxyOptions } from './core/proxy'

@@ -16,13 +16,24 @@ fi
 
 # Validate required environment variables.
 # If LINEAR_TEAM_ID is a short key (e.g. "AI"), resolve it to a UUID.
+CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/aver"
+
 require_env() {
   if [[ -z "${LINEAR_API_KEY:-}" ]]; then
-    echo "Error: LINEAR_API_KEY environment variable is required" >&2
+    echo "Error: LINEAR_API_KEY is not set." >&2
+    echo "" >&2
+    echo "To configure, run:" >&2
+    echo "  bash $(cd "$SCRIPT_DIR" && pwd)/setup.sh" >&2
+    echo "" >&2
+    echo "Or manually create $CONFIG_DIR/.env with:" >&2
+    echo "  LINEAR_API_KEY=lin_api_..." >&2
+    echo "  LINEAR_TEAM_ID=YOUR_TEAM_KEY" >&2
     exit 1
   fi
   if [[ -z "${LINEAR_TEAM_ID:-}" ]]; then
-    echo "Error: LINEAR_TEAM_ID environment variable is required" >&2
+    echo "Error: LINEAR_TEAM_ID is not set." >&2
+    echo "" >&2
+    echo "Add LINEAR_TEAM_ID to $CONFIG_DIR/.env or .env in your project root." >&2
     exit 1
   fi
 

@@ -27,9 +27,6 @@ export type { CoverageConfig, TeardownFailureMode } from './core/config'
 
 export type { VocabularyCoverage } from './core/coverage'
 
-export { createOtlpReceiver } from './telemetry/otlp-receiver'
-export type { OtlpReceiver } from './telemetry/otlp-receiver'
-
 export { verifyCorrelation } from './core/correlation'
 export type { CorrelationResult, CorrelationGroup, CorrelationViolation } from './core/correlation'
 

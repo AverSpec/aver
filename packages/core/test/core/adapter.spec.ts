@@ -25,6 +25,16 @@ const cart = defineDomain({
   },
 })
 
+const noQueriesDomain = defineDomain({
+  name: 'NoQueries',
+  actions: {
+    doThing: action(),
+  },
+  assertions: {
+    thingDone: assertion(),
+  },
+})
+
 describe('implement()', () => {
   it('creates an adapter with domain, protocol, and handlers', () => {
     const adapter = implement(cart, {
@@ -69,5 +79,39 @@ describe('implement()', () => {
 
     const total = await adapter.handlers.queries.total(ctx)
     expect(total).toBe(99)
+  })
+
+  it('allows omitting queries when domain has no queries', () => {
+    const adapter = implement(noQueriesDomain, {
+      protocol: testProtocol,
+      actions: {
+        doThing: async (ctx) => { ctx.calls.push('doThing') },
+      },
+      assertions: {
+        thingDone: async () => {},
+      },
+    })
+
+    expect(adapter.domain).toBe(noQueriesDomain)
+    expect(adapter.handlers.queries).toEqual({})
+  })
+
+  it('can omit queries field and still execute actions and assertions', async () => {
+    const adapter = implement(noQueriesDomain, {
+      protocol: testProtocol,
+      actions: {
+        doThing: async (ctx) => { ctx.calls.push('doThing') },
+      },
+      assertions: {
+        thingDone: async (ctx) => {
+          if (!ctx.calls.includes('doThing')) throw new Error('doThing not called')
+        },
+      },
+    })
+
+    const ctx = await testProtocol.setup()
+    await adapter.handlers.actions.doThing(ctx)
+    expect(ctx.calls).toContain('doThing')
+    await expect(adapter.handlers.assertions.thingDone(ctx)).resolves.toBeUndefined()
   })
 })

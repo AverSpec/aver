@@ -788,3 +788,46 @@ describe('getAdapters()', () => {
     expect(a1).toEqual(a2)
   })
 })
+
+describe('suite() — domain without queries', () => {
+  beforeEach(() => {
+    resetRegistry()
+    calls.length = 0
+  })
+
+  it('works end-to-end with a domain that omits queries', async () => {
+    const actionOnlyDomain = defineDomain({
+      name: 'ActionOnly',
+      actions: {
+        fire: action(),
+      },
+      assertions: {
+        fired: assertion(),
+      },
+    })
+
+    let fired = false
+    const actionOnlyAdapter = implement(actionOnlyDomain, {
+      protocol: testProtocol,
+      actions: {
+        fire: async () => { fired = true },
+      },
+      assertions: {
+        fired: async () => {
+          if (!fired) throw new Error('fire() was not called')
+        },
+      },
+    })
+
+    const s = suite(actionOnlyDomain, actionOnlyAdapter)
+    await s.setup()
+
+    await s.act.fire()
+    await s.assert.fired()
+
+    expect(fired).toBe(true)
+    expect(s.getCoverage().percentage).toBe(100)
+
+    await s.teardown()
+  })
+})

@@ -20,24 +20,57 @@ The user selects the mode at the start. If they say "clear the backlog" or "run 
 
 ---
 
+## Ticket Lifecycle
+
+Tickets move through these Linear states as the skill progresses:
+
+| Phase | State | Script |
+|-------|-------|--------|
+| Planning / prioritization | **Todo** | `backlog-status.sh <ID> --state todo` |
+| Active implementation | **In Progress** | `backlog-status.sh <ID> --state in-progress` |
+| Completed & verified | **Done** | `backlog-status.sh <ID> --state done` |
+| Blocked / deferred | stays current | add a note via `backlog-update.sh` |
+
+**Transition tickets at each phase boundary** — don't skip states.
+
+---
+
 ## Interactive Mode
 
-## Step 1 — Present the backlog by wave
+### Step 1 — Load and priority-sort the backlog
 
-Call `get_backlog_items(status: 'open')` and group by priority:
+Run `bash packages/agent-plugin/scripts/linear/backlog-list.sh --status open` to fetch all open items.
+
+Group by priority tier and sort within each tier by impact:
 
 ```
-Wave 1 (P0): <items>
-Wave 2 (P1): <items>
-Wave 3 (P2): <items>
-Wave 4 (P3): <items>
+Wave 1 (P0): <items>  — blockers, ship-stopping
+Wave 2 (P1): <items>  — important, pre-release
+Wave 3 (P2): <items>  — nice-to-have
+Wave 4 (P3): <items>  — low priority
 ```
 
-Show the grouped list. Ask: **"Start with Wave 1 (P0)? Or pick a different starting wave?"**
+**Priority sorting within a wave**: When items share a priority tier, sort by:
+1. **Dependencies first** — if item B depends on item A's changes, A goes first
+2. **Type weight** — bugs > refactors > features > chores > research
+3. **Effort** — smaller items first (quick wins build momentum)
+4. **Impact** — items touching public API or user-facing behavior rank higher
+
+Present the sorted list with recommended execution order. Ask: **"Start with Wave 1 (P0)? Or pick a different starting wave?"**
 
 The user can also cherry-pick specific items across priorities into a custom wave.
 
-## Step 2 — Execution strategy for this wave
+### Step 2 — Move wave items to Todo
+
+For each item selected for the current wave:
+
+```bash
+bash packages/agent-plugin/scripts/linear/backlog-status.sh <ID> --state todo
+```
+
+This signals the wave is planned and these items are queued for work.
+
+### Step 3 — Execution strategy for this wave
 
 Ask the user: **"How should we execute this wave?"**
 
@@ -45,28 +78,36 @@ Ask the user: **"How should we execute this wave?"**
 - **Parallel (in-session)**: Dispatch subagents via the Agent tool with worktree isolation. Good for 2-4 items touching non-overlapping files. See **Subagent Isolation Protocol** below.
 - **Headless (fire-and-forget)**: Invoke the `/headless-dispatch` skill — spawns independent `claude -p` processes, each in its own worktree. Best for larger waves.
 
-## Step 3 — Execute items
+### Step 4 — Execute items
 
 **Sequential**: For each item in the wave:
 
-1. Mark `in-progress` via `update_backlog_item`
+1. Move to **In Progress**:
+   ```bash
+   bash packages/agent-plugin/scripts/linear/backlog-status.sh <ID> --state in-progress
+   ```
 2. Implement the fix/feature
-3. Run tests to verify (`run_tests` or `pnpm exec aver run`)
-4. Commit separately — message should reference the backlog item title
-5. Mark `done` via `update_backlog_item`
+3. Run tests to verify (`pnpm test` or `pnpm exec aver run`)
+4. Commit separately — message should reference the backlog item ID and title
+5. Move to **Done**:
+   ```bash
+   bash packages/agent-plugin/scripts/linear/backlog-status.sh <ID> --state done
+   ```
 
-**Parallel**: Follow the **Subagent Isolation Protocol** below. Each agent implements, tests, and commits. The orchestrator only merges and updates backlog status.
+**Parallel**: Follow the **Subagent Isolation Protocol** below. Each agent implements, tests, and commits. The orchestrator handles status transitions:
+- Move all items to **In Progress** before dispatching agents
+- Move each to **Done** after its worktree branch is successfully merged
 
-If an item gets blocked after 2 attempts, mark it with a note describing the blocker and move on.
+If an item gets blocked after 2 attempts, add a note via `backlog-update.sh` describing the blocker and move on. Leave it in its current state.
 
-## Step 4 — Push and verify
+### Step 5 — Push and verify
 
 After the wave completes:
 1. Push to remote
 2. Verify CI passes
 3. If CI fails, diagnose and fix before proceeding
 
-## Step 5 — Wave checkpoint
+### Step 6 — Wave checkpoint
 
 Report:
 - Wave N complete: X items done, Y blocked
@@ -112,17 +153,22 @@ Present the split: "I can autonomously handle X items. Y items need your input �
 
 ### Procedure
 
-1. Call `get_backlog_items(status: 'open')`, filter for autonomous suitability, and group by priority (P0 first)
-2. For each priority wave:
+1. Run `bash packages/agent-plugin/scripts/linear/backlog-list.sh --status open`, filter for autonomous suitability, and group by priority (P0 first). Apply priority sorting rules from Step 1 above.
+2. Move all selected items to **Todo**:
+   ```bash
+   bash packages/agent-plugin/scripts/linear/backlog-status.sh <ID> --state todo
+   ```
+3. For each priority wave:
    - List the items and execution order
+   - Move items to **In Progress** before starting work
    - For items that can be parallelized (no file dependencies), dispatch subagents with `isolation: "worktree"` — one per item. Each agent must write tests, implement, verify the suite passes, and **commit its own work** in the worktree branch
    - For items with dependencies, execute sequentially
    - After all subagents complete, merge each worktree branch to main one at a time, running the full test suite between merges
-   - Update each backlog item's status to `done`
+   - Move each completed item to **Done**
    - Push and verify CI
    - Move to the next priority wave
-3. If any item fails after 2 attempts, mark it blocked with a note and continue
-4. At the end, report a wave-by-wave summary:
+4. If any item fails after 2 attempts, mark it blocked with a note and continue
+5. At the end, report a wave-by-wave summary:
 
 ```
 ## Wave Summary
@@ -153,12 +199,16 @@ Remaining: Z items
 - **Autonomous mode**: run all waves without pausing, report at the end
 - **Commit per item** — one commit per backlog item, not a batch commit
 - **Parallel safety** — always use worktree isolation for parallel execution
+- **Always transition ticket state** — Todo → In Progress → Done
 
-## MCP Tools Used
+## Scripts Reference
 
-| Tool | Purpose |
-|------|---------|
-| `get_backlog_items` | List open items grouped by priority |
-| `update_backlog_item` | Mark in-progress / done |
-| `run_tests` | Verify after implementation |
-| `get_backlog_summary` | Wave checkpoint reporting |
+| Script | Purpose |
+|--------|---------|
+| `backlog-list.sh --status open` | List open items grouped by priority |
+| `backlog-status.sh <ID> --state <state>` | Transition ticket: `todo`, `in-progress`, `done` |
+| `backlog-close.sh <ID>` | Close a ticket (alternative to `--state done`) |
+| `backlog-update.sh <ID> --body "..."` | Add notes (e.g., blocker description) |
+| `backlog-create.sh --title "..." --priority P1` | Create new backlog items |
+
+All scripts are at `packages/agent-plugin/scripts/linear/`.

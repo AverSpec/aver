@@ -33,6 +33,15 @@ export function extractContract(input: ExtractContractInput): BehavioralContract
 function extractSpans(domain: Domain, trace: TraceEntry[]): SpanExpectation[] {
   const spans: SpanExpectation[] = []
 
+  // Build a spanId → span name map from matched spans for parent lookups
+  const spanIdToName = new Map<string, string>()
+  for (const entry of trace) {
+    const matched = entry.telemetry?.matchedSpan
+    if (matched?.spanId) {
+      spanIdToName.set(matched.spanId, matched.name)
+    }
+  }
+
   for (const entry of trace) {
     if (!entry.telemetry?.expected) continue
 
@@ -62,7 +71,17 @@ function extractSpans(domain: Domain, trace: TraceEntry[]): SpanExpectation[] {
       }
     }
 
-    spans.push({ name: expected.span, attributes })
+    // Resolve parent name from matched span hierarchy
+    const matchedSpan = entry.telemetry.matchedSpan
+    const parentName = matchedSpan?.parentSpanId
+      ? spanIdToName.get(matchedSpan.parentSpanId)
+      : undefined
+
+    const expectation: SpanExpectation = { name: expected.span, attributes }
+    if (parentName) {
+      (expectation as { parentName?: string }).parentName = parentName
+    }
+    spans.push(expectation)
   }
 
   return spans

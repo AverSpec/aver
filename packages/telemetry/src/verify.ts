@@ -4,6 +4,10 @@ import type { BehavioralContract, ContractEntry, SpanExpectation, AttributeBindi
 export interface ProductionSpan {
   readonly name: string
   readonly attributes: Readonly<Record<string, unknown>>
+  /** Span identifier for hierarchy matching. */
+  readonly spanId?: string
+  /** Parent span identifier for hierarchy matching. */
+  readonly parentSpanId?: string
 }
 
 /** A production trace — a collection of spans from a single request/flow. */
@@ -56,6 +60,38 @@ export function verifyContract(
   }
 }
 
+/**
+ * Find the best matching production span for an expectation, respecting hierarchy
+ * constraints and avoiding reuse of already-matched spans.
+ */
+function findMatchingSpan(
+  expectedSpan: SpanExpectation,
+  trace: ProductionTrace,
+  usedSpanIds: Set<string>,
+): ProductionSpan | undefined {
+  // Build a spanId → name lookup for parent resolution
+  const spanIdToName = new Map<string, string>()
+  for (const s of trace.spans) {
+    if (s.spanId) spanIdToName.set(s.spanId, s.name)
+  }
+
+  const candidates = trace.spans.filter(s => {
+    if (s.name !== expectedSpan.name) return false
+    // Don't reuse spans that have already been matched (only when spanId is available)
+    if (s.spanId && usedSpanIds.has(s.spanId)) return false
+    // If parentName constraint is set, verify the parent
+    if (expectedSpan.parentName && s.parentSpanId) {
+      const actualParentName = spanIdToName.get(s.parentSpanId)
+      if (actualParentName !== expectedSpan.parentName) return false
+    }
+    // If parentName is required but span has no parentSpanId, it can't match
+    if (expectedSpan.parentName && !s.parentSpanId) return false
+    return true
+  })
+
+  return candidates[0]
+}
+
 function verifyEntry(
   entry: ContractEntry,
   traces: readonly ProductionTrace[],
@@ -71,9 +107,15 @@ function verifyEntry(
   const violations: Violation[] = []
 
   for (const trace of matchingTraces) {
+    // Track which production spans have been matched to avoid reuse
+    const usedSpanIds = new Set<string>()
+    // Map from expected span index to matched production span
+    const matchedSpans = new Map<number, ProductionSpan>()
+
     // Check each expected span
-    for (const expectedSpan of entry.spans) {
-      const prodSpan = trace.spans.find(s => s.name === expectedSpan.name)
+    for (let i = 0; i < entry.spans.length; i++) {
+      const expectedSpan = entry.spans[i]
+      const prodSpan = findMatchingSpan(expectedSpan, trace, usedSpanIds)
 
       if (!prodSpan) {
         violations.push({
@@ -83,6 +125,10 @@ function verifyEntry(
         })
         continue
       }
+
+      // Track this span as used
+      if (prodSpan.spanId) usedSpanIds.add(prodSpan.spanId)
+      matchedSpans.set(i, prodSpan)
 
       // Check literal attributes
       for (const [attrKey, binding] of Object.entries(expectedSpan.attributes)) {
@@ -105,8 +151,9 @@ function verifyEntry(
     // Check correlations — collect all values for each symbol across spans
     const symbolValues = new Map<string, Array<{ span: string; attribute: string; value: unknown }>>()
 
-    for (const expectedSpan of entry.spans) {
-      const prodSpan = trace.spans.find(s => s.name === expectedSpan.name)
+    for (let i = 0; i < entry.spans.length; i++) {
+      const expectedSpan = entry.spans[i]
+      const prodSpan = matchedSpans.get(i)
       if (!prodSpan) continue
 
       for (const [attrKey, binding] of Object.entries(expectedSpan.attributes)) {

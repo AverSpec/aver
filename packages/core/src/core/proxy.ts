@@ -90,6 +90,7 @@ function verifyTelemetry(
           attributes: { ...matched.attributes },
           traceId: matched.traceId,
           spanId: matched.spanId,
+          parentSpanId: matched.parentSpanId,
           links: matched.links ? [...matched.links] : undefined,
         }
       : undefined,

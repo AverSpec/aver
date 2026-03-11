@@ -20,3 +20,4 @@ Task-oriented how-to guides for common Aver tasks.
 | [CI Integration](ci-integration) | Run Aver tests in your CI pipeline |
 | [AI-Assisted Testing](ai-assisted) | Use agent skills and GitHub Issues for scenario management |
 | [Example App](example-app) | Full working task board example |
+| [Test Styles](test-styles) | When to use given/when/then vs act/assert |

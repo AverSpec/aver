@@ -20,11 +20,6 @@
     "aver-plugin": "bin/aver-plugin.sh"
   },
   "files": [".claude-plugin", "skills", "scripts", "bin"],
-  "dependencies": {
-    "@aver/skills": "workspace:^"
-  },
   "scripts": {
-    "sync-skills": "cp node_modules/@aver/skills/*.md skills/aver-workflow/",
-    "prepublishOnly": "pnpm run sync-skills"
   }
 }

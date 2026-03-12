@@ -10,6 +10,7 @@ import { verifyCorrelation } from './correlation'
 import { enhanceComposedWithTrace } from './trace-format'
 import { getTeardownFailureMode } from './config'
 import type { TestContext } from './suite'
+import { isExtractionMode, registerTestResult } from './extract-registry'
 
 /** A single entry in the adapter tuple array passed to `runTest`. */
 export type AdapterEntry = [name: string, domain: Domain, adapter: Adapter]
@@ -146,6 +147,13 @@ export async function runTest(
             correlationId,
           })
         }
+      }
+    }
+
+    // ── Contract extraction: register passing test traces ──
+    if (isExtractionMode()) {
+      for (const [, domain] of entries) {
+        registerTestResult(domain, testName, trace)
       }
     }
 

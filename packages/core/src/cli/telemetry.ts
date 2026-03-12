@@ -134,11 +134,277 @@ export async function runTelemetryDiagnose(
   return { lines, exitCode }
 }
 
+// ── Extract ──
+
+export interface ExtractOutput {
+  lines: string[]
+  exitCode: number
+}
+
+export async function runTelemetryExtract(argv: string[]): Promise<void> {
+  if (argv.includes('--help') || argv.includes('-h')) {
+    console.log(`
+aver telemetry extract - Extract behavioral contracts from test runs
+
+Runs tests with contract extraction enabled. For each passing test with
+telemetry declarations, writes a contract file to .aver/contracts/<domain>/.
+
+Usage:
+  aver telemetry extract
+
+All other arguments are forwarded to vitest.
+`)
+    return
+  }
+
+  const { execFileSync } = await import('node:child_process')
+  const npx = process.platform === 'win32' ? 'npx.cmd' : 'npx'
+
+  try {
+    execFileSync(npx, ['vitest', 'run', ...argv], {
+      stdio: 'inherit',
+      env: { ...process.env, AVER_CONTRACT_EXTRACT: '1' },
+      timeout: 10 * 60 * 1000,
+      maxBuffer: 10 * 1024 * 1024,
+    })
+  } catch {
+    process.exit(1)
+  }
+}
+
+// ── Verify ──
+
+export interface VerifyArgs {
+  traces: string | undefined
+  contract: string | undefined
+  verbose: boolean
+  help: boolean
+}
+
+export function parseVerifyArgs(argv: string[]): VerifyArgs {
+  let traces: string | undefined
+  let contract: string | undefined
+  let verbose = false
+  let help = false
+
+  let i = 0
+  while (i < argv.length) {
+    const arg = argv[i]
+    if (arg === '--traces' || arg.startsWith('--traces=')) {
+      if (arg.includes('=')) {
+        traces = arg.split('=').slice(1).join('=')
+      } else if (i + 1 < argv.length) {
+        traces = argv[++i]
+      }
+    } else if (arg === '--contract' || arg.startsWith('--contract=')) {
+      if (arg.includes('=')) {
+        contract = arg.split('=').slice(1).join('=')
+      } else if (i + 1 < argv.length) {
+        contract = argv[++i]
+      }
+    } else if (arg === '--verbose' || arg === '-v') {
+      verbose = true
+    } else if (arg === '--help' || arg === '-h') {
+      help = true
+    }
+    i++
+  }
+
+  return { traces, contract, verbose, help }
+}
+
+export interface VerifyOutput {
+  lines: string[]
+  exitCode: number
+}
+
+export async function runTelemetryVerify(args: VerifyArgs): Promise<VerifyOutput> {
+  const lines: string[] = []
+
+  if (!args.traces) {
+    lines.push('Error: --traces <file> is required')
+    lines.push('')
+    lines.push('Usage: aver telemetry verify --traces <file> [--contract <path>] [--verbose]')
+    return { lines, exitCode: 1 }
+  }
+
+  let telemetry: typeof import('@aver/telemetry')
+  try {
+    telemetry = await import('@aver/telemetry')
+  } catch {
+    lines.push('Error: @aver/telemetry is required for contract verification.')
+    lines.push('Install it: pnpm add -D @aver/telemetry')
+    return { lines, exitCode: 1 }
+  }
+
+  const { resolve } = await import('node:path')
+
+  // Load production traces
+  const traceSource = new telemetry.FileTraceSource(resolve(args.traces))
+  let traces: Awaited<ReturnType<typeof traceSource.fetch>>
+  try {
+    traces = await traceSource.fetch()
+  } catch (err: any) {
+    lines.push(`Error: Failed to read traces from ${args.traces}`)
+    lines.push(`  ${err.message}`)
+    return { lines, exitCode: 1 }
+  }
+
+  // Load contracts
+  let contracts: Awaited<ReturnType<typeof telemetry.readContracts>>
+
+  if (args.contract) {
+    // Single contract mode
+    try {
+      const { domain, entry } = await telemetry.readContractFile(resolve(args.contract))
+      contracts = [{ domain, entries: [entry] }]
+    } catch (err: any) {
+      lines.push(`Error: Failed to read contract from ${args.contract}`)
+      lines.push(`  ${err.message}`)
+      return { lines, exitCode: 1 }
+    }
+  } else {
+    // Read all contracts from .aver/contracts/
+    const baseDir = resolve('.aver', 'contracts')
+    contracts = await telemetry.readContracts(baseDir)
+    if (contracts.length === 0) {
+      lines.push('Error: No contracts found in .aver/contracts/')
+      lines.push('Run "aver telemetry extract" first to generate contracts.')
+      return { lines, exitCode: 1 }
+    }
+  }
+
+  // Verify each contract
+  let totalViolations = 0
+  const reports: Array<ReturnType<typeof telemetry.verifyContract>> = []
+
+  for (const contract of contracts) {
+    const report = telemetry.verifyContract(contract, traces)
+    reports.push(report)
+    totalViolations += report.totalViolations
+  }
+
+  // Print summary
+  lines.push('Contract Verification')
+  lines.push('')
+
+  for (const report of reports) {
+    const status = report.totalViolations === 0 ? '\u2713 PASS' : '\u2717 FAIL'
+    lines.push(`  ${report.domain}: ${status}`)
+    for (const result of report.results) {
+      const entryStatus = result.violations.length === 0 ? '\u2713' : '\u2717'
+      lines.push(`    ${entryStatus} ${result.testName} (${result.tracesMatched}/${result.tracesChecked} traces)`)
+      if (result.violations.length > 0) {
+        lines.push(`      ${result.violations.length} violation(s)`)
+      }
+    }
+  }
+
+  // Verbose: grouped violation details
+  if (args.verbose && totalViolations > 0) {
+    lines.push('')
+    lines.push('Violation Details')
+    lines.push('')
+
+    // Collect all violations across all reports
+    type ViolationType = 'missing-span' | 'correlation-violation' | 'literal-mismatch'
+    const grouped = new Map<ViolationType, Array<{ violation: any; domain: string; testName: string }>>()
+
+    for (const report of reports) {
+      for (const result of report.results) {
+        for (const v of result.violations) {
+          const kind = v.kind as ViolationType
+          if (!grouped.has(kind)) grouped.set(kind, [])
+          grouped.get(kind)!.push({ violation: v, domain: report.domain, testName: result.testName })
+        }
+      }
+    }
+
+    for (const [kind, items] of grouped) {
+      lines.push(`  ${kind} (${items.length} violation${items.length === 1 ? '' : 's'}):`)
+
+      if (kind === 'missing-span') {
+        // Group by span name
+        const bySpan = new Map<string, string[]>()
+        for (const { violation } of items) {
+          const name = violation.spanName as string
+          if (!bySpan.has(name)) bySpan.set(name, [])
+          bySpan.get(name)!.push(violation.traceId as string)
+        }
+        for (const [spanName, traceIds] of bySpan) {
+          lines.push(`    span: ${spanName}`)
+          const shown = traceIds.slice(0, 3)
+          const remaining = traceIds.length - shown.length
+          lines.push(`    traces: ${shown.join(', ')}${remaining > 0 ? ` and ${remaining} more` : ''}`)
+        }
+      } else if (kind === 'literal-mismatch') {
+        for (const { violation } of items) {
+          lines.push(`    span: ${violation.span}, attr: ${violation.attribute}`)
+          lines.push(`    expected: ${JSON.stringify(violation.expected)}, actual: ${JSON.stringify(violation.actual)}`)
+          lines.push(`    traces: ${violation.traceId}`)
+        }
+      } else if (kind === 'correlation-violation') {
+        for (const { violation } of items) {
+          lines.push(`    symbol: ${violation.symbol}`)
+          const paths = (violation.paths as Array<{ span: string; value: unknown }>)
+            .map(p => `${JSON.stringify(p.value)} (${p.span})`)
+            .join(', ')
+          lines.push(`    values: ${paths}`)
+          lines.push(`    traces: ${violation.traceId}`)
+        }
+      }
+    }
+  }
+
+  lines.push('')
+  if (totalViolations === 0) {
+    lines.push(`\u2713 All contracts pass (${reports.length} domain${reports.length === 1 ? '' : 's'}, ${traces.length} trace${traces.length === 1 ? '' : 's'})`)
+  } else {
+    lines.push(`\u2717 ${totalViolations} violation${totalViolations === 1 ? '' : 's'} found`)
+  }
+
+  return { lines, exitCode: totalViolations > 0 ? 1 : 0 }
+}
+
+// ── Command router ──
+
 export async function runTelemetryCommand(argv: string[]): Promise<void> {
   const subcommand = argv[0]
 
   if (subcommand === 'diagnose' || subcommand === 'check') {
     const { lines, exitCode } = await runTelemetryDiagnose(process.env as Record<string, string | undefined>)
+    for (const line of lines) {
+      console.log(line)
+    }
+    if (exitCode !== 0) {
+      process.exit(exitCode)
+    }
+    return
+  }
+
+  if (subcommand === 'extract') {
+    await runTelemetryExtract(argv.slice(1))
+    return
+  }
+
+  if (subcommand === 'verify') {
+    const args = parseVerifyArgs(argv.slice(1))
+    if (args.help) {
+      console.log(`
+aver telemetry verify - Verify contracts against production traces
+
+Usage:
+  aver telemetry verify --traces <file> [--contract <path>] [--verbose]
+
+Options:
+  --traces <file>      Path to OTLP JSON trace export (required)
+  --contract <path>    Verify a single contract file instead of all in .aver/contracts/
+  --verbose, -v        Show grouped violation details with trace IDs
+  --help               Show this help message
+`)
+      return
+    }
+    const { lines, exitCode } = await runTelemetryVerify(args)
     for (const line of lines) {
       console.log(line)
     }
@@ -155,6 +421,8 @@ aver telemetry - Telemetry utilities
 Commands:
   aver telemetry diagnose   Show telemetry configuration and check port availability
   aver telemetry check      Alias for diagnose
+  aver telemetry extract    Extract behavioral contracts from test runs
+  aver telemetry verify     Verify contracts against production traces
 
 Options:
   --help   Show this help message

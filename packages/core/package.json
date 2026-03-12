@@ -85,9 +85,16 @@
     "prepublishOnly": "pnpm run build"
   },
   "peerDependencies": {
+    "@aver/telemetry": "workspace:^",
     "vitest": ">=2.0.0"
   },
+  "peerDependenciesMeta": {
+    "@aver/telemetry": {
+      "optional": true
+    }
+  },
   "devDependencies": {
+    "@aver/telemetry": "workspace:^",
     "@clack/prompts": "^1.0.0",
     "@opentelemetry/api": "^1.9.0",
     "@opentelemetry/exporter-trace-otlp-http": "^0.213.0",

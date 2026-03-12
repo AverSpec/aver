@@ -34,7 +34,7 @@ Commands:
   aver run           Run acceptance tests (flags forwarded to vitest)
   aver init          Scaffold a new domain
   aver approve       Update approvals
-  aver telemetry     Telemetry utilities (diagnose, check)
+  aver telemetry     Telemetry utilities (diagnose, extract, verify)
 
 Options:
   --help         Show this help message

@@ -1,28 +1,11 @@
 import { createServer, type Server, type IncomingMessage, type ServerResponse } from 'node:http'
 import type { CollectedSpan, TelemetryCollector } from '@aver/core'
+import { parseAttributes, normalizeParentSpanId } from './otlp-parse'
 
 export interface OtlpReceiver extends TelemetryCollector {
   start(): Promise<number>
   stop(): Promise<void>
   port: number
-}
-
-interface OtlpAttribute {
-  key: string
-  value: { stringValue?: string; intValue?: string; boolValue?: boolean; doubleValue?: number }
-}
-
-function parseAttributes(attrs?: OtlpAttribute[]): Record<string, unknown> {
-  const result: Record<string, unknown> = {}
-  if (!attrs) return result
-  for (const attr of attrs) {
-    const v = attr.value
-    if (v.stringValue !== undefined) result[attr.key] = v.stringValue
-    else if (v.intValue !== undefined) result[attr.key] = Number(v.intValue)
-    else if (v.boolValue !== undefined) result[attr.key] = v.boolValue
-    else if (v.doubleValue !== undefined) result[attr.key] = v.doubleValue
-  }
-  return result
 }
 
 function readBody(req: IncomingMessage): Promise<string> {
@@ -58,9 +41,7 @@ export function createOtlpReceiver(): OtlpReceiver {
       for (const rs of body.resourceSpans ?? []) {
         for (const ss of rs.scopeSpans ?? []) {
           for (const span of ss.spans ?? []) {
-            const parentSpanId = span.parentSpanId && span.parentSpanId !== '' && span.parentSpanId !== '0000000000000000'
-              ? span.parentSpanId
-              : undefined
+            const parentSpanId = normalizeParentSpanId(span.parentSpanId)
             const links = (span.links ?? []).map((l: any) => ({
               traceId: l.spanContext?.traceId ?? l.traceId ?? '',
               spanId: l.spanContext?.spanId ?? l.spanId ?? '',

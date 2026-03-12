@@ -128,7 +128,6 @@ function applyTelemetryVerification(
   marker: VocabMarker | undefined,
   collector: TelemetryCollector,
   mode: TelemetryVerificationMode,
-  trace: TraceEntry[],
 ): void {
   if (!marker?.telemetry || mode === 'off') return
 
@@ -145,7 +144,6 @@ function applyTelemetryVerification(
         `Telemetry mismatch: expected span '${expected.span}' not found`
       )
       entry.error = err
-      trace.push(entry)
       throw err
     }
     if (mode === 'warn') {
@@ -197,7 +195,6 @@ function buildKindProxy(
         const result = await handler(getCtx(), payload)
         if (kind === 'query') {
           entry.result = result
-          return result
         }
       } catch (error) {
         entry.status = 'fail'
@@ -205,17 +202,16 @@ function buildKindProxy(
         throw error
       } finally {
         finalizeTraceEntry(entry, clock)
-
-        // Telemetry verification: only when step passed and a collector is available.
-        // On mode==='fail' mismatch, applyTelemetryVerification pushes the entry and
-        // throws, propagating out of this finally block before the push below runs.
-        const collector = getTelemetryCollector()
-        if (entry.status === 'pass' && collector) {
-          applyTelemetryVerification(entry, payload, markers[name], collector, getTelemetryMode(), trace)
-        }
-
         trace.push(entry)
       }
+
+      // Telemetry verification — only reached when the step passed (catch re-throws).
+      const collector = getTelemetryCollector()
+      if (collector) {
+        applyTelemetryVerification(entry, payload, markers[name], collector, getTelemetryMode())
+      }
+
+      return entry.result
     }
   }
 

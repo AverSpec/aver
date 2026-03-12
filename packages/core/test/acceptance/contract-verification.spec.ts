@@ -148,7 +148,82 @@ describe('contract verification pipeline', () => {
     await assert.outputExcludes({ text: 'logout' })
   })
 
+  // ── Error handling ──
+
+  test('errors when --traces is not provided', async ({ act, assert }) => {
+    await act.verify({})
+    await assert.fails()
+    await assert.outputContains({ text: '--traces' })
+  })
+
+  test('errors when trace file does not exist', async ({ act, assert }) => {
+    await act.verify({ tracesPath: '/tmp/nonexistent-trace-file.json' })
+    await assert.fails()
+    await assert.outputContains({ text: 'Failed to read traces' })
+  })
+
+  test('errors when no contracts found in directory', async ({ act, assert }) => {
+    await act.writeTraces({
+      filename: 'orphan.json',
+      spans: [{ traceId: 't1', spanId: 's1', name: 'some.span' }],
+    })
+    await act.verify({})
+    await assert.fails()
+    await assert.outputContains({ text: 'No contracts found' })
+  })
+
+  test('errors when --contract file does not exist', async ({ act, assert }) => {
+    await act.writeTraces({
+      filename: 'ok.json',
+      spans: [{ traceId: 't1', spanId: 's1', name: 'some.span' }],
+    })
+    await act.verify({ contractPath: '/tmp/nonexistent-contract.json' })
+    await assert.fails()
+    await assert.outputContains({ text: 'Failed to read contract' })
+  })
+
   // ── AI-59: Verbose output ──
+
+  test('verbose includes both summary and violation details', async ({ act, assert }) => {
+    await act.writeContract({
+      domain: 'signup',
+      testName: 'test',
+      spans: [{ name: 'user.signup', attributes: { 'user.email': { kind: 'literal', value: 'right@test.com' } } }],
+    })
+    await act.writeTraces({
+      filename: 'wrong.json',
+      spans: [{ traceId: 't1', spanId: 's1', name: 'user.signup', attributes: { 'user.email': 'wrong@test.com' } }],
+    })
+    await act.verify({ verbose: true })
+    await assert.fails()
+    await assert.domainReported({ domain: 'signup' })
+    await assert.outputContains({ text: 'Violation Details' })
+  })
+
+  test('verbose truncates trace IDs after 3', async ({ act, assert }) => {
+    // Write traces with 5 separate traces, each missing a required span
+    await act.writeContract({
+      domain: 'trunc',
+      testName: 'test',
+      spans: [
+        { name: 'anchor.span', attributes: {} },
+        { name: 'missing.span', attributes: {} },
+      ],
+    })
+    await act.writeTraces({
+      filename: 'many.json',
+      spans: [
+        { traceId: 'trace-0', spanId: 's0', name: 'anchor.span' },
+        { traceId: 'trace-1', spanId: 's1', name: 'anchor.span' },
+        { traceId: 'trace-2', spanId: 's2', name: 'anchor.span' },
+        { traceId: 'trace-3', spanId: 's3', name: 'anchor.span' },
+        { traceId: 'trace-4', spanId: 's4', name: 'anchor.span' },
+      ],
+    })
+    await act.verify({ verbose: true })
+    await assert.fails()
+    await assert.outputContains({ text: 'more' })
+  })
 
   test('verbose with no violations omits violation section', async ({ act, assert }) => {
     await act.writeContract({

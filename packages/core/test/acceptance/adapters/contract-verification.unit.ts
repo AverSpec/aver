@@ -63,7 +63,7 @@ export const adapter = implement(contractVerification, {
       process.chdir(ctx.tempDir)
       try {
         ctx.lastResult = await runTelemetryVerify({
-          traces: ctx.tracePath!,
+          traces: opts?.tracesPath ?? ctx.tracePath,
           contract: opts?.contractPath,
           verbose: opts?.verbose ?? false,
           help: false,

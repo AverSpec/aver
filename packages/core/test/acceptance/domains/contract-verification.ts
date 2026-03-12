@@ -26,6 +26,7 @@ export interface TraceSpan {
 export interface VerifyOpts {
   verbose?: boolean
   contractPath?: string
+  tracesPath?: string // explicit path override — for testing bad/missing paths
 }
 
 // ── Domain ──

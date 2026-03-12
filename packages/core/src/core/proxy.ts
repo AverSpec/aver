@@ -69,7 +69,7 @@ function matchSpan(span: CollectedSpan, expected: TelemetryExpectation): boolean
     if (typeof value === 'object' && value !== null && 'asymmetricMatch' in value) {
       if (!value.asymmetricMatch(actual)) return false
     } else {
-      if (String(actual) !== String(value)) return false
+      if (actual !== value) return false
     }
   }
   return true

@@ -103,7 +103,7 @@ describe.skipIf(isCI)('OTLP receiver integration', () => {
     const matched = spans.find(s => {
       if (s.name !== expected.span) return false
       for (const [key, value] of Object.entries(expected.attributes)) {
-        if (String(s.attributes[key]) !== String(value)) return false
+        if (s.attributes[key] !== value) return false
       }
       return true
     })

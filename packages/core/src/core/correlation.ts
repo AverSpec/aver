@@ -102,7 +102,7 @@ export function verifyCorrelation(trace: ReadonlyArray<TraceEntry>): Correlation
           steps: steps.map(s => s.name),
           message: `Expected attribute '${key}' on span '${step.matchedSpan.name}' for step '${step.name}' but not found`,
         })
-      } else if (String(actual) !== String(value)) {
+      } else if (actual !== value) {
         violations.push({
           kind: 'attribute-mismatch',
           key,

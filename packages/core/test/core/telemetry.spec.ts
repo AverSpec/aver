@@ -190,6 +190,42 @@ describe('telemetry verification — programmatic API', () => {
     })
   })
 
+  it('uses strict equality for attribute matching — type mismatch is not a match', async () => {
+    const prev = process.env.AVER_TELEMETRY_MODE
+    process.env.AVER_TELEMETRY_MODE = 'warn'
+    try {
+    const { collector, emit } = createCollector()
+    const domain = defineDomain({
+      name: 'tel-strict',
+      assertions: {
+        checkStatus: assertion({ telemetry: { span: 'status.check', attributes: { code: '200' } } }),
+      },
+      actions: {},
+      queries: {},
+    })
+    const protocol = unitProtocolWithTelemetry(collector)
+    const adapter = adapt(domain, {
+      protocol,
+      actions: {},
+      queries: {},
+      assertions: {
+        // Emit numeric 200 — should NOT match string '200'
+        checkStatus: async () => { emit('status.check', { code: 200 }) },
+      },
+    })
+    const s = suite(domain, adapter)
+    await s.setup()
+    await s.assert.checkStatus()
+    await s.teardown()
+
+    const trace = s.getTrace()
+    expect(trace[0].telemetry?.matched).toBe(false)
+    } finally {
+      if (prev === undefined) delete process.env.AVER_TELEMETRY_MODE
+      else process.env.AVER_TELEMETRY_MODE = prev
+    }
+  })
+
   it('records unmatched telemetry when span is missing (warn mode)', async () => {
     const prev = process.env.AVER_TELEMETRY_MODE
     process.env.AVER_TELEMETRY_MODE = 'warn'

@@ -118,6 +118,23 @@ describe('verifyCorrelation', () => {
       expect(result.violations[0].message).toMatch(/999/)
     })
 
+    it('attribute type mismatch is reported — number vs string', () => {
+      const trace: TraceEntry[] = [
+        makeEntry('checkout', { 'order.id': '123' }, {
+          name: 'order.checkout', attributes: { 'order.id': '123' },
+          traceId: 'aaa', spanId: '001',
+        }),
+        makeEntry('fulfillOrder', { 'order.id': '123' }, {
+          name: 'order.fulfill', attributes: { 'order.id': 123 }, // number, not string
+          traceId: 'aaa', spanId: '002',
+        }),
+      ]
+
+      const result = verifyCorrelation(trace)
+      expect(result.violations).toHaveLength(1)
+      expect(result.violations[0].kind).toBe('attribute-mismatch')
+    })
+
     it('steps without telemetry are ignored', () => {
       const trace: TraceEntry[] = [
         makeEntry('checkout', { 'order.id': '123' }, {

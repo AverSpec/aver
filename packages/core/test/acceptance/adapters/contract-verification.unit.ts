@@ -2,10 +2,10 @@ import { mkdtemp, writeFile, mkdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { expect } from 'vitest'
-import { implement } from '@aver/core'
-import type { Protocol } from '@aver/core'
+import { implement } from '../../../src/index'
+import type { Protocol } from '../../../src/index'
 import { slugify } from '@aver/telemetry'
-import { runTelemetryVerify } from '@aver/core/internals'
+import { runTelemetryVerify } from '../../../src/cli/telemetry'
 import { contractVerification } from '../domains/contract-verification.js'
 
 interface Ctx {

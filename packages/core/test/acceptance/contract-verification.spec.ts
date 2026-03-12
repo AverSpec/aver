@@ -1,9 +1,10 @@
 import { describe } from 'vitest'
-import { suite } from '@aver/core'
-import { contractVerification } from '../domains/contract-verification.js'
+import { suite } from '../../src/index'
+import { contractVerification } from './domains/contract-verification.js'
+import { adapter } from './adapters/contract-verification.unit.js'
 
 describe('contract verification pipeline', () => {
-  const { test } = suite(contractVerification)
+  const { test } = suite(contractVerification, adapter)
 
   // ── AI-58: Verify contracts against traces ──
 

@@ -1,4 +1,4 @@
-import { defineDomain, action, query, assertion } from '@aver/core'
+import { defineDomain, action, query, assertion } from '../../../src/index'
 import type { AttributeBinding } from '@aver/telemetry'
 
 // ── Payload types ──

@@ -76,6 +76,12 @@ export function buildTestApi<D extends Domain>(
           buildTestApi(testImpl.each(...args), domain, getEffectiveAdapters, globalSkipImpl, calledOps)
       }
 
+      // skipIf / runIf are factories — wrap the *result* of calling them
+      if (prop === 'skipIf' || prop === 'runIf') {
+        return (...args: any[]) =>
+          buildTestApi(child.call(testImpl, ...args), domain, getEffectiveAdapters, globalSkipImpl, calledOps)
+      }
+
       // Everything else: recursively wrap (handles only, skip, concurrent, etc.)
       if (typeof child === 'function') {
         return buildTestApi(child, domain, getEffectiveAdapters, globalSkipImpl, calledOps)

@@ -21,6 +21,7 @@ export type Violation =
   | { kind: 'missing-span'; spanName: string; traceId: string }
   | { kind: 'correlation-violation'; symbol: string; paths: Array<{ span: string; attribute: string; value: unknown }>; traceId: string }
   | { kind: 'literal-mismatch'; span: string; attribute: string; expected: string | number | boolean; actual: unknown; traceId: string }
+  | { kind: 'no-matching-traces'; anchorSpan: string; message: string }
 
 /** Result of verifying a contract entry against a set of production traces. */
 export interface EntryVerificationResult {
@@ -105,6 +106,14 @@ function verifyEntry(
   const matchingTraces = traces.filter(t => t.spans.some(s => s.name === anchorName))
 
   const violations: Violation[] = []
+
+  if (matchingTraces.length === 0) {
+    violations.push({
+      kind: 'no-matching-traces',
+      anchorSpan: anchorName,
+      message: `Contract entry '${entry.testName}' matched zero production traces — anchor span '${anchorName}' not found in any trace. The contract may be stale or the span name may be wrong.`,
+    })
+  }
 
   for (const trace of matchingTraces) {
     // Track which production spans have been matched to avoid reuse

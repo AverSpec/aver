@@ -307,7 +307,7 @@ export async function runTelemetryVerify(args: VerifyArgs): Promise<VerifyOutput
     lines.push('')
 
     // Collect all violations across all reports
-    type ViolationType = 'missing-span' | 'correlation-violation' | 'literal-mismatch'
+    type ViolationType = 'missing-span' | 'correlation-violation' | 'literal-mismatch' | 'no-matching-traces'
     const grouped = new Map<ViolationType, Array<{ violation: any; domain: string; testName: string }>>()
 
     for (const report of reports) {
@@ -351,6 +351,12 @@ export async function runTelemetryVerify(args: VerifyArgs): Promise<VerifyOutput
             .join(', ')
           lines.push(`    values: ${paths}`)
           lines.push(`    traces: ${violation.traceId}`)
+        }
+      } else if (kind === 'no-matching-traces') {
+        for (const { violation, testName } of items) {
+          lines.push(`    entry: ${testName}`)
+          lines.push(`    anchor span: ${violation.anchorSpan}`)
+          lines.push(`    ${violation.message}`)
         }
       }
     }

@@ -236,7 +236,7 @@ describe('verifyContract', () => {
       expect(report.results[0].tracesMatched).toBe(1)
     })
 
-    it('traces without anchor span are not checked', () => {
+    it('reports no-matching-traces violation when anchor span is absent', () => {
       const traces: ProductionTrace[] = [
         {
           traceId: 'unrelated-trace',
@@ -249,7 +249,11 @@ describe('verifyContract', () => {
       const report = verifyContract(signupContract, traces)
       expect(report.results[0].tracesMatched).toBe(0)
       expect(report.results[0].tracesChecked).toBe(1)
-      expect(report.totalViolations).toBe(0)
+      expect(report.totalViolations).toBe(1)
+      expect(report.results[0].violations[0]).toMatchObject({
+        kind: 'no-matching-traces',
+        anchorSpan: 'user.signup',
+      })
     })
   })
 

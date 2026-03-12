@@ -2,7 +2,8 @@
 set -euo pipefail
 
 # Update a backlog item (Linear Issue).
-# Usage: backlog-update <identifier> [--add-label ...] [--remove-label ...] [--body "..."] [--title "..."]
+# Usage: backlog-update <identifier> [--priority high] [--add-label ...] [--remove-label ...] [--body "..."] [--title "..."]
+# Priority accepts: urgent, high, medium, low, none, or P0-P3 shorthand.
 # Output: Updated issue URL
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -11,7 +12,7 @@ require_env
 
 if [[ $# -lt 1 ]]; then
   echo "Error: issue identifier is required" >&2
-  echo "Usage: backlog-update <identifier> [--add-label ...] [--remove-label ...] [--body \"...\"] [--title \"...\"]" >&2
+  echo "Usage: backlog-update <identifier> [--priority high] [--add-label ...] [--remove-label ...] [--body \"...\"] [--title \"...\"]" >&2
   exit 1
 fi
 
@@ -22,6 +23,7 @@ add_labels=""
 remove_labels=""
 body=""
 title=""
+priority=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -29,9 +31,10 @@ while [[ $# -gt 0 ]]; do
     --remove-label) remove_labels="$2"; shift 2 ;;
     --body)         body="$2";          shift 2 ;;
     --title)        title="$2";         shift 2 ;;
+    --priority)     priority="$2";      shift 2 ;;
     *)
       echo "Error: unknown argument '$1'" >&2
-      echo "Usage: backlog-update <identifier> [--add-label ...] [--remove-label ...] [--body \"...\"] [--title \"...\"]" >&2
+      echo "Usage: backlog-update <identifier> [--priority high] [--add-label ...] [--remove-label ...] [--body \"...\"] [--title \"...\"]" >&2
       exit 1
       ;;
   esac
@@ -58,6 +61,16 @@ fi
 # Handle body/description update
 if [[ -n "$body" ]]; then
   input=$(echo "$input" | jq --arg b "$body" '. + {description: $b}')
+fi
+
+# Handle native priority update
+if [[ -n "$priority" ]]; then
+  priority_int=$(resolve_priority "$priority")
+  if [[ -z "$priority_int" ]]; then
+    echo "Error: invalid priority '$priority'. Use: urgent, high, medium, low, none, or P0-P3." >&2
+    exit 1
+  fi
+  input=$(echo "$input" | jq --argjson p "$priority_int" '. + {priority: $p}')
 fi
 
 # Handle label changes

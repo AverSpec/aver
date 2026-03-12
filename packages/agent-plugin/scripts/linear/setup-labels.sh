@@ -58,11 +58,7 @@ ensure_label "stage:mapped"         "#C5DEF5" "Scenario: mapped"
 ensure_label "stage:specified"      "#BFD4F2" "Scenario: specified"
 ensure_label "stage:implemented"    "#0E8A16" "Scenario: implemented"
 
-# Priority labels
-ensure_label "P0" "#B60205" "Critical priority"
-ensure_label "P1" "#D93F0B" "High priority"
-ensure_label "P2" "#FBCA04" "Medium priority"
-ensure_label "P3" "#0E8A16" "Low priority"
+# Priority: uses Linear's native priority field (urgent/high/medium/low), not labels.
 
 # Item type labels
 ensure_label "Feature"  "#A2EEEF" "Feature"

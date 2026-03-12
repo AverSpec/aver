@@ -32,7 +32,7 @@ For each selected doc, read the full content and extract:
 For each extracted item, draft:
 - **title**: concise imperative (e.g., "Add retry logic to judge provider")
 - **type**: feature | bug | research | refactor | chore
-- **priority**: P0–P3 (use context clues — "critical" → P0, "nice to have" → P3)
+- **priority**: urgent, high, medium, low (use context clues — "critical" → urgent, "nice to have" → low)
 - **tags**: relevant categories
 - **reference**: `{ label: "<doc filename>", path: "<doc path>" }`
 

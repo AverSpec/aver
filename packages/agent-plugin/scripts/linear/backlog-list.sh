@@ -2,7 +2,8 @@
 set -euo pipefail
 
 # List backlog items from Linear Issues.
-# Usage: backlog-list [--status open|closed|all] [--priority P1] [--type feature]
+# Usage: backlog-list [--status open|closed|all] [--priority high] [--type feature]
+# Priority accepts: urgent, high, medium, low, none, or P0-P3 shorthand.
 # Output: JSON array of { number, title, priority, type, status, url }
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -20,7 +21,7 @@ while [[ $# -gt 0 ]]; do
     --type)     type="$2";     shift 2 ;;
     *)
       echo "Error: unknown argument '$1'" >&2
-      echo "Usage: backlog-list [--status open|closed|all] [--priority P1] [--type feature]" >&2
+      echo "Usage: backlog-list [--status open|closed|all] [--priority high] [--type feature]" >&2
       exit 1
       ;;
   esac
@@ -28,8 +29,7 @@ done
 
 # Build label filter: must have "backlog" label
 label_names='["backlog"]'
-[[ -n "$priority" ]] && label_names=$(echo "$label_names" | jq --arg p "$priority" '. + [$p]')
-[[ -n "$type" ]]     && label_names=$(echo "$label_names" | jq --arg t "$type" '. + [$t]')
+[[ -n "$type" ]] && label_names=$(echo "$label_names" | jq --arg t "$type" '. + [$t]')
 
 # Build the filter object — use "and" to require ALL labels via multiple "some" conditions
 label_filters="[]"
@@ -41,6 +41,16 @@ filter=$(jq -nc --argjson ands "$label_filters" --arg tid "$LINEAR_TEAM_ID" '{
   and: $ands,
   team: { id: { eq: $tid } }
 }')
+
+# Add native priority filter
+if [[ -n "$priority" ]]; then
+  priority_int=$(resolve_priority "$priority")
+  if [[ -z "$priority_int" ]]; then
+    echo "Error: invalid priority '$priority'. Use: urgent, high, medium, low, none, or P0-P3." >&2
+    exit 1
+  fi
+  filter=$(echo "$filter" | jq --argjson p "$priority_int" '. + {priority: {eq: $p}}')
+fi
 
 # Add state filter based on status
 # Linear state types: backlog, unstarted, started, completed, cancelled
@@ -62,7 +72,7 @@ esac
 
 _tmp=$(mktemp)
 jq -n --argjson f "$filter" '{
-  query: "query($filter: IssueFilter) { issues(filter: $filter, first: 200) { nodes { identifier title url labels { nodes { name } } state { name type } } } }",
+  query: "query($filter: IssueFilter) { issues(filter: $filter, first: 200) { nodes { identifier title priority priorityLabel url labels { nodes { name } } state { name type } } } }",
   variables: {filter: $f}
 }' > "$_tmp"
 result=$(linear_gql "$_tmp")
@@ -71,8 +81,9 @@ rm -f "$_tmp"
 echo "$result" | jq '[.data.issues.nodes[] | {
   number: .identifier,
   title,
-  priority: (.labels.nodes | map(select(.name | test("^P[0-3]$"))) | .[0].name // "none"),
+  priority: .priorityLabel,
+  _sort: (if .priority == 0 then 99 else .priority end),
   type: (.labels.nodes | map(select(.name | test("^(feature|bug|research|refactor|chore)$"; "i"))) | .[0].name // "none"),
   status: (if .state.type == "completed" or .state.type == "canceled" then "closed" else "open" end),
   url
-}]'
+}] | sort_by(._sort) | [.[] | del(._sort)]'

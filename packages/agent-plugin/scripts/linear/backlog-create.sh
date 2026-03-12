@@ -2,7 +2,8 @@
 set -euo pipefail
 
 # Create a backlog item as a Linear Issue.
-# Usage: backlog-create --title "..." [--priority P1] [--type feature] [--body "..."]
+# Usage: backlog-create --title "..." [--priority high] [--type feature] [--body "..."]
+# Priority accepts: urgent, high, medium, low, none, or P0-P3 shorthand.
 # Output: JSON { number, url }
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -22,7 +23,7 @@ while [[ $# -gt 0 ]]; do
     --body)     body="$2";     shift 2 ;;
     *)
       echo "Error: unknown argument '$1'" >&2
-      echo "Usage: backlog-create --title \"...\" [--priority P1] [--type feature] [--body \"...\"]" >&2
+      echo "Usage: backlog-create --title \"...\" [--priority high] [--type feature] [--body \"...\"]" >&2
       exit 1
       ;;
   esac
@@ -30,28 +31,49 @@ done
 
 if [[ -z "$title" ]]; then
   echo "Error: --title is required" >&2
-  echo "Usage: backlog-create --title \"...\" [--priority P1] [--type feature] [--body \"...\"]" >&2
+  echo "Usage: backlog-create --title \"...\" [--priority high] [--type feature] [--body \"...\"]" >&2
   exit 1
 fi
 
-# Build label list
+# Resolve native priority value
+priority_int=""
+if [[ -n "$priority" ]]; then
+  priority_int=$(resolve_priority "$priority")
+  if [[ -z "$priority_int" ]]; then
+    echo "Error: invalid priority '$priority'. Use: urgent, high, medium, low, none, or P0-P3." >&2
+    exit 1
+  fi
+fi
+
+# Build label list (type labels only — priority uses native field)
 labels="backlog"
-[[ -n "$priority" ]] && labels="$labels,$priority"
-[[ -n "$type" ]]     && labels="$labels,$type"
+[[ -n "$type" ]] && labels="$labels,$type"
 
 # Resolve label IDs
 label_ids=$(resolve_label_ids "$labels")
 
 # Build request body and execute
 _tmp=$(mktemp)
-jq -n \
-  --arg title "$title" \
-  --arg body "$body" \
-  --arg teamId "$LINEAR_TEAM_ID" \
-  --argjson labelIds "$label_ids" '{
-  query: "mutation($input: IssueCreateInput!) { issueCreate(input: $input) { success issue { id identifier url } } }",
-  variables: {input: {title: $title, description: $body, teamId: $teamId, labelIds: $labelIds}}
-}' > "$_tmp"
+if [[ -n "$priority_int" ]]; then
+  jq -n \
+    --arg title "$title" \
+    --arg body "$body" \
+    --arg teamId "$LINEAR_TEAM_ID" \
+    --argjson labelIds "$label_ids" \
+    --argjson priority "$priority_int" '{
+    query: "mutation($input: IssueCreateInput!) { issueCreate(input: $input) { success issue { id identifier url } } }",
+    variables: {input: {title: $title, description: $body, teamId: $teamId, labelIds: $labelIds, priority: $priority}}
+  }' > "$_tmp"
+else
+  jq -n \
+    --arg title "$title" \
+    --arg body "$body" \
+    --arg teamId "$LINEAR_TEAM_ID" \
+    --argjson labelIds "$label_ids" '{
+    query: "mutation($input: IssueCreateInput!) { issueCreate(input: $input) { success issue { id identifier url } } }",
+    variables: {input: {title: $title, description: $body, teamId: $teamId, labelIds: $labelIds}}
+  }' > "$_tmp"
+fi
 result=$(linear_gql "$_tmp")
 rm -f "$_tmp"
 

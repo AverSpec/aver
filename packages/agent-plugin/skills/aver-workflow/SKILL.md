@@ -206,9 +206,9 @@ All scripts are in `packages/agent-plugin/scripts/<backend>/` relative to the pr
 
 | Script | Purpose |
 |--------|---------|
-| `backlog-create.sh --title "..." [--priority P1] [--type feature] [--body "..."]` | Create a new backlog item. Returns `{number, url}` |
-| `backlog-list.sh [--status open] [--priority P1] [--type feature]` | List backlog items with filters. Returns JSON array |
-| `backlog-update.sh <number> [--add-label ...] [--remove-label ...] [--body "..."]` | Update labels or body of a backlog item. Returns URL |
+| `backlog-create.sh --title "..." [--priority high] [--type feature] [--body "..."]` | Create a new backlog item. Returns `{number, url}` |
+| `backlog-list.sh [--status open] [--priority high] [--type feature]` | List backlog items with filters. Returns JSON array |
+| `backlog-update.sh <number> [--priority high] [--add-label ...] [--remove-label ...] [--body "..."]` | Update priority, labels, or body of a backlog item. Returns URL |
 | `backlog-close.sh <number>` | Close a backlog item. Returns URL |
 
 ### Additional Operations

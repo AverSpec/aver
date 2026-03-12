@@ -65,6 +65,23 @@ linear_gql() {
 }
 
 
+# Map a priority name to Linear's native priority integer.
+# Accepts both P0-P3 shorthand and Linear's own names.
+# Returns integer (0-4) or empty string if invalid.
+# Linear values: 0=No priority, 1=Urgent, 2=High, 3=Medium, 4=Low
+resolve_priority() {
+  local input
+  input=$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')
+  case "$input" in
+    p0|urgent|1)  echo 1 ;;
+    p1|high|2)    echo 2 ;;
+    p2|medium|3)  echo 3 ;;
+    p3|low|4)     echo 4 ;;
+    none|0)       echo 0 ;;
+    *)            echo "" ;;
+  esac
+}
+
 # Resolve a single label name to its UUID for the current team.
 # Usage: resolve_label_id "scenario"
 resolve_label_id() {

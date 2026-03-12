@@ -37,3 +37,6 @@ export type { ActionMarker, QueryMarker, AssertionMarker, TelemetryExpectation, 
 export type { ActProxy, QueryProxy, AssertProxy, PlannedTest, SuiteConfig, NamedContext, NamedTestContext, NamedSuiteReturn } from './core/suite'
 
 export type { Clock, StepCategory, TelemetryVerificationMode, ProxyOptions } from './core/proxy'
+
+export { runTelemetryVerify, parseVerifyArgs } from './cli/telemetry'
+export type { VerifyArgs, VerifyOutput } from './cli/telemetry'

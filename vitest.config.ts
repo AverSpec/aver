@@ -9,6 +9,7 @@ export default defineConfig({
       'packages/protocol-http',
       'packages/protocol-playwright',
       'examples/task-board',
+      'examples/contract-verification',
     ],
     exclude: ['.worktrees/**'],
   },

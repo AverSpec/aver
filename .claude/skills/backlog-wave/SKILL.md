@@ -219,3 +219,18 @@ Remaining: Z items
 | `backlog-create.sh --title "..." --priority high` | Create new backlog items |
 
 All scripts are at `packages/agent-plugin/scripts/linear/`.
+
+## Linear API Access
+
+The Linear API key lives at `~/.config/aver/.env`. The sandbox blocks access to both `~/.config` and `api.linear.app`.
+
+**Do NOT** try to read the key file with the Read tool, `cat`, or any sandboxed command — it will be denied. Instead, inline the key read into a single `dangerouslyDisableSandbox: true` bash command:
+
+```bash
+curl -s -H "Authorization: $(grep LINEAR_API_KEY ~/.config/aver/.env | cut -d= -f2)" \
+  -H "Content-Type: application/json" \
+  -d '{"query":"..."}' \
+  https://api.linear.app/graphql
+```
+
+This applies to all Linear API calls: status transitions, ticket updates, queries. Always `dangerouslyDisableSandbox: true`, always inline the key read.

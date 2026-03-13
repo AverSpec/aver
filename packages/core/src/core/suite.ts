@@ -262,7 +262,9 @@ function suiteSingle<D extends Domain>(domain: D, adapter?: Adapter): SuiteRetur
       if (!domainResults || domainResults.results.length === 0) return
 
       try {
-        const { extractContract, writeContracts } = await import('@aver/telemetry')
+        // Non-literal specifier prevents DTS from resolving the circular peer dep
+        const telemetryPkg = '@aver/telemetry' as const
+        const { extractContract, writeContracts } = await import(telemetryPkg)
         const { join } = await import('node:path')
         const baseDir = join(process.cwd(), '.aver', 'contracts')
         const contract = extractContract({ domain: domainResults.domain, results: domainResults.results })

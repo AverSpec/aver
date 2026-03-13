@@ -190,6 +190,16 @@ When creating tickets (Linear, GitHub Issues, etc.) from review findings:
 - Describe each issue on its **technical merits only**: what the problem is, where it is, why it matters, and how to fix it.
 - Use the **Lens** column (e.g., "observability", "test economics") for categorization, not attribution.
 
+## Refining Tickets
+
+After ticketing, each finding should be refined before execution:
+
+1. **Vet the issue** — read the relevant code, confirm the problem exists, assess severity
+2. **Make a plan** — determine the specific fix: which files, what changes, what tests
+3. **Get panel feedback** — quick thumbs up/down/sideways from the panel on the proposed fix
+4. **Update the ticket** — replace the initial description with the refined plan
+5. **Move to Todo** — refined tickets go to Todo; unrefined tickets stay in Backlog
+
 ## Output
 
 Save the review to `.aver/plans/YYYY-MM-DD-<topic>-<review-type>-review.md` by default. If the user asks to skip saving, just present the review conversationally.

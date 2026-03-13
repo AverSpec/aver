@@ -59,7 +59,7 @@ export function withFixture<C>(
   fixture: { before?: () => Promise<void>; after?: () => Promise<void> }
 ): Protocol<C> {
   return {
-    name: protocol.name,
+    ...protocol,
     async setup() {
       if (fixture.before) await fixture.before()
       return protocol.setup()
@@ -74,7 +74,5 @@ export function withFixture<C>(
     onTestStart: protocol.onTestStart?.bind(protocol),
     onTestFail: protocol.onTestFail?.bind(protocol),
     onTestEnd: protocol.onTestEnd?.bind(protocol),
-    extensions: protocol.extensions,
-    telemetry: protocol.telemetry,
   }
 }

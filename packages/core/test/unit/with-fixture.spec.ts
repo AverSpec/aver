@@ -106,6 +106,27 @@ describe('withFixture()', () => {
     expect(calls).toContain('after')
   })
 
+  it('preserves custom properties from the original protocol', () => {
+    const server = { port: 3000 }
+    const protocol = {
+      ...mockProtocol([]),
+      myServer: server,
+    } as Protocol<{ value: number }> & { myServer: typeof server }
+    const wrapped = withFixture(protocol, {}) as typeof protocol
+    expect(wrapped.myServer).toBe(server)
+  })
+
+  it('preserves extra methods from the original protocol', async () => {
+    const cleanup = async () => 'cleaned'
+    const protocol = {
+      ...mockProtocol([]),
+      customCleanup: cleanup,
+    } as Protocol<{ value: number }> & { customCleanup: typeof cleanup }
+    const wrapped = withFixture(protocol, {}) as typeof protocol
+    expect(wrapped.customCleanup).toBe(cleanup)
+    expect(await wrapped.customCleanup()).toBe('cleaned')
+  })
+
   it('handles protocol without optional hooks', async () => {
     const bare: Protocol<null> = {
       name: 'bare',

@@ -3,7 +3,8 @@ import { suite } from '../../src/core/suite'
 import { resetRegistry, registerAdapter, getAdapters } from '../../src/core/registry'
 import { adapt } from '../../src/core/adapter'
 import { defineDomain } from '../../src/core/domain'
-import { defineConfig, resetCoverageConfig } from '../../src/core/config'
+import { defineConfig } from '../../src/core/config'
+import { resetAll } from '../../src/core/reset'
 import { action, query, assertion } from '../../src/core/markers'
 import type { Protocol } from '../../src/core/protocol'
 
@@ -494,8 +495,7 @@ describe('suite() — teardown error handling', () => {
   afterEach(() => {
     if (originalTest) (globalThis as any).test = originalTest
     if (originalIt) (globalThis as any).it = originalIt
-    resetRegistry()
-    resetCoverageConfig()
+    resetAll()
   })
 
   it('does not replace original test error when teardown throws', async () => {

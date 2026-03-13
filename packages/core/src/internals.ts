@@ -27,6 +27,8 @@ export type { CoverageConfig, TeardownFailureMode } from './core/config'
 
 export type { VocabularyCoverage } from './core/coverage'
 
+export { resetAll } from './core/reset'
+
 export { verifyCorrelation } from './core/correlation'
 export type { CorrelationResult, CorrelationGroup, CorrelationViolation } from './core/correlation'
 

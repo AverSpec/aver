@@ -1,15 +1,14 @@
 import { describe, it, expect, beforeEach, afterAll, vi } from 'vitest'
 import { defineConfig, getCoverageConfig, resetCoverageConfig } from '../../src/core/config'
 import { suite } from '../../src/core/suite'
-import { resetRegistry } from '../../src/core/registry'
+import { resetAll } from '../../src/core/reset'
 import { defineDomain } from '../../src/core/domain'
 import { action, query, assertion } from '../../src/core/markers'
 import { adapt } from '../../src/core/adapter'
 import { unit } from '../../src/protocols/unit'
 
 beforeEach(() => {
-  resetRegistry()
-  resetCoverageConfig()
+  resetAll()
 })
 
 // ---------------------------------------------------------------------------

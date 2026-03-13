@@ -96,7 +96,7 @@ export async function runTest(
     return {
       testName,
       domainName: domain.name,
-      adapterName: adapter.domain.name,
+      adapterName: adapter.protocol.name,
       protocolName: adapter.protocol.name,
     }
   }

@@ -17,4 +17,6 @@ export interface VisualApproveOptions {
   name: string
   region?: string
   threshold?: number
+  filePath?: string
+  testName?: string
 }

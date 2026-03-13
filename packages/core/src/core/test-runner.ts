@@ -113,9 +113,12 @@ export async function runTest(
     // ── Run test body inside AsyncLocalStorage context ──
     // Use the first adapter's protocol info for the ALS context (backward compat).
     const [firstName, firstDomain, firstAdapter] = entries[0]
+    const expectGlobal = (globalThis as any).expect
+    const testPath = expectGlobal?.getState?.()?.testPath as string | undefined
     await runWithTestContext(
       {
         testName,
+        testPath,
         domainName: firstDomain.name,
         protocolName: firstAdapter.protocol.name,
         trace,

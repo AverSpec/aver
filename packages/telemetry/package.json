@@ -35,12 +35,7 @@
         "default": "./dist/index.js"
       }
     },
-    "./vitest": {
-      "import": {
-        "types": "./dist/vitest.d.ts",
-        "default": "./dist/vitest.js"
-      }
-    }
+    "./vitest": "./dist/vitest.js"
   },
   "files": [
     "dist"

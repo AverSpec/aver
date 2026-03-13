@@ -29,6 +29,8 @@ export type { VocabularyCoverage } from './core/coverage'
 
 export { resetAll } from './core/reset'
 
+export { isExtractionMode, registerTestResult, getExtractionRegistry, clearExtractionRegistry } from './core/extract-registry'
+
 export { verifyCorrelation } from './core/correlation'
 export type { CorrelationResult, CorrelationGroup, CorrelationViolation } from './core/correlation'
 

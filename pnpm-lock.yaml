@@ -21,21 +21,6 @@ importers:
         specifier: ^3.2.4
         version: 3.2.4(@types/node@22.19.13)(tsx@4.21.0)
 
-  examples/contract-verification:
-    devDependencies:
-      '@aver/core':
-        specifier: workspace:*
-        version: link:../../packages/core
-      '@aver/telemetry':
-        specifier: workspace:*
-        version: link:../../packages/telemetry
-      typescript:
-        specifier: ^5.7.0
-        version: 5.9.3
-      vitest:
-        specifier: ^3.0.0
-        version: 3.2.4(@types/node@22.19.13)(tsx@4.21.0)
-
   examples/task-board:
     dependencies:
       express:

@@ -11,7 +11,7 @@ import { getGlobalTest, getGlobalDescribe, buildTestApi, shouldFilterOutDomain, 
 import { getCoverageConfig } from './config'
 import { runTest } from './test-runner'
 import type { AdapterEntry } from './test-runner'
-import { isExtractionMode, getExtractionRegistry } from './extract-registry'
+
 
 export type { ActProxy, QueryProxy, AssertProxy } from './proxy'
 
@@ -250,33 +250,6 @@ function suiteSingle<D extends Domain>(domain: D, adapter?: Adapter): SuiteRetur
           `Vocabulary coverage for domain "${domain.name}" is ${cov.percentage}%, ` +
           `below the configured minimum of ${threshold}%.${detail}`,
         )
-      }
-    })
-  }
-
-  // Register afterAll contract extraction if AVER_CONTRACT_EXTRACT is set.
-  if (typeof globalAfterAll === 'function' && isExtractionMode()) {
-    globalAfterAll(async () => {
-      const registry = getExtractionRegistry()
-      const domainResults = registry.get(domain.name)
-      if (!domainResults || domainResults.results.length === 0) return
-
-      try {
-        // Non-literal specifier prevents DTS from resolving the circular peer dep
-        const telemetryPkg = '@aver/telemetry' as const
-        const { extractContract, writeContracts } = await import(telemetryPkg)
-        const { join } = await import('node:path')
-        const baseDir = join(process.cwd(), '.aver', 'contracts')
-        const contract = extractContract({ domain: domainResults.domain, results: domainResults.results })
-        if (contract.entries.length === 0) return
-        const paths = await writeContracts(contract, baseDir)
-        console.log(`[aver] Extracted ${paths.length} contract(s) for "${domain.name}" to ${baseDir}/${domain.name}/`)
-      } catch (err: any) {
-        if (err?.code === 'ERR_MODULE_NOT_FOUND' || err?.code === 'MODULE_NOT_FOUND') {
-          console.error('[aver] Contract extraction requires @aver/telemetry. Install it: pnpm add -D @aver/telemetry')
-        } else {
-          console.error(`[aver] Contract extraction failed for "${domain.name}":`, err)
-        }
       }
     })
   }

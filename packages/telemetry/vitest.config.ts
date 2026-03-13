@@ -9,6 +9,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
+      '@aver/core/internals': resolve(__dirname, '../core/src/internals.ts'),
       '@aver/core': resolve(__dirname, '../core/src/index.ts'),
     },
   },

@@ -34,6 +34,12 @@
         "types": "./dist/index.d.ts",
         "default": "./dist/index.js"
       }
+    },
+    "./vitest": {
+      "import": {
+        "types": "./dist/vitest.d.ts",
+        "default": "./dist/vitest.js"
+      }
     }
   },
   "files": [
@@ -46,7 +52,8 @@
     "prepublishOnly": "pnpm run build"
   },
   "peerDependencies": {
-    "@aver/core": "workspace:^"
+    "@aver/core": "workspace:^",
+    "vitest": ">=2.0.0"
   },
   "devDependencies": {
     "@aver/core": "workspace:^",

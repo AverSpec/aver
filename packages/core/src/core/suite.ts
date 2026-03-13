@@ -262,7 +262,7 @@ function suiteSingle<D extends Domain>(domain: D, adapter?: Adapter): SuiteRetur
       if (!domainResults || domainResults.results.length === 0) return
 
       try {
-        const { extractContract, writeContracts } = await import('@aver/telemetry')
+        const { extractContract, writeContracts } = await (import('@aver/telemetry') as Promise<any>)
         const { join } = await import('node:path')
         const baseDir = join(process.cwd(), '.aver', 'contracts')
         const contract = extractContract({ domain: domainResults.domain, results: domainResults.results })

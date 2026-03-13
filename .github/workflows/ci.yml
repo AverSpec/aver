@@ -22,8 +22,8 @@ jobs:
 
       - name: Build packages
         run: |
-          pnpm --filter @aver/telemetry run build
           pnpm --filter @aver/core run build
+          pnpm --filter @aver/telemetry run build
           pnpm --filter @aver/approvals run build
           pnpm --filter @aver/protocol-http run build
           pnpm --filter @aver/protocol-playwright run build

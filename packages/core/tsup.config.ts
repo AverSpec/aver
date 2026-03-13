@@ -12,7 +12,7 @@ export default defineConfig([
     },
     splitting: true,
     shims: true,
-    external: ['vitest'],
+    external: ['vitest', '@aver/telemetry'],
   },
   {
     ...baseConfig,
@@ -22,6 +22,6 @@ export default defineConfig([
     dts: false,
     splitting: true,
     shims: true,
-    external: ['vitest'],
+    external: ['vitest', '@aver/telemetry'],
   },
 ])

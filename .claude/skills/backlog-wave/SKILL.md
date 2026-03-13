@@ -60,15 +60,22 @@ Present the sorted list with recommended execution order. Ask: **"Start with Wav
 
 The user can also cherry-pick specific items across priorities into a custom wave.
 
-### Step 2 — Move wave items to Todo
+### Step 2 — Refine items before execution
 
-For each item selected for the current wave:
+Each item must be refined before it can be executed. Unrefined items stay in **Backlog**; refined items move to **Todo**.
 
-```bash
-bash packages/agent-plugin/scripts/linear/backlog-status.sh <ID> --state todo
-```
+For each item in the wave:
 
-This signals the wave is planned and these items are queued for work.
+1. **Vet the issue** — read the relevant code, confirm the problem exists, assess severity
+2. **Make a plan** — determine the specific fix: which files, what changes, what tests
+3. **Get feedback** — quick validation on the proposed approach (e.g., panel thumbs up/down/sideways)
+4. **Update the ticket** — replace the initial description with the refined plan
+5. **Move to Todo**:
+   ```bash
+   bash packages/agent-plugin/scripts/linear/backlog-status.sh <ID> --state todo
+   ```
+
+Items that don't survive vetting (already fixed, not reproducible, out of scope) should be closed directly.
 
 ### Step 3 — Execution strategy for this wave
 

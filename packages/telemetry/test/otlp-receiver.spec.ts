@@ -110,6 +110,23 @@ describe.skipIf(isCI)('OtlpReceiver', () => {
     expect(names).toEqual(['r1-s1', 'r1-s2', 'r2-s1'])
   })
 
+  it('rejects oversized request bodies with 413', async () => {
+    // Build a body that exceeds the 1 MB default limit
+    const oversized = JSON.stringify({
+      resourceSpans: [{ scopeSpans: [{ spans: [{ name: 'x'.repeat(1_100_000) }] }] }],
+    })
+
+    const res = await fetch(`http://localhost:${receiver.port}/v1/traces`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: oversized,
+    })
+
+    expect(res.status).toBe(413)
+    const json = await res.json()
+    expect(json.error).toMatch(/exceeds/)
+  })
+
   it('stops cleanly', async () => {
     await receiver.stop()
     // Fetching after stop should fail

@@ -8,11 +8,35 @@ export interface OtlpReceiver extends TelemetryCollector {
   port: number
 }
 
-function readBody(req: IncomingMessage): Promise<string> {
+/** Default body size limit: 1 MB */
+const MAX_BODY_BYTES = 1_048_576
+
+class BodyTooLargeError extends Error {
+  constructor(limit: number) {
+    super(`Request body exceeds the ${limit}-byte limit`)
+    this.name = 'BodyTooLargeError'
+  }
+}
+
+function readBody(req: IncomingMessage, maxBytes = MAX_BODY_BYTES): Promise<string> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = []
-    req.on('data', (c: Buffer) => chunks.push(c))
-    req.on('end', () => resolve(Buffer.concat(chunks).toString()))
+    let received = 0
+    let exceeded = false
+    req.on('data', (c: Buffer) => {
+      received += c.length
+      if (received > maxBytes) {
+        exceeded = true
+        // Stop buffering but let the stream finish so the socket stays open for the response
+        chunks.length = 0
+        return
+      }
+      if (!exceeded) chunks.push(c)
+    })
+    req.on('end', () => {
+      if (exceeded) reject(new BodyTooLargeError(maxBytes))
+      else resolve(Buffer.concat(chunks).toString())
+    })
     req.on('error', reject)
   })
 }
@@ -28,6 +52,11 @@ export function createOtlpReceiver(): OtlpReceiver {
       try {
         body = JSON.parse(await readBody(req))
       } catch (err) {
+        if (err instanceof BodyTooLargeError) {
+          res.writeHead(413, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({ error: err.message }))
+          return
+        }
         const contentType = req.headers['content-type'] ?? '(none)'
         console.warn(
           `[aver] OTLP receiver: failed to parse request body as JSON (content-type: ${contentType}).`,

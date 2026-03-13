@@ -1,7 +1,7 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { suite } from '../../src/core/suite'
 import { defineDomain } from '../../src/core/domain'
-import { adapt } from '../../src/core/adapter'
+import { implement } from '../../src/core/adapter'
 import { action, query, assertion } from '../../src/core/markers'
 import type { Protocol } from '../../src/core/protocol'
 
@@ -58,7 +58,7 @@ const userDomain = defineDomain({
   },
 })
 
-const adminAdapter = adapt(adminDomain, {
+const adminAdapter = implement(adminDomain, {
   protocol: adminProtocol,
   actions: {
     createProject: async (ctx, { name }) => { ctx.log.push(`create:${name}`) },
@@ -71,7 +71,7 @@ const adminAdapter = adapt(adminDomain, {
   },
 })
 
-const userAdapter = adapt(userDomain, {
+const userAdapter = implement(userDomain, {
   protocol: userProtocol,
   actions: {
     addTask: async (ctx, { project, title }) => { ctx.log.push(`task:${project}:${title}`) },
@@ -166,8 +166,8 @@ describe('suite(config) [composed]', () => {
 
       const d1 = defineDomain({ name: 'D1', actions: { go: action() }, queries: {}, assertions: {} })
       const d2 = defineDomain({ name: 'D2', actions: { go: action() }, queries: {}, assertions: {} })
-      const a1 = adapt(d1, { protocol: proto1, actions: { go: async () => { order.push('body') } }, queries: {}, assertions: {} })
-      const a2 = adapt(d2, { protocol: proto2, actions: { go: async () => {} }, queries: {}, assertions: {} })
+      const a1 = implement(d1, { protocol: proto1, actions: { go: async () => { order.push('body') } }, queries: {}, assertions: {} })
+      const a2 = implement(d2, { protocol: proto2, actions: { go: async () => {} }, queries: {}, assertions: {} })
 
       let pending: Promise<void> | undefined
       const fakeTest = (_name: string, fn: () => Promise<void>) => { pending = fn() }
@@ -199,8 +199,8 @@ describe('suite(config) [composed]', () => {
 
       const d1 = defineDomain({ name: 'D1', actions: { boom: action() }, queries: {}, assertions: {} })
       const d2 = defineDomain({ name: 'D2', actions: {}, queries: {}, assertions: {} })
-      const a1 = adapt(d1, { protocol: proto1, actions: { boom: async () => { throw new Error('kaboom') } }, queries: {}, assertions: {} })
-      const a2 = adapt(d2, { protocol: proto2, actions: {}, queries: {}, assertions: {} })
+      const a1 = implement(d1, { protocol: proto1, actions: { boom: async () => { throw new Error('kaboom') } }, queries: {}, assertions: {} })
+      const a2 = implement(d2, { protocol: proto2, actions: {}, queries: {}, assertions: {} })
 
       let pending: Promise<void> | undefined
       const fakeTest = (_name: string, fn: () => Promise<void>) => { pending = fn() }
@@ -229,9 +229,9 @@ describe('suite(config) [composed]', () => {
       const d1 = defineDomain({ name: 'D1', actions: {}, queries: {}, assertions: {} })
       const d2 = defineDomain({ name: 'D2', actions: {}, queries: {}, assertions: {} })
       const d3 = defineDomain({ name: 'D3', actions: {}, queries: {}, assertions: {} })
-      const a1 = adapt(d1, { protocol: makeProto('p1'), actions: {}, queries: {}, assertions: {} })
-      const a2 = adapt(d2, { protocol: makeProto('p2'), actions: {}, queries: {}, assertions: {} })
-      const a3 = adapt(d3, { protocol: makeProto('p3'), actions: {}, queries: {}, assertions: {} })
+      const a1 = implement(d1, { protocol: makeProto('p1'), actions: {}, queries: {}, assertions: {} })
+      const a2 = implement(d2, { protocol: makeProto('p2'), actions: {}, queries: {}, assertions: {} })
+      const a3 = implement(d3, { protocol: makeProto('p3'), actions: {}, queries: {}, assertions: {} })
 
       let pending: Promise<void> | undefined
       const fakeTest = (_name: string, fn: () => Promise<void>) => { pending = fn() }
@@ -261,8 +261,8 @@ describe('suite(config) [composed]', () => {
 
       const d1 = defineDomain({ name: 'D1', actions: {}, queries: {}, assertions: {} })
       const d2 = defineDomain({ name: 'D2', actions: {}, queries: {}, assertions: {} })
-      const a1 = adapt(d1, { protocol: proto1, actions: {}, queries: {}, assertions: {} })
-      const a2 = adapt(d2, { protocol: proto2, actions: {}, queries: {}, assertions: {} })
+      const a1 = implement(d1, { protocol: proto1, actions: {}, queries: {}, assertions: {} })
+      const a2 = implement(d2, { protocol: proto2, actions: {}, queries: {}, assertions: {} })
 
       let pending: Promise<void> | undefined
       const fakeTest = (_name: string, fn: () => Promise<void>) => { pending = fn() }
@@ -344,7 +344,7 @@ describe('suite(config) [composed]', () => {
         queries: {},
         assertions: { boom: assertion() },
       })
-      const failAdapter = adapt(failDomain, {
+      const failAdapter = implement(failDomain, {
         protocol: {
           name: 'fail-proto',
           async setup() { return {} },

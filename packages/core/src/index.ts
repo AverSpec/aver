@@ -1,7 +1,7 @@
 // User-facing API
 export { action, query, assertion } from './core/markers'
 export { defineDomain } from './core/domain'
-export { adapt, implement } from './core/adapter'
+export { implement, adapt } from './core/adapter'
 export { suite } from './core/suite'
 export { defineConfig } from './core/config'
 export { unit } from './protocols/unit'

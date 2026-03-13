@@ -62,7 +62,7 @@ export interface Adapter<
   }
 }
 
-export function adapt<
+export function implement<
   Ctx,
   A extends Record<string, ActionMarker<any>>,
   Q extends Record<string, QueryMarker<any, any>>,
@@ -82,5 +82,5 @@ export function adapt<
   }
 }
 
-/** @deprecated Use adapt() instead */
-export const implement = adapt
+/** @deprecated Use implement() instead */
+export const adapt = implement

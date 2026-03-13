@@ -1,5 +1,5 @@
 import { expect } from 'vitest'
-import { adapt, unit, runWithTestContext } from '@aver/core'
+import { implement, unit, runWithTestContext } from '@aver/core'
 import type { TraceEntry, Screenshotter } from '@aver/core'
 import { mkdtempSync, existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
@@ -67,7 +67,7 @@ function getVisualApprovalDir(): string | undefined {
   return join(dirname(testPath), '__approvals__', safeName(testName))
 }
 
-export const averApprovalsAdapter = adapt(averApprovals, {
+export const averApprovalsAdapter = implement(averApprovals, {
   protocol: unit<ApprovalSession>(() => {
     const workDir = mkdtempSync(join(tmpdir(), 'aver-approvals-test-'))
     return { workDir, lastApprovalName: 'approval', trace: [] }

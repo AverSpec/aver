@@ -13,7 +13,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { defineDomain, action, query, assertion, adapt, suite } from '../../src/index'
+import { defineDomain, action, query, assertion, implement, suite } from '../../src/index'
 import { resetRegistry } from '../../src/core/registry'
 import { createProxies } from '../../src/core/proxy'
 import type { Protocol } from '../../src/core/protocol'
@@ -84,7 +84,7 @@ const counterProtocol: Protocol<CounterStore> = {
   async teardown() {},
 }
 
-const counterAdapter = adapt(counter, {
+const counterAdapter = implement(counter, {
   protocol: counterProtocol,
   actions: rawHandlers.actions,
   queries: rawHandlers.queries,
@@ -250,7 +250,7 @@ describe('smoke tests: Aver machinery vs plain Vitest equivalence', () => {
       queries: {},
       assertions: {},
     })
-    const boomAdapter = adapt(boomDomain, {
+    const boomAdapter = implement(boomDomain, {
       protocol: counterProtocol as Protocol<any>,
       actions: { explode: async () => { throw new Error('boom!') } },
       queries: {},
@@ -365,7 +365,7 @@ describe('smoke tests: Aver machinery vs plain Vitest equivalence', () => {
       },
     }
 
-    const lifecycleAdapter = adapt(counter, {
+    const lifecycleAdapter = implement(counter, {
       protocol: lifecycleProtocol,
       actions: rawHandlers.actions,
       queries: rawHandlers.queries,

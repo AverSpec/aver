@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { type Context as OtelContext, context, trace } from '@opentelemetry/api'
 import { BasicTracerProvider, SimpleSpanProcessor, InMemorySpanExporter } from '@opentelemetry/sdk-trace-base'
-import { defineDomain, action, adapt } from '../../src/index'
+import { defineDomain, action,  implement } from '../../src/index'
 import { runTestWithAdapter } from '../../src/core/test-runner'
 import type { Protocol, TelemetryCollector, CollectedSpan } from '../../src/core/protocol'
 
@@ -114,7 +114,7 @@ describe('example-order-flow: correlation verification', () => {
       telemetry: collector,
     }
 
-    return adapt(orderFlow, {
+    return implement(orderFlow, {
       protocol,
       actions: {
         checkout: async (ctx, { orderId }) => {
@@ -169,7 +169,7 @@ describe('example-order-flow: correlation verification', () => {
         telemetry: collector,
       }
 
-      const adapter = adapt(orderFlow, {
+      const adapter = implement(orderFlow, {
         protocol,
         actions: {
           checkout: async (ctx, { orderId }) => {
@@ -225,7 +225,7 @@ describe('example-order-flow: correlation verification', () => {
         telemetry: collector,
       }
 
-      const adapter = adapt(orderFlow, {
+      const adapter = implement(orderFlow, {
         protocol,
         actions: {
           checkout: async (_ctx, { orderId }) => {
@@ -266,7 +266,7 @@ describe('example-order-flow: correlation verification', () => {
         telemetry: collector,
       }
 
-      const adapter = adapt(orderFlow, {
+      const adapter = implement(orderFlow, {
         protocol,
         actions: {
           checkout: async (_ctx, { orderId }) => {
@@ -308,7 +308,7 @@ describe('example-order-flow: correlation verification', () => {
         telemetry: collector,
       }
 
-      const adapter = adapt(orderFlow, {
+      const adapter = implement(orderFlow, {
         protocol,
         actions: {
           checkout: async (_ctx, { orderId }) => {

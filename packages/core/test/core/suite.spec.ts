@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { suite } from '../../src/core/suite'
 import { resetRegistry, registerAdapter, getAdapters } from '../../src/core/registry'
-import { adapt } from '../../src/core/adapter'
+import { implement } from '../../src/core/adapter'
 import { defineDomain } from '../../src/core/domain'
 import { defineConfig } from '../../src/core/config'
 import { resetAll } from '../../src/core/reset'
@@ -34,7 +34,7 @@ const cart = defineDomain({
   },
 })
 
-const cartAdapter = adapt(cart, {
+const cartAdapter = implement(cart, {
   protocol: testProtocol,
   actions: {
     addItem: async (ctx, { name }) => { ctx.log.push(`add:${name}`) },
@@ -106,7 +106,7 @@ describe('suite() — programmatic API', () => {
       queries: {},
       assertions: { check: assertion() },
     })
-    const failAdapter = adapt(failDomain, {
+    const failAdapter = implement(failDomain, {
       protocol: testProtocol,
       actions: {},
       queries: {},
@@ -139,7 +139,7 @@ describe('suite() — programmatic API', () => {
       assertions: {},
     })
     const items = { active: ['a', 'b'], done: ['c'] }
-    const filterAdapter = adapt(filterDomain, {
+    const filterAdapter = implement(filterDomain, {
       protocol: testProtocol,
       actions: {},
       queries: {
@@ -330,7 +330,7 @@ describe('suite() — failure artifacts', () => {
       },
     }
 
-    const adapter = adapt(failDomain, {
+    const adapter = implement(failDomain, {
       protocol,
       actions: {},
       queries: {},
@@ -367,7 +367,7 @@ describe('suite() — failure artifacts', () => {
       queries: {},
       assertions: {},
     })
-    const adapter = adapt(failDomain, {
+    const adapter = implement(failDomain, {
       protocol: testProtocol,
       actions: { go: async () => { throw new Error('boom') } },
       queries: {},
@@ -451,7 +451,7 @@ describe('suite() — getPlannedTests()', () => {
       async setup() { return null },
       async teardown() {},
     }
-    const httpAdapter = adapt(cart, {
+    const httpAdapter = implement(cart, {
       protocol: httpProtocol,
       actions: { addItem: async () => {} },
       queries: { total: async () => 0 },
@@ -519,7 +519,7 @@ describe('suite() — teardown error handling', () => {
       async setup() { return {} },
       async teardown() { throw new Error('teardown boom') },
     }
-    const adapter = adapt(failDomain, {
+    const adapter = implement(failDomain, {
       protocol,
       actions: { go: async () => { throw new Error('original error') } },
       queries: {},
@@ -558,7 +558,7 @@ describe('suite() — teardown error handling', () => {
       async setup() { return {} },
       async teardown() { throw new Error('teardown boom') },
     }
-    const adapter = adapt(okDomain, {
+    const adapter = implement(okDomain, {
       protocol,
       actions: {},
       queries: {},
@@ -597,7 +597,7 @@ describe('suite() — teardown error handling', () => {
       async setup() { return {} },
       async teardown() { throw new Error('teardown boom') },
     }
-    const adapter = adapt(okDomain, {
+    const adapter = implement(okDomain, {
       protocol,
       actions: {},
       queries: {},
@@ -636,7 +636,7 @@ describe('suite() — teardown error handling', () => {
       async setup() { return {} },
       async teardown() { throw new Error('teardown boom') },
     }
-    const adapter = adapt(okDomain, {
+    const adapter = implement(okDomain, {
       protocol,
       actions: {},
       queries: {},
@@ -694,7 +694,7 @@ describe('suite() — hook error tracing', () => {
       },
     }
 
-    const adapter = adapt(failDomain, {
+    const adapter = implement(failDomain, {
       protocol,
       actions: {},
       queries: {},
@@ -744,7 +744,7 @@ describe('suite() — hook error tracing', () => {
       },
     }
 
-    const adapter = adapt(failDomain, {
+    const adapter = implement(failDomain, {
       protocol,
       actions: {},
       queries: {},
@@ -807,7 +807,7 @@ describe('suite() — domain without queries', () => {
     })
 
     let fired = false
-    const actionOnlyAdapter = adapt(actionOnlyDomain, {
+    const actionOnlyAdapter = implement(actionOnlyDomain, {
       protocol: testProtocol,
       actions: {
         fire: async () => { fired = true },

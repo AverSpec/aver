@@ -61,7 +61,7 @@ describe('Scaffolding', () => {
       await then.fileExists({ path: join(dir, 'adapters', 'task-board.unit.ts') })
       await then.fileContains({
         path: join(dir, 'adapters', 'task-board.unit.ts'),
-        content: 'adapt',
+        content: 'implement',
       })
       await then.fileContains({
         path: join(dir, 'adapters', 'task-board.unit.ts'),

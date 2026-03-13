@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { runTest, runTestWithAdapter } from '../../src/core/test-runner'
 import { defineDomain } from '../../src/core/domain'
-import { adapt } from '../../src/core/adapter'
+import { implement } from '../../src/core/adapter'
 import { action, query, assertion } from '../../src/core/markers'
 import type { Protocol } from '../../src/core/protocol'
 import type { TraceAttachment } from '../../src/core/trace'
@@ -32,7 +32,7 @@ function makeProtocol(name: string, log: string[]): Protocol<{ log: string[] }> 
 }
 
 function makeAdapter(domain: ReturnType<typeof makeDomain>, protocol: Protocol<any>, log: string[]) {
-  return adapt(domain, {
+  return implement(domain, {
     protocol,
     actions: { doSomething: async (ctx, { val }) => { log.push(`action:${val}`) } },
     queries: { count: async () => 42 },
@@ -171,8 +171,8 @@ describe('runTest (generalized)', () => {
       }
 
       const a1 = makeAdapter(d1, p1, log)
-      const a2 = adapt(d2, { protocol: p2, actions: { doSomething: async () => {} }, queries: { count: async () => 0 }, assertions: { check: async () => {} } })
-      const a3 = adapt(d3, { protocol: p3, actions: { doSomething: async () => {} }, queries: { count: async () => 0 }, assertions: { check: async () => {} } })
+      const a2 = implement(d2, { protocol: p2, actions: { doSomething: async () => {} }, queries: { count: async () => 0 }, assertions: { check: async () => {} } })
+      const a3 = implement(d3, { protocol: p3, actions: { doSomething: async () => {} }, queries: { count: async () => 0 }, assertions: { check: async () => {} } })
 
       await expect(
         runTest(
@@ -229,8 +229,8 @@ describe('runTest (generalized)', () => {
         async onTestFail() { return attachments2 },
       }
 
-      const a1 = adapt(d1, { protocol: p1, actions: { doSomething: async () => {} }, queries: { count: async () => 0 }, assertions: { check: async () => {} } })
-      const a2 = adapt(d2, { protocol: p2, actions: { doSomething: async () => {} }, queries: { count: async () => 0 }, assertions: { check: async () => {} } })
+      const a1 = implement(d1, { protocol: p1, actions: { doSomething: async () => {} }, queries: { count: async () => 0 }, assertions: { check: async () => {} } })
+      const a2 = implement(d2, { protocol: p2, actions: { doSomething: async () => {} }, queries: { count: async () => 0 }, assertions: { check: async () => {} } })
 
       let caughtError: Error | undefined
       try {
@@ -255,8 +255,8 @@ describe('runTest (generalized)', () => {
       const d2 = makeDomain('D2')
       const p1: Protocol<null> = { name: 'proto-alpha', async setup() { return null }, async teardown() {} }
       const p2: Protocol<null> = { name: 'proto-beta', async setup() { return null }, async teardown() {} }
-      const a1 = adapt(d1, { protocol: p1, actions: { doSomething: async () => {} }, queries: { count: async () => 0 }, assertions: { check: async () => {} } })
-      const a2 = adapt(d2, { protocol: p2, actions: { doSomething: async () => {} }, queries: { count: async () => 0 }, assertions: { check: async () => {} } })
+      const a1 = implement(d1, { protocol: p1, actions: { doSomething: async () => {} }, queries: { count: async () => 0 }, assertions: { check: async () => {} } })
+      const a2 = implement(d2, { protocol: p2, actions: { doSomething: async () => {} }, queries: { count: async () => 0 }, assertions: { check: async () => {} } })
 
       let caughtError: Error | undefined
       try {
@@ -282,8 +282,8 @@ describe('runTest (generalized)', () => {
       const d2 = makeDomain('D2')
       const p1: Protocol<null> = { name: 'p1', async setup() { return null }, async teardown() {} }
       const p2: Protocol<null> = { name: 'p2', async setup() { return null }, async teardown() {} }
-      const a1 = adapt(d1, { protocol: p1, actions: { doSomething: async () => {} }, queries: { count: async () => 0 }, assertions: { check: async () => {} } })
-      const a2 = adapt(d2, { protocol: p2, actions: { doSomething: async () => {} }, queries: { count: async () => 0 }, assertions: { check: async () => {} } })
+      const a1 = implement(d1, { protocol: p1, actions: { doSomething: async () => {} }, queries: { count: async () => 0 }, assertions: { check: async () => {} } })
+      const a2 = implement(d2, { protocol: p2, actions: { doSomething: async () => {} }, queries: { count: async () => 0 }, assertions: { check: async () => {} } })
 
       await runTest(
         [['alpha', d1, a1], ['beta', d2, a2]],
@@ -338,7 +338,7 @@ describe('runTest (generalized)', () => {
         async setup() { return null },
         async teardown() { throw new Error('teardown boom') },
       }
-      const a = adapt(d, { protocol: p, actions: { doSomething: async () => {} }, queries: { count: async () => 0 }, assertions: { check: async () => {} } })
+      const a = implement(d, { protocol: p, actions: { doSomething: async () => {} }, queries: { count: async () => 0 }, assertions: { check: async () => {} } })
 
       await expect(
         runTest([['td', d, a]], 'teardown-fail', async () => {}),
@@ -354,7 +354,7 @@ describe('runTest (generalized)', () => {
         async setup() { return null },
         async teardown() { throw new Error('teardown boom') },
       }
-      const a = adapt(d, { protocol: p, actions: { doSomething: async () => {} }, queries: { count: async () => 0 }, assertions: { check: async () => {} } })
+      const a = implement(d, { protocol: p, actions: { doSomething: async () => {} }, queries: { count: async () => 0 }, assertions: { check: async () => {} } })
 
       await expect(
         runTest([['td', d, a]], 'teardown-warn', async () => {}),
@@ -376,8 +376,8 @@ describe('runTest (generalized)', () => {
         async setup() { return null },
         async teardown() { throw new Error('p2 teardown boom') },
       }
-      const a1 = adapt(d1, { protocol: p1, actions: { doSomething: async () => {} }, queries: { count: async () => 0 }, assertions: { check: async () => {} } })
-      const a2 = adapt(d2, { protocol: p2, actions: { doSomething: async () => {} }, queries: { count: async () => 0 }, assertions: { check: async () => {} } })
+      const a1 = implement(d1, { protocol: p1, actions: { doSomething: async () => {} }, queries: { count: async () => 0 }, assertions: { check: async () => {} } })
+      const a2 = implement(d2, { protocol: p2, actions: { doSomething: async () => {} }, queries: { count: async () => 0 }, assertions: { check: async () => {} } })
 
       await expect(
         runTest([['ns1', d1, a1], ['ns2', d2, a2]], 'td-multi', async () => {}),
@@ -396,7 +396,7 @@ describe('runTest (generalized)', () => {
         async teardown() {},
         extensions: { customExt: 'value' },
       }
-      const a = adapt(d, { protocol: p, actions: { doSomething: async () => {} }, queries: { count: async () => 0 }, assertions: { check: async () => {} } })
+      const a = implement(d, { protocol: p, actions: { doSomething: async () => {} }, queries: { count: async () => 0 }, assertions: { check: async () => {} } })
 
       await runTest(
         [['als', d, a]],

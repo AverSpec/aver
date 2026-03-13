@@ -33,7 +33,7 @@ export function registerAdapter(adapter: Adapter): void {
  *
  * Domains are matched by **reference identity** (`===`), not structural
  * equality. Callers must pass the same `Domain` object that was used in
- * `adapt(domain, ...)` when the adapter was created. In practice this
+ * `implement(domain, ...)` when the adapter was created. In practice this
  * means importing and reusing the domain constant rather than reconstructing
  * an equivalent object.
  */

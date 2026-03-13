@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { createProxies } from '../../src/core/proxy'
 import { defineDomain } from '../../src/core/domain'
-import { adapt } from '../../src/core/adapter'
+import { implement } from '../../src/core/adapter'
 import { action, query, assertion } from '../../src/core/markers'
 import type { TraceEntry } from '../../src/core/trace'
 
@@ -14,7 +14,7 @@ const testDomain = defineDomain({
 
 describe('given/when proxy aliases', () => {
   it('given and when are distinct objects from act (stamp different categories)', () => {
-    const adapter = adapt(testDomain, {
+    const adapter = implement(testDomain, {
       protocol: { name: 'unit', async setup() { return null }, async teardown() {} },
       actions: { doSomething: async () => {} },
       queries: { getValue: async () => 42 },
@@ -39,7 +39,7 @@ describe('given/when proxy aliases', () => {
 
   it('given and when route to the same handlers as act with distinct categories', async () => {
     const calls: string[] = []
-    const adapter = adapt(testDomain, {
+    const adapter = implement(testDomain, {
       protocol: { name: 'unit', async setup() { return null }, async teardown() {} },
       actions: { doSomething: async () => { calls.push('called') } },
       queries: { getValue: async () => 42 },
@@ -66,7 +66,7 @@ describe('given/when proxy aliases', () => {
   })
 
   it('then alias stamps assertion traces with then category', async () => {
-    const adapter = adapt(testDomain, {
+    const adapter = implement(testDomain, {
       protocol: { name: 'unit', async setup() { return null }, async teardown() {} },
       actions: { doSomething: async () => {} },
       queries: { getValue: async () => 42 },
@@ -94,7 +94,7 @@ describe('injectable clock in createProxies', () => {
     let tick = 1000
     const fakeClock = () => tick++
 
-    const adapter = adapt(testDomain, {
+    const adapter = implement(testDomain, {
       protocol: { name: 'unit', async setup() { return null }, async teardown() {} },
       actions: { doSomething: async () => {} },
       queries: { getValue: async () => 42 },
@@ -135,7 +135,7 @@ describe('injectable clock in createProxies', () => {
   })
 
   it('defaults to Date.now when no clock provided', async () => {
-    const adapter = adapt(testDomain, {
+    const adapter = implement(testDomain, {
       protocol: { name: 'unit', async setup() { return null }, async teardown() {} },
       actions: { doSomething: async () => {} },
       queries: { getValue: async () => 42 },

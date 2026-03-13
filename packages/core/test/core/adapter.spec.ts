@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { adapt } from '../../src/core/adapter'
+import { implement } from '../../src/core/adapter'
 import { defineDomain } from '../../src/core/domain'
 import { action, query, assertion } from '../../src/core/markers'
 import type { Protocol } from '../../src/core/protocol'
@@ -35,9 +35,9 @@ const noQueriesDomain = defineDomain({
   },
 })
 
-describe('adapt()', () => {
+describe('implement()', () => {
   it('creates an adapter with domain, protocol, and handlers', () => {
-    const adapter = adapt(cart, {
+    const adapter = implement(cart, {
       protocol: testProtocol,
       actions: {
         addItem: async (ctx, { name }) => { ctx.calls.push(`add:${name}`) },
@@ -57,7 +57,7 @@ describe('adapt()', () => {
   })
 
   it('exposes executable handlers', async () => {
-    const adapter = adapt(cart, {
+    const adapter = implement(cart, {
       protocol: testProtocol,
       actions: {
         addItem: async (ctx, { name }) => { ctx.calls.push(`add:${name}`) },
@@ -82,7 +82,7 @@ describe('adapt()', () => {
   })
 
   it('allows omitting queries when domain has no queries', () => {
-    const adapter = adapt(noQueriesDomain, {
+    const adapter = implement(noQueriesDomain, {
       protocol: testProtocol,
       actions: {
         doThing: async (ctx) => { ctx.calls.push('doThing') },
@@ -97,7 +97,7 @@ describe('adapt()', () => {
   })
 
   it('can omit queries field and still execute actions and assertions', async () => {
-    const adapter = adapt(noQueriesDomain, {
+    const adapter = implement(noQueriesDomain, {
       protocol: testProtocol,
       actions: {
         doThing: async (ctx) => { ctx.calls.push('doThing') },

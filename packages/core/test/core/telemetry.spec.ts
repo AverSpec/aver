@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { action, query, assertion } from '../../src/core/markers'
 import { defineDomain } from '../../src/core/domain'
-import { adapt } from '../../src/core/adapter'
+import { implement } from '../../src/core/adapter'
 import { suite } from '../../src/core/suite'
 import type { Protocol, CollectedSpan } from '../../src/core/protocol'
 import { formatTrace } from '../../src/core/trace-format'
@@ -99,7 +99,7 @@ describe('telemetry verification', () => {
 
   const protocol = unitProtocolWithTelemetry(collector)
 
-  const adapter = adapt(orderDomain, {
+  const adapter = implement(orderDomain, {
     protocol,
     actions: {
       cancelOrder: async (_ctx, { orderId }) => { emit('order.cancel', { 'order.id': orderId }) },
@@ -160,7 +160,7 @@ describe('telemetry verification — programmatic API', () => {
       },
     })
     const protocol = unitProtocolWithTelemetry(collector)
-    const adapter = adapt(domain, {
+    const adapter = implement(domain, {
       protocol,
       actions: {
         doThing: async () => { emit('thing.done') },
@@ -204,7 +204,7 @@ describe('telemetry verification — programmatic API', () => {
       queries: {},
     })
     const protocol = unitProtocolWithTelemetry(collector)
-    const adapter = adapt(domain, {
+    const adapter = implement(domain, {
       protocol,
       actions: {},
       queries: {},
@@ -240,7 +240,7 @@ describe('telemetry verification — programmatic API', () => {
       assertions: {},
     })
     const protocol = unitProtocolWithTelemetry(collector)
-    const adapter = adapt(domain, {
+    const adapter = implement(domain, {
       protocol,
       actions: {
         doThing: async () => { /* no span emitted */ },
@@ -275,7 +275,7 @@ describe('telemetry verification — programmatic API', () => {
       assertions: {},
     })
     const protocol = unitProtocolWithTelemetry(collector)
-    const adapter = adapt(domain, {
+    const adapter = implement(domain, {
       protocol,
       actions: { doThing: async () => {} },
       queries: {},
@@ -305,7 +305,7 @@ describe('telemetry verification — programmatic API', () => {
       async teardown() {},
       // no telemetry collector
     }
-    const adapter = adapt(domain, {
+    const adapter = implement(domain, {
       protocol,
       actions: { doThing: async () => {} },
       queries: {},
@@ -333,7 +333,7 @@ describe('telemetry verification — programmatic API', () => {
       },
     })
     const protocol = unitProtocolWithTelemetry(collector)
-    const adapter = adapt(domain, {
+    const adapter = implement(domain, {
       protocol,
       actions: {},
       queries: {},
@@ -366,7 +366,7 @@ describe('telemetry verification — programmatic API', () => {
       },
     })
     const protocol = unitProtocolWithTelemetry(collector)
-    const adapter = adapt(domain, {
+    const adapter = implement(domain, {
       protocol,
       actions: {},
       queries: {},

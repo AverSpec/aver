@@ -71,7 +71,7 @@ describe('defineConfig()', () => {
       queries: {},
       assertions: {},
     })
-    const adapter = adapt(dom, {
+    const adapter = implement(dom, {
       protocol: unit(() => null),
       actions: {},
       queries: {},

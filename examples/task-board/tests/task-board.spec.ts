@@ -5,30 +5,30 @@ import { taskBoard } from '../domains/task-board.js'
 
 const { test } = suite(taskBoard)
 
-test('create a task in backlog', async ({ act, assert }) => {
-  await act.createTask({ title: 'Fix login bug' })
-  await assert.taskInStatus({ title: 'Fix login bug', status: 'backlog' })
-  await assert.taskCount({ status: 'backlog', count: 1 })
+test('create a task in backlog', async ({ when, then }) => {
+  await when.createTask({ title: 'Fix login bug' })
+  await then.taskInStatus({ title: 'Fix login bug', status: 'backlog' })
+  await then.taskCount({ status: 'backlog', count: 1 })
 })
 
-test('move task through workflow', async ({ act, assert }) => {
-  await act.createTask({ title: 'Fix login bug' })
-  await act.moveTask({ title: 'Fix login bug', status: 'in-progress' })
-  await assert.taskInStatus({ title: 'Fix login bug', status: 'in-progress' })
-  await assert.taskCount({ status: 'backlog', count: 0 })
+test('move task through workflow', async ({ given, when, then }) => {
+  await given.createTask({ title: 'Fix login bug' })
+  await when.moveTask({ title: 'Fix login bug', status: 'in-progress' })
+  await then.taskInStatus({ title: 'Fix login bug', status: 'in-progress' })
+  await then.taskCount({ status: 'backlog', count: 0 })
 })
 
-test('assign task to team member', async ({ act, assert }) => {
-  await act.createTask({ title: 'Fix login bug' })
-  await act.assignTask({ title: 'Fix login bug', assignee: 'Alice' })
-  await assert.taskAssignedTo({ title: 'Fix login bug', assignee: 'Alice' })
+test('assign task to team member', async ({ given, when, then }) => {
+  await given.createTask({ title: 'Fix login bug' })
+  await when.assignTask({ title: 'Fix login bug', assignee: 'Alice' })
+  await then.taskAssignedTo({ title: 'Fix login bug', assignee: 'Alice' })
 })
 
-test('delete a task', async ({ act, assert }) => {
-  await act.createTask({ title: 'Stale task' })
-  await assert.taskCount({ status: 'backlog', count: 1 })
-  await act.deleteTask({ title: 'Stale task' })
-  await assert.taskCount({ status: 'backlog', count: 0 })
+test('delete a task', async ({ given, when, then }) => {
+  await given.createTask({ title: 'Stale task' })
+  await then.taskCount({ status: 'backlog', count: 1 })
+  await when.deleteTask({ title: 'Stale task' })
+  await then.taskCount({ status: 'backlog', count: 0 })
 })
 
 test('track full task lifecycle', async ({ act, query }) => {

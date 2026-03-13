@@ -23,15 +23,15 @@ export interface Domain<
     readonly assertions: S
   }
   readonly parent?: Domain<any, any, any>
-  extend(name: string, extension: {
-    actions?: Record<string, ActionMarker<any>>
-    queries?: Record<string, QueryMarker<any, any>>
-    assertions?: Record<string, AssertionMarker<any>>
-  }): Domain<
-    A & Record<string, ActionMarker<any>>,
-    Q & Record<string, QueryMarker<any, any>>,
-    S & Record<string, AssertionMarker<any>>
-  >
+  extend<
+    EA extends Record<string, ActionMarker<any>> = Record<string, never>,
+    EQ extends Record<string, QueryMarker<any, any>> = Record<string, never>,
+    ES extends Record<string, AssertionMarker<any>> = Record<string, never>,
+  >(name: string, extension: {
+    actions?: EA
+    queries?: EQ
+    assertions?: ES
+  }): Domain<A & EA, Q & EQ, S & ES>
 }
 
 function makeDomain<
@@ -78,9 +78,9 @@ function makeDomain<
       return makeDomain(
         childName,
         {
-          actions: { ...vocab.actions, ...(extension.actions ?? {}) } as any,
-          queries: { ...vocab.queries, ...(extension.queries ?? {}) } as any,
-          assertions: { ...vocab.assertions, ...(extension.assertions ?? {}) } as any,
+          actions: { ...vocab.actions, ...extension.actions } as any,
+          queries: { ...vocab.queries, ...extension.queries } as any,
+          assertions: { ...vocab.assertions, ...extension.assertions } as any,
         },
         domain,
       )

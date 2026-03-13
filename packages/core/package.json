@@ -91,6 +91,9 @@
   "peerDependenciesMeta": {
     "@aver/telemetry": {
       "optional": true
+    },
+    "vitest": {
+      "optional": true
     }
   },
   "devDependencies": {

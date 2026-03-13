@@ -3,6 +3,12 @@ import type { Adapter } from './adapter'
 import type { TraceEntry, TelemetryMatchResult } from './trace'
 import type { TelemetryCollector, CollectedSpan } from './protocol'
 import type { TelemetryExpectation, VocabMarker } from './types'
+import { parseTelemetryMode } from './telemetry-mode'
+import type { TelemetryVerificationMode } from './telemetry-mode'
+
+// Re-export for backward compatibility
+export type { TelemetryVerificationMode } from './telemetry-mode'
+export { parseTelemetryMode } from './telemetry-mode'
 
 export interface CalledOps {
   actions: Set<string>
@@ -46,20 +52,6 @@ export interface Proxies<D extends Domain> {
 }
 
 export type Clock = () => number
-
-export type TelemetryVerificationMode = 'warn' | 'fail' | 'off'
-
-const VALID_TELEMETRY_MODES: readonly TelemetryVerificationMode[] = ['warn', 'fail', 'off']
-
-export function parseTelemetryMode(value: string | undefined): TelemetryVerificationMode | undefined {
-  if (value === undefined || value === '') return undefined
-  if (VALID_TELEMETRY_MODES.includes(value as TelemetryVerificationMode)) {
-    return value as TelemetryVerificationMode
-  }
-  throw new Error(
-    `Invalid AVER_TELEMETRY_MODE: '${value}'. Valid values are: ${VALID_TELEMETRY_MODES.join(', ')}`
-  )
-}
 
 function matchSpan(span: CollectedSpan, expected: TelemetryExpectation): boolean {
   if (span.name !== expected.span) return false

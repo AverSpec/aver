@@ -1,8 +1,8 @@
 import { createServer } from 'node:http'
+import { type TelemetryVerificationMode as TelemetryMode, VALID_TELEMETRY_MODES as VALID_MODES } from '../core/telemetry-mode'
 
-export type TelemetryMode = 'warn' | 'fail' | 'off'
+export type { TelemetryVerificationMode as TelemetryMode } from '../core/telemetry-mode'
 
-const VALID_MODES: readonly TelemetryMode[] = ['warn', 'fail', 'off']
 const DEFAULT_OTLP_PORT = 4318
 
 export interface TelemetryDiagnostics {

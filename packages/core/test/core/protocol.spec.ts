@@ -56,4 +56,14 @@ describe('unit()', () => {
     const ctx = await proto.setup()
     await expect(proto.teardown(ctx)).resolves.toBeUndefined()
   })
+
+  it('defaults name to "unit" when no name provided', () => {
+    const proto = unit(() => ({ count: 0 }))
+    expect(proto.name).toBe('unit')
+  })
+
+  it('uses custom name when provided', () => {
+    const proto = unit(() => ({ count: 0 }), 'in-memory')
+    expect(proto.name).toBe('in-memory')
+  })
 })

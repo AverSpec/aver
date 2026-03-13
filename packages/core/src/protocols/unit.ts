@@ -5,9 +5,9 @@ import type { Protocol } from '../core/protocol'
  * The factory creates the context (typically the system under test).
  * Teardown is a no-op.
  */
-export function unit<T>(factory: () => T | Promise<T>): Protocol<T> {
+export function unit<T>(factory: () => T | Promise<T>, name?: string): Protocol<T> {
   return {
-    name: 'unit',
+    name: name ?? 'unit',
     async setup() {
       return await factory()
     },

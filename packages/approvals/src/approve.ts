@@ -136,19 +136,19 @@ approve.visual = async function visual(
     )
   }
 
-  // Both images exist — diff them
+  // Both images exist — check match first (byte-identical fast path)
   const pixelThreshold = opts.threshold ?? 0.1
-  const imageDiff = await diffImages(paths, pixelThreshold)
-  const allAttachments = [...pendingAttachments]
-  if (imageDiff) allAttachments.push(imageDiff)
-
-  // Check if images match (0 diff pixels)
   const match = await imagesMatch(paths, pixelThreshold)
 
   if (match) {
     deleteIfExists(paths.receivedImagePath)
     return
   }
+
+  // Mismatch — generate diff image for diagnostics
+  const imageDiff = await diffImages(paths, pixelThreshold)
+  const allAttachments = [...pendingAttachments]
+  if (imageDiff) allAttachments.push(imageDiff)
 
   allAttachments.unshift(
     { name: 'approved', path: paths.approvedImagePath, mime: 'image/png' },

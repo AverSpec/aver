@@ -163,11 +163,13 @@ Where panelists disagree, with both sides stated.
 
 ### Issues Table
 
-| ID | Severity | Description | Source | Effort |
+| ID | Severity | Description | Lens | Effort |
 |---|---|---|---|---|
-| C-1 | Critical | ... | Beck, Farley | ... |
-| I-1 | Important | ... | Majors | ... |
-| S-1 | Suggestion | ... | Thomas | ... |
+| C-1 | Critical | ... | testability, CI fitness | ... |
+| I-1 | Important | ... | observability | ... |
+| S-1 | Suggestion | ... | pragmatism, DRY | ... |
+
+**Lens** describes the technical concern that surfaced the issue (e.g., "observability", "test economics", "naming/DX"), NOT the panelist name. Panelist names are for the review narrative — they must NOT leak into issue descriptions, tickets, or downstream work items.
 
 Severity levels:
 - **Critical** — Must fix before shipping
@@ -179,6 +181,14 @@ One sentence per panelist with their name in bold.
 
 ### Group Consensus
 Overall assessment — ship / ship with caveats / needs work. State the vote (e.g., "9/10 panelists agree...").
+
+## Ticketing Findings
+
+When creating tickets (Linear, GitHub Issues, etc.) from review findings:
+
+- **Do NOT reference panelist names** in ticket titles, descriptions, or comments. These are simulated personas — attributing findings to them is misleading outside the review context.
+- Describe each issue on its **technical merits only**: what the problem is, where it is, why it matters, and how to fix it.
+- Use the **Lens** column (e.g., "observability", "test economics") for categorization, not attribution.
 
 ## Output
 

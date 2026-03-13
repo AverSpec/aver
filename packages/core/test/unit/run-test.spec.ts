@@ -189,6 +189,52 @@ describe('runTest (generalized)', () => {
       ])
     })
 
+    it('logs teardown errors during partial setup instead of swallowing', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const log: string[] = []
+      const d1 = makeDomain('D1')
+      const d2 = makeDomain('D2')
+      const d3 = makeDomain('D3')
+
+      const p1: Protocol<null> = {
+        name: 'p1',
+        async setup() { log.push('setup:p1'); return null },
+        async teardown() { throw new Error('p1 teardown kaboom') },
+      }
+      const p2: Protocol<null> = {
+        name: 'p2',
+        async setup() { log.push('setup:p2'); return null },
+        async teardown() { log.push('teardown:p2') },
+      }
+      const p3: Protocol<null> = {
+        name: 'p3',
+        async setup() { throw new Error('p3 setup failed') },
+        async teardown() { log.push('teardown:p3') },
+      }
+
+      const a1 = implement(d1, { protocol: p1, actions: { doSomething: async () => {} }, queries: { count: async () => 0 }, assertions: { check: async () => {} } })
+      const a2 = implement(d2, { protocol: p2, actions: { doSomething: async () => {} }, queries: { count: async () => 0 }, assertions: { check: async () => {} } })
+      const a3 = implement(d3, { protocol: p3, actions: { doSomething: async () => {} }, queries: { count: async () => 0 }, assertions: { check: async () => {} } })
+
+      // The original setup error should still surface
+      await expect(
+        runTest(
+          [['ns1', d1, a1], ['ns2', d2, a2], ['ns3', d3, a3]],
+          'partial-teardown-warn',
+          async () => {},
+        ),
+      ).rejects.toThrow('p3 setup failed')
+
+      // p1 teardown failed — it should be logged via console.warn
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('p1 teardown kaboom'),
+      )
+      // p2 teardown should succeed normally
+      expect(log).toContain('teardown:p2')
+
+      warnSpy.mockRestore()
+    })
+
     it('calls onTestFail for ALL adapters on failure', async () => {
       const log: string[] = []
       const d1 = makeDomain('D1')

@@ -47,8 +47,10 @@ export async function runTest(
         try {
           const entry = entries.find(([n]) => n === k)!
           await entry[2].protocol.teardown(contexts.get(k))
-        } catch {
-          // swallow teardown errors during partial cleanup
+        } catch (teardownErr) {
+          console.warn(
+            `[aver] Teardown failed for "${k}" after setup error: ${teardownErr instanceof Error ? teardownErr.message : String(teardownErr)}`,
+          )
         }
       }
       throw setupError

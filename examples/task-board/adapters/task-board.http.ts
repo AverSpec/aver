@@ -1,36 +1,36 @@
 import { expect } from 'vitest'
-import { implement } from '@aver/core'
+import { implement, withFixture } from '@aver/core'
 import { http } from '@aver/protocol-http'
 import { taskBoard } from '../domains/task-board.js'
 import { createServer } from '../src/server/index.js'
 import type { Server } from 'node:http'
-import type { HttpContext } from '@aver/protocol-http'
-import type { Protocol } from '@aver/core'
 
 let server: Server | undefined
+let baseUrl = 'http://localhost:3000'
 
-const httpProtocol: Protocol<HttpContext> = {
-  name: 'http',
-  async setup(): Promise<HttpContext> {
-    const { app } = createServer()
-    server = await new Promise<Server>(resolve => {
-      const s = app.listen(0, () => resolve(s))
-    })
-    const addr = server.address()
-    const port = typeof addr === 'object' && addr ? addr.port : 3000
-    const base = `http://localhost:${port}`
-    return http({ baseUrl: base }).setup()
+const protocol = withFixture(
+  http({ get baseUrl() { return baseUrl } }),
+  {
+    async before() {
+      const { app } = createServer()
+      server = await new Promise<Server>(resolve => {
+        const s = app.listen(0, () => resolve(s))
+      })
+      const addr = server.address()
+      const port = typeof addr === 'object' && addr ? addr.port : 3000
+      baseUrl = `http://localhost:${port}`
+    },
+    async after() {
+      if (server) {
+        await new Promise<void>((resolve) => server!.close(() => resolve()))
+        server = undefined
+      }
+    },
   },
-  async teardown() {
-    if (server) {
-      await new Promise<void>((resolve) => server!.close(() => resolve()))
-      server = undefined
-    }
-  },
-}
+)
 
 export const httpAdapter = implement(taskBoard, {
-  protocol: httpProtocol,
+  protocol,
 
   actions: {
     createTask: async (ctx, { title, status }) => {

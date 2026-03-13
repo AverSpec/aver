@@ -45,6 +45,9 @@ importers:
       '@aver/protocol-playwright':
         specifier: workspace:*
         version: link:../../packages/protocol-playwright
+      '@aver/telemetry':
+        specifier: workspace:*
+        version: link:../../packages/telemetry
       '@playwright/test':
         specifier: ^1.52.0
         version: 1.58.2

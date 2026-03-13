@@ -120,6 +120,7 @@ export async function runTest(
         protocolName: firstAdapter.protocol.name,
         trace,
         extensions: firstAdapter.protocol.extensions ?? {},
+        protocolContext: contexts.get(firstName),
       },
       async () => fn(testCtx),
     )

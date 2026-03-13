@@ -1,4 +1,3 @@
-import { expect } from 'vitest'
 import { suite } from '@aver/core'
 import { approve } from '@aver/approvals'
 import { taskBoard } from '../domains/task-board.js'
@@ -31,14 +30,13 @@ test('delete a task', async ({ given, when, then }) => {
   await then.taskCount({ status: 'backlog', count: 0 })
 })
 
-test('track full task lifecycle', async ({ act, query }) => {
+test('track full task lifecycle', async ({ act, then }) => {
   await act.createTask({ title: 'Fix login bug' })
   await act.assignTask({ title: 'Fix login bug', assignee: 'Alice' })
   await act.moveTask({ title: 'Fix login bug', status: 'in-progress' })
 
-  const task = await query.taskDetails({ title: 'Fix login bug' })
-  expect(task?.status).toBe('in-progress')
-  expect(task?.assignee).toBe('Alice')
+  await then.taskInStatus({ title: 'Fix login bug', status: 'in-progress' })
+  await then.taskAssignedTo({ title: 'Fix login bug', assignee: 'Alice' })
 })
 
 test.skipIf(process.env.AVER_DEMO_FAIL !== '1')('demo failure artifacts (set AVER_DEMO_FAIL=1)', async ({ assert }) => {

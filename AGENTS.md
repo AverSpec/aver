@@ -58,9 +58,38 @@ See per-package AGENTS.md files for package-specific instructions.
 
 ## Parallel Work / Subagents
 
-- When dispatching parallel subagents, each agent must: (1) `cd` into its assigned worktree as the FIRST action, (2) run `pwd` to confirm location, (3) only then begin work. If an agent's changes aren't in its worktree, kill it and retry in a fresh worktree.
-- After all agents complete, verify each worktree has the expected changes before merging. Merge one at a time, running the full test suite between merges. If any merge breaks tests, revert it and report.
-- When running parallel subagent waves, always verify CI passes after merging results. Common issues: missing lockfiles, incorrect import path depths after file moves, and test timeout values being too low.
+### Subagent responsibilities
+
+Each worktree agent is responsible for:
+
+1. **Working in isolation** — use `isolation: "worktree"` on the Agent tool. The agent gets its own copy of the repo automatically.
+2. **Committing its own work** — commit with `dangerouslyDisableSandbox: true` (GPG signing). Use a descriptive message referencing the ticket ID, e.g., `fix: metadataFor uses protocol name (AI-76)`.
+3. **Running tests** — verify changes pass before committing. Expected Playwright failures (no browser) are acceptable.
+4. **Advancing ticket status** — move the assigned Linear ticket to Done via the API using `dangerouslyDisableSandbox: true`:
+   ```bash
+   # Query issue ID and Done state ID, then update
+   curl -s -H "Authorization: $(cat ~/.config/aver/.env | grep LINEAR_API_KEY | cut -d= -f2)" \
+     -H "Content-Type: application/json" \
+     -d '{"query":"..."}' https://api.linear.app/graphql
+   ```
+
+### Orchestrator responsibilities
+
+The orchestrator (main session) handles:
+
+1. **Dispatching** — launch agents in parallel with `isolation: "worktree"`, providing full context (ticket description, relevant file contents, specific instructions).
+2. **Merging** — merge each agent's worktree branch to main one at a time, smallest/least-conflicting first.
+3. **Verifying** — run the full test suite between merges. If a merge breaks tests, revert and investigate.
+4. **Cleanup** — worktrees with no changes are auto-cleaned. Worktrees with changes persist until merged.
+
+### Prompt template for subagents
+
+Include in every subagent prompt:
+- The ticket ID and full description
+- Contents of relevant source files (don't make the agent search)
+- Explicit test command: `pnpm exec aver run` (or `npx vitest run` if CLI not built)
+- Reminder: `dangerouslyDisableSandbox: true` for git and curl commands
+- Reminder: do not reference panelist names in ticket updates
 
 ## Project Conventions
 

@@ -1,4 +1,5 @@
 import type { Protocol, TestCompletion, TraceAttachment, Screenshotter } from '@aver/core'
+import { getTestContext } from '@aver/core'
 import type { Browser, Page } from 'playwright'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -17,12 +18,6 @@ export function playwright(options?: PlaywrightOptions): Protocol<Page> {
   // Track browser-per-page so parallel tests each close their own browser
   const browserForPage = new Map<Page, Browser>()
   const consoleLogs = new WeakMap<Page, string[]>()
-  /**
-   * Module-level active page reference. Overwritten on each setup() call.
-   * Known limitation: parallel tests will race on this variable.
-   * @see https://github.com/njackson/aver/issues — tracked for fix in future release
-   */
-  let activePage: Page | undefined
   const artifactsDir = options?.artifactsDir ?? join(process.cwd(), 'test-results', 'aver-artifacts')
   const captureScreenshot = options?.captureScreenshot ?? true
   const captureHtml = options?.captureHtml ?? true
@@ -38,7 +33,6 @@ export function playwright(options?: PlaywrightOptions): Protocol<Page> {
       })
       const page = await browser.newPage()
       browserForPage.set(page, browser)
-      activePage = page
       if (captureConsole) {
         const logs: string[] = []
         consoleLogs.set(page, logs)
@@ -51,7 +45,6 @@ export function playwright(options?: PlaywrightOptions): Protocol<Page> {
     async teardown(ctx: Page): Promise<void> {
       const browser = browserForPage.get(ctx)
       browserForPage.delete(ctx)
-      if (activePage === ctx) activePage = undefined
       await browser?.close()
     },
     async onTestFail(ctx: Page, meta: TestCompletion): Promise<TraceAttachment[]> {
@@ -90,13 +83,14 @@ export function playwright(options?: PlaywrightOptions): Protocol<Page> {
       screenshotter: {
         regions: options?.regions ?? {},
         async capture(outputPath, opts) {
-          if (!activePage) throw new Error('No active page for screenshotter — setup() has not been called or teardown() already ran')
+          const page = getTestContext()?.protocolContext as Page | undefined
+          if (!page) throw new Error('No active page for screenshotter — ensure tests run through the Aver test runner')
           if (opts?.region) {
             const selector = this.regions?.[opts.region]
             if (!selector) throw new Error(`Unknown region "${opts.region}". Available: ${Object.keys(this.regions ?? {}).join(', ')}`)
-            await activePage.locator(selector).screenshot({ path: outputPath })
+            await page.locator(selector).screenshot({ path: outputPath })
           } else {
-            await activePage.screenshot({ path: outputPath, fullPage: true })
+            await page.screenshot({ path: outputPath, fullPage: true })
           }
         },
       } satisfies Screenshotter,

@@ -8,6 +8,7 @@ export interface RunningTestContext {
   protocolName: string
   trace: TraceEntry[]
   extensions: ProtocolExtensions
+  protocolContext?: unknown
 }
 
 const storage = new AsyncLocalStorage<RunningTestContext>()

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { defineDomain, action, query, assertion } from '@aver/core'
 import type { TraceEntry } from '@aver/core'
 import { extractContract } from '../src/extract'
@@ -242,6 +242,88 @@ describe('extractContract', () => {
       })
 
       expect(result.entries[0].spans[0].parentName).toBeUndefined()
+    })
+
+    it('computed attributes produce a warning and fall back to literal', () => {
+      const computedDomain = defineDomain({
+        name: 'api-routing',
+        actions: {
+          fetchUser: action<{ userId: string }>({
+            telemetry: (p) => ({
+              span: 'http.request',
+              attributes: { 'http.path': '/users/' + p.userId },
+            }),
+          }),
+        },
+        queries: {},
+        assertions: {},
+      })
+
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      const result = extractContract({
+        domain: computedDomain,
+        results: [{
+          testName: 'fetch user by id',
+          trace: [
+            traceEntry({
+              kind: 'action',
+              name: 'fetchUser',
+              payload: { userId: '42' },
+              telemetry: {
+                expected: { span: 'http.request', attributes: { 'http.path': '/users/42' } },
+                matched: true,
+              },
+            }),
+          ],
+        }],
+      })
+
+      // The attribute should fall back to literal since the sentinel was embedded in a computed string
+      expect(result.entries[0].spans[0].attributes['http.path']).toEqual({
+        kind: 'literal',
+        value: '/users/42',
+      })
+
+      // A warning should have been emitted about the computed attribute
+      expect(warnSpy).toHaveBeenCalledOnce()
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining("attribute 'http.path' uses a computed value from payload field 'userId'"),
+      )
+
+      warnSpy.mockRestore()
+    })
+
+    it('direct field access produces correlated binding without warning', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      const result = extractContract({
+        domain: testDomain,
+        results: [{
+          testName: 'signup creates account',
+          trace: [
+            traceEntry({
+              kind: 'action',
+              name: 'signUp',
+              payload: { email: 'test@example.com' },
+              telemetry: {
+                expected: { span: 'user.signup', attributes: { 'user.email': 'test@example.com' } },
+                matched: true,
+              },
+            }),
+          ],
+        }],
+      })
+
+      expect(result.entries[0].spans[0].attributes['user.email']).toEqual({
+        kind: 'correlated',
+        symbol: '$email',
+      })
+
+      // No warnings for direct field access
+      expect(warnSpy).not.toHaveBeenCalled()
+
+      warnSpy.mockRestore()
     })
 
     it('parameterized tests produce multiple contract entries', () => {

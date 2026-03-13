@@ -129,6 +129,22 @@ function trackFieldAccesses(
         attrToField.set(attrKey, field)
       }
     }
+
+    // Detect sentinel fragments in values that didn't match exactly
+    // This indicates computed attributes like `path: '/users/' + p.userId`
+    const SENTINEL_PREFIX = '__aver_sentinel_'
+    for (const [attrKey, attrValue] of Object.entries(result.attributes)) {
+      if (attrToField.has(attrKey)) continue // already matched
+      if (typeof attrValue === 'string' && attrValue.includes(SENTINEL_PREFIX)) {
+        const match = attrValue.match(/__aver_sentinel_(\w+)__/)
+        const field = match ? match[1] : 'unknown'
+        console.warn(
+          `[aver] Contract extraction: attribute '${attrKey}' uses a computed value from payload field '${field}'. ` +
+          `Computed attributes cannot be tracked as correlated — they will be extracted as literal values. ` +
+          `Consider using the raw field value directly if correlation is needed.`,
+        )
+      }
+    }
   }
 
   return attrToField

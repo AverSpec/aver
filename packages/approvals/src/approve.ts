@@ -8,13 +8,13 @@ import type { Screenshotter, TraceAttachment } from '@aver/core'
 import type { ApproveOptions, VisualApproveOptions } from './types'
 
 export async function approve(value: unknown, options: ApproveOptions = {}): Promise<void> {
-  const state = getTestState()
-  const testPath = options.filePath ?? state?.testPath
-  const testName = options.testName ?? state?.testName
+  const context = getTestContext()
+  const testPath = options.filePath ?? context?.testPath
+  const testName = options.testName ?? context?.testName
 
   if (!testPath || !testName) {
     throw new Error(
-      'approve() requires a test runner with expect.getState() or explicit filePath/testName options.',
+      'approve() could not determine test file path. Pass explicit filePath/testName options or ensure tests run through the Aver test runner.',
     )
   }
 
@@ -31,7 +31,6 @@ export async function approve(value: unknown, options: ApproveOptions = {}): Pro
   const approvedExists = existsSync(paths.approvedPath)
   const approved = approvedExists ? readFileSync(paths.approvedPath, 'utf-8') : ''
 
-  const context = getTestContext()
   const comparison = compareValues(approved, received, {
     comparator: options.comparator,
     serializer,
@@ -99,13 +98,12 @@ approve.visual = async function visual(
     )
   }
 
-  const state = getTestState()
-  const testPath = state?.testPath
-  const testName = state?.testName
+  const testPath = opts.filePath ?? context?.testPath
+  const testName = opts.testName ?? context?.testName
 
   if (!testPath || !testName) {
     throw new Error(
-      'approve.visual() requires a test runner with expect.getState().',
+      'approve.visual() could not determine test file path. Pass explicit filePath/testName options or ensure tests run through the Aver test runner.',
     )
   }
 
@@ -218,17 +216,6 @@ function pushTrace(
 function defaultSerializerFor(value: unknown): SerializerName {
   if (value && typeof value === 'object') return 'json'
   return 'text'
-}
-
-function getTestState(): { testPath?: string; testName?: string } | undefined {
-  const expectGlobal = (globalThis as any).expect
-  const getState = expectGlobal?.getState
-  if (typeof getState !== 'function') return undefined
-  const state = getState()
-  return {
-    testPath: state?.testPath,
-    testName: state?.currentTestName ?? state?.testName ?? state?.currentTestSuiteName,
-  }
 }
 
 function mimeFor(ext: string): string {

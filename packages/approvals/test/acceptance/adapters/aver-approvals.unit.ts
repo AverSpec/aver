@@ -60,6 +60,10 @@ function createMockScreenshotter(behavior: 'match' | 'differ' | 'dimension-misma
 }
 
 function getVisualApprovalDir(): string | undefined {
+  // Use vitest's state directly for the visual approval dir lookup.
+  // The approve.visual() call reads testPath/testName from RunningTestContext,
+  // which the approveVisual handler populates from vitest's expect.getState().
+  // Assertions need to look in the same directory, so we read the same source.
   const state = (globalThis as any).expect?.getState?.()
   const testPath = state?.testPath
   if (!testPath) return undefined
@@ -113,8 +117,12 @@ export const averApprovalsAdapter = implement(averApprovals, {
       session.lastApprovalName = name
 
       try {
+        const state = (globalThis as any).expect?.getState?.()
+        const testPath = state?.testPath
+        const testName = state?.currentTestName ?? 'approval-test'
         const context = {
-          testName: 'approval-test',
+          testName,
+          testPath,
           domainName: 'AverApprovals',
           protocolName: 'unit',
           trace: session.trace,

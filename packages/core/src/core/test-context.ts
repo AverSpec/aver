@@ -4,6 +4,7 @@ import type { ProtocolExtensions } from './extensions'
 
 export interface RunningTestContext {
   testName: string
+  testPath?: string
   domainName: string
   protocolName: string
   trace: TraceEntry[]

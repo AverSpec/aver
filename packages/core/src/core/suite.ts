@@ -3,12 +3,11 @@ import type { Domain } from './domain'
 import type { Adapter } from './adapter'
 import { findAdapter, findAdapters } from './registry'
 import type { TraceEntry } from './trace'
-import { computeCoverage } from './coverage'
+import { computeCoverage, registerCoverageEnforcement } from './coverage'
 import type { VocabularyCoverage } from './coverage'
 import { createProxies } from './proxy'
 import type { CalledOps, ActProxy, QueryProxy, AssertProxy } from './proxy'
 import { getGlobalTest, getGlobalDescribe, buildTestApi, shouldFilterOutDomain, buildMissingAdapterError } from './test-registration'
-import { getCoverageConfig } from './config'
 import { runTest } from './test-runner'
 import type { AdapterEntry } from './test-runner'
 
@@ -220,39 +219,7 @@ function suiteSingle<D extends Domain>(domain: D, adapter?: Adapter): SuiteRetur
   const correlationId = randomUUID()
 
   // Register afterAll coverage enforcement if a threshold is configured.
-  // We read the threshold at suite-creation time so the config must be loaded
-  // (e.g. via defineConfig) before suite() is called — the same requirement
-  // that already applies to adapter registration.
-  const globalAfterAll: ((fn: () => void | Promise<void>) => void) | undefined =
-    (globalThis as any).afterAll
-  const threshold = getCoverageConfig().minPercentage
-  if (typeof globalAfterAll === 'function' && threshold > 0) {
-    globalAfterAll(() => {
-      const cov = computeCoverage(
-        domain.name,
-        Object.keys(domain.vocabulary.actions),
-        Object.keys(domain.vocabulary.queries),
-        Object.keys(domain.vocabulary.assertions),
-        calledOps.actions,
-        calledOps.queries,
-        calledOps.assertions,
-      )
-      if (cov.percentage < threshold) {
-        const uncoveredActions = cov.actions.total.filter(n => !cov.actions.called.includes(n))
-        const uncoveredQueries = cov.queries.total.filter(n => !cov.queries.called.includes(n))
-        const uncoveredAssertions = cov.assertions.total.filter(n => !cov.assertions.called.includes(n))
-        const uncoveredParts: string[] = []
-        if (uncoveredActions.length > 0) uncoveredParts.push(`actions: ${uncoveredActions.join(', ')}`)
-        if (uncoveredQueries.length > 0) uncoveredParts.push(`queries: ${uncoveredQueries.join(', ')}`)
-        if (uncoveredAssertions.length > 0) uncoveredParts.push(`assertions: ${uncoveredAssertions.join(', ')}`)
-        const detail = uncoveredParts.length > 0 ? ` Uncovered: ${uncoveredParts.join('; ')}.` : ''
-        throw new Error(
-          `Vocabulary coverage for domain "${domain.name}" is ${cov.percentage}%, ` +
-          `below the configured minimum of ${threshold}%.${detail}`,
-        )
-      }
-    })
-  }
+  registerCoverageEnforcement(domain, calledOps)
 
   const programmaticProxies = createProxies(
     domain,

@@ -7,7 +7,7 @@ nav_order: 1
 
 # Introducing Aver: Domain-Driven Acceptance Testing for TypeScript
 
-*February 2026 — Nate Jackson*
+*Nate Jackson*
 
 ## The Testing Infrastructure Everyone Keeps Rebuilding
 

@@ -5,29 +5,33 @@ import { taskBoard } from '../domains/task-board.js'
 import { createServer } from '../src/server/index.js'
 import type { Server } from 'node:http'
 
-let server: Server | undefined
-let baseUrl = 'http://localhost:3000'
+function createProtocol() {
+  let server: Server | undefined
+  let baseUrl = 'http://localhost:3000'
 
-const protocol = withFixture(
-  http({ get baseUrl() { return baseUrl } }),
-  {
-    async before() {
-      const { app } = createServer()
-      server = await new Promise<Server>(resolve => {
-        const s = app.listen(0, () => resolve(s))
-      })
-      const addr = server.address()
-      const port = typeof addr === 'object' && addr ? addr.port : 3000
-      baseUrl = `http://localhost:${port}`
+  return withFixture(
+    http({ get baseUrl() { return baseUrl } }),
+    {
+      async before() {
+        const { app } = createServer()
+        server = await new Promise<Server>(resolve => {
+          const s = app.listen(0, () => resolve(s))
+        })
+        const addr = server.address()
+        const port = typeof addr === 'object' && addr ? addr.port : 3000
+        baseUrl = `http://localhost:${port}`
+      },
+      async after() {
+        if (server) {
+          await new Promise<void>((resolve) => server!.close(() => resolve()))
+          server = undefined
+        }
+      },
     },
-    async after() {
-      if (server) {
-        await new Promise<void>((resolve) => server!.close(() => resolve()))
-        server = undefined
-      }
-    },
-  },
-)
+  )
+}
+
+const protocol = createProtocol()
 
 export const httpAdapter = implement(taskBoard, {
   protocol,

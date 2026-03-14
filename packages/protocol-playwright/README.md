@@ -7,7 +7,7 @@ Playwright browser protocol for [Aver](../../README.md) acceptance testing. Mana
 ## Install
 
 ```bash
-npm install @aver/protocol-playwright
+npm install @aver/protocol-playwright playwright
 npx playwright install chromium
 ```
 

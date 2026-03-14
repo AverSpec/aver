@@ -145,7 +145,7 @@ describe('vitest-plugin', () => {
     expect(mockWriteContracts).not.toHaveBeenCalled()
   })
 
-  it('logs error and continues when extraction fails for a domain', async () => {
+  it('attempts all domains then throws aggregated error on extraction failure', async () => {
     mockIsExtractionMode.mockReturnValue(true)
 
     const domainA = { name: 'fail', vocabulary: { actions: {}, queries: {}, assertions: {} } }
@@ -162,21 +162,14 @@ describe('vitest-plugin', () => {
       .mockReturnValueOnce({ entries: [{ span: 'pass.test' }] })
     mockWriteContracts.mockResolvedValueOnce(['/out/pass/contract.json'])
 
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-
     vi.resetModules()
     registeredHooks.length = 0
     await import('../src/vitest-plugin.ts')
 
-    await registeredHooks[0]()
-
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Contract extraction failed for "fail"'),
-      expect.any(Error),
+    await expect(registeredHooks[0]()).rejects.toThrow(
+      /Contract extraction failed for 1 domain\(s\)[\s\S]*"fail": boom/,
     )
-    // Second domain should still be processed
+    // Second domain should still be processed despite first failing
     expect(mockWriteContracts).toHaveBeenCalledTimes(1)
-
-    consoleSpy.mockRestore()
   })
 })

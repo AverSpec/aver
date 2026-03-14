@@ -7,11 +7,11 @@
   "author": "Nate Jackson",
   "repository": {
     "type": "git",
-    "url": "https://github.com/njackson/aver.git",
+    "url": "https://github.com/averspec/aver.git",
     "directory": "packages/protocol-playwright"
   },
-  "homepage": "https://github.com/njackson/aver",
-  "bugs": "https://github.com/njackson/aver/issues",
+  "homepage": "https://github.com/averspec/aver",
+  "bugs": "https://github.com/averspec/aver/issues",
   "keywords": ["testing", "playwright", "e2e-testing", "browser-testing", "acceptance-testing", "aver"],
   "publishConfig": { "access": "public" },
   "sideEffects": false,

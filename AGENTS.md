@@ -43,7 +43,7 @@ Expected failures: 7 Playwright tests (need browser).
 - `@averspec/protocol-http` — HTTP protocol adapter
 - `@averspec/protocol-playwright` — Playwright browser protocol adapter
 - `@averspec/agent-plugin` — Claude Code plugin (workflow skills + GitHub Issues scripts)
-- `@averspec/agent` — moved to [aver-experimental](https://github.com/njackson/aver-experimental)
+- `@averspec/agent` — moved to [aver-experimental](https://github.com/averspec/aver-experimental)
 
 ## Package Manager
 

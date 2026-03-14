@@ -265,12 +265,12 @@ npx aver run
 
 When you're ready for a second level — say, an HTTP adapter for your Express API — run `npx aver init` again and select the HTTP protocol. The tests don't change. Now every test runs at both levels. Add a Playwright adapter when the UI exists. The test suite grows in depth without growing in duplication.
 
-For a complete example, explore the [task board](https://github.com/njackson/aver/tree/main/examples/task-board) — a React + Express app tested across unit, HTTP, and Playwright adapters with a single test suite.
+For a complete example, explore the [task board](https://github.com/averspec/aver/tree/main/examples/task-board) — a React + Express app tested across unit, HTTP, and Playwright adapters with a single test suite.
 
 - [Documentation](/)
 - [Getting Started](/getting-started)
 - [Architecture](/architecture)
-- [GitHub](https://github.com/njackson/aver)
+- [GitHub](https://github.com/averspec/aver)
 
 ---
 

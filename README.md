@@ -1,6 +1,6 @@
 # Know your system works.
 
-[![CI](https://github.com/njackson/aver/actions/workflows/ci.yml/badge.svg)](https://github.com/njackson/aver/actions/workflows/ci.yml)
+[![CI](https://github.com/averspec/aver/actions/workflows/ci.yml/badge.svg)](https://github.com/averspec/aver/actions/workflows/ci.yml)
 [![npm version](https://img.shields.io/npm/v/@averspec/core)](https://www.npmjs.com/package/@averspec/core)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 

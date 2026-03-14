@@ -2,7 +2,7 @@
 
 > **Status: Experimental** — API may change between minor versions.
 
-Agent plugin for [Aver](https://github.com/njackson/aver) — domain-driven acceptance testing.
+Agent plugin for [Aver](https://github.com/averspec/aver) — domain-driven acceptance testing.
 
 ## What's Included
 

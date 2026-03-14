@@ -7,7 +7,7 @@ parent: Guides
 
 # Example: Task Board
 
-The [`examples/task-board`](https://github.com/njackson/aver/tree/main/examples/task-board) directory contains a complete task board application tested with Aver across three adapters. It demonstrates the full three-layer architecture with a React frontend, Express API, and in-memory model.
+The [`examples/task-board`](https://github.com/averspec/aver/tree/main/examples/task-board) directory contains a complete task board application tested with Aver across three adapters. It demonstrates the full three-layer architecture with a React frontend, Express API, and in-memory model.
 
 ## The App
 

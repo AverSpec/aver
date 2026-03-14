@@ -14,7 +14,7 @@ Domain-driven acceptance testing for TypeScript.
 
 [Get Started](guides/getting-started){: .btn .btn-primary .fs-5 .mb-4 .mb-md-0 .mr-2 }
 [Tutorial](tutorial){: .btn .btn-secondary .fs-5 .mb-4 .mb-md-0 .mr-2 }
-[GitHub](https://github.com/njackson-projects/aver){: .btn .fs-5 .mb-4 .mb-md-0 }
+[GitHub](https://github.com/averspec/aver){: .btn .fs-5 .mb-4 .mb-md-0 }
 
 ---
 
@@ -127,9 +127,9 @@ Or follow a tutorial: [legacy code](tutorial), [greenfield](tutorial-greenfield)
 
 | Package | Description |
 |:--------|:------------|
-| [`@averspec/core`](https://github.com/njackson-projects/aver/tree/main/packages/core) | Domains, adapters, suite, CLI. Zero runtime dependencies. |
-| [`@averspec/approvals`](https://github.com/njackson-projects/aver/tree/main/packages/approvals) | Approval testing — structural diffs and visual screenshots |
-| [`@averspec/telemetry`](https://github.com/njackson-projects/aver/tree/main/packages/telemetry) | Dev-to-prod telemetry verification — contract extraction and conformance checking |
-| [`@averspec/protocol-http`](https://github.com/njackson-projects/aver/tree/main/packages/protocol-http) | HTTP protocol adapter (fetch-based) |
-| [`@averspec/protocol-playwright`](https://github.com/njackson-projects/aver/tree/main/packages/protocol-playwright) | Playwright browser protocol adapter |
-| [`@averspec/agent-plugin`](https://github.com/njackson-projects/aver/tree/main/packages/agent-plugin) | Claude Code plugin — workflow and telemetry skills |
+| [`@averspec/core`](https://github.com/averspec/aver/tree/main/packages/core) | Domains, adapters, suite, CLI. Zero runtime dependencies. |
+| [`@averspec/approvals`](https://github.com/averspec/aver/tree/main/packages/approvals) | Approval testing — structural diffs and visual screenshots |
+| [`@averspec/telemetry`](https://github.com/averspec/aver/tree/main/packages/telemetry) | Dev-to-prod telemetry verification — contract extraction and conformance checking |
+| [`@averspec/protocol-http`](https://github.com/averspec/aver/tree/main/packages/protocol-http) | HTTP protocol adapter (fetch-based) |
+| [`@averspec/protocol-playwright`](https://github.com/averspec/aver/tree/main/packages/protocol-playwright) | Playwright browser protocol adapter |
+| [`@averspec/agent-plugin`](https://github.com/averspec/aver/tree/main/packages/agent-plugin) | Claude Code plugin — workflow and telemetry skills |

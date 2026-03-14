@@ -7,6 +7,7 @@ import { join } from 'node:path'
 if (isExtractionMode()) {
   afterAll(async () => {
     const registry = getExtractionRegistry()
+    const errors: Array<{ domain: string; error: unknown }> = []
     for (const [domainName, domainResults] of registry) {
       if (!domainResults || domainResults.results.length === 0) continue
       try {
@@ -15,9 +16,15 @@ if (isExtractionMode()) {
         if (contract.entries.length === 0) continue
         const paths = await writeContracts(contract, baseDir)
         console.log(`[aver] Extracted ${paths.length} contract(s) for "${domainName}" to ${baseDir}/${domainName}/`)
-      } catch (err: any) {
-        console.error(`[aver] Contract extraction failed for "${domainName}":`, err)
+      } catch (err: unknown) {
+        errors.push({ domain: domainName, error: err })
       }
+    }
+    if (errors.length > 0) {
+      const details = errors
+        .map((e) => `  - "${e.domain}": ${e.error instanceof Error ? e.error.message : String(e.error)}`)
+        .join('\n')
+      throw new Error(`[aver] Contract extraction failed for ${errors.length} domain(s):\n${details}`)
     }
   })
 }

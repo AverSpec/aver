@@ -21,6 +21,7 @@ import { defineDomain, action, assertion, adapt, unit, suite } from '@aver/core'
 const cart = defineDomain({
   name: 'cart',
   actions: { addItem: action<{ name: string }>() },
+  queries: {},
   assertions: { hasItems: assertion<{ count: number }>() },
 })
 

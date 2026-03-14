@@ -8,8 +8,9 @@ import {
   suite as realSuite,
   unit,
 } from '../../../src/index'
-import type { Domain, Adapter, Protocol, PlannedTest } from '../../../src/index'
+import type { Domain, Adapter, Protocol } from '../../../src/index'
 import type { SuiteReturn } from '../../../src/core/suite'
+import type { SuiteInternals, PlannedTest } from '../../../src/internals'
 import type { TraceEntry } from '../../../src/core/trace'
 import { registerAdapter } from '../../../src/core/registry'
 import { averCore } from '../domains/aver-core'
@@ -18,7 +19,7 @@ interface AverTestSession {
   domain?: Domain
   extendedDomain?: Domain
   adapter?: Adapter
-  suiteInstance?: SuiteReturn<any>
+  suiteInstance?: SuiteReturn<any> & SuiteInternals
   lastQueryResult?: unknown
   lastQueryName?: string
   lastSetupError?: string

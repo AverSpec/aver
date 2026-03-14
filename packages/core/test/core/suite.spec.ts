@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { suite } from '../../src/core/suite'
+import type { SuiteInternals } from '../../src/core/suite'
 import { resetRegistry, registerAdapter, getAdapters } from '../../src/core/registry'
 import { implement } from '../../src/core/adapter'
 import { defineDomain } from '../../src/core/domain'
@@ -438,7 +439,7 @@ describe('suite() — getPlannedTests()', () => {
   })
 
   it('returns single test name for single adapter', () => {
-    const s = suite(cart, cartAdapter)
+    const s = suite(cart, cartAdapter) as ReturnType<typeof suite> & SuiteInternals
     const planned = s.getPlannedTests('add item')
     expect(planned).toEqual([
       { name: 'add item', status: 'register' },
@@ -460,7 +461,7 @@ describe('suite() — getPlannedTests()', () => {
 
     registerAdapter(cartAdapter)
     registerAdapter(httpAdapter)
-    const s = suite(cart)
+    const s = suite(cart) as ReturnType<typeof suite> & SuiteInternals
 
     const planned = s.getPlannedTests('add item')
     expect(planned).toEqual([
@@ -471,7 +472,7 @@ describe('suite() — getPlannedTests()', () => {
 
   it('returns skip status when AVER_DOMAIN does not match', () => {
     process.env.AVER_DOMAIN = 'OtherDomain'
-    const s = suite(cart, cartAdapter)
+    const s = suite(cart, cartAdapter) as ReturnType<typeof suite> & SuiteInternals
     const planned = s.getPlannedTests('add item')
     expect(planned).toEqual([
       { name: 'add item', status: 'skip' },
@@ -480,7 +481,7 @@ describe('suite() — getPlannedTests()', () => {
 
   it('returns register status when AVER_DOMAIN matches', () => {
     process.env.AVER_DOMAIN = 'Cart'
-    const s = suite(cart, cartAdapter)
+    const s = suite(cart, cartAdapter) as ReturnType<typeof suite> & SuiteInternals
     const planned = s.getPlannedTests('add item')
     expect(planned).toEqual([
       { name: 'add item', status: 'register' },
@@ -801,6 +802,7 @@ describe('suite() — domain without queries', () => {
       actions: {
         fire: action(),
       },
+      queries: {},
       assertions: {
         fired: assertion(),
       },

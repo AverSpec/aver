@@ -39,12 +39,13 @@ describe('defineDomain()', () => {
     expect(minimal.vocabulary.actions).toEqual({})
   })
 
-  it('allows omitting queries — defaults to empty object', () => {
+  it('accepts explicit empty queries object', () => {
     const noQueries = defineDomain({
       name: 'NoQueries',
       actions: {
         doThing: action(),
       },
+      queries: {},
       assertions: {
         thingDone: assertion(),
       },

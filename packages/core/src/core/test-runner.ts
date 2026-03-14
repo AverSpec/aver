@@ -5,7 +5,7 @@ import type { TraceEntry, TraceAttachment } from './trace'
 import { runWithTestContext } from './test-context'
 import { createProxies } from './proxy'
 import type { CalledOps } from './proxy'
-import { parseTelemetryMode } from './telemetry-mode'
+import { resolveTelemetryMode } from './telemetry-mode'
 import { verifyCorrelation } from './correlation'
 import { enhanceComposedWithTrace } from './trace-format'
 import { getTeardownFailureMode } from './config'
@@ -44,10 +44,18 @@ export async function runTest(
       // Teardown already-setup protocols in reverse order
       const setupKeys = [...contexts.keys()].reverse()
       for (const k of setupKeys) {
+        const adapterEntry = entries.find(([n]) => n === k)!
         try {
-          const entry = entries.find(([n]) => n === k)!
-          await entry[2].protocol.teardown(contexts.get(k))
+          await adapterEntry[2].protocol.teardown(contexts.get(k))
         } catch (teardownErr) {
+          trace.push({
+            kind: 'test',
+            name: `teardown-error:${adapterEntry[2].protocol.name}`,
+            payload: undefined,
+            status: 'fail',
+            error: teardownErr,
+            correlationId,
+          })
           console.warn(
             `[aver] Teardown failed for "${k}" after setup error: ${teardownErr instanceof Error ? teardownErr.message : String(teardownErr)}`,
           )
@@ -133,8 +141,7 @@ export async function runTest(
     // ── End-of-test correlation verification ──
     const hasTelemetry = entries.some(([, , adapter]) => adapter.protocol.telemetry)
     if (hasTelemetry) {
-      const envMode = typeof process !== 'undefined' ? parseTelemetryMode(process.env.AVER_TELEMETRY_MODE) : undefined
-      const mode = envMode ?? (typeof process !== 'undefined' && process.env.CI ? 'fail' : 'warn')
+      const mode = resolveTelemetryMode()
       if (mode !== 'off') {
         const result = verifyCorrelation(trace)
         if (result.violations.length > 0) {

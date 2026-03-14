@@ -42,10 +42,20 @@ function readBody(req: IncomingMessage, maxBytes = MAX_BODY_BYTES): Promise<stri
   })
 }
 
-export function createOtlpReceiver(): OtlpReceiver {
+/** Default maximum number of spans to store in memory */
+const DEFAULT_MAX_SPANS = 10_000
+
+export interface OtlpReceiverOptions {
+  /** Maximum number of spans to store. Defaults to 10,000. */
+  maxSpans?: number
+}
+
+export function createOtlpReceiver(options?: OtlpReceiverOptions): OtlpReceiver {
+  const maxSpans = options?.maxSpans ?? DEFAULT_MAX_SPANS
   const spans: CollectedSpan[] = []
   let server: Server | undefined
   let currentPort = 0
+  let limitWarned = false
 
   const handler = async (req: IncomingMessage, res: ServerResponse) => {
     if (req.method === 'POST' && req.url === '/v1/traces') {
@@ -81,6 +91,15 @@ export function createOtlpReceiver(): OtlpReceiver {
       for (const rs of body.resourceSpans ?? []) {
         for (const ss of rs.scopeSpans ?? []) {
           for (const span of ss.spans ?? []) {
+            if (spans.length >= maxSpans) {
+              if (!limitWarned) {
+                limitWarned = true
+                console.warn(
+                  `[aver] OTLP receiver: maxSpans limit (${maxSpans}) reached. New spans will not be collected.`,
+                )
+              }
+              break
+            }
             const parentSpanId = normalizeParentSpanId(span.parentSpanId)
             const links = (span.links ?? []).map((l: any) => ({
               traceId: l.spanContext?.traceId ?? l.traceId ?? '',
@@ -111,7 +130,7 @@ export function createOtlpReceiver(): OtlpReceiver {
 
     getSpans() { return [...spans] },
 
-    reset() { spans.length = 0 },
+    reset() { spans.length = 0; limitWarned = false },
 
     start() {
       return new Promise<number>((resolve, reject) => {

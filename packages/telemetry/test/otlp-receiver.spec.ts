@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { createOtlpReceiver, type OtlpReceiver } from '../src/otlp-receiver'
 
 
@@ -154,5 +154,76 @@ describe('OtlpReceiver', () => {
     await receiver.stop()
     // Fetching after stop should fail
     await expect(postTraces(receiver.port, otlpPayload([{ name: 'x' }]))).rejects.toThrow()
+  })
+
+  describe('maxSpans', () => {
+    let limitedReceiver: OtlpReceiver
+
+    afterEach(async () => {
+      await limitedReceiver?.stop()
+    })
+
+    it('stops collecting spans after maxSpans is reached', async () => {
+      limitedReceiver = createOtlpReceiver({ maxSpans: 3 })
+      await limitedReceiver.start()
+
+      // Send 5 spans — only first 3 should be stored
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      try {
+        await postTraces(limitedReceiver.port, otlpPayload([
+          { name: 'span-1' },
+          { name: 'span-2' },
+          { name: 'span-3' },
+          { name: 'span-4' },
+          { name: 'span-5' },
+        ]))
+
+        expect(limitedReceiver.getSpans()).toHaveLength(3)
+        expect(limitedReceiver.getSpans().map(s => s.name)).toEqual(['span-1', 'span-2', 'span-3'])
+      } finally {
+        warnSpy.mockRestore()
+      }
+    })
+
+    it('still returns 200 after maxSpans is reached', async () => {
+      limitedReceiver = createOtlpReceiver({ maxSpans: 1 })
+      await limitedReceiver.start()
+
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      try {
+        await postTraces(limitedReceiver.port, otlpPayload([{ name: 'span-1' }]))
+        const res = await postTraces(limitedReceiver.port, otlpPayload([{ name: 'span-2' }]))
+
+        expect(res.status).toBe(200)
+        expect(limitedReceiver.getSpans()).toHaveLength(1)
+      } finally {
+        warnSpy.mockRestore()
+      }
+    })
+
+    it('emits console.warn once when maxSpans is reached', async () => {
+      limitedReceiver = createOtlpReceiver({ maxSpans: 2 })
+      await limitedReceiver.start()
+
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      try {
+        // First request: 3 spans, limit is 2 — should trigger warning
+        await postTraces(limitedReceiver.port, otlpPayload([
+          { name: 'span-1' },
+          { name: 'span-2' },
+          { name: 'span-3' },
+        ]))
+
+        // Second request: should NOT trigger another warning
+        await postTraces(limitedReceiver.port, otlpPayload([{ name: 'span-4' }]))
+
+        const maxSpansWarnings = warnSpy.mock.calls.filter(
+          call => typeof call[0] === 'string' && call[0].includes('maxSpans limit'),
+        )
+        expect(maxSpansWarnings).toHaveLength(1)
+      } finally {
+        warnSpy.mockRestore()
+      }
+    })
   })
 })

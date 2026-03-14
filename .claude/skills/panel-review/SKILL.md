@@ -190,6 +190,40 @@ When creating tickets (Linear, GitHub Issues, etc.) from review findings:
 - Describe each issue on its **technical merits only**: what the problem is, where it is, why it matters, and how to fix it.
 - Use the **Lens** column (e.g., "observability", "test economics") for categorization, not attribution.
 
+### Ticketing Triage
+
+After creating tickets from the issues table, do a three-pass triage with the user:
+
+**Pass 1 — Verify findings against code.** Before triaging, spot-check panelist claims against the actual codebase. Simulated reviewers sometimes assert things that aren't true (wrong dependency format, missing features that exist, etc.). Flag and discard false positives. This pass prevents wasted tickets.
+
+**Pass 2 — Sort into vetted vs. needs refinement.** Present all validated findings and categorize:
+
+| Category | Criteria | Action |
+|---|---|---|
+| **Vetted → Todo** | Clear what to do, no design decisions, could be described to any engineer | Move straight to Todo status |
+| **Needs refinement** | Requires a design decision, API design, naming choice, scope decision, or content strategy | Leave in Backlog |
+
+**Pass 3 — Quick-vet the borderline items.** Review the "needs refinement" list and identify items where you can make a simple, defensible decision on the spot. For each:
+
+- State the decision in one line
+- State the rationale in one line
+- Move to Todo with the decision captured in the ticket
+
+What remains after Pass 3 are the **real design questions** — items that genuinely need collaborative discussion. Present these grouped by natural clusters (e.g., items touching the same subsystem, related API decisions, content vs. code work) so the user can refine them efficiently.
+
+```dot
+digraph triage {
+  "Issues table" -> "Verify against code";
+  "Verify against code" -> "Discard false positives";
+  "Verify against code" -> "Sort: vetted vs. refinement";
+  "Sort: vetted vs. refinement" -> "Vetted → Todo";
+  "Sort: vetted vs. refinement" -> "Quick-vet borderline";
+  "Quick-vet borderline" -> "Decision obvious?" [shape=diamond];
+  "Decision obvious?" -> "Decide + Todo" [label="yes"];
+  "Decision obvious?" -> "Real design questions" [label="no"];
+  "Real design questions" -> "Cluster + present to user";
+}
+
 ## Output
 
 Save the review to `.aver/plans/YYYY-MM-DD-<topic>-<review-type>-review.md` by default. If the user asks to skip saving, just present the review conversationally.

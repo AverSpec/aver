@@ -54,6 +54,20 @@ npx aver run
 - **[Getting Started](docs/guides/getting-started.md)** — Install, scaffold, configure
 - **[Guides](docs/guides/)** — Multi-adapter, telemetry, CI, AI-assisted testing
 
+## When to use Aver
+
+- **Multiple adapters** — unit, HTTP, and browser tests share the same scenario
+- **Acceptance-level verification** — behavior tests, not low-level unit logic
+- **Shared vocabulary** — product and engineering need a common language for behavior
+- **Observability matters** — you want to prove telemetry is structurally correct
+
+## When NOT to use Aver
+
+- **Pure unit tests** — a plain Vitest test is simpler for isolated functions
+- **Prototypes or throwaway code** — the domain/adapter payoff needs time to compound
+- **Single deployment target** — no HTTP or browser adapter means domain overhead without multi-adapter benefit
+- **Trivial CRUD** — if the domain vocabulary would mirror the database schema, there's nothing to abstract
+
 ## Packages
 
 | Package | Description |

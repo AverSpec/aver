@@ -90,7 +90,28 @@ AVER_APPROVE=1 npx vitest run tests/invoice-characterization.spec.ts
 
 This serializes each result and writes it to an `__approvals__/` directory next to your test file — one `.approved` file per `approve()` call, named after the test. Objects are stored as stable-sorted JSON; strings as plain text. Every subsequent run compares against those baselines. Any change to the function's output fails the test with a diff.
 
+For example, suppose someone changes the tax rate from 8% to 9% without realizing tests exist. The next run shows exactly what broke:
+
+```diff
+ Subtotal: $149.85
+ Discount: 10%
+-Tax: $10.79
+-Total: $145.66
++Tax: $12.14
++Total: $147.01
+```
+
+The safety net caught a change before it reached production. You can now decide whether to update the baseline (if the tax rate change was intentional) or revert the code.
+
 > `approve()` is standalone — it works with plain Vitest tests, no domain or adapter needed. It's also aliased as `characterize()` if that reads better for your characterization tests.
+
+## Finding your first operations
+
+Now comes the messiest part: extracting domain vocabulary from code that was never designed to have one. You're staring at a function that does five things, and you need to decide which of those things are *operations* worth naming.
+
+Start by reading the characterization test outputs. Each approved baseline is a snapshot of behavior — and each distinct behavior is a candidate for a domain operation. In our case, the invoice function does three things worth naming: it accumulates line items, it applies (or doesn't apply) a discount, and it computes a total. Those are your first operations.
+
+You'll get the names wrong. That's expected. Maybe you start with `calculateTotal` and later realize `invoiceTotal` reads better as a query. Maybe you create a `discountTier` query before realizing you only ever *assert* about the discount, never *query* it directly. Renaming is cheap — the domain file is a single source of truth, and TypeScript will flag every call site that needs updating. The goal isn't to get the vocabulary perfect on the first pass; it's to get *something* named so you can start writing tests in domain language and let the awkward names reveal themselves through use.
 
 ## Step 2: Name the behaviors
 

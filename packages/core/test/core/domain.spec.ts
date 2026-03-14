@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, expectTypeOf } from 'vitest'
 import { defineDomain } from '../../src/core/domain'
 import { action, query, assertion } from '../../src/core/markers'
 
@@ -242,5 +242,77 @@ describe('domain.extend()', () => {
 
     expect(extended.vocabulary.actions.process).toEqual({ kind: 'action' })
     expect(extended.vocabulary.queries.process).toEqual({ kind: 'query' })
+  })
+})
+
+describe('domain.extend() type safety', () => {
+  const base = defineDomain({
+    name: 'Cart',
+    actions: {
+      addItem: action<{ name: string; qty: number }>(),
+      removeItem: action<{ name: string }>(),
+    },
+    queries: {
+      total: query<number>(),
+    },
+    assertions: {
+      isEmpty: assertion(),
+      hasTotal: assertion<{ amount: number }>(),
+    },
+  })
+
+  it('extended domain preserves parent keys', () => {
+    const extended = base.extend('CartUI', {
+      assertions: { showsSpinner: assertion() },
+    })
+
+    expectTypeOf(extended.vocabulary.actions).toHaveProperty('addItem')
+    expectTypeOf(extended.vocabulary.actions).toHaveProperty('removeItem')
+    expectTypeOf(extended.vocabulary.queries).toHaveProperty('total')
+    expectTypeOf(extended.vocabulary.assertions).toHaveProperty('isEmpty')
+    expectTypeOf(extended.vocabulary.assertions).toHaveProperty('hasTotal')
+  })
+
+  it('extended domain includes child keys', () => {
+    const extended = base.extend('CartUI', {
+      actions: { clickCheckout: action() },
+      assertions: { showsSpinner: assertion() },
+    })
+
+    expectTypeOf(extended.vocabulary.assertions).toHaveProperty('showsSpinner')
+    expectTypeOf(extended.vocabulary.actions).toHaveProperty('clickCheckout')
+    // Parent keys still present
+    expectTypeOf(extended.vocabulary.actions).toHaveProperty('addItem')
+    expectTypeOf(extended.vocabulary.assertions).toHaveProperty('isEmpty')
+  })
+
+  it('chained extensions preserve types from all levels', () => {
+    const level1 = base.extend('Level1', {
+      queries: { itemCount: query<number>() },
+    })
+    const level2 = level1.extend('Level2', {
+      assertions: { showsBadge: assertion() },
+    })
+
+    // Base keys
+    expectTypeOf(level2.vocabulary.actions).toHaveProperty('addItem')
+    expectTypeOf(level2.vocabulary.actions).toHaveProperty('removeItem')
+    expectTypeOf(level2.vocabulary.queries).toHaveProperty('total')
+    expectTypeOf(level2.vocabulary.assertions).toHaveProperty('isEmpty')
+    expectTypeOf(level2.vocabulary.assertions).toHaveProperty('hasTotal')
+    // Level1 keys
+    expectTypeOf(level2.vocabulary.queries).toHaveProperty('itemCount')
+    // Level2 keys
+    expectTypeOf(level2.vocabulary.assertions).toHaveProperty('showsBadge')
+  })
+
+  it('empty extension does not widen types', () => {
+    const extended = base.extend('CartEmpty', {})
+
+    expectTypeOf(extended.vocabulary.actions).toHaveProperty('addItem')
+    expectTypeOf(extended.vocabulary.actions).toHaveProperty('removeItem')
+    expectTypeOf(extended.vocabulary.queries).toHaveProperty('total')
+    expectTypeOf(extended.vocabulary.assertions).toHaveProperty('isEmpty')
+    expectTypeOf(extended.vocabulary.assertions).toHaveProperty('hasTotal')
   })
 })

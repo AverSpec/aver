@@ -302,3 +302,22 @@ if (report.totalViolations > 0) {
 ```
 
 Traces that don't contain the anchor span are silently skipped -- unrelated traffic won't generate false positives. Only traces that *look like* the scenario under test are checked.
+
+## Exporting traces from Jaeger
+
+If you're using Jaeger as your tracing backend, you can export traces for use with `FileTraceSource`:
+
+1. Query the Jaeger HTTP API: `GET http://<jaeger-host>:16686/api/traces?service=<your-service>&limit=100`
+2. Save the JSON response to a file: `curl -s 'http://localhost:16686/api/traces?service=my-app&limit=100' -o traces.json`
+3. Pass the file to `FileTraceSource` and use it with `verifyContract()`
+
+This is the fastest way to get production traces into the verification pipeline without building a custom collector integration.
+
+## Design considerations
+
+Telemetry declarations can live on domain markers or on adapters. Both placements are valid, and the right choice depends on your team's intent:
+
+- **Domain markers** — use this when observability is a business requirement. If the business says "checkout must be traceable" or "every payment must emit an audit span," then telemetry is part of the domain contract. Declaring it on the marker makes it visible to anyone reading the domain and ensures every adapter satisfies the requirement.
+- **Adapters** — use this when telemetry is an implementation detail. If only the HTTP adapter needs spans (for debugging or performance monitoring) but the unit adapter doesn't care, putting telemetry on the adapter keeps the domain clean and avoids forcing every adapter to satisfy span expectations.
+
+There is no universally correct answer. Some teams start with adapter-level telemetry and promote declarations to the domain when they realize observability is load-bearing. Others start at the domain level and move declarations down when they find the constraints too rigid for some adapters. Either direction works — the key is being intentional about whether a span is a business promise or an engineering convenience.

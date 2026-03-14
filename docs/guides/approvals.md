@@ -28,6 +28,10 @@ await approve.visual('board-with-task')
 
 > `approve` is also exported as `characterize` — same function, alternative name for characterization test contexts: `import { characterize } from '@aver/approvals'`
 
+## `characterize()` vs `approve()`
+
+`characterize()` and `approve()` are the same function — they behave identically at runtime. The distinction is purely about communicating intent to future readers of your test code. Use `characterize()` during discovery: "I don't know if this output is correct yet, but I'm locking it in as a baseline so I'll notice if it changes." Use `approve()` in steady state: "I have reviewed this output and confirmed it is the desired behavior." As your understanding of the system solidifies, you can rename `characterize()` calls to `approve()` to signal that the baseline has been deliberately validated.
+
 ## Workflow
 
 1. First run: test fails with "Baseline missing"

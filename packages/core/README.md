@@ -9,7 +9,7 @@ Define **what** to test in domain language. Swap **how** via adapters. Same test
 ## Install
 
 ```bash
-npm install @aver/core
+npm install @aver/core vitest
 ```
 
 ## Usage

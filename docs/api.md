@@ -441,18 +441,13 @@ beforeEach(() => {
 
 ## Types
 
+### From `@aver/core`
+
 ```typescript
 import type {
   // Domain & markers
   Domain,
-  ActionMarker,
-  QueryMarker,
-  AssertionMarker,
   MarkerOptions,
-  TelemetryExpectation,
-  TelemetryDeclaration,
-  TelemetryAttributeValue,
-  AsymmetricMatcher,
 
   // Adapters & protocols
   Adapter,
@@ -467,13 +462,37 @@ import type {
   CollectedSpan,
   SpanLink,
   TelemetryMatchResult,
-  CorrelationResult,
-  CorrelationGroup,
-  CorrelationViolation,
 
   // Suite & testing
   TestContext,
   SuiteReturn,
+
+  // Config
+  AverConfig,
+  AverConfigInput,
+
+  // Trace
+  TraceEntry,
+  TraceAttachment,
+} from '@aver/core'
+```
+
+### From `@aver/core/internals`
+
+These types are **not** re-exported from `@aver/core`. Import them from the `@aver/core/internals` subpath.
+
+```typescript
+import type {
+  // Domain & markers
+  ActionMarker,
+  QueryMarker,
+  AssertionMarker,
+  TelemetryExpectation,
+  TelemetryDeclaration,
+  TelemetryAttributeValue,
+  AsymmetricMatcher,
+
+  // Suite & testing
   ActProxy,
   QueryProxy,
   AssertProxy,
@@ -481,19 +500,20 @@ import type {
   RunningTestContext,
 
   // Config
-  AverConfig,
-  AverConfigInput,
   CoverageConfig,
   TeardownFailureMode,
 
-  // Trace
-  TraceEntry,
-  TraceAttachment,
+  // Trace & coverage
   VocabularyCoverage,
+
+  // Correlation
+  CorrelationResult,
+  CorrelationGroup,
+  CorrelationViolation,
 
   // Registry
   RegistrySnapshot,
-} from '@aver/core'
+} from '@aver/core/internals'
 ```
 
 ### `TraceEntry`

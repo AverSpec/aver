@@ -39,6 +39,25 @@ describe('withFixture()', () => {
     expect(calls).toEqual(['before', 'setup', 'teardown', 'after'])
   })
 
+  it('runs afterSetup() after setup() with the context', async () => {
+    const calls: string[] = []
+    let receivedCtx: unknown
+    const wrapped = withFixture(mockProtocol(calls), {
+      before: async () => { calls.push('before') },
+      afterSetup: async (ctx) => {
+        calls.push('afterSetup')
+        receivedCtx = ctx
+      },
+      after: async () => { calls.push('after') },
+    })
+
+    const ctx = await wrapped.setup()
+    await wrapped.teardown(ctx)
+
+    expect(calls).toEqual(['before', 'setup', 'afterSetup', 'teardown', 'after'])
+    expect(receivedCtx).toEqual({ value: 1 })
+  })
+
   it('works with only before', async () => {
     const calls: string[] = []
     const wrapped = withFixture(mockProtocol(calls), {

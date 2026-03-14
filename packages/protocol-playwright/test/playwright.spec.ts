@@ -47,7 +47,7 @@ describe('playwright()', () => {
     expect(typeof protocol.onTestFail).toBe('function')
   })
 
-  it('uses per-page browser tracking (no shared browser variable)', () => {
+  it('protocol instances are independent', () => {
     // Create two protocol instances to verify they are independent
     const p1 = playwright()
     const p2 = playwright()

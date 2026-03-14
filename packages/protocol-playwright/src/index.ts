@@ -21,8 +21,9 @@ export interface PlaywrightOptions {
 }
 
 export function playwright(options?: PlaywrightOptions): Protocol<Page> {
-  // Track browser-per-page so parallel tests each close their own browser
-  const browserForPage = new Map<Page, Browser>()
+  // Shared browser instance: launched once on first setup(), closed on last teardown()
+  let sharedBrowser: Browser | null = null
+  const activePages = new Set<Page>()
   const consoleLogs = new WeakMap<Page, string[]>()
   const artifactsDir = options?.artifactsDir ?? join(process.cwd(), 'test-results', 'aver-artifacts')
   const captureScreenshot = options?.captureScreenshot ?? true
@@ -32,13 +33,15 @@ export function playwright(options?: PlaywrightOptions): Protocol<Page> {
   return {
     name: 'playwright',
     async setup(): Promise<Page> {
-      const pw = await import('playwright')
-      const browserType = options?.browserType ?? 'chromium'
-      const browser = await pw[browserType].launch({
-        headless: options?.headless ?? true,
-      })
-      const page = await browser.newPage()
-      browserForPage.set(page, browser)
+      if (!sharedBrowser) {
+        const pw = await import('playwright')
+        const browserType = options?.browserType ?? 'chromium'
+        sharedBrowser = await pw[browserType].launch({
+          headless: options?.headless ?? true,
+        })
+      }
+      const page = await sharedBrowser.newPage()
+      activePages.add(page)
       if (captureConsole) {
         const logs: string[] = []
         consoleLogs.set(page, logs)
@@ -49,9 +52,12 @@ export function playwright(options?: PlaywrightOptions): Protocol<Page> {
       return page
     },
     async teardown(ctx: Page): Promise<void> {
-      const browser = browserForPage.get(ctx)
-      browserForPage.delete(ctx)
-      await browser?.close()
+      activePages.delete(ctx)
+      await ctx.close()
+      if (activePages.size === 0 && sharedBrowser) {
+        await sharedBrowser.close()
+        sharedBrowser = null
+      }
     },
     async onTestFail(ctx: Page, meta: TestCompletion): Promise<TraceAttachment[]> {
       const attachments: TraceAttachment[] = []

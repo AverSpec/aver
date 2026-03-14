@@ -56,13 +56,15 @@ export interface Protocol<Context> {
 
 export function withFixture<C>(
   protocol: Protocol<C>,
-  fixture: { before?: () => Promise<void>; after?: () => Promise<void> }
+  fixture: { before?: () => Promise<void>; afterSetup?: (ctx: C) => Promise<void>; after?: () => Promise<void> }
 ): Protocol<C> {
   return {
     ...protocol,
     async setup() {
       if (fixture.before) await fixture.before()
-      return protocol.setup()
+      const ctx = await protocol.setup()
+      if (fixture.afterSetup) await fixture.afterSetup(ctx)
+      return ctx
     },
     async teardown(ctx: C) {
       try {

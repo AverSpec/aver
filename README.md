@@ -4,6 +4,8 @@
 [![npm version](https://img.shields.io/npm/v/@averspec/core)](https://www.npmjs.com/package/@averspec/core)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+> **Early release.** Aver is functional and tested but pre-1.0. APIs may change between minor versions.
+
 **Domain-driven acceptance testing for TypeScript.**
 Describe what your system does. Prove it at every level.
 

@@ -91,11 +91,42 @@ export async function readContracts(baseDir: string): Promise<BehavioralContract
   return contracts
 }
 
-/** Read a single contract file. */
+/** Read a single contract file with schema validation. */
 export async function readContractFile(
   filePath: string,
 ): Promise<{ domain: string; entry: ContractEntry }> {
   const raw = await readFile(filePath, 'utf-8')
-  const parsed: ContractFile = JSON.parse(raw)
-  return { domain: parsed.domain, entry: parsed.entry }
+
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw)
+  } catch {
+    throw new Error(`Invalid JSON in contract file ${filePath}`)
+  }
+
+  const obj = parsed as Record<string, unknown>
+
+  if (obj.version !== 1) {
+    throw new Error(`Unsupported contract version ${obj.version} in ${filePath}`)
+  }
+
+  if (typeof obj.domain !== 'string' || obj.domain === '') {
+    throw new Error(`Invalid contract file ${filePath}: missing domain`)
+  }
+
+  if (!obj.entry) {
+    throw new Error(`Invalid contract file ${filePath}: missing entry`)
+  }
+
+  const entry = obj.entry as Record<string, unknown>
+
+  if (typeof entry.testName !== 'string') {
+    throw new Error(`Invalid contract file ${filePath}: missing entry.testName`)
+  }
+
+  if (!Array.isArray(entry.spans)) {
+    throw new Error(`Invalid contract file ${filePath}: missing entry.spans`)
+  }
+
+  return { domain: obj.domain as string, entry: obj.entry as ContractEntry }
 }

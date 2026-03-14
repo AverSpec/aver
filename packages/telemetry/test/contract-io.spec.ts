@@ -184,4 +184,52 @@ describe('readContractFile', () => {
   it('throws if file does not exist', async () => {
     await expect(readContractFile('/tmp/nonexistent.contract.json')).rejects.toThrow()
   })
+
+  it('throws on invalid JSON', async () => {
+    const dir = await makeTempDir()
+    const filePath = join(dir, 'bad.contract.json')
+    await writeFile(filePath, '{ not valid json !!!', 'utf-8')
+
+    await expect(readContractFile(filePath)).rejects.toThrow('Invalid JSON')
+  })
+
+  it('throws on unsupported contract version', async () => {
+    const dir = await makeTempDir()
+    const filePath = join(dir, 'v2.contract.json')
+    await writeFile(filePath, JSON.stringify({ version: 2, domain: 'x', entry: { testName: 'a', spans: [] } }), 'utf-8')
+
+    await expect(readContractFile(filePath)).rejects.toThrow('Unsupported contract version')
+  })
+
+  it('throws when domain is missing', async () => {
+    const dir = await makeTempDir()
+    const filePath = join(dir, 'no-domain.contract.json')
+    await writeFile(filePath, JSON.stringify({ version: 1, entry: { testName: 'a', spans: [] } }), 'utf-8')
+
+    await expect(readContractFile(filePath)).rejects.toThrow('missing domain')
+  })
+
+  it('throws when entry is missing', async () => {
+    const dir = await makeTempDir()
+    const filePath = join(dir, 'no-entry.contract.json')
+    await writeFile(filePath, JSON.stringify({ version: 1, domain: 'x' }), 'utf-8')
+
+    await expect(readContractFile(filePath)).rejects.toThrow('missing entry')
+  })
+
+  it('throws when entry.testName is missing', async () => {
+    const dir = await makeTempDir()
+    const filePath = join(dir, 'no-testname.contract.json')
+    await writeFile(filePath, JSON.stringify({ version: 1, domain: 'x', entry: { spans: [] } }), 'utf-8')
+
+    await expect(readContractFile(filePath)).rejects.toThrow('missing entry.testName')
+  })
+
+  it('throws when entry.spans is not an array', async () => {
+    const dir = await makeTempDir()
+    const filePath = join(dir, 'bad-spans.contract.json')
+    await writeFile(filePath, JSON.stringify({ version: 1, domain: 'x', entry: { testName: 'a', spans: 'not-array' } }), 'utf-8')
+
+    await expect(readContractFile(filePath)).rejects.toThrow('missing entry.spans')
+  })
 })

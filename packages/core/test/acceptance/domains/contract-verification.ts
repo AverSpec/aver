@@ -1,5 +1,5 @@
 import { defineDomain, action, query, assertion } from '../../../src/index'
-import type { AttributeBinding } from '@aver/telemetry'
+import type { AttributeBinding } from '@averspec/telemetry'
 
 // ── Payload types ──
 

@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
-// Mock @aver/core/internals before importing the plugin
+// Mock @averspec/core/internals before importing the plugin
 const mockGetExtractionRegistry = vi.fn()
 const mockIsExtractionMode = vi.fn()
 
-vi.mock('@aver/core/internals', () => ({
+vi.mock('@averspec/core/internals', () => ({
   getExtractionRegistry: mockGetExtractionRegistry,
   isExtractionMode: mockIsExtractionMode,
 }))

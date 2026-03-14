@@ -9,7 +9,7 @@ nav_order: 3
 
 ## Overview
 
-`@aver/approvals` provides two approval modes:
+`@averspec/approvals` provides two approval modes:
 
 - **`approve(value)`** — structural approval (text/JSON diff)
 - **`approve.visual('name')`** — visual approval (screenshot + pixel diff)
@@ -17,7 +17,7 @@ nav_order: 3
 Both use the same workflow: baseline → compare → diff → approve.
 
 ```ts
-import { approve } from '@aver/approvals'
+import { approve } from '@averspec/approvals'
 
 // Structural: approve a data value
 await approve(taskList, { name: 'tasks' })
@@ -26,7 +26,7 @@ await approve(taskList, { name: 'tasks' })
 await approve.visual('board-with-task')
 ```
 
-> `approve` is also exported as `characterize` — same function, alternative name for characterization test contexts: `import { characterize } from '@aver/approvals'`
+> `approve` is also exported as `characterize` — same function, alternative name for characterization test contexts: `import { characterize } from '@averspec/approvals'`
 
 ## `characterize()` vs `approve()`
 
@@ -47,7 +47,7 @@ Visual approvals use the `screenshotter` protocol extension. Protocols that can 
 ### Setup
 
 ```ts
-import { playwright } from '@aver/protocol-playwright'
+import { playwright } from '@averspec/protocol-playwright'
 
 const proto = playwright({
   regions: {

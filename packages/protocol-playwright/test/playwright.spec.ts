@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { runWithTestContext } from '@aver/core'
+import { runWithTestContext } from '@averspec/core'
 import { playwright } from '../src/index'
 
 describe('playwright()', () => {

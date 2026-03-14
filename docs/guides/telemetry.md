@@ -82,7 +82,7 @@ const protocol: Protocol<MyContext> = {
 **Cross-process (integration adapter):**
 
 ```typescript
-import { createOtlpReceiver } from '@aver/telemetry'
+import { createOtlpReceiver } from '@averspec/telemetry'
 
 const receiver = createOtlpReceiver()
 const port = await receiver.start()
@@ -134,7 +134,7 @@ Follow OTel semantic conventions: `{noun}.{verb}` or `{service}.{operation}`.
 
 ## Dev-to-production verification
 
-Test-time telemetry verification proves your system emits the right spans in a controlled environment. But does production actually emit the same spans with the same attributes? Code paths differ, middleware interferes, instrumentation gets refactored away. The `@aver/telemetry` package closes this gap with two functions: `extractContract()` and `verifyContract()`.
+Test-time telemetry verification proves your system emits the right spans in a controlled environment. But does production actually emit the same spans with the same attributes? Code paths differ, middleware interferes, instrumentation gets refactored away. The `@averspec/telemetry` package closes this gap with two functions: `extractContract()` and `verifyContract()`.
 
 ### The flow
 
@@ -148,7 +148,7 @@ Test-time telemetry verification proves your system emits the right spans in a c
 `extractContract()` takes a domain and an array of test results (test name + trace entries from passing tests). It walks each trace, finds operations with telemetry declarations, and produces span expectations with attribute bindings.
 
 ```typescript
-import { extractContract } from '@aver/telemetry'
+import { extractContract } from '@averspec/telemetry'
 import { signupFlow } from './domains/signup-flow'
 
 const contract = extractContract({
@@ -177,8 +177,8 @@ This distinction matters: literal bindings catch "the span emits the wrong const
 `verifyContract()` takes a contract and an array of production traces. Each trace has a `traceId` and an array of spans (name + attributes).
 
 ```typescript
-import { verifyContract } from '@aver/telemetry'
-import type { ProductionTrace } from '@aver/telemetry'
+import { verifyContract } from '@averspec/telemetry'
+import type { ProductionTrace } from '@averspec/telemetry'
 
 // Collect these from your OTLP backend, staging environment, or trace pipeline
 const productionTraces: ProductionTrace[] = [
@@ -252,9 +252,9 @@ Within a single trace, the signup and account-creation spans reference different
 Putting it all together for a signup flow domain:
 
 ```typescript
-import { defineDomain, action, assertion } from '@aver/core'
-import { extractContract, verifyContract } from '@aver/telemetry'
-import type { ProductionTrace } from '@aver/telemetry'
+import { defineDomain, action, assertion } from '@averspec/core'
+import { extractContract, verifyContract } from '@averspec/telemetry'
+import type { ProductionTrace } from '@averspec/telemetry'
 
 // 1. Domain with telemetry declarations
 const signupFlow = defineDomain({

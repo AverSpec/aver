@@ -27,10 +27,10 @@ If that's all you need, stop here. Everything below adds structured workflow and
 
 ## Setting up the Claude Code plugin
 
-The `@aver/agent-plugin` bundles two agent skills and a set of bash scripts for managing scenarios and backlog via GitHub Issues. Install it:
+The `@averspec/agent-plugin` bundles two agent skills and a set of bash scripts for managing scenarios and backlog via GitHub Issues. Install it:
 
 ```bash
-npm install --save-dev @aver/agent-plugin
+npm install --save-dev @averspec/agent-plugin
 ```
 
 ### 1. Register the plugin
@@ -43,7 +43,7 @@ Add to your project's `.claude/settings.json`:
     "aver-plugins": {
       "source": {
         "source": "directory",
-        "path": "node_modules/@aver/agent-plugin"
+        "path": "node_modules/@averspec/agent-plugin"
       }
     }
   },
@@ -60,7 +60,7 @@ This tells Claude Code to load the Aver skills when it opens your project.
 Run the label setup script once per repository:
 
 ```bash
-./node_modules/@aver/agent-plugin/scripts/gh/setup-labels.sh
+./node_modules/@averspec/agent-plugin/scripts/gh/setup-labels.sh
 ```
 
 This creates the `scenario`, `backlog`, `stage:captured`, `stage:characterized`, `stage:mapped`, `stage:specified`, `stage:implemented`, and priority/type labels that the scripts use to track scenarios and backlog items as GitHub Issues.
@@ -179,6 +179,6 @@ gh issue view 42
 gh issue list --label backlog --label P0
 
 # Or use the convenience scripts directly
-./node_modules/@aver/agent-plugin/scripts/gh/scenario-list.sh
-./node_modules/@aver/agent-plugin/scripts/gh/backlog-list.sh
+./node_modules/@averspec/agent-plugin/scripts/gh/scenario-list.sh
+./node_modules/@averspec/agent-plugin/scripts/gh/backlog-list.sh
 ```

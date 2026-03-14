@@ -1,5 +1,5 @@
 import { afterAll } from 'vitest'
-import { getExtractionRegistry, isExtractionMode } from '@aver/core/internals'
+import { getExtractionRegistry, isExtractionMode } from '@averspec/core/internals'
 import { extractContract } from './extract'
 import { writeContracts } from './contract-io'
 import { join } from 'node:path'

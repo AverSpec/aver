@@ -6,7 +6,7 @@ nav_order: 7
 
 # API Reference
 
-All public exports from the `@aver/core` package.
+All public exports from the `@averspec/core` package.
 
 ## Domain Definition
 
@@ -15,7 +15,7 @@ All public exports from the `@aver/core` package.
 Creates a domain with a named vocabulary.
 
 ```typescript
-import { defineDomain, action, query, assertion } from '@aver/core'
+import { defineDomain, action, query, assertion } from '@averspec/core'
 
 const cart = defineDomain({
   name: 'shopping-cart',
@@ -89,7 +89,7 @@ const cartUI = cart.extend('shopping-cart-ui', {
 Creates an adapter binding a domain to a protocol with handler implementations.
 
 ```typescript
-import { adapt, unit } from '@aver/core'
+import { adapt, unit } from '@averspec/core'
 
 const adapter = adapt(cart, {
   protocol: unit(() => []),
@@ -118,7 +118,7 @@ TypeScript enforces that every action, query, and assertion declared in the doma
 Built-in protocol for in-memory testing. Zero dependencies.
 
 ```typescript
-import { unit } from '@aver/core'
+import { unit } from '@averspec/core'
 
 protocol: unit(() => new Cart())         // object context
 protocol: unit(() => ({ db: new DB() })) // compound context
@@ -127,24 +127,24 @@ protocol: unit<Cart[]>(() => [])         // typed context
 
 The factory runs on each test setup, creating a fresh context. Teardown is a no-op.
 
-### `http(options)` <small>from `@aver/protocol-http`</small>
+### `http(options)` <small>from `@averspec/protocol-http`</small>
 
 HTTP protocol providing a fetch-based client.
 
 ```typescript
-import { http } from '@aver/protocol-http'
+import { http } from '@averspec/protocol-http'
 
 protocol: http({ baseUrl: 'http://localhost:3000' })
 ```
 
 Context provides `get`, `post`, `put`, `patch`, `delete` methods.
 
-### `playwright(options?)` <small>from `@aver/protocol-playwright`</small>
+### `playwright(options?)` <small>from `@averspec/protocol-playwright`</small>
 
 Playwright protocol providing a browser page.
 
 ```typescript
-import { playwright } from '@aver/protocol-playwright'
+import { playwright } from '@averspec/protocol-playwright'
 
 protocol: playwright()
 ```
@@ -156,7 +156,7 @@ Context is a Playwright `Page`. Browser is launched once and reused; a fresh pag
 Wraps a protocol with before/after hooks.
 
 ```typescript
-import { withFixture } from '@aver/core'
+import { withFixture } from '@averspec/core'
 
 const wrapped = withFixture(myProtocol, {
   before: async () => { /* runs before setup */ },
@@ -173,7 +173,7 @@ const wrapped = withFixture(myProtocol, {
 Creates a test suite for a domain.
 
 ```typescript
-import { suite } from '@aver/core'
+import { suite } from '@averspec/core'
 
 // Multi-adapter: resolves from registry
 const { test } = suite(cart)
@@ -234,7 +234,7 @@ The callback receives a `TestContext`:
 Creates an Aver configuration and auto-registers adapters.
 
 ```typescript
-import { defineConfig } from '@aver/core'
+import { defineConfig } from '@averspec/core'
 import { unitAdapter } from './adapters/cart.unit'
 import { httpAdapter } from './adapters/cart.http'
 
@@ -319,7 +319,7 @@ interface SpanLink {
 Creates an OTLP HTTP receiver for cross-process telemetry testing.
 
 ```typescript
-import { createOtlpReceiver } from '@aver/telemetry'
+import { createOtlpReceiver } from '@averspec/telemetry'
 
 const receiver = await createOtlpReceiver()
 // receiver.port — port the OTLP HTTP endpoint listens on
@@ -335,7 +335,7 @@ The receiver implements `TelemetryCollector` so it can be set directly on a prot
 Verifies that correlated trace entries have causally connected spans.
 
 ```typescript
-import { verifyCorrelation } from '@aver/core/internals'
+import { verifyCorrelation } from '@averspec/core/internals'
 ```
 
 ### Telemetry Declarations
@@ -429,7 +429,7 @@ If no adapter is registered for a domain, `findAdapter()` walks the `domain.pare
 The registry is process-global state. If your tests register their own adapters (common in framework-level testing), call `resetRegistry()` in `beforeEach` to prevent cross-test leakage:
 
 ```typescript
-import { resetRegistry, registerAdapter } from '@aver/core/internals'
+import { resetRegistry, registerAdapter } from '@averspec/core/internals'
 
 beforeEach(() => {
   resetRegistry()
@@ -441,7 +441,7 @@ beforeEach(() => {
 
 ## Types
 
-### From `@aver/core`
+### From `@averspec/core`
 
 ```typescript
 import type {
@@ -474,12 +474,12 @@ import type {
   // Trace
   TraceEntry,
   TraceAttachment,
-} from '@aver/core'
+} from '@averspec/core'
 ```
 
-### From `@aver/core/internals`
+### From `@averspec/core/internals`
 
-These types are **not** re-exported from `@aver/core`. Import them from the `@aver/core/internals` subpath.
+These types are **not** re-exported from `@averspec/core`. Import them from the `@averspec/core/internals` subpath.
 
 ```typescript
 import type {
@@ -513,7 +513,7 @@ import type {
 
   // Registry
   RegistrySnapshot,
-} from '@aver/core/internals'
+} from '@averspec/core/internals'
 ```
 
 ### `TraceEntry`
@@ -557,15 +557,15 @@ The lifecycle hooks are optional. `onTestStart` runs before each test body. `onT
 
 ---
 
-## Approval Testing <small>from `@aver/approvals`</small>
+## Approval Testing <small>from `@averspec/approvals`</small>
 
 ### `approve(value, options?)`
 
 Approves a value against a stored baseline. Auto-detects serializer: objects use JSON, strings use text. Also exported as `characterize` for characterization test contexts.
 
 ```typescript
-import { approve } from '@aver/approvals'
-// or: import { characterize } from '@aver/approvals'
+import { approve } from '@averspec/approvals'
+// or: import { characterize } from '@averspec/approvals'
 
 await approve({ count: 42 })                    // default name "approval"
 await approve(reportText, { name: 'report' })   // named approval
@@ -603,7 +603,7 @@ await approve.visual({ name: 'backlog', region: 'backlog' }) // scoped region
 | `region` | `string` | no | Named region (maps to CSS selector in adapter) |
 | `threshold` | `number` | no | Pixel difference threshold (0-1) for visual comparison |
 
-### `Screenshotter` <small>from `@aver/core`</small>
+### `Screenshotter` <small>from `@averspec/core`</small>
 
 Extension interface for visual approval support. Protocols implement this.
 

@@ -9,7 +9,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@aver/core': resolve(__dirname, '../core/src/index.ts'),
+      '@averspec/core': resolve(__dirname, '../core/src/index.ts'),
     },
   },
 })

@@ -1,4 +1,4 @@
-# @aver/core
+# @averspec/core
 
 > **Status: Stable** — API surface is locked for 0.x releases.
 
@@ -9,14 +9,14 @@ Define **what** to test in domain language. Swap **how** via adapters. Same test
 ## Install
 
 ```bash
-npm install @aver/core vitest
+npm install @averspec/core vitest
 ```
 
 ## Usage
 
 ```typescript
 import { expect } from 'vitest'
-import { defineDomain, action, assertion, adapt, unit, suite } from '@aver/core'
+import { defineDomain, action, assertion, adapt, unit, suite } from '@averspec/core'
 
 const cart = defineDomain({
   name: 'cart',
@@ -54,7 +54,7 @@ See the [main README](../../README.md) for full documentation.
 
 ## Module Format Notes
 
-@aver/core ships as both ESM and CJS. If both copies load in the same Node.js process, the global domain registry will split silently — domains registered via one format will not be visible to the other. In practice this is unlikely because vitest loads everything as ESM, so only one copy is active. If you encounter unexpected "domain not found" errors in a mixed ESM/CJS environment, duplicate module instances are the most likely cause.
+@averspec/core ships as both ESM and CJS. If both copies load in the same Node.js process, the global domain registry will split silently — domains registered via one format will not be visible to the other. In practice this is unlikely because vitest loads everything as ESM, so only one copy is active. If you encounter unexpected "domain not found" errors in a mixed ESM/CJS environment, duplicate module instances are the most likely cause.
 
 ## License
 

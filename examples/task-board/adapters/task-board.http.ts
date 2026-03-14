@@ -1,6 +1,6 @@
 import { expect } from 'vitest'
-import { implement, withFixture } from '@aver/core'
-import { http } from '@aver/protocol-http'
+import { implement, withFixture } from '@averspec/core'
+import { http } from '@averspec/protocol-http'
 import { taskBoard } from '../domains/task-board.js'
 import { createServer } from '../src/server/index.js'
 import type { Server } from 'node:http'

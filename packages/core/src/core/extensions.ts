@@ -8,7 +8,7 @@ export interface Screenshotter {
  * interface to declare their own extensions:
  *
  * ```ts
- * declare module '@aver/core' {
+ * declare module '@averspec/core' {
  *   interface ProtocolExtensions {
  *     myExtension?: MyExtensionType
  *   }

@@ -58,13 +58,13 @@ Three things make this hard to test: the only output is a formatted string, the 
 Before changing anything, capture the current behavior as a safety net.
 
 ```bash
-npm install --save-dev @aver/core @aver/approvals vitest
+npm install --save-dev @averspec/core @averspec/approvals vitest
 ```
 
 ```typescript
 // tests/invoice-characterization.spec.ts
 import { test } from 'vitest'
-import { approve } from '@aver/approvals'
+import { approve } from '@averspec/approvals'
 import { calculateInvoice } from '../src/invoice.js'
 
 test('invoice with quantity discount', async () => {
@@ -119,7 +119,7 @@ Look at what the characterization tests revealed. The function accumulates line 
 
 ```typescript
 // domains/pricing.ts
-import { defineDomain, action, query, assertion } from '@aver/core'
+import { defineDomain, action, query, assertion } from '@averspec/core'
 
 export const pricing = defineDomain({
   name: 'pricing',
@@ -146,7 +146,7 @@ Tests use domain language only. No implementation details leak in:
 
 ```typescript
 // tests/pricing.spec.ts
-import { suite } from '@aver/core'
+import { suite } from '@averspec/core'
 import { pricing } from '../domains/pricing.js'
 
 const { test } = suite(pricing)
@@ -178,7 +178,7 @@ An adapter binds domain vocabulary to a real implementation. Start with the `uni
 
 ```typescript
 // adapters/pricing.unit.ts
-import { adapt, unit } from '@aver/core'
+import { adapt, unit } from '@averspec/core'
 import { expect } from 'vitest'
 import { pricing } from '../domains/pricing.js'
 
@@ -221,7 +221,7 @@ Register it:
 
 ```typescript
 // aver.config.ts
-import { defineConfig } from '@aver/core'
+import { defineConfig } from '@averspec/core'
 import { unitAdapter } from './adapters/pricing.unit.js'
 
 export default defineConfig({
@@ -292,10 +292,10 @@ Write an HTTP adapter for the same domain:
 
 ```typescript
 // adapters/pricing.http.ts
-import { adapt } from '@aver/core'
+import { adapt } from '@averspec/core'
 import { expect } from 'vitest'
 import { pricing } from '../domains/pricing.js'
-import type { Protocol } from '@aver/core'
+import type { Protocol } from '@averspec/core'
 import { app } from '../src/server.js'
 
 interface HttpContext {
@@ -363,7 +363,7 @@ Register both adapters:
 
 ```typescript
 // aver.config.ts
-import { defineConfig } from '@aver/core'
+import { defineConfig } from '@averspec/core'
 import { unitAdapter } from './adapters/pricing.unit.js'
 import { httpAdapter } from './adapters/pricing.http.js'
 

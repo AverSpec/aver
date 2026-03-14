@@ -11,7 +11,7 @@ A complete React + Express task board demonstrating Aver's multi-adapter testing
 
 ```bash
 pnpm install
-pnpm --filter @aver/core run build
+pnpm --filter @averspec/core run build
 ```
 
 ## Running the App

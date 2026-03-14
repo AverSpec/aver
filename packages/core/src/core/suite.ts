@@ -47,7 +47,7 @@ export interface SuiteReturn<D extends Domain> {
   getCoverage(): VocabularyCoverage
 }
 
-/** Internal-only extension — available from '@aver/core/internals'. */
+/** Internal-only extension — available from '@averspec/core/internals'. */
 export interface SuiteInternals {
   /** Returns what test names would be registered for a given test name. */
   getPlannedTests(name: string): PlannedTest[]

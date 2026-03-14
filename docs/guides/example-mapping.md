@@ -93,7 +93,7 @@ The story card itself does not map to a specific artifact. It is the context tha
 Take Rule 1's two examples and write them as Aver tests. The domain and adapter from the [Tutorial](../tutorial) already support these:
 
 ```typescript
-import { suite } from '@aver/core'
+import { suite } from '@averspec/core'
 import { pricing } from '../domains/pricing.js'
 
 const { test } = suite(pricing)

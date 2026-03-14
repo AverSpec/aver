@@ -1,5 +1,5 @@
-import { implement, withFixture } from '@aver/core'
-import { playwright } from '@aver/protocol-playwright'
+import { implement, withFixture } from '@averspec/core'
+import { playwright } from '@averspec/protocol-playwright'
 import { taskBoard } from '../domains/task-board.js'
 import { createServer } from '../src/server/index.js'
 import type { Server } from 'node:http'

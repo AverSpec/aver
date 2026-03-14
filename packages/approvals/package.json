@@ -1,5 +1,5 @@
 {
-  "name": "@aver/approvals",
+  "name": "@averspec/approvals",
   "version": "0.1.1",
   "description": "Approval testing for Aver",
   "type": "module",
@@ -43,7 +43,7 @@
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
-    "@aver/core": "workspace:^",
+    "@averspec/core": "workspace:^",
     "pngjs": "^7.0.0",
     "pixelmatch": "^5.3.0"
   },
@@ -59,7 +59,7 @@
     "diff": "^8.0.3"
   },
   "devDependencies": {
-    "@aver/core": "workspace:^",
+    "@averspec/core": "workspace:^",
     "pngjs": "^7.0.0",
     "pixelmatch": "^5.3.0",
     "tsup": "^8.0.0",

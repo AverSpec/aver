@@ -1,5 +1,5 @@
-import { suite } from '@aver/core'
-import { approve } from '@aver/approvals'
+import { suite } from '@averspec/core'
+import { approve } from '@averspec/approvals'
 import { taskBoard } from '../domains/task-board.js'
 
 const { test } = suite(taskBoard)

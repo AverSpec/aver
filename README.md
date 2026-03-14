@@ -1,7 +1,7 @@
 # Know your system works.
 
 [![CI](https://github.com/njackson/aver/actions/workflows/ci.yml/badge.svg)](https://github.com/njackson/aver/actions/workflows/ci.yml)
-[![npm version](https://img.shields.io/npm/v/@aver/core)](https://www.npmjs.com/package/@aver/core)
+[![npm version](https://img.shields.io/npm/v/@averspec/core)](https://www.npmjs.com/package/@averspec/core)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 **Domain-driven acceptance testing for TypeScript.**
@@ -40,7 +40,7 @@ Five domain operations support fifty tests. Vocabulary grows slowly, scenarios g
 ## Quick Start
 
 ```bash
-npm install --save-dev @aver/core vitest
+npm install --save-dev @averspec/core vitest
 npx aver init
 npx aver run
 ```
@@ -72,12 +72,12 @@ npx aver run
 
 | Package | Description |
 |---------|-------------|
-| [`@aver/core`](packages/core) | Domains, adapters, suite, CLI. Zero runtime deps. |
-| [`@aver/approvals`](packages/approvals) | Approval testing — structural diffs, visual screenshots |
-| [`@aver/telemetry`](packages/telemetry) | Dev-to-prod telemetry verification — contract extraction and conformance checking |
-| [`@aver/protocol-http`](packages/protocol-http) | HTTP protocol adapter |
-| [`@aver/protocol-playwright`](packages/protocol-playwright) | Playwright browser protocol adapter |
-| [`@aver/agent-plugin`](packages/agent-plugin) | Claude Code plugin — workflow and telemetry skills |
+| [`@averspec/core`](packages/core) | Domains, adapters, suite, CLI. Zero runtime deps. |
+| [`@averspec/approvals`](packages/approvals) | Approval testing — structural diffs, visual screenshots |
+| [`@averspec/telemetry`](packages/telemetry) | Dev-to-prod telemetry verification — contract extraction and conformance checking |
+| [`@averspec/protocol-http`](packages/protocol-http) | HTTP protocol adapter |
+| [`@averspec/protocol-playwright`](packages/protocol-playwright) | Playwright browser protocol adapter |
+| [`@averspec/agent-plugin`](packages/agent-plugin) | Claude Code plugin — workflow and telemetry skills |
 
 ## License
 

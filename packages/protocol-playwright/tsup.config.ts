@@ -4,5 +4,5 @@ import { baseConfig } from '../../tsup.preset'
 export default defineConfig({
   ...baseConfig,
   entry: { index: 'src/index.ts' },
-  external: ['playwright', '@aver/core'],
+  external: ['playwright', '@averspec/core'],
 })

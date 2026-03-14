@@ -228,12 +228,12 @@ export async function runTelemetryVerify(args: VerifyArgs): Promise<VerifyOutput
     return { lines, exitCode: 1 }
   }
 
-  let telemetry: typeof import('@aver/telemetry')
+  let telemetry: typeof import('@averspec/telemetry')
   try {
-    telemetry = await import('@aver/telemetry')
+    telemetry = await import('@averspec/telemetry')
   } catch {
-    lines.push('Error: @aver/telemetry is required for contract verification.')
-    lines.push('Install it: pnpm add -D @aver/telemetry')
+    lines.push('Error: @averspec/telemetry is required for contract verification.')
+    lines.push('Install it: pnpm add -D @averspec/telemetry')
     return { lines, exitCode: 1 }
   }
 

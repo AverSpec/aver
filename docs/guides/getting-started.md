@@ -10,7 +10,7 @@ nav_order: 1
 ## Install
 
 ```bash
-npm install --save-dev @aver/core vitest
+npm install --save-dev @averspec/core vitest
 ```
 
 Aver uses [Vitest](https://vitest.dev) as its test runner.
@@ -24,12 +24,12 @@ Your entry point depends on what you have today.
 Start by locking in what exists. Install the approvals package and capture current behavior before changing anything:
 
 ```bash
-npm install --save-dev @aver/approvals
+npm install --save-dev @averspec/approvals
 ```
 
 ```typescript
 import { test } from 'vitest'
-import { approve } from '@aver/approvals'
+import { approve } from '@averspec/approvals'
 import { processOrder } from '../src/orders.js'
 
 test('order processing output', async () => {
@@ -107,14 +107,14 @@ export default defineConfig({
 
 | When you need... | Add... |
 |:-----------------|:-------|
-| A safety net for existing code | `@aver/approvals` — approval testing |
-| API-level testing | `@aver/protocol-http` — HTTP adapter |
-| Browser testing | `@aver/protocol-playwright` — Playwright adapter |
+| A safety net for existing code | `@averspec/approvals` — approval testing |
+| API-level testing | `@averspec/protocol-http` — HTTP adapter |
+| Browser testing | `@averspec/protocol-playwright` — Playwright adapter |
 | Telemetry verification | Telemetry declarations on domain markers. See [Telemetry Tutorial](../tutorial-telemetry) |
-| AI-assisted workflow | `@aver/agent-plugin` — workflow skills + scenario pipeline. See [AI-Assisted](ai-assisted) |
+| AI-assisted workflow | `@averspec/agent-plugin` — workflow skills + scenario pipeline. See [AI-Assisted](ai-assisted) |
 | CI integration | No extra packages — `npx aver run` in your pipeline. See [CI Integration](ci-integration) |
 
-You don't need everything on day one. Start with `@aver/core` and a unit adapter. Add packages as your needs grow.
+You don't need everything on day one. Start with `@averspec/core` and a unit adapter. Add packages as your needs grow.
 
 ## Next steps
 

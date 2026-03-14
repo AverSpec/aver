@@ -1,5 +1,5 @@
-import type { Domain } from '@aver/core'
-import type { TraceEntry } from '@aver/core'
+import type { Domain } from '@averspec/core'
+import type { TraceEntry } from '@averspec/core'
 import type { BehavioralContract, ContractEntry, SpanExpectation, AttributeBinding } from './types'
 
 export interface ExtractContractInput {

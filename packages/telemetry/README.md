@@ -1,4 +1,4 @@
-# @aver/telemetry
+# @averspec/telemetry
 
 Behavioral contract export and production trace verification for Aver.
 
@@ -7,10 +7,10 @@ Verify that your system emits the right OpenTelemetry spans — not just in test
 ## Installation
 
 ```bash
-npm install @aver/telemetry @aver/core vitest
+npm install @averspec/telemetry @averspec/core vitest
 ```
 
-Requires `@aver/core` and `vitest` as peer dependencies. Node.js 22+.
+Requires `@averspec/core` and `vitest` as peer dependencies. Node.js 22+.
 
 ## Quick Start
 
@@ -19,7 +19,7 @@ Requires `@aver/core` and `vitest` as peer dependencies. Node.js 22+.
 After running tests with telemetry declarations, extract a portable behavioral contract:
 
 ```typescript
-import { extractContract } from '@aver/telemetry'
+import { extractContract } from '@averspec/telemetry'
 
 const contract = extractContract({
   domain: signupFlow,
@@ -37,8 +37,8 @@ const contract = extractContract({
 Check real OTLP traces against the contract:
 
 ```typescript
-import { verifyContract } from '@aver/telemetry'
-import type { ProductionTrace } from '@aver/telemetry'
+import { verifyContract } from '@averspec/telemetry'
+import type { ProductionTrace } from '@averspec/telemetry'
 
 const report = verifyContract(contract, productionTraces)
 
@@ -54,7 +54,7 @@ Violations detected: `missing-span`, `literal-mismatch`, `correlation-violation`
 For integration testing, spin up a local OTLP collector:
 
 ```typescript
-import { createOtlpReceiver } from '@aver/telemetry'
+import { createOtlpReceiver } from '@averspec/telemetry'
 
 const receiver = createOtlpReceiver()
 const port = await receiver.start()

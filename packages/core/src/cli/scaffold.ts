@@ -13,7 +13,7 @@ export function initProjectFiles(dir: string): void {
   mkdirSync(join(dir, 'adapters'), { recursive: true })
   mkdirSync(join(dir, 'tests'), { recursive: true })
 
-  const configContent = `import { defineConfig } from '@aver/core'
+  const configContent = `import { defineConfig } from '@averspec/core'
 
 export default defineConfig({
   adapters: [],
@@ -48,7 +48,7 @@ export function initDomainFiles(dir: string, name: string, protocol: string): vo
     throw new Error(`Domain file already exists: domains/${kebab}.ts`)
   }
 
-  writeFileSync(domainPath, `import { defineDomain, action, query, assertion } from '@aver/core'
+  writeFileSync(domainPath, `import { defineDomain, action, query, assertion } from '@averspec/core'
 
 export const ${name} = defineDomain({
   name: '${kebab}',
@@ -68,7 +68,7 @@ export const ${name} = defineDomain({
   writeFileSync(adapterPath, buildAdapterTemplate(name, kebab, protocol))
 
   const testPath = join(dir, 'tests', `${kebab}.spec.ts`)
-  writeFileSync(testPath, `import { suite } from '@aver/core'
+  writeFileSync(testPath, `import { suite } from '@averspec/core'
 import { ${name} } from '../domains/${kebab}.js'
 
 const { test } = suite(${name})
@@ -85,12 +85,12 @@ test('create and verify', async ({ act, query, assert }) => {
 
 function buildAdapterTemplate(name: string, kebab: string, protocol: string): string {
   const protocolImport = protocol === 'unit'
-    ? `import { implement, unit } from '@aver/core'`
+    ? `import { implement, unit } from '@averspec/core'`
     : protocol === 'http'
-      ? `import { implement } from '@aver/core'\nimport { http } from '@aver/protocol-http'`
+      ? `import { implement } from '@averspec/core'\nimport { http } from '@averspec/protocol-http'`
       : protocol === 'playwright'
-        ? `import { implement } from '@aver/core'\nimport { playwright } from '@aver/protocol-playwright'`
-        : `import { implement, ${protocol} } from '@aver/core'`
+        ? `import { implement } from '@averspec/core'\nimport { playwright } from '@averspec/protocol-playwright'`
+        : `import { implement, ${protocol} } from '@averspec/core'`
 
   if (protocol === 'unit') {
     return `${protocolImport}

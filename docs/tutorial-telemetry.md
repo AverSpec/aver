@@ -36,7 +36,7 @@ Start with the pricing domain from the main tutorial. Add `telemetry` to the mar
 
 ```typescript
 // domains/pricing.ts
-import { defineDomain, action, query, assertion } from '@aver/core'
+import { defineDomain, action, query, assertion } from '@averspec/core'
 
 export const pricing = defineDomain({
   name: 'pricing',
@@ -79,7 +79,7 @@ For in-process testing, use the OTel SDK's `InMemorySpanExporter`:
 
 ```typescript
 // adapters/pricing.unit.ts
-import { adapt, unit } from '@aver/core'
+import { adapt, unit } from '@averspec/core'
 import { expect } from 'vitest'
 import { pricing } from '../domains/pricing.js'
 import {
@@ -87,7 +87,7 @@ import {
   BasicTracerProvider,
   SimpleSpanProcessor,
 } from '@opentelemetry/sdk-trace-base'
-import type { Protocol, TelemetryCollector, CollectedSpan } from '@aver/core'
+import type { Protocol, TelemetryCollector, CollectedSpan } from '@averspec/core'
 
 // --- OTel collector wiring ---
 
@@ -178,7 +178,7 @@ The tests from the main tutorial still work:
 
 ```typescript
 // tests/pricing.spec.ts
-import { suite } from '@aver/core'
+import { suite } from '@averspec/core'
 import { pricing } from '../domains/pricing.js'
 
 const { test } = suite(pricing)

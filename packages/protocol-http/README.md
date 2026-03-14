@@ -1,4 +1,4 @@
-# @aver/protocol-http
+# @averspec/protocol-http
 
 > **Status: Stable** — API surface is locked for 0.x releases.
 
@@ -7,14 +7,14 @@ HTTP protocol for [Aver](../../README.md) acceptance testing. Provides a fetch-b
 ## Install
 
 ```bash
-npm install @aver/protocol-http
+npm install @averspec/protocol-http
 ```
 
 ## Usage
 
 ```typescript
-import { adapt } from '@aver/core'
-import { http } from '@aver/protocol-http'
+import { adapt } from '@averspec/core'
+import { http } from '@averspec/protocol-http'
 import { cart } from './domains/cart'
 
 export const httpAdapter = adapt(cart, {

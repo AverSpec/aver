@@ -3,7 +3,7 @@ import { mkdtempSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { approve } from '../../src/approve'
-import { runWithTestContext } from '@aver/core'
+import { runWithTestContext } from '@averspec/core'
 
 describe('approve() reads testPath from RunningTestContext', () => {
   let workDir: string

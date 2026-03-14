@@ -6,12 +6,12 @@ export default defineConfig([
     ...baseConfig,
     entry: { index: 'src/index.ts' },
     format: ['esm'],
-    external: ['@aver/core'],
+    external: ['@averspec/core'],
   },
   {
     ...baseConfig,
     entry: { vitest: 'src/vitest-plugin.ts' },
     format: ['esm'],
-    external: ['@aver/core', '@aver/core/internals', 'vitest'],
+    external: ['@averspec/core', '@averspec/core/internals', 'vitest'],
   },
 ])

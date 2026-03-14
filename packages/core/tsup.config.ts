@@ -23,6 +23,6 @@ export default defineConfig([
     dts: false,
     splitting: true,
     shims: true,
-    external: ['vitest', '@aver/telemetry'],
+    external: ['vitest', '@averspec/telemetry'],
   },
 ])

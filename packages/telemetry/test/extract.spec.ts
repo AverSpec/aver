@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
-import { defineDomain, action, query, assertion } from '@aver/core'
-import type { TraceEntry } from '@aver/core'
+import { defineDomain, action, query, assertion } from '@averspec/core'
+import type { TraceEntry } from '@averspec/core'
 import { extractContract } from '../src/extract'
 
 // -- Test domain with mixed telemetry declarations --

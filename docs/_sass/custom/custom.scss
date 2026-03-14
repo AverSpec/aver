@@ -1,0 +1,17 @@
+// Aver branding — minimal overrides, keep default theme feel
+
+// Primary buttons only
+.btn-primary {
+  background-color: #059669 !important;
+  border-color: #059669 !important;
+
+  &:hover {
+    background-color: #047857 !important;
+    border-color: #047857 !important;
+  }
+}
+
+// Links
+a:hover {
+  color: #047857;
+}

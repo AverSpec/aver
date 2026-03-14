@@ -3,6 +3,8 @@ description: Domain-driven acceptance testing for TypeScript
 theme: just-the-docs
 remote_theme: just-the-docs/just-the-docs
 
+color_scheme: aver
+
 url: ""
 baseurl: ""
 
@@ -13,6 +15,6 @@ exclude:
 nav_order_base: 1
 
 aux_links:
-  GitHub: https://github.com/njackson/aver
+  GitHub: https://github.com/njackson-projects/aver
 
 footer_content: "MIT License &copy; 2026 Nate Jackson"

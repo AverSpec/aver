@@ -17,7 +17,7 @@ You need a domain and at least two adapters. This guide uses a task board exampl
 
 ```typescript
 // domains/task-board.ts
-import { defineDomain, action, query, assertion } from '@aver/core'
+import { defineDomain, action, query, assertion } from '@averspec/core'
 
 export const taskBoard = defineDomain({
   name: 'task-board',
@@ -38,7 +38,7 @@ Tests against in-memory objects. Runs in ~1ms.
 
 ```typescript
 // adapters/task-board.unit.ts
-import { adapt, unit } from '@aver/core'
+import { adapt, unit } from '@averspec/core'
 import { expect } from 'vitest'
 import { Board } from '../src/board'
 import { taskBoard } from '../domains/task-board'
@@ -65,9 +65,9 @@ Tests against a REST API. Runs in ~10ms.
 
 ```typescript
 // adapters/task-board.http.ts
-import { adapt } from '@aver/core'
+import { adapt } from '@averspec/core'
 import { expect } from 'vitest'
-import { http } from '@aver/protocol-http'
+import { http } from '@averspec/protocol-http'
 import { taskBoard } from '../domains/task-board'
 
 export const httpAdapter = adapt(taskBoard, {
@@ -97,9 +97,9 @@ Tests against a browser UI. Runs in ~300ms.
 
 ```typescript
 // adapters/task-board.playwright.ts
-import { adapt } from '@aver/core'
+import { adapt } from '@averspec/core'
 import { expect } from '@playwright/test'
-import { playwright } from '@aver/protocol-playwright'
+import { playwright } from '@averspec/protocol-playwright'
 import { taskBoard } from '../domains/task-board'
 
 export const playwrightAdapter = adapt(taskBoard, {
@@ -129,7 +129,7 @@ export const playwrightAdapter = adapt(taskBoard, {
 
 ```typescript
 // aver.config.ts
-import { defineConfig } from '@aver/core'
+import { defineConfig } from '@averspec/core'
 import { unitAdapter } from './adapters/task-board.unit'
 import { httpAdapter } from './adapters/task-board.http'
 import { playwrightAdapter } from './adapters/task-board.playwright'
@@ -156,7 +156,7 @@ export default defineConfig({
 
 ```typescript
 // tests/task-board.spec.ts
-import { suite } from '@aver/core'
+import { suite } from '@averspec/core'
 import { taskBoard } from '../domains/task-board'
 
 const { test } = suite(taskBoard)

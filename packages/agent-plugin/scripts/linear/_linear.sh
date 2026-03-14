@@ -23,7 +23,7 @@ require_env() {
     echo "Error: LINEAR_API_KEY is not set." >&2
     echo "" >&2
     echo "To configure, run:" >&2
-    echo "  npx @aver/agent-plugin setup" >&2
+    echo "  npx @averspec/agent-plugin setup" >&2
     echo "" >&2
     echo "Or manually create $CONFIG_DIR/.env with:" >&2
     echo "  LINEAR_API_KEY=lin_api_..." >&2

@@ -1,5 +1,5 @@
 {
-  "name": "@aver/telemetry",
+  "name": "@averspec/telemetry",
   "version": "0.1.1",
   "description": "Behavioral contract export and production trace verification for Aver",
   "type": "module",
@@ -52,11 +52,11 @@
     "prepublishOnly": "pnpm run build"
   },
   "peerDependencies": {
-    "@aver/core": "workspace:^",
+    "@averspec/core": "workspace:^",
     "vitest": ">=2.0.0"
   },
   "devDependencies": {
-    "@aver/core": "workspace:^",
+    "@averspec/core": "workspace:^",
     "@opentelemetry/api": "^1.9.0",
     "@opentelemetry/exporter-trace-otlp-http": "^0.213.0",
     "@opentelemetry/sdk-trace-base": "^2.6.0",

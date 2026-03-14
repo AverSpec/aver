@@ -46,7 +46,7 @@ The `--reporter=default` keeps console output alongside the XML report.
 
 ## Playwright in CI
 
-If your adapters use `@aver/protocol-playwright`, install browsers:
+If your adapters use `@averspec/protocol-playwright`, install browsers:
 
 ```yaml
       - run: npx playwright install --with-deps chromium
@@ -89,7 +89,7 @@ If your adapters import from built packages (common in monorepos), build first:
 
 ```yaml
       - name: Build
-        run: pnpm --filter @aver/core run build
+        run: pnpm --filter @averspec/core run build
 
       - name: Test
         run: npx aver run

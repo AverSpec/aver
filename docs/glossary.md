@@ -20,13 +20,13 @@ A domain operation that changes state. Actions perform side effects, take option
 A concrete implementation of a domain's vocabulary for a specific protocol. One adapter per interaction mode (unit, HTTP, Playwright, etc.). Created via `implement()`, adapters bind domain operations to real handlers within a protocol context.
 
 **Approval**
-Snapshot-based verification that compares current output to an approved baseline. The `approve()` function captures behavior and stores it for comparison in future runs. Provided by `@aver/approvals`.
+Snapshot-based verification that compares current output to an approved baseline. The `approve()` function captures behavior and stores it for comparison in future runs. Provided by `@averspec/approvals`.
 
 **Assertion**
 A domain operation that verifies an expected outcome. Assertions check conditions, take optional typed parameters, return void, and express intent in domain language. Declared with the `assertion()` marker.
 
 **Contract**
-Extracted behavioral expectations from test telemetry used to verify production traces conform to the same expected patterns. Contracts are extracted via `@aver/telemetry` for dev-to-prod verification.
+Extracted behavioral expectations from test telemetry used to verify production traces conform to the same expected patterns. Contracts are extracted via `@averspec/telemetry` for dev-to-prod verification.
 
 **Domain**
 The vocabulary of a bounded context — what a system does, expressed in business language without implementation details. Domains declare actions, queries, and assertions that describe system behavior. Created with `defineDomain()`.

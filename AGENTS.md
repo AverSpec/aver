@@ -15,7 +15,7 @@ After completing backlog items or bug fixes, always commit separately per item, 
 ## Build
 
 ```
-pnpm --filter @aver/core run build
+pnpm --filter @averspec/core run build
 ```
 
 CLI entry: `node packages/core/dist/cli.js` (ESM)
@@ -37,13 +37,13 @@ Expected failures: 7 Playwright tests (need browser).
 
 ## Architecture
 
-- `@aver/core` — domain-driven acceptance testing framework
-- `@aver/approvals` — approval testing (structural diffs, visual screenshots)
-- `@aver/telemetry` — dev-to-prod telemetry verification
-- `@aver/protocol-http` — HTTP protocol adapter
-- `@aver/protocol-playwright` — Playwright browser protocol adapter
-- `@aver/agent-plugin` — Claude Code plugin (workflow skills + GitHub Issues scripts)
-- `@aver/agent` — moved to [aver-experimental](https://github.com/njackson/aver-experimental)
+- `@averspec/core` — domain-driven acceptance testing framework
+- `@averspec/approvals` — approval testing (structural diffs, visual screenshots)
+- `@averspec/telemetry` — dev-to-prod telemetry verification
+- `@averspec/protocol-http` — HTTP protocol adapter
+- `@averspec/protocol-playwright` — Playwright browser protocol adapter
+- `@averspec/agent-plugin` — Claude Code plugin (workflow skills + GitHub Issues scripts)
+- `@averspec/agent` — moved to [aver-experimental](https://github.com/njackson/aver-experimental)
 
 ## Package Manager
 

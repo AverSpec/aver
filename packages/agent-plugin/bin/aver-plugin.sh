@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# CLI entry point for @aver/agent-plugin.
+# CLI entry point for @averspec/agent-plugin.
 # Usage: aver-plugin setup [linear|gh]
 
 PACKAGE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

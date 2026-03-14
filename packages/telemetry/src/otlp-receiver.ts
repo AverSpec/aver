@@ -1,5 +1,5 @@
 import { createServer, type Server, type IncomingMessage, type ServerResponse } from 'node:http'
-import type { CollectedSpan, TelemetryCollector } from '@aver/core'
+import type { CollectedSpan, TelemetryCollector } from '@averspec/core'
 import { parseAttributes, normalizeParentSpanId } from './otlp-parse'
 
 export interface OtlpReceiver extends TelemetryCollector {

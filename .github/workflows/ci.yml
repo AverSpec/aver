@@ -22,12 +22,12 @@ jobs:
 
       - name: Build packages
         run: |
-          pnpm --filter @aver/core run build
-          pnpm --filter @aver/telemetry run build
-          pnpm --filter @aver/approvals run build
-          pnpm --filter @aver/protocol-http run build
-          pnpm --filter @aver/protocol-playwright run build
-          pnpm --filter @aver/example-task-board run build
+          pnpm --filter @averspec/core run build
+          pnpm --filter @averspec/telemetry run build
+          pnpm --filter @averspec/approvals run build
+          pnpm --filter @averspec/protocol-http run build
+          pnpm --filter @averspec/protocol-playwright run build
+          pnpm --filter @averspec/example-task-board run build
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4

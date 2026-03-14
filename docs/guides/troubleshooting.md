@@ -51,7 +51,7 @@ If baselines aren't being written at all, check that the `__approvals__/` direct
 
 You don't need to restructure your entire test suite at once.
 
-**Week 1 — Safety net.** Add `@aver/approvals` alongside your existing tests and call `approve()` on the outputs of your highest-risk functions. Commit the baselines. You now have a regression net with no domain model required.
+**Week 1 — Safety net.** Add `@averspec/approvals` alongside your existing tests and call `approve()` on the outputs of your highest-risk functions. Commit the baselines. You now have a regression net with no domain model required.
 
 **Week 2 — One domain.** Pick one bounded area — a single feature or service — and extract a domain with two or three operations. Write a unit adapter. Move the tests for that area to use `suite()`. Leave everything else alone.
 

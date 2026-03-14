@@ -77,7 +77,7 @@ These blocks are the pipeline's teeth. Without them, stages become suggestions. 
 
 ### With GitHub Issues scripts
 
-The `@aver/agent-plugin` package includes shell scripts that manage scenarios as GitHub Issues through the pipeline:
+The `@averspec/agent-plugin` package includes shell scripts that manage scenarios as GitHub Issues through the pipeline:
 
 ```bash
 # Capture a new scenario

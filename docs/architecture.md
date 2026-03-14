@@ -78,8 +78,8 @@ You can write custom protocols for any interaction mode — WebSocket, gRPC, CLI
 `withFixture(protocol, { before?, after? })` wraps a protocol with setup/teardown hooks — useful when an adapter needs external infrastructure (a database, a server process) that sits outside the protocol's own context:
 
 ```typescript
-import { withFixture } from '@aver/core'
-import { http } from '@aver/protocol-http'
+import { withFixture } from '@averspec/core'
+import { http } from '@averspec/protocol-http'
 
 const httpWithServer = withFixture(http({ baseUrl: 'http://localhost:3000' }), {
   before: () => startServer(),
@@ -164,7 +164,7 @@ Two verification layers run automatically:
 1. **Per-step**: After each operation, verify a matching span exists with the expected name and attributes
 2. **End-of-test correlation**: After all steps, verify that correlated steps (shared attribute key + value) are causally connected — same traceId or span links
 
-This catches instrumentation bugs that behavioral tests miss: the API returns the right data, but the spans are missing, misnamed, or disconnected. The `@aver/telemetry` package extends this to production — extract a behavioral contract from passing tests, then verify that production traces conform to the same contract. See the [telemetry guide](guides/telemetry) for details.
+This catches instrumentation bugs that behavioral tests miss: the API returns the right data, but the spans are missing, misnamed, or disconnected. The `@averspec/telemetry` package extends this to production — extract a behavioral contract from passing tests, then verify that production traces conform to the same contract. See the [telemetry guide](guides/telemetry) for details.
 
 ## Design principles
 
@@ -194,4 +194,4 @@ The cost model determines when Aver earns its keep.
 
 This works with Claude Code, Cursor, Cline, Aider, or any agent that can run tests. The domain vocabulary defines correctness; `aver run` verifies it.
 
-Aver also ships an `@aver/agent-plugin` for Claude Code that provides workflow skills for scenario management, telemetry design, and OTel context propagation, plus bash scripts for issue tracking via GitHub Issues or Linear.
+Aver also ships an `@averspec/agent-plugin` for Claude Code that provides workflow skills for scenario management, telemetry design, and OTel context propagation, plus bash scripts for issue tracking via GitHub Issues or Linear.

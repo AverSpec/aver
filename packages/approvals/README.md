@@ -1,4 +1,4 @@
-# @aver/approvals
+# @averspec/approvals
 
 > **Status: Stable** — API surface is locked for 0.x releases.
 
@@ -7,10 +7,10 @@ Approval testing for [Aver](../../README.md) — structural diffs and visual reg
 ## Install
 
 ```bash
-npm install @aver/approvals
+npm install @averspec/approvals
 ```
 
-Requires `@aver/core` as a peer dependency.
+Requires `@averspec/core` as a peer dependency.
 
 ## Usage
 
@@ -19,7 +19,7 @@ Requires `@aver/core` as a peer dependency.
 Use `approve(value)` to compare text or JSON output against a saved baseline. On first run, set `AVER_APPROVE=1` to create the baseline file.
 
 ```typescript
-import { approve } from '@aver/approvals'
+import { approve } from '@averspec/approvals'
 
 // In an assertion handler:
 async function cartMatchesApproval(ctx) {
@@ -32,10 +32,10 @@ Objects are serialized as JSON; strings are compared as plain text. When the rec
 
 ### Visual Approvals
 
-Use `approve.visual('name')` for screenshot-based pixel comparison. This requires a protocol with screenshotter support (e.g., `@aver/protocol-playwright`).
+Use `approve.visual('name')` for screenshot-based pixel comparison. This requires a protocol with screenshotter support (e.g., `@averspec/protocol-playwright`).
 
 ```typescript
-import { approve } from '@aver/approvals'
+import { approve } from '@averspec/approvals'
 
 // In an assertion handler (with a visual protocol):
 async function pageMatchesBaseline(ctx) {

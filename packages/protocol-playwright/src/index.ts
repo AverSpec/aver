@@ -1,11 +1,11 @@
-import type { Protocol, TestCompletion, TraceAttachment, Screenshotter } from '@aver/core'
+import type { Protocol, TestCompletion, TraceAttachment, Screenshotter } from '@averspec/core'
 
-declare module '@aver/core' {
+declare module '@averspec/core' {
   interface ProtocolExtensions {
     screenshotter?: Screenshotter
   }
 }
-import { getTestContext } from '@aver/core'
+import { getTestContext } from '@averspec/core'
 import type { Browser, Page } from 'playwright'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'

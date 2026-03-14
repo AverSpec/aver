@@ -21,7 +21,7 @@ You'll build a task board tested at two levels:
 ```bash
 mkdir task-board && cd task-board
 npm init -y
-npm install --save-dev @aver/core vitest typescript
+npm install --save-dev @averspec/core vitest typescript
 ```
 
 Create `tsconfig.json`:
@@ -60,7 +60,7 @@ Before writing any implementation, name the behaviors. A task board lets you cre
 
 ```typescript
 // domains/task-board.ts
-import { defineDomain, action, assertion } from '@aver/core'
+import { defineDomain, action, assertion } from '@averspec/core'
 
 export const taskBoard = defineDomain({
   name: 'task-board',
@@ -88,7 +88,7 @@ Tests use domain language only. They don't know whether the task board is an in-
 
 ```typescript
 // tests/task-board.spec.ts
-import { suite } from '@aver/core'
+import { suite } from '@averspec/core'
 import { taskBoard } from '../domains/task-board.js'
 
 const { test } = suite(taskBoard)
@@ -127,7 +127,7 @@ An adapter binds domain vocabulary to a real implementation. Start with the `uni
 
 ```typescript
 // adapters/task-board.unit.ts
-import { adapt, unit } from '@aver/core'
+import { adapt, unit } from '@averspec/core'
 import { expect } from 'vitest'
 import { taskBoard } from '../domains/task-board.js'
 
@@ -170,7 +170,7 @@ Register the adapter:
 
 ```typescript
 // aver.config.ts
-import { defineConfig } from '@aver/core'
+import { defineConfig } from '@averspec/core'
 import { unitAdapter } from './adapters/task-board.unit.js'
 
 export default defineConfig({
@@ -257,11 +257,11 @@ Write an HTTP adapter for the same domain:
 
 ```typescript
 // adapters/task-board.http.ts
-import { adapt } from '@aver/core'
+import { adapt } from '@averspec/core'
 import { expect } from 'vitest'
 import { taskBoard } from '../domains/task-board.js'
 import { createApp } from '../src/server.js'
-import type { Protocol } from '@aver/core'
+import type { Protocol } from '@averspec/core'
 
 interface HttpContext {
   baseUrl: string
@@ -320,7 +320,7 @@ Register both adapters:
 
 ```typescript
 // aver.config.ts
-import { defineConfig } from '@aver/core'
+import { defineConfig } from '@averspec/core'
 import { unitAdapter } from './adapters/task-board.unit.js'
 import { httpAdapter } from './adapters/task-board.http.js'
 

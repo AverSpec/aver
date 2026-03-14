@@ -1,4 +1,4 @@
-# @aver/agent-plugin
+# @averspec/agent-plugin
 
 > **Status: Experimental** — API may change between minor versions.
 
@@ -44,7 +44,7 @@ packages/agent-plugin/scripts/gh/setup-labels.sh
 Run the interactive setup:
 
 ```bash
-npx @aver/agent-plugin setup
+npx @averspec/agent-plugin setup
 ```
 
 This will:

@@ -1,4 +1,4 @@
-# @aver/protocol-playwright
+# @averspec/protocol-playwright
 
 > **Status: Stable** — API surface is locked for 0.x releases.
 
@@ -7,15 +7,15 @@ Playwright browser protocol for [Aver](../../README.md) acceptance testing. Mana
 ## Install
 
 ```bash
-npm install @aver/protocol-playwright playwright
+npm install @averspec/protocol-playwright playwright
 npx playwright install chromium
 ```
 
 ## Usage
 
 ```typescript
-import { adapt } from '@aver/core'
-import { playwright } from '@aver/protocol-playwright'
+import { adapt } from '@averspec/core'
+import { playwright } from '@averspec/protocol-playwright'
 import { cart } from './domains/cart'
 
 export const playwrightAdapter = adapt(cart, {
@@ -54,10 +54,10 @@ playwright({
 
 ### Visual Approval Testing
 
-The Playwright protocol provides a `screenshotter` extension for visual approval testing via `@aver/approvals`. Use `approve.visual()` in your tests to capture and compare screenshots:
+The Playwright protocol provides a `screenshotter` extension for visual approval testing via `@averspec/approvals`. Use `approve.visual()` in your tests to capture and compare screenshots:
 
 ```typescript
-import { approve } from '@aver/approvals'
+import { approve } from '@averspec/approvals'
 
 await approve.visual('board-state')                          // full page
 await approve.visual({ name: 'backlog', region: 'backlog' }) // scoped region

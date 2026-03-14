@@ -7,7 +7,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@aver/approvals': resolve(__dirname, '../approvals/src/index.ts'),
+      '@averspec/approvals': resolve(__dirname, '../approvals/src/index.ts'),
     },
   },
 })

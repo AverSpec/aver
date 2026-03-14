@@ -1,4 +1,4 @@
-import type { Protocol } from '@aver/core'
+import type { Protocol } from '@averspec/core'
 
 export interface HttpContext {
   get(path: string): Promise<Response>

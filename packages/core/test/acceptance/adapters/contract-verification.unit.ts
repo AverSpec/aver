@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { expect } from 'vitest'
 import { implement } from '../../../src/index'
 import type { Protocol } from '../../../src/index'
-import { slugify } from '@aver/telemetry'
+import { slugify } from '@averspec/telemetry'
 import { runTelemetryVerify } from '../../../src/cli/telemetry'
 import { contractVerification } from '../domains/contract-verification.js'
 

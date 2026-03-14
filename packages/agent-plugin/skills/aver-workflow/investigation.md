@@ -38,7 +38,7 @@ A seam is where you can observe or intercept behavior without modifying source.
 Approval tests capture what the system actually does, not what it should do. They are evidence, not specification.
 
 **Structural approvals** — for data outputs (API responses, computed values):
-Use `approve(value)` from `@aver/approvals`. First run captures the baseline. Subsequent runs compare.
+Use `approve(value)` from `@averspec/approvals`. First run captures the baseline. Subsequent runs compare.
 
 **Visual approvals** — for rendered UI:
 Use `approve.visual('name')`. Requires a `screenshotter` extension from the protocol.

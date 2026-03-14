@@ -43,7 +43,7 @@ Cucumber got the big things right: tests should speak domain language, and the v
 This is where Aver starts. A domain definition in Aver is simultaneously a specification and a test contract:
 
 ```typescript
-import { defineDomain, action, query, assertion } from '@aver/core'
+import { defineDomain, action, query, assertion } from '@averspec/core'
 
 export const taskBoard = defineDomain({
   name: 'task-board',
@@ -158,7 +158,7 @@ This is the synthesis: Cucumber's vocabulary insight, implemented with types ins
 
 There's a companion pattern that teams rebuild just as frequently: approval testing. Compare output against an approved baseline, fail on differences, make approval an explicit human decision. You've seen the variations — visual regression tools that screenshot every page, snapshot testing libraries that serialize component trees, golden-file scripts that diff CLI output, custom diff reporters bolted onto CI. Each project reinvents baseline management, the diff display, the approve/reject workflow, and the storage conventions for approved artifacts.
 
-Aver's `@aver/approvals` package provides `approve()` for structural comparison (text, JSON) and `approve.visual()` for screenshot comparison. The interesting part is how approval integrates with the domain layer.
+Aver's `@averspec/approvals` package provides `approve()` for structural comparison (text, JSON) and `approve.visual()` for screenshot comparison. The interesting part is how approval integrates with the domain layer.
 
 A visual approval test in Aver looks like this:
 
@@ -244,7 +244,7 @@ Aver earns its keep when the test suite is large enough to feel the pain of dupl
 ## Try It
 
 ```bash
-npm install @aver/core
+npm install @averspec/core
 npx aver init
 ```
 

@@ -104,7 +104,7 @@ With a single adapter, Aver's overhead matches well-structured page objects — 
 ## Quick start
 
 ```bash
-npm install --save-dev @aver/core vitest
+npm install --save-dev @averspec/core vitest
 npx aver init
 npx aver run
 ```
@@ -117,9 +117,9 @@ Or follow a tutorial: [legacy code](tutorial), [greenfield](tutorial-greenfield)
 
 | Package | Description |
 |:--------|:------------|
-| [`@aver/core`](https://github.com/njackson/aver/tree/main/packages/core) | Domains, adapters, suite, CLI. Zero runtime dependencies. |
-| [`@aver/approvals`](https://github.com/njackson/aver/tree/main/packages/approvals) | Approval testing — structural diffs and visual screenshots |
-| [`@aver/telemetry`](https://github.com/njackson/aver/tree/main/packages/telemetry) | Dev-to-prod telemetry verification — contract extraction and conformance checking |
-| [`@aver/protocol-http`](https://github.com/njackson/aver/tree/main/packages/protocol-http) | HTTP protocol adapter (fetch-based) |
-| [`@aver/protocol-playwright`](https://github.com/njackson/aver/tree/main/packages/protocol-playwright) | Playwright browser protocol adapter |
-| [`@aver/agent-plugin`](https://github.com/njackson/aver/tree/main/packages/agent-plugin) | Claude Code plugin — workflow and telemetry skills |
+| [`@averspec/core`](https://github.com/njackson/aver/tree/main/packages/core) | Domains, adapters, suite, CLI. Zero runtime dependencies. |
+| [`@averspec/approvals`](https://github.com/njackson/aver/tree/main/packages/approvals) | Approval testing — structural diffs and visual screenshots |
+| [`@averspec/telemetry`](https://github.com/njackson/aver/tree/main/packages/telemetry) | Dev-to-prod telemetry verification — contract extraction and conformance checking |
+| [`@averspec/protocol-http`](https://github.com/njackson/aver/tree/main/packages/protocol-http) | HTTP protocol adapter (fetch-based) |
+| [`@averspec/protocol-playwright`](https://github.com/njackson/aver/tree/main/packages/protocol-playwright) | Playwright browser protocol adapter |
+| [`@averspec/agent-plugin`](https://github.com/njackson/aver/tree/main/packages/agent-plugin) | Claude Code plugin — workflow and telemetry skills |

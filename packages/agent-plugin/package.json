@@ -1,5 +1,5 @@
 {
-  "name": "@aver/agent-plugin",
+  "name": "@averspec/agent-plugin",
   "version": "0.1.1",
   "description": "Agent plugin for Aver — workflow skills + GitHub Issues scripts",
   "license": "MIT",

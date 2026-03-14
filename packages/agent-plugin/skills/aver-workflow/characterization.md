@@ -22,7 +22,7 @@ Focus on behavior the scenario describes. Don't characterize the entire module â
 
 ## Approval Tests as Starting Point
 
-Use `approve(value)` from `@aver/approvals` to capture complex outputs. Approval tests:
+Use `approve(value)` from `@averspec/approvals` to capture complex outputs. Approval tests:
 - Lock the full output (golden master pattern)
 - Are brittle but comprehensive â€” good for characterization
 - Graduate to named domain assertions as scenarios advance through mapping and specification

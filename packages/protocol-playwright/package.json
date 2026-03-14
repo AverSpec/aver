@@ -1,5 +1,5 @@
 {
-  "name": "@aver/protocol-playwright",
+  "name": "@averspec/protocol-playwright",
   "version": "0.1.1",
   "description": "Playwright protocol for Aver acceptance testing",
   "type": "module",
@@ -40,13 +40,13 @@
   },
   "peerDependencies": {
     "playwright": "^1.40.0",
-    "@aver/core": "workspace:^"
+    "@averspec/core": "workspace:^"
   },
   "devDependencies": {
     "tsup": "^8.0.0",
     "typescript": "^5.7.0",
     "vitest": "^3.0.0",
     "playwright": "^1.48.0",
-    "@aver/core": "workspace:^"
+    "@averspec/core": "workspace:^"
   }
 }

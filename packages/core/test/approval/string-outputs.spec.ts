@@ -8,7 +8,7 @@
  */
 import { describe, test } from 'vitest'
 import { fileURLToPath } from 'node:url'
-import { approve } from '@aver/approvals'
+import { approve } from '@averspec/approvals'
 import { formatTrace } from '../../src/core/trace-format'
 import { generateJUnitXml } from '../../src/reporter/junit'
 import { buildMissingAdapterError } from '../../src/core/test-registration'

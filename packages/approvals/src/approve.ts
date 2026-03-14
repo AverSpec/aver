@@ -4,7 +4,7 @@ import { resolveSerializer, type SerializerName } from './serializers'
 import { resolveApprovalPaths } from './paths'
 import { captureVisual, diffImages } from './artifacts'
 import { getTestContext } from '@aver/core'
-import type { TraceAttachment } from '@aver/core'
+import type { TraceAttachment, TraceEntry } from '@aver/core'
 import type { ApproveOptions, VisualApproveOptions } from './types'
 
 export async function approve(value: unknown, options: ApproveOptions = {}): Promise<void> {
@@ -199,7 +199,7 @@ function deleteIfExists(filePath: string): void {
 }
 
 function pushTrace(
-  trace: any[] | undefined,
+  trace: TraceEntry[] | undefined,
   attachments: TraceAttachment[],
   status: 'pass' | 'fail',
 ): void {

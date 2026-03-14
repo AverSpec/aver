@@ -6,10 +6,25 @@ export type { Task }
 export const taskBoard = defineDomain({
   name: 'task-board',
   actions: {
-    createTask: action<{ title: string; status?: string }>(),
+    createTask: action<{ title: string; status?: string }>({
+      telemetry: (p) => ({
+        span: 'task.create',
+        attributes: { 'task.title': p.title },
+      }),
+    }),
     deleteTask: action<{ title: string }>(),
-    moveTask: action<{ title: string; status: string }>(),
-    assignTask: action<{ title: string; assignee: string }>(),
+    moveTask: action<{ title: string; status: string }>({
+      telemetry: (p) => ({
+        span: 'task.move',
+        attributes: { 'task.title': p.title },
+      }),
+    }),
+    assignTask: action<{ title: string; assignee: string }>({
+      telemetry: (p) => ({
+        span: 'task.assign',
+        attributes: { 'task.title': p.title },
+      }),
+    }),
   },
   queries: {
     tasksByStatus: query<{ status: string }, Task[]>(),

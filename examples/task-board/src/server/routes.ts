@@ -1,5 +1,7 @@
 import { Router } from 'express'
 import { Board } from './board.js'
+import { tracer } from './tracing.js'
+import { enqueueNotification } from './notifications.js'
 
 export function createRouter(board: Board): Router {
   const router = Router()
@@ -16,7 +18,14 @@ export function createRouter(board: Board): Router {
     try {
       let task
       if (status !== undefined) task = board.move(title, status)
-      if (assignee !== undefined) task = board.assign(title, assignee)
+      if (assignee !== undefined) {
+        tracer.startActiveSpan('task.assign', (span) => {
+          span.setAttribute('task.title', title)
+          task = board.assign(title, assignee)
+          enqueueNotification(title, assignee)
+          span.end()
+        })
+      }
       res.json(task)
     } catch (e: any) {
       res.status(404).json({ error: e.message })

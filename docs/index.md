@@ -12,8 +12,18 @@ Know your system works.
 Domain-driven acceptance testing for TypeScript.
 {: .fs-5 .fw-300 }
 
-[Tutorial](tutorial){: .btn .btn-primary .fs-5 .mb-4 .mb-md-0 .mr-2 }
-[GitHub](https://github.com/njackson/aver){: .btn .fs-5 .mb-4 .mb-md-0 }
+[Get Started](guides/getting-started){: .btn .btn-primary .fs-5 .mb-4 .mb-md-0 .mr-2 }
+[Tutorial](tutorial){: .btn .btn-secondary .fs-5 .mb-4 .mb-md-0 .mr-2 }
+[GitHub](https://github.com/njackson-projects/aver){: .btn .fs-5 .mb-4 .mb-md-0 }
+
+---
+
+## Features at a glance
+
+- **Multi-adapter testing** — Same test, unit/HTTP/browser
+- **Approval testing** — Lock in behavior with snapshots and scrubbers
+- **Telemetry verification** — Prove your observability works
+- **Zero runtime dependencies** — Core has no deps
 
 ---
 
@@ -104,7 +114,7 @@ With a single adapter, Aver's overhead matches well-structured page objects — 
 ## Quick start
 
 ```bash
-npm install --save-dev @aver/core vitest
+npm install --save-dev @averspec/core vitest
 npx aver init
 npx aver run
 ```
@@ -117,9 +127,9 @@ Or follow a tutorial: [legacy code](tutorial), [greenfield](tutorial-greenfield)
 
 | Package | Description |
 |:--------|:------------|
-| [`@aver/core`](https://github.com/njackson/aver/tree/main/packages/core) | Domains, adapters, suite, CLI. Zero runtime dependencies. |
-| [`@aver/approvals`](https://github.com/njackson/aver/tree/main/packages/approvals) | Approval testing — structural diffs and visual screenshots |
-| [`@aver/telemetry`](https://github.com/njackson/aver/tree/main/packages/telemetry) | Dev-to-prod telemetry verification — contract extraction and conformance checking |
-| [`@aver/protocol-http`](https://github.com/njackson/aver/tree/main/packages/protocol-http) | HTTP protocol adapter (fetch-based) |
-| [`@aver/protocol-playwright`](https://github.com/njackson/aver/tree/main/packages/protocol-playwright) | Playwright browser protocol adapter |
-| [`@aver/agent-plugin`](https://github.com/njackson/aver/tree/main/packages/agent-plugin) | Claude Code plugin — workflow and telemetry skills |
+| [`@averspec/core`](https://github.com/njackson-projects/aver/tree/main/packages/core) | Domains, adapters, suite, CLI. Zero runtime dependencies. |
+| [`@averspec/approvals`](https://github.com/njackson-projects/aver/tree/main/packages/approvals) | Approval testing — structural diffs and visual screenshots |
+| [`@averspec/telemetry`](https://github.com/njackson-projects/aver/tree/main/packages/telemetry) | Dev-to-prod telemetry verification — contract extraction and conformance checking |
+| [`@averspec/protocol-http`](https://github.com/njackson-projects/aver/tree/main/packages/protocol-http) | HTTP protocol adapter (fetch-based) |
+| [`@averspec/protocol-playwright`](https://github.com/njackson-projects/aver/tree/main/packages/protocol-playwright) | Playwright browser protocol adapter |
+| [`@averspec/agent-plugin`](https://github.com/njackson-projects/aver/tree/main/packages/agent-plugin) | Claude Code plugin — workflow and telemetry skills |

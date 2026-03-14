@@ -7,10 +7,10 @@ Verify that your system emits the right OpenTelemetry spans — not just in test
 ## Installation
 
 ```bash
-npm install @aver/telemetry
+npm install @aver/telemetry @aver/core vitest
 ```
 
-Requires `@aver/core`, `vitest` (peer dependency), and Node.js 18+.
+Requires `@aver/core` and `vitest` as peer dependencies. Node.js 22+.
 
 ## Quick Start
 

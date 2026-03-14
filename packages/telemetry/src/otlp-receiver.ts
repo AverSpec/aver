@@ -25,19 +25,20 @@ function readBody(req: IncomingMessage, maxBytes = MAX_BODY_BYTES): Promise<stri
     let exceeded = false
     req.on('data', (c: Buffer) => {
       received += c.length
-      if (received > maxBytes) {
+      if (received > maxBytes && !exceeded) {
         exceeded = true
-        // Stop buffering but let the stream finish so the socket stays open for the response
         chunks.length = 0
+        reject(new BodyTooLargeError(maxBytes))
         return
       }
       if (!exceeded) chunks.push(c)
     })
     req.on('end', () => {
-      if (exceeded) reject(new BodyTooLargeError(maxBytes))
-      else resolve(Buffer.concat(chunks).toString())
+      if (!exceeded) resolve(Buffer.concat(chunks).toString())
     })
-    req.on('error', reject)
+    req.on('error', (err) => {
+      if (!exceeded) reject(err)
+    })
   })
 }
 
@@ -54,7 +55,7 @@ export function createOtlpReceiver(): OtlpReceiver {
       } catch (err) {
         if (err instanceof BodyTooLargeError) {
           res.writeHead(413, { 'Content-Type': 'application/json' })
-          res.end(JSON.stringify({ error: err.message }))
+          res.end(JSON.stringify({ error: err.message }), () => req.destroy())
           return
         }
         const contentType = req.headers['content-type'] ?? '(none)'

@@ -4,7 +4,7 @@ import { resolveSerializer, type SerializerName } from './serializers'
 import { resolveApprovalPaths } from './paths'
 import { captureVisual, diffImages } from './artifacts'
 import { getTestContext } from '@aver/core'
-import type { Screenshotter, TraceAttachment } from '@aver/core'
+import type { TraceAttachment } from '@aver/core'
 import type { ApproveOptions, VisualApproveOptions } from './types'
 
 export async function approve(value: unknown, options: ApproveOptions = {}): Promise<void> {
@@ -89,7 +89,7 @@ approve.visual = async function visual(
     : nameOrOptions
 
   const context = getTestContext()
-  const screenshotter = context?.extensions.screenshotter as Screenshotter | undefined
+  const screenshotter = context?.extensions.screenshotter
 
   if (!screenshotter) {
     throw new Error(

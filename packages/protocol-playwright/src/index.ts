@@ -1,4 +1,10 @@
 import type { Protocol, TestCompletion, TraceAttachment, Screenshotter } from '@aver/core'
+
+declare module '@aver/core' {
+  interface ProtocolExtensions {
+    screenshotter?: Screenshotter
+  }
+}
 import { getTestContext } from '@aver/core'
 import type { Browser, Page } from 'playwright'
 import { mkdirSync, writeFileSync } from 'node:fs'

@@ -3,7 +3,6 @@ import { playwright } from '@aver/protocol-playwright'
 import { taskBoard } from '../domains/task-board.js'
 import { createServer } from '../src/server/index.js'
 import type { Server } from 'node:http'
-import type { Page } from 'playwright'
 import { expect } from '@playwright/test'
 
 let server: Server | undefined
@@ -17,7 +16,7 @@ const proto = playwright({
   },
 })
 
-// Use withFixture to manage server lifecycle in setup/teardown
+// Use withFixture to manage server lifecycle + navigate after each setup
 const protocolWithServer = withFixture(proto, {
   async before() {
     const { app } = createServer()
@@ -28,6 +27,10 @@ const protocolWithServer = withFixture(proto, {
     const port = typeof addr === 'object' && addr ? addr.port : 3000
     baseUrl = `http://localhost:${port}`
   },
+  async afterSetup(page) {
+    await page.goto(baseUrl!)
+    await page.waitForLoadState('domcontentloaded')
+  },
   async after() {
     if (server) {
       await new Promise<void>((resolve) => server!.close(() => resolve()))
@@ -36,15 +39,6 @@ const protocolWithServer = withFixture(proto, {
     }
   },
 })
-
-// Wrap setup to navigate to the app after protocol setup
-const originalSetup = protocolWithServer.setup.bind(protocolWithServer)
-protocolWithServer.setup = async function (): Promise<Page> {
-  const page = await originalSetup()
-  await page.goto(baseUrl!)
-  await page.waitForLoadState('domcontentloaded')
-  return page
-}
 
 export const playwrightAdapter = implement(taskBoard, {
   protocol: protocolWithServer,

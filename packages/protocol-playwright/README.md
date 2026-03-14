@@ -34,7 +34,7 @@ export const playwrightAdapter = adapt(cart, {
 })
 ```
 
-The `playwright()` protocol launches a browser on first use and creates a fresh page per test.
+The `playwright()` protocol launches a single browser on the first `setup()` call and reuses it for subsequent calls. Each test gets a fresh, isolated page. The browser is closed automatically after the last page is torn down.
 
 On test failure, it captures:
 - a screenshot

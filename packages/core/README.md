@@ -51,6 +51,10 @@ npx aver run
 
 See the [main README](../../README.md) for full documentation.
 
+## Module Format Notes
+
+@aver/core ships as both ESM and CJS. If both copies load in the same Node.js process, the global domain registry will split silently — domains registered via one format will not be visible to the other. In practice this is unlikely because vitest loads everything as ESM, so only one copy is active. If you encounter unexpected "domain not found" errors in a mixed ESM/CJS environment, duplicate module instances are the most likely cause.
+
 ## License
 
 [MIT](../../LICENSE)

@@ -3,12 +3,12 @@ import type { Adapter } from './adapter'
 import type { TraceEntry, TelemetryMatchResult } from './trace'
 import type { TelemetryCollector, CollectedSpan } from './protocol'
 import type { TelemetryExpectation, VocabMarker } from './types'
-import { parseTelemetryMode } from './telemetry-mode'
+import { resolveTelemetryMode } from './telemetry-mode'
 import type { TelemetryVerificationMode } from './telemetry-mode'
 
 // Re-export for backward compatibility
 export type { TelemetryVerificationMode } from './telemetry-mode'
-export { parseTelemetryMode } from './telemetry-mode'
+export { parseTelemetryMode, resolveTelemetryMode } from './telemetry-mode'
 
 export interface CalledOps {
   actions: Set<string>
@@ -232,9 +232,7 @@ export function createProxies<D extends Domain>(
 
   const getTelemetryCollector = options?.getTelemetryCollector ?? (() => undefined)
   const getTelemetryMode = (): TelemetryVerificationMode => {
-    if (options?.telemetryMode) return options.telemetryMode
-    const envMode = typeof process !== 'undefined' ? parseTelemetryMode(process.env.AVER_TELEMETRY_MODE) : undefined
-    return envMode ?? (typeof process !== 'undefined' && process.env.CI ? 'fail' : 'warn')
+    return resolveTelemetryMode(options?.telemetryMode)
   }
 
   const args = [getCtx, getAdapter, trace, calledOps, correlationId, clock, getTelemetryCollector, getTelemetryMode, domainName] as const

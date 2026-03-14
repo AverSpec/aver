@@ -11,3 +11,9 @@ export function parseTelemetryMode(value: string | undefined): TelemetryVerifica
     `Invalid AVER_TELEMETRY_MODE: '${value}'. Valid values are: ${VALID_TELEMETRY_MODES.join(', ')}`
   )
 }
+
+export function resolveTelemetryMode(override?: TelemetryVerificationMode): TelemetryVerificationMode {
+  if (override) return override
+  const envMode = typeof process !== 'undefined' ? parseTelemetryMode(process.env.AVER_TELEMETRY_MODE) : undefined
+  return envMode ?? (typeof process !== 'undefined' && process.env.CI ? 'fail' : 'warn')
+}

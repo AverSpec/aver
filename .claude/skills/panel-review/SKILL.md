@@ -203,13 +203,25 @@ After creating tickets from the issues table, do a three-pass triage with the us
 | **Vetted → Todo** | Clear what to do, no design decisions, could be described to any engineer | Move straight to Todo status |
 | **Needs refinement** | Requires a design decision, API design, naming choice, scope decision, or content strategy | Leave in Backlog |
 
-**Pass 3 — Quick-vet the borderline items.** Review the "needs refinement" list and identify items where you can make a simple, defensible decision on the spot. For each:
+**Pass 3 — Quick-vet the borderline items.** Review the "needs refinement" list and identify items where a simple, defensible decision can be made without the user. Present as a summary table for the user to approve or override:
 
-- State the decision in one line
-- State the rationale in one line
-- Move to Todo with the decision captured in the ticket
+| Ticket | Decision | Rationale |
+|---|---|---|
+| AI-NNN | [one-line decision] | [one-line why] |
 
-What remains after Pass 3 are the **real design questions** — items that genuinely need collaborative discussion. Present these grouped by natural clusters (e.g., items touching the same subsystem, related API decisions, content vs. code work) so the user can refine them efficiently.
+Move approved items to Todo with the decision captured in the ticket body.
+
+**What remains** after Pass 3 are the **real design questions** — items that genuinely need collaborative discussion. Present these grouped by natural clusters (related subsystems, coupled API decisions, content vs. code), with a "What needs deciding" column:
+
+| Ticket | Description | What needs deciding |
+|---|---|---|
+| **AI-NNN + AI-MMM** | [cluster name] | [the actual design question] |
+
+Clustering helps the user see which items can be refined together in a single conversation, and which are independent decisions. Common cluster types:
+- Items touching the same subsystem or protocol
+- Coupled API design decisions (where one choice constrains another)
+- Content/docs vs. code work
+- Feature design (new public API surface)
 
 ```dot
 digraph triage {

@@ -71,6 +71,9 @@ export function withFixture<C>(
         if (fixture.after) await fixture.after()
       }
     },
+    // Rebind lifecycle hooks to the original protocol so `this` refers to
+    // the unwrapped protocol, not this wrapper. Necessary for class-based
+    // protocol implementations where hooks reference `this`.
     onTestStart: protocol.onTestStart?.bind(protocol),
     onTestFail: protocol.onTestFail?.bind(protocol),
     onTestEnd: protocol.onTestEnd?.bind(protocol),

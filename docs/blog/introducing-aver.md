@@ -1,10 +1,11 @@
 ---
 layout: default
-title: "Introducing Aver: Domain-Driven Acceptance Testing for TypeScript"
-nav_order: 10
+title: Introducing Aver
+parent: Blog
+nav_order: 1
 ---
 
-# The Testing Infrastructure Everyone Keeps Rebuilding
+# Introducing Aver: Domain-Driven Acceptance Testing for TypeScript
 
 *February 2026 — Nate Jackson*
 

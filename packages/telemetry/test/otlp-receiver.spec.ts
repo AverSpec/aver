@@ -125,6 +125,31 @@ describe('OtlpReceiver', () => {
     expect(json.error).toMatch(/exceeds/)
   })
 
+  it('returns 415 for application/x-protobuf content-type', async () => {
+    const res = await fetch(`http://localhost:${receiver.port}/v1/traces`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-protobuf' },
+      body: new Uint8Array([0x0a, 0x00]),
+    })
+
+    expect(res.status).toBe(415)
+    const json = await res.json()
+    expect(json.error).toMatch(/Unsupported content-type/)
+    expect(json.error).toMatch(/OTLP\/HTTP JSON/)
+  })
+
+  it('returns 415 for application/grpc content-type', async () => {
+    const res = await fetch(`http://localhost:${receiver.port}/v1/traces`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/grpc' },
+      body: new Uint8Array([0x0a, 0x00]),
+    })
+
+    expect(res.status).toBe(415)
+    const json = await res.json()
+    expect(json.error).toMatch(/Unsupported content-type/)
+  })
+
   it('stops cleanly', async () => {
     await receiver.stop()
     // Fetching after stop should fail

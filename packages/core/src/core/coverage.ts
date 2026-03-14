@@ -1,3 +1,7 @@
+import type { Domain } from './domain'
+import type { CalledOps } from './proxy'
+import { getCoverageConfig } from './config'
+
 export interface VocabularyCoverage {
   domain: string
   actions: { total: string[]; called: string[] }
@@ -5,10 +9,6 @@ export interface VocabularyCoverage {
   assertions: { total: string[]; called: string[] }
   percentage: number
 }
-
-import type { Domain } from './domain'
-import type { CalledOps } from './proxy'
-import { getCoverageConfig } from './config'
 
 /**
  * Registers an afterAll hook that enforces vocabulary coverage against the

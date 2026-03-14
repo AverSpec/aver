@@ -4,6 +4,15 @@ export interface Comparator {
   (approved: string, received: string): { equal: boolean }
 }
 
+export type Scrubber =
+  | ScrubberRule[]
+  | ((text: string) => string)
+
+export interface ScrubberRule {
+  pattern: RegExp
+  replacement: string
+}
+
 export interface ApproveOptions {
   name?: string
   fileExtension?: string
@@ -11,6 +20,7 @@ export interface ApproveOptions {
   testName?: string
   comparator?: Comparator
   serializer?: SerializerName
+  scrub?: Scrubber
 }
 
 export interface VisualApproveOptions {

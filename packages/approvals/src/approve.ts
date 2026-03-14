@@ -5,7 +5,7 @@ import { resolveApprovalPaths } from './paths'
 import { captureVisual, diffImages } from './artifacts'
 import { getTestContext } from '@aver/core'
 import type { TraceAttachment } from '@aver/core'
-import type { ApproveOptions, VisualApproveOptions } from './types'
+import type { ApproveOptions, Scrubber, VisualApproveOptions } from './types'
 
 export async function approve(value: unknown, options: ApproveOptions = {}): Promise<void> {
   const context = getTestContext()
@@ -25,7 +25,8 @@ export async function approve(value: unknown, options: ApproveOptions = {}): Pro
 
   mkdirSync(paths.approvalDir, { recursive: true })
 
-  const received = serializer.serialize(value)
+  const raw = serializer.serialize(value)
+  const received = options.scrub ? applyScrubber(raw, options.scrub) : raw
   writeFileSync(paths.receivedPath, received, 'utf-8')
 
   const approvedExists = existsSync(paths.approvedPath)
@@ -211,6 +212,11 @@ function pushTrace(
     status,
     attachments,
   })
+}
+
+function applyScrubber(text: string, scrub: Scrubber): string {
+  if (typeof scrub === 'function') return scrub(text)
+  return scrub.reduce((t, rule) => t.replace(rule.pattern, rule.replacement), text)
 }
 
 function defaultSerializerFor(value: unknown): SerializerName {

@@ -38,6 +38,6 @@ export type { RunningTestContext } from './core/test-context'
 
 export type { ActionMarker, QueryMarker, AssertionMarker, TelemetryExpectation, TelemetryDeclaration, TelemetryAttributeValue, AsymmetricMatcher } from './core/types'
 
-export type { ActProxy, QueryProxy, AssertProxy, PlannedTest, SuiteConfig, NamedContext, NamedTestContext, NamedSuiteReturn } from './core/suite'
+export type { ActProxy, QueryProxy, AssertProxy, PlannedTest, SuiteInternals, SuiteConfig, NamedContext, NamedTestContext, NamedSuiteReturn } from './core/suite'
 
 export type { Clock, StepCategory, TelemetryVerificationMode, ProxyOptions } from './core/proxy'

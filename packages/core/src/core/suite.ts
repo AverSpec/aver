@@ -45,6 +45,10 @@ export interface SuiteReturn<D extends Domain> {
   teardown(): Promise<void>
   getTrace(): TraceEntry[]
   getCoverage(): VocabularyCoverage
+}
+
+/** Internal-only extension — available from '@aver/core/internals'. */
+export interface SuiteInternals {
   /** Returns what test names would be registered for a given test name. */
   getPlannedTests(name: string): PlannedTest[]
 }
@@ -170,7 +174,7 @@ function suiteConfig<C extends SuiteConfig>(config: C): NamedSuiteReturn<C> {
 
 // ── Single domain implementation ──
 
-function suiteSingle<D extends Domain>(domain: D, adapter?: Adapter): SuiteReturn<D> {
+function suiteSingle<D extends Domain>(domain: D, adapter?: Adapter): SuiteReturn<D> & SuiteInternals {
   // Resolve adapters
   let resolvedAdapters: Adapter[] | undefined
   if (adapter) {

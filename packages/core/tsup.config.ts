@@ -19,6 +19,7 @@ export default defineConfig([
     entry: {
       cli: 'src/cli/index.ts',
     },
+    format: ['esm'],
     dts: false,
     splitting: true,
     shims: true,

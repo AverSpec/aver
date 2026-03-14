@@ -29,13 +29,13 @@ Skip Aver when:
 
 ### "My telemetry isn't recording"
 
-Check the `AVER_TELEMETRY_MODE` environment variable spelling. Valid values are `record`, `verify`, and `off`. Any other value — including `Record` (wrong case) or an empty string — silently falls back to `off`.
+Check the `AVER_TELEMETRY_MODE` environment variable spelling. Valid values are `warn`, `fail`, and `off`. Any other value — including `Warn` (wrong case) or an empty string — will cause an error.
 
 Also verify that your OTLP receiver is running before the test suite starts. If the collector isn't reachable when the first span is exported, the exporter drops spans without error.
 
 ### "Tests pass but I don't see spans"
 
-Confirm that `AVER_TELEMETRY_MODE=record` is set in the environment where you're running the tests — not just in your shell profile. Then check `AVER_OTLP_ENDPOINT` (default `http://localhost:4318`). If the collector is on a different host or port, spans are exported but to the wrong address.
+Confirm that `AVER_TELEMETRY_MODE=warn` or `AVER_TELEMETRY_MODE=fail` is set in the environment where you're running the tests — not just in your shell profile. Check that your OTLP collector is reachable at the expected host and port. If the collector is on a different address, spans are exported but to the wrong destination.
 
 ### "Type errors after defining domain"
 

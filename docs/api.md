@@ -335,7 +335,7 @@ The receiver implements `TelemetryCollector` so it can be set directly on a prot
 Verifies that correlated trace entries have causally connected spans.
 
 ```typescript
-import { verifyCorrelation } from '@aver/core'
+import { verifyCorrelation } from '@aver/core/internals'
 ```
 
 ### Telemetry Declarations

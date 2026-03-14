@@ -82,5 +82,5 @@ export function implement<
   }
 }
 
-/** @deprecated Use implement() instead */
+/** Alias for implement() — both names are supported */
 export const adapt = implement

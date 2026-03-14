@@ -13,6 +13,7 @@
   "homepage": "https://github.com/njackson/aver",
   "bugs": "https://github.com/njackson/aver/issues",
   "keywords": [
+    "aver",
     "testing",
     "bdd",
     "acceptance-testing",
@@ -23,7 +24,7 @@
     "access": "public"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=22.0.0"
   },
   "bin": {
     "aver": "./dist/cli.js"

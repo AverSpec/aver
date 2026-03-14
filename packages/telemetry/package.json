@@ -24,9 +24,8 @@
     "access": "public"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=22.0.0"
   },
-  "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
@@ -35,7 +34,12 @@
         "default": "./dist/index.js"
       }
     },
-    "./vitest": "./dist/vitest.js"
+    "./vitest": {
+      "import": {
+        "types": "./dist/vitest.d.ts",
+        "default": "./dist/vitest.js"
+      }
+    }
   },
   "files": [
     "dist"

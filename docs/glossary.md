@@ -65,7 +65,7 @@ Automatic checking that domain operations produce expected OpenTelemetry spans w
 ## Functions & APIs
 
 **`adapt()`**
-Creates a typed adapter from a domain definition. Enforces at compile time that every domain operation has an implementation. (Formerly `implement()` — both names are available.)
+Creates a typed adapter from a domain definition. Enforces at compile time that every domain operation has an implementation. Alias for `implement()` — both names are supported.
 
 **`approve()`**
 Snapshot-based approval testing function. Also aliased as `characterize()` for semantic clarity in specific testing contexts.
@@ -74,7 +74,7 @@ Snapshot-based approval testing function. Also aliased as `characterize()` for s
 Creates a domain with named vocabulary (actions, queries, assertions). Returns a Domain object.
 
 **`implement()`**
-Creates a typed adapter from a domain definition. (See `adapt()` — both names work.)
+Creates a typed adapter from a domain definition. Alias for `adapt()` — both names are supported.
 
 **`suite()`**
 Creates a test suite from a domain and optional adapter. Returns the test API including test registration and context. Supports both single-domain and multi-domain (named config) modes.

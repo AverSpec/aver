@@ -6,9 +6,6 @@ import { defineDomain, action, assertion, implement, suite } from '@aver/core'
 import { createOtlpReceiver, type OtlpReceiver } from '../src/otlp-receiver'
 import type { Protocol } from '@aver/core'
 
-// OTLP receiver tests require server.listen which fails with EPERM in GitHub Actions
-const isCI = !!process.env.CI
-
 /**
  * Full aver verification pipeline over OTLP:
  * domain declaration → adapter → OTLP export → receiver → proxy matchSpan → pass/fail
@@ -16,7 +13,7 @@ const isCI = !!process.env.CI
  * This proves that aver can verify telemetry from an application exporting
  * spans over the network, not just in-process InMemorySpanExporter.
  */
-describe.skipIf(isCI)('OTLP verification over network', () => {
+describe('OTLP verification over network', () => {
   // --- Domain: declares expected telemetry ---
   const greetingDomain = defineDomain({
     name: 'Greeting',

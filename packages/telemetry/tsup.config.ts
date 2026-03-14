@@ -12,7 +12,6 @@ export default defineConfig([
     ...baseConfig,
     entry: { vitest: 'src/vitest-plugin.ts' },
     format: ['esm'],
-    dts: false,
     external: ['@aver/core', '@aver/core/internals', 'vitest'],
   },
 ])

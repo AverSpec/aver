@@ -1,8 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { createOtlpReceiver, type OtlpReceiver } from '../src/otlp-receiver'
 
-// OTLP receiver tests require server.listen which fails with EPERM in GitHub Actions
-const isCI = !!process.env.CI
 
 function otlpPayload(spans: Array<{
   name: string
@@ -34,7 +32,7 @@ async function postTraces(port: number, body: unknown) {
   })
 }
 
-describe.skipIf(isCI)('OtlpReceiver', () => {
+describe('OtlpReceiver', () => {
   let receiver: OtlpReceiver
 
   beforeEach(async () => {

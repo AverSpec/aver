@@ -4,15 +4,12 @@ import { BasicTracerProvider, SimpleSpanProcessor } from '@opentelemetry/sdk-tra
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http'
 import { createOtlpReceiver, type OtlpReceiver } from '../src/otlp-receiver'
 
-// OTLP receiver tests require server.listen which fails with EPERM in GitHub Actions
-const isCI = !!process.env.CI
-
 /**
  * End-to-end integration test: a real OTel SDK exporting spans
  * over HTTP to our OTLP receiver. Proves the receiver works with
  * the actual wire protocol, not just hand-crafted JSON.
  */
-describe.skipIf(isCI)('OTLP receiver integration', () => {
+describe('OTLP receiver integration', () => {
   let receiver: OtlpReceiver
   let provider: BasicTracerProvider
 

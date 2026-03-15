@@ -7,6 +7,8 @@ nav_order: 6
 
 # Adding Telemetry to a Domain
 
+> **Experimental.** Telemetry verification is functional and tested but has not been validated in production environments. The correlation model, `causes` API, and contract verification workflow may evolve based on real-world usage. If you're using this in practice, we'd love to hear about your experience — [open an issue](https://github.com/averspec/aver/issues) or [start a discussion](https://github.com/averspec/aver/discussions).
+
 Aver can verify that your system emits the right OTel spans — not just that it produces the right output, but that it's observable. More importantly, it verifies that the *relationships* between spans are intact: operations that belong to the same business flow share a trace, carry correlated attributes, and remain causally connected. When those relational seams break, your dashboards and AI agents lose the context that makes observability data powerful.
 
 This guide shows how to add telemetry declarations to a domain and set up verification. For a hands-on walkthrough with failure examples, see the [Telemetry Tutorial](../tutorial-telemetry).
@@ -97,12 +99,14 @@ const protocol: Protocol<MyContext> = {
 
 ## Correlation design
 
-Steps that share an attribute key and are called with the same value are **correlated**. The framework automatically verifies:
+Steps that share an attribute key and are called with the same value are **correlated**. The framework verifies two things:
 
-1. Each step's span carries the declared attributes (per-step)
-2. Correlated steps' spans are causally connected (end-of-test)
+1. **Attribute correlation** (automatic) — each step's span carries the declared attributes with the correct value
+2. **Causal correlation** (opt-in via `causes`) — spans are in the same trace or connected via span links
 
-Design correlation by using the same attribute key across related operations:
+### Attribute correlation
+
+Use the same attribute key across related operations:
 
 ```typescript
 checkout: action<{ orderId: string }>({
@@ -113,7 +117,33 @@ fulfillOrder: action<{ orderId: string }>({
 }),
 ```
 
-When a test calls `checkout({ orderId: '123' })` then `fulfillOrder({ orderId: '123' })`, the framework checks that both spans carry `order.id: '123'` and share a traceId (or are linked).
+When a test calls `checkout({ orderId: '123' })` then `fulfillOrder({ orderId: '123' })`, the framework checks that both spans carry `order.id: '123'`. This works across independent HTTP requests, separate services, or any boundary — the check is purely about attribute values.
+
+### Causal correlation with `causes`
+
+When an operation triggers another operation asynchronously (e.g., via a message queue or background worker), you can declare the causal relationship:
+
+```typescript
+assignTask: action<{ title: string; assignee: string }>({
+  telemetry: (p) => ({
+    span: 'task.assign',
+    attributes: { 'task.title': p.title },
+    causes: ['notification.process'],
+  }),
+}),
+```
+
+The `causes` declaration tells the verifier: "when `task.assign` runs, it should produce a `notification.process` span that is causally connected — either in the same trace or linked via a span link." If the spans are in different traces with no link, the verifier flags it.
+
+This creates design pressure to propagate trace context across async boundaries. When the check fails, the error message tells you what to do:
+
+```
+'task.assign' declares causes: ['notification.process'] but spans are in
+different traces with no link. Propagate trace context or add a span link
+at the async boundary.
+```
+
+Use `causes` when your code explicitly triggers the downstream operation (queues, event buses, async workers). Don't use it for operations that happen to share an entity but are triggered independently (separate user actions, unrelated API calls).
 
 ## Telemetry mode
 

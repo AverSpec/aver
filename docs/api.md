@@ -362,6 +362,7 @@ action<{ orderId: string }>({
 |:---------|:-----|:------------|
 | `span` | `string` | OTel span name to match |
 | `attributes` | `Record<string, TelemetryAttributeValue>` | Required span attributes. Primitives for exact match, or asymmetric matchers (e.g. `expect.any(String)`) |
+| `causes` | `string[]` | Span names this operation causally triggers. Opts in to causal correlation — verifies trace connection (same trace or span link) to the named spans. |
 
 ### `AVER_TELEMETRY_MODE`
 

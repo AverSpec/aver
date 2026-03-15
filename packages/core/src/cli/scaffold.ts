@@ -27,6 +27,7 @@ export default defineConfig({
 
 export default defineConfig({
   test: {
+    globals: true,
     setupFiles: ['./aver.config.ts'],
   },
 })

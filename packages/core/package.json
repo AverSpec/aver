@@ -1,6 +1,6 @@
 {
   "name": "@averspec/core",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Domain-driven acceptance testing framework",
   "type": "module",
   "license": "MIT",

@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Introducing Aver
-parent: Blog
+parent: Articles
 nav_order: 1
 ---
 

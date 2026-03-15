@@ -1,7 +1,7 @@
 ---
 layout: default
 title: "Your Adapter Is a Design Review"
-parent: Blog
+parent: Articles
 nav_order: 3
 ---
 

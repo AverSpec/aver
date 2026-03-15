@@ -1,10 +1,10 @@
 ---
 layout: default
-title: Blog
+title: Articles
 nav_order: 9
 has_children: true
 ---
 
-# Blog
+# Articles
 
 Articles and announcements about Aver.

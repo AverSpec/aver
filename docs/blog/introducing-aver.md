@@ -7,13 +7,13 @@ nav_order: 1
 
 # Introducing Aver: Domain-Driven Acceptance Testing for TypeScript
 
-*Nate Jackson*
-
 ## The Testing Infrastructure Everyone Keeps Rebuilding
 
 Every project of sufficient complexity eventually builds a domain language for its tests. You've seen it happen — probably more than once. The Playwright suite grows to forty tests and someone says, "We should extract a page object." The API tests start sharing setup functions and someone builds a test data factory. The integration suite gets its own little DSL for describing workflows: `createUser`, `loginAs`, `submitOrder`, `verifyOrderStatus`.
 
-These are all partial solutions to the same underlying problem: tests should describe *what* the system does, not *how* the test interacts with the system. Page Object pattern, service layer abstractions, test data builders, custom assertion helpers — every team arrives at some subset of this infrastructure. They build it from scratch, because it's "just test code," not worth extracting into a library. They maintain it alongside the production code, and when the team moves on, the next team inherits either a sophisticated-but-undocumented test DSL, or brittle tests that nobody dares refactor.
+These are all the same impulse: name the operations, hide the mechanics, write tests in terms of what the system does instead of how it's implemented. But each level builds its own vocabulary independently. The page object says `checkoutPage.addItem()`. The API helper says `postItem()`. The unit factory says `builder.withItem()`. Three names for the same domain operation, none of them aware the others exist.
+
+This is the accidental domain language. It emerges organically, serves its level well, and creates invisible drift between levels. Teams build it from scratch, because it's "just test code," not worth extracting into a library. They maintain it alongside the production code, and when the team moves on, the next team inherits either a sophisticated-but-undocumented test DSL, or brittle tests that nobody dares refactor.
 
 The pattern repeats on every project I've worked on or consulted with over the past decade. A team starts with raw Playwright or Jest tests. Six months later, they have an ad-hoc domain language layered on top. A year later, someone rewrites the test infrastructure because the first version made assumptions that no longer hold. And when they start a *new* project, they build the whole thing again from zero — slightly different this time, shaped by whatever they remember regretting last time.
 
@@ -21,9 +21,13 @@ This is the problem Aver exists to solve. Not the tests themselves, but the infr
 
 ## The Pyramid's Missing Spine
 
-The testing pyramid — lots of unit tests at the base, fewer integration tests in the middle, a handful of end-to-end tests at the top — is sound advice. Unit tests catch logic bugs fast. Integration tests catch wiring issues. End-to-end tests verify the deployment actually works. These are genuinely different failure modes, and the pyramid is right to recommend coverage at each level.
+The testing pyramid — lots of unit tests at the base, fewer integration tests in the middle, a handful of end-to-end tests at the top — is sound advice about *how many* tests to write at each level. It says nothing about how to organize them, how to share vocabulary between levels, or how to ensure the levels agree on what correct behavior looks like.
 
-What breaks down is how teams implement it. "Creating a task puts it in backlog" is the same requirement whether you're verifying it against a `Board` class, an Express API, or a React UI. The pyramid tells you to write a unit test for the class, an integration test for the API, and an end-to-end test for the browser. Three tests, one requirement, three places to update when the requirement changes. The levels are valuable. Duplicating the behavioral specification across them isn't.
+So teams do what's natural: they organize by level. Unit tests here, integration tests there, E2E tests over there. Each level develops its own conventions independently. And over time, those conventions drift.
+
+The unit test for "create order" initializes an `OrderService` with a mock database and calls `createOrder()`. The integration test hits `POST /api/orders` with a JSON body. The E2E test fills out a form and clicks "Submit." Three descriptions of the same behavior that share nothing — not the setup, not the assertions, not even the vocabulary.
+
+When a product requirement changes — say, orders now require a shipping address — you update the unit test, update the API test, and maybe remember to update the E2E test. There's no single source of truth for what your system does. There's just a pile of tests organized by how they run, not what they verify.
 
 **Legacy projects** have it worst. The pyramid is inverted: most of the test coverage is end-to-end, because the code wasn't designed for unit testing. Services are tightly coupled to databases. Business logic lives inside controllers. Adding unit tests means refactoring the production code, which breaks the end-to-end tests that are the only safety net you have. So you don't refactor, and the inverted pyramid calcifies.
 
@@ -172,6 +176,57 @@ One line. No `page` object, no selectors, no screenshot API calls. The protocol'
 When approval fails, you get a diff — a unified text diff for structural comparisons, a pixel-highlighted diff image for visual ones — alongside the received output so you can inspect exactly what changed. If the change is intentional, `aver approve` updates the baseline. If not, you have a regression.
 
 This is the same separation at work: the domain says *what* to verify, the adapter knows *how*. But approval testing also plays a deeper role in how teams adopt domain-driven testing, particularly on legacy systems. More on that shortly.
+
+## Before and After
+
+Three test files, three vocabularies, three implementations of the same behavior:
+
+```typescript
+// Unit test
+test('assign task', () => {
+  const board = new Board()
+  board.create('Fix bug')
+  board.assign('Fix bug', 'alice')
+  expect(board.get('Fix bug').assignee).toBe('alice')
+})
+
+// API test
+test('assign task via API', async () => {
+  await request(app).post('/tasks').send({ title: 'Fix bug' })
+  await request(app).patch('/tasks/Fix bug').send({ assignee: 'alice' })
+  const res = await request(app).get('/tasks/Fix bug')
+  expect(res.body.assignee).toBe('alice')
+})
+
+// E2E test
+test('assign task in UI', async ({ page }) => {
+  await page.fill('[data-test=new-task]', 'Fix bug')
+  await page.click('[data-test=create]')
+  await page.click('[data-test=task-Fix-bug] >> [data-test=assign]')
+  await page.selectOption('[data-test=assignee]', 'alice')
+  await expect(page.locator('[data-test=task-Fix-bug]')).toContainText('alice')
+})
+```
+
+One test, three adapters:
+
+```typescript
+const { test } = suite(taskBoard)
+
+test('assign task to team member', async ({ given, when, then }) => {
+  await given.createTask({ title: 'Fix bug' })
+  await when.assignTask({ title: 'Fix bug', assignee: 'alice' })
+  await then.taskAssignedTo({ title: 'Fix bug', assignee: 'alice' })
+})
+```
+
+```
+✓ assign task to team member [unit]          1ms
+✓ assign task to team member [http]         12ms
+✓ assign task to team member [playwright]  280ms
+```
+
+The domain definition (`createTask`, `assignTask`, `taskAssignedTo`) is the single source of truth. The adapters implement it for each level. The test doesn't know or care which adapter it's running against. When two adapters disagree, that's a real bug at a real boundary — not a flaky test.
 
 ## Same Test, Every Level
 

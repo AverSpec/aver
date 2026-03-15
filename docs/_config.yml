@@ -4,6 +4,9 @@ remote_theme: just-the-docs/just-the-docs
 
 color_scheme: aver
 
+plugins:
+  - jekyll-remote-theme
+
 url: ""
 baseurl: ""
 

@@ -1,15 +1,22 @@
+import { context, trace, type Context } from '@opentelemetry/api'
 import { tracer } from './tracing.js'
 
 interface Notification {
   taskTitle: string
   assignee: string
+  /** Captured OTel context from the enqueue site, used for span linking. */
+  originContext: Context
 }
 
 const queue: Notification[] = []
 let processing = false
 
 export function enqueueNotification(taskTitle: string, assignee: string) {
-  queue.push({ taskTitle, assignee })
+  // Capture the active context so the worker span can link back to the
+  // originating span (e.g. task.assign), preserving causal correlation
+  // even though setTimeout breaks the automatic context chain.
+  const originContext = context.active()
+  queue.push({ taskTitle, assignee, originContext })
   if (!processing) {
     processing = true
     setTimeout(processNext, 10)
@@ -23,7 +30,15 @@ function processNext() {
     return
   }
 
-  tracer.startActiveSpan('notification.process', (span) => {
+  // Create a span link back to the originating span so that Aver's
+  // correlation verification can connect task.assign → notification.process
+  // across the async boundary that setTimeout introduces.
+  const originSpan = trace.getSpan(item.originContext)
+  const links = originSpan
+    ? [{ context: originSpan.spanContext() }]
+    : []
+
+  tracer.startActiveSpan('notification.process', { links }, (span) => {
     span.setAttribute('task.title', item.taskTitle)
     span.setAttribute('notification.assignee', item.assignee)
 

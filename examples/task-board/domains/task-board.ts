@@ -12,6 +12,9 @@ export const taskBoard = defineDomain({
         attributes: { 'task.title': p.title },
       }),
     }),
+    // deleteTask intentionally has no telemetry declaration — not every
+    // operation needs to be traced. This shows that telemetry verification
+    // only applies to markers that explicitly declare span expectations.
     deleteTask: action<{ title: string }>(),
     moveTask: action<{ title: string; status: string }>({
       telemetry: (p) => ({

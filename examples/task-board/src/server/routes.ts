@@ -8,8 +8,12 @@ export function createRouter(board: Board): Router {
 
   router.post('/tasks', (req, res) => {
     const { title, status } = req.body
-    const task = board.create(title, status)
-    res.status(201).json(task)
+    tracer.startActiveSpan('task.create', (span) => {
+      span.setAttribute('task.title', title)
+      const task = board.create(title, status)
+      span.end()
+      res.status(201).json(task)
+    })
   })
 
   router.patch('/tasks/:title', (req, res) => {
@@ -17,7 +21,13 @@ export function createRouter(board: Board): Router {
     const { status, assignee } = req.body
     try {
       let task
-      if (status !== undefined) task = board.move(title, status)
+      if (status !== undefined) {
+        tracer.startActiveSpan('task.move', (span) => {
+          span.setAttribute('task.title', title)
+          task = board.move(title, status)
+          span.end()
+        })
+      }
       if (assignee !== undefined) {
         tracer.startActiveSpan('task.assign', (span) => {
           span.setAttribute('task.title', title)

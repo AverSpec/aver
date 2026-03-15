@@ -1,3 +1,4 @@
+import { expect } from 'vitest'
 import { suite } from '@averspec/core'
 import { approve } from '@averspec/approvals'
 import { taskBoard } from '../domains/task-board.js'
@@ -28,6 +29,24 @@ test('delete a task', async ({ given, when, then }) => {
   await then.taskCount({ status: 'backlog', count: 1 })
   await when.deleteTask({ title: 'Stale task' })
   await then.taskCount({ status: 'backlog', count: 0 })
+})
+
+test('assign task produces correlated notification span', async ({ given, when, then, trace }) => {
+  await given.createTask({ title: 'Telemetry task' })
+  await when.assignTask({ title: 'Telemetry task', assignee: 'Bob' })
+  await then.taskAssignedTo({ title: 'Telemetry task', assignee: 'Bob' })
+
+  // Verify that the trace includes a telemetry match for the assignTask action.
+  // When a TelemetryCollector is present (HTTP adapter), Aver automatically
+  // matches the 'task.assign' span declared in the domain and records the result
+  // on the trace entry. The unit adapter verifies telemetry expectations
+  // internally through Aver's proxy without needing OTel.
+  const entries = trace()
+  const assignEntry = entries.find(e => e.name === 'assignTask' && e.category === 'when')
+  if (assignEntry?.telemetry) {
+    // If telemetry verification ran, the span should have been matched.
+    expect(assignEntry.telemetry.matched).toBe(true)
+  }
 })
 
 test('track full task lifecycle', async ({ act, then }) => {

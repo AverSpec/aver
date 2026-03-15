@@ -19,9 +19,9 @@ The pattern repeats on every project I've worked on or consulted with over the p
 
 This is the problem Aver exists to solve. Not the tests themselves, but the infrastructure underneath them: the domain vocabulary, the adapter layer, the mechanism for running the same intent at different abstraction levels. The stuff every serious test suite needs and every team rebuilds.
 
-## The Pyramid's Missing Spine
+## What the Pyramid Doesn't Address
 
-The testing pyramid — lots of unit tests at the base, fewer integration tests in the middle, a handful of end-to-end tests at the top — is sound advice about *how many* tests to write at each level. It says nothing about how to organize them, how to share vocabulary between levels, or how to ensure the levels agree on what correct behavior looks like.
+The testing pyramid — lots of unit tests at the base, fewer integration tests in the middle, a handful of end-to-end tests at the top — is sound advice about *how many* tests to write at each level. What it doesn't address is how to organize them, how to share vocabulary between levels, or how to ensure the levels agree on what correct behavior looks like.
 
 So teams do what's natural: they organize by level. Unit tests here, integration tests there, E2E tests over there. Each level develops its own conventions independently. And over time, those conventions drift.
 

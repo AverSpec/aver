@@ -1,6 +1,6 @@
 # @averspec/telemetry
 
-> **Status: Stable** — API surface is locked for 0.x releases.
+> **Status: Early release.** API is stabilizing. Breaking changes will be noted in release notes.
 
 Behavioral contract export and production trace verification for Aver.
 

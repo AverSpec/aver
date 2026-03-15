@@ -128,7 +128,7 @@ test('track full task lifecycle', async ({ act, query }) => {
   await act.moveTask({ title: 'Fix login bug', status: 'in-progress' })
 
   const task = await query.taskDetails({ title: 'Fix login bug' })
-  expect(task?.status).toBe('in-progress')
+  expect(task?.status).toBe('in-progress') // import { expect } from 'vitest'
   expect(task?.assignee).toBe('Alice')
 })
 ```

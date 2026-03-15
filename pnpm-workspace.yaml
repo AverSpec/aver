@@ -5,7 +5,6 @@ packages:
   - packages/protocol-http
   - packages/protocol-playwright
   - packages/agent-plugin
-  - packages/skills
   - examples/*
 
 onlyBuiltDependencies:

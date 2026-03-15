@@ -82,4 +82,4 @@ Creates a test suite from a domain and optional adapter. Returns the test API in
 ## Testing Styles
 
 **Given/When/Then**
-Narrative test aliases providing clarity in test structure. `given` and `then` are aliases for `act` and `assert` respectively, used to label setup, trigger, and verification steps in test traces. Internally they call the same adapter handlers.
+Narrative test aliases providing clarity in test structure. `given` and `when` are aliases for `act`, and `then` is an alias for `assert`, used to label setup, trigger, and verification steps in test traces. Internally they call the same adapter handlers.

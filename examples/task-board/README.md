@@ -4,7 +4,7 @@ A complete React + Express task board demonstrating Aver's multi-adapter testing
 
 ## Prerequisites
 
-- Node.js 18+
+- Node.js 22+
 - pnpm
 
 ## Setup

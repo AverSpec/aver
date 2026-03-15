@@ -113,6 +113,6 @@ Both backends expose the same script interface.
 
 ## Requirements
 
-- Node.js >= 18
+- Node.js >= 22
 - **GitHub backend:** `gh` CLI authenticated (`gh auth status`)
 - **Linear backend:** Linear API key ([create one here](https://linear.app/settings/api))

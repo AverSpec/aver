@@ -1,6 +1,6 @@
 {
   "name": "@averspec/approvals",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Approval testing for Aver",
   "type": "module",
   "license": "MIT",

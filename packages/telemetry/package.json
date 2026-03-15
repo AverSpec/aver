@@ -1,6 +1,6 @@
 {
   "name": "@averspec/telemetry",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Behavioral contract export and production trace verification for Aver",
   "type": "module",
   "license": "MIT",

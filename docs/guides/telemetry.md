@@ -125,6 +125,43 @@ Controlled by `AVER_TELEMETRY_MODE`:
 | `warn` | Mismatch recorded in trace, test passes | Local development |
 | `off` | No telemetry verification | When explicitly disabled |
 
+## How verification works in practice
+
+### Spans must arrive before verification runs
+
+Aver verifies telemetry immediately after each adapter handler returns. If your application emits spans asynchronously (e.g., via a background worker or batched exporter), they need to be flushed to the collector before the handler returns. Otherwise verification reports "span not found."
+
+In your HTTP adapter, call `flushTracing()` (or equivalent) after operations that emit spans:
+
+```typescript
+actions: {
+  async createTask(ctx, payload) {
+    const res = await ctx.post('/api/tasks', payload)
+    await flushTracing() // Ensure spans reach the OTLP receiver
+    return res.json()
+  },
+}
+```
+
+For async operations like queued workers, drain the queue before flushing:
+
+```typescript
+async assignTask(ctx, payload) {
+  await ctx.patch(`/api/tasks/${payload.title}`, { assignee: payload.assignee })
+  await drainQueue()    // Wait for background worker to finish
+  await flushTracing()  // Then flush all spans
+}
+```
+
+### Local vs CI mode defaults
+
+Telemetry mode defaults to `warn` locally and `fail` in CI (when `process.env.CI` is set). This means telemetry mismatches log a warning locally but fail the test in CI. To get consistent behavior, set `AVER_TELEMETRY_MODE=fail` locally when working on telemetry declarations.
+
+### What gets verified and what doesn't
+
+- **Unit adapters** don't provide a `TelemetryCollector`, so telemetry verification is skipped. This is by design — unit tests run in-process without real OTel spans. To verify telemetry, use an adapter with a collector (like an HTTP adapter with an OTLP receiver).
+- **Operations without `telemetry:` declarations** are not verified — no warning, no error. Not every operation needs tracing, but you won't get feedback about missing declarations unless you add them.
+
 ## Span naming conventions
 
 Follow OTel semantic conventions: `{noun}.{verb}` or `{service}.{operation}`.

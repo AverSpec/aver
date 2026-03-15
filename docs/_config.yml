@@ -1,6 +1,5 @@
 title: Aver
 description: Domain-driven acceptance testing for TypeScript
-theme: just-the-docs
 remote_theme: just-the-docs/just-the-docs
 
 color_scheme: aver

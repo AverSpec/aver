@@ -10,7 +10,7 @@
     "url": "https://github.com/averspec/aver.git",
     "directory": "packages/protocol-playwright"
   },
-  "homepage": "https://github.com/averspec/aver",
+  "homepage": "https://averspec.dev",
   "bugs": "https://github.com/averspec/aver/issues",
   "keywords": ["testing", "playwright", "e2e-testing", "browser-testing", "acceptance-testing", "aver"],
   "publishConfig": { "access": "public" },

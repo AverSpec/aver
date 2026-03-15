@@ -9,7 +9,7 @@
     "url": "https://github.com/averspec/aver.git",
     "directory": "packages/agent-plugin"
   },
-  "homepage": "https://github.com/averspec/aver",
+  "homepage": "https://averspec.dev",
   "bugs": "https://github.com/averspec/aver/issues",
   "keywords": ["testing", "claude-code", "ai-agent", "aver"],
   "publishConfig": { "access": "public" },

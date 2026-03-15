@@ -10,7 +10,7 @@
     "url": "https://github.com/averspec/aver.git",
     "directory": "packages/approvals"
   },
-  "homepage": "https://github.com/averspec/aver",
+  "homepage": "https://averspec.dev",
   "bugs": "https://github.com/averspec/aver/issues",
   "keywords": ["testing", "approval-testing", "snapshot-testing", "visual-regression", "aver"],
   "publishConfig": { "access": "public" },

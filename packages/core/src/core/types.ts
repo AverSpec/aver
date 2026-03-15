@@ -12,6 +12,8 @@ export interface TelemetryExpectation {
   readonly span: string
   /** Required span attributes. Use primitives for exact match, or asymmetric matchers (e.g. expect.any(String)) for pattern match. */
   readonly attributes?: Readonly<Record<string, TelemetryAttributeValue>>
+  /** Span names this operation causally triggers. Verifies trace connection (same trace or span link) to the named spans. */
+  readonly causes?: readonly string[]
 }
 
 /** Static expectation or a function that derives the expectation from the operation's parameters. */

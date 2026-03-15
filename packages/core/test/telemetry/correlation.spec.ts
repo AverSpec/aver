@@ -20,6 +20,7 @@ const orderFlow = defineDomain({
       telemetry: (p) => ({
         span: 'order.checkout',
         attributes: { 'order.id': p.orderId },
+        causes: ['order.fulfill'],
       }),
     }),
     fulfillOrder: action<{ orderId: string }>({

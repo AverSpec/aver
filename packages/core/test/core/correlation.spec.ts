@@ -12,6 +12,7 @@ function makeEntry(
     spanId?: string
     links?: Array<{ traceId: string; spanId: string }>
   },
+  causes?: string[],
 ): TraceEntry {
   return {
     kind: 'action',
@@ -19,7 +20,7 @@ function makeEntry(
     payload: undefined,
     status: 'pass',
     telemetry: {
-      expected: { span: `span.${name}`, attributes: expectedAttrs },
+      expected: { span: `span.${name}`, attributes: expectedAttrs, causes },
       matched: !!matchedSpan,
       matchedSpan,
     },
@@ -171,12 +172,12 @@ describe('verifyCorrelation', () => {
       expect(result.violations).toHaveLength(0)
     })
 
-    it('correlated steps in different traces with link pass', () => {
+    it('correlated steps in different traces with link pass when causes declared', () => {
       const trace: TraceEntry[] = [
         makeEntry('checkout', { 'order.id': '123' }, {
           name: 'order.checkout', attributes: { 'order.id': '123' },
           traceId: 'aaa', spanId: '001',
-        }),
+        }, ['order.fulfill']),
         makeEntry('fulfillOrder', { 'order.id': '123' }, {
           name: 'order.fulfill', attributes: { 'order.id': '123' },
           traceId: 'bbb', spanId: '002',
@@ -188,12 +189,12 @@ describe('verifyCorrelation', () => {
       expect(result.violations).toHaveLength(0)
     })
 
-    it('correlated steps in different traces without link report causal break', () => {
+    it('correlated steps in different traces without link report causal break when causes declared', () => {
       const trace: TraceEntry[] = [
         makeEntry('checkout', { 'order.id': '123' }, {
           name: 'order.checkout', attributes: { 'order.id': '123' },
           traceId: 'aaa', spanId: '001',
-        }),
+        }, ['order.fulfill']),
         makeEntry('fulfillOrder', { 'order.id': '123' }, {
           name: 'order.fulfill', attributes: { 'order.id': '123' },
           traceId: 'bbb', spanId: '002',
@@ -207,6 +208,22 @@ describe('verifyCorrelation', () => {
         key: 'order.id',
       }))
       expect(result.violations[0].message).toMatch(/different traces/)
+    })
+
+    it('correlated steps in different traces without causes declared do NOT report causal break', () => {
+      const trace: TraceEntry[] = [
+        makeEntry('checkout', { 'order.id': '123' }, {
+          name: 'order.checkout', attributes: { 'order.id': '123' },
+          traceId: 'aaa', spanId: '001',
+        }),
+        makeEntry('fulfillOrder', { 'order.id': '123' }, {
+          name: 'order.fulfill', attributes: { 'order.id': '123' },
+          traceId: 'bbb', spanId: '002',
+        }),
+      ]
+
+      const result = verifyCorrelation(trace)
+      expect(result.violations).toHaveLength(0)
     })
 
     it('uncorrelated steps skip causal check entirely', () => {

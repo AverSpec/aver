@@ -5,7 +5,7 @@ export interface TraceAttachment {
 }
 
 export interface TelemetryMatchResult {
-  expected: { span: string; attributes?: Record<string, unknown> }
+  expected: { span: string; attributes?: Record<string, unknown>; causes?: readonly string[] }
   matched: boolean
   matchedSpan?: { name: string; attributes: Record<string, unknown>; traceId?: string; spanId?: string; parentSpanId?: string; links?: ReadonlyArray<{ traceId: string; spanId: string }> }
 }

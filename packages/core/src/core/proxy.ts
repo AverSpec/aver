@@ -74,7 +74,7 @@ function verifyTelemetry(
   const spans = collector.getSpans()
   const matched = spans.find(s => matchSpan(s, expected))
   return {
-    expected: { span: expected.span, attributes: expected.attributes },
+    expected: { span: expected.span, attributes: expected.attributes, causes: expected.causes },
     matched: !!matched,
     matchedSpan: matched
       ? {

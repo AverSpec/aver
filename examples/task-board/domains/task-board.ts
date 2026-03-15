@@ -26,6 +26,7 @@ export const taskBoard = defineDomain({
       telemetry: (p) => ({
         span: 'task.assign',
         attributes: { 'task.title': p.title },
+        causes: ['notification.process'],
       }),
     }),
   },

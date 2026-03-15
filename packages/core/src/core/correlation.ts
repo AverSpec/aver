@@ -24,9 +24,14 @@ export interface CorrelationResult {
  *
  * Scans trace entries for steps with telemetry match results.
  * Groups steps by shared (attribute key, expected value) pairs.
- * For correlated groups, verifies:
- * 1. Each matched span carries the expected attribute value (attribute correlation)
- * 2. Matched spans are causally connected — same traceId or linked (causal correlation)
+ *
+ * Two verification levels:
+ * 1. Attribute correlation (default) — each matched span carries the expected attribute value
+ * 2. Causal correlation (opt-in via `causes`) — spans are in the same trace or linked
+ *
+ * Causal checking only fires when a step's telemetry declaration includes `causes: [...]`,
+ * naming the target spans that should be trace-connected. Separate HTTP requests that share
+ * an attribute but have no causal relationship are not flagged.
  */
 export function verifyCorrelation(trace: ReadonlyArray<TraceEntry>): CorrelationResult {
   // Collect steps that have telemetry with expected attributes
@@ -34,6 +39,7 @@ export function verifyCorrelation(trace: ReadonlyArray<TraceEntry>): Correlation
     name: string
     index: number
     expected: Record<string, unknown>
+    causes?: readonly string[]
     matchedSpan?: TelemetryMatchResult['matchedSpan']
   }> = []
 
@@ -45,6 +51,7 @@ export function verifyCorrelation(trace: ReadonlyArray<TraceEntry>): Correlation
       name: entry.name,
       index: i,
       expected: entry.telemetry.expected.attributes,
+      causes: entry.telemetry.expected.causes,
       matchedSpan: entry.telemetry.matchedSpan,
     })
   }
@@ -113,43 +120,51 @@ export function verifyCorrelation(trace: ReadonlyArray<TraceEntry>): Correlation
       }
     }
 
-    // --- Causal correlation: verify spans are in the same trace or linked ---
-    const traceIds = new Set<string>()
-    const spanMap = new Map<string, string>() // spanId → traceId for link checking
-
+    // --- Causal correlation: only when a step declares `causes` ---
     for (const step of steps) {
+      if (!step.causes || step.causes.length === 0) continue
       if (!step.matchedSpan?.traceId) continue
-      traceIds.add(step.matchedSpan.traceId)
-      if (step.matchedSpan.spanId) {
-        spanMap.set(step.matchedSpan.spanId, step.matchedSpan.traceId)
-      }
-    }
 
-    if (traceIds.size > 1) {
-      // Multiple traces — check if linked
-      let linked = false
-      for (const step of steps) {
-        if (!step.matchedSpan?.links) continue
-        for (const link of step.matchedSpan.links) {
-          // Check if this link points to any span in the correlated group
-          if (steps.some(s => s.matchedSpan?.spanId === link.spanId)) {
-            linked = true
-            break
+      for (const targetSpanName of step.causes) {
+        // Find the target step in this correlation group
+        const target = steps.find(s => s.matchedSpan?.name === targetSpanName)
+        if (!target?.matchedSpan?.traceId) continue
+
+        // Same trace — causally connected
+        if (step.matchedSpan.traceId === target.matchedSpan.traceId) continue
+
+        // Different trace — check for span links
+        let linked = false
+
+        // Check if target links back to source
+        if (target.matchedSpan.links) {
+          for (const link of target.matchedSpan.links) {
+            if (link.spanId === step.matchedSpan.spanId) {
+              linked = true
+              break
+            }
           }
         }
-        if (linked) break
-      }
 
-      if (!linked) {
-        const traceIdList = [...traceIds]
-        const stepNames = steps.map(s => s.name)
-        violations.push({
-          kind: 'causal-break',
-          key,
-          value,
-          steps: stepNames,
-          message: `Steps ${stepNames.join(', ')} share '${key}: ${value}' but spans are in different traces (${traceIdList.join(', ')}) with no link`,
-        })
+        // Check if source links to target
+        if (!linked && step.matchedSpan.links) {
+          for (const link of step.matchedSpan.links) {
+            if (link.spanId === target.matchedSpan.spanId) {
+              linked = true
+              break
+            }
+          }
+        }
+
+        if (!linked) {
+          violations.push({
+            kind: 'causal-break',
+            key,
+            value,
+            steps: [step.name, targetSpanName],
+            message: `'${step.matchedSpan.name}' declares causes: ['${targetSpanName}'] but spans are in different traces (${step.matchedSpan.traceId}, ${target.matchedSpan.traceId}) with no link. Propagate trace context or add a span link at the async boundary.`,
+          })
+        }
       }
     }
   }

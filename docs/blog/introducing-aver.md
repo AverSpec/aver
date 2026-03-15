@@ -175,7 +175,7 @@ This is the same separation at work: the domain says *what* to verify, the adapt
 
 ## Same Test, Every Level
 
-The payoff is concrete. The task board example has five tests and three adapters — unit, HTTP, Playwright:
+The payoff is concrete. The task board example has four core tests and three adapters — unit, HTTP, Playwright:
 
 ```
 $ npx aver run
@@ -193,10 +193,10 @@ $ npx aver run
  ✓ track full task lifecycle [http]           9ms
  ✓ track full task lifecycle [playwright]   408ms
 
- Tests  15 passed (15)
+ Tests  12 passed (12)
 ```
 
-Five tests. Three adapters. Fifteen runs. Zero code duplication. The unit adapter validates business logic in under 5ms. The HTTP adapter verifies API contracts. The Playwright adapter confirms the UI works end-to-end. And the test code is identical for all three — because the test code doesn't know about any of them.
+Four tests. Three adapters. Twelve runs. Zero code duplication. The unit adapter validates business logic in under 5ms. The HTTP adapter verifies API contracts. The Playwright adapter confirms the UI works end-to-end. And the test code is identical for all three — because the test code doesn't know about any of them.
 
 This is the spine. The shared domain tests verify the behavioral contract at every level. You still write unit tests to drive your implementation design through TDD. You still write level-specific tests for concerns that only exist at one layer — drag-and-drop interactions, concurrent writes, CSS rendering. The pyramid doesn't disappear. It gets a backbone.
 
@@ -245,7 +245,7 @@ Aver earns its keep when the test suite is large enough to feel the pain of dupl
 ## Try It
 
 ```bash
-npm install @averspec/core
+npm install --save-dev @averspec/core vitest
 npx aver init
 ```
 
@@ -254,7 +254,7 @@ The `init` command is interactive — it will prompt you for a domain name and p
 ```
 domains/task-board.ts        # Your domain vocabulary
 adapters/task-board.unit.ts  # The unit adapter
-tests/task-board.test.ts     # Your first test
+tests/task-board.spec.ts     # Your first test
 ```
 
 The domain defines what your system does. The adapter maps those operations to a unit protocol. The test composes them into scenarios. Run it:
@@ -268,10 +268,10 @@ When you're ready for a second level — say, an HTTP adapter for your Express A
 For a complete example, explore the [task board](https://github.com/averspec/aver/tree/main/examples/task-board) — a React + Express app tested across unit, HTTP, and Playwright adapters with a single test suite.
 
 - [Documentation](/)
-- [Getting Started](/getting-started)
+- [Getting Started](/guides/getting-started)
 - [Architecture](/architecture)
 - [GitHub](https://github.com/averspec/aver)
 
 ---
 
-*Aver is MIT-licensed and open source. Built by [Nate Jackson](https://github.com/njackson).*
+*Aver is MIT-licensed and open source. Built by Nate Jackson.*

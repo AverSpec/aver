@@ -321,11 +321,12 @@ Creates an OTLP HTTP receiver for cross-process telemetry testing.
 ```typescript
 import { createOtlpReceiver } from '@averspec/telemetry'
 
-const receiver = await createOtlpReceiver()
+const receiver = createOtlpReceiver()
+await receiver.start()
 // receiver.port — port the OTLP HTTP endpoint listens on
 // receiver.getSpans() — returns CollectedSpan[]
 // receiver.reset() — clears collected spans
-// receiver.close() — shuts down the server
+// receiver.stop() — shuts down the server
 ```
 
 The receiver implements `TelemetryCollector` so it can be set directly on a protocol's `telemetry` property.

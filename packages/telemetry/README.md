@@ -1,5 +1,7 @@
 # @averspec/telemetry
 
+> **Status: Stable** — API surface is locked for 0.x releases.
+
 Behavioral contract export and production trace verification for Aver.
 
 Verify that your system emits the right OpenTelemetry spans — not just in tests, but in production. Extract expected telemetry from test runs, then check real production traces against that contract to catch instrumentation gaps, broken correlations, and attribute mismatches.

@@ -110,7 +110,7 @@ Beyond the high-profile tools, there's a layer of internal infrastructure that t
 
 **Production telemetry verification.** Your tests pass, your deploys ship, and then your dashboards go dark because someone broke trace propagation. Verifying that the system emits the right telemetry is a testing problem almost nobody treats as a testing problem.
 
-These aren't exotic requirements. They're the infrastructure every serious team needs and most teams build from scratch. The agentic development tools don't address them because they're focused on the loop, the orchestration, or the spec — not the verification layer underneath.
+These aren't exotic requirements. They're the infrastructure that teams reaching for serious verification end up building from scratch — or wishing they had time to. The agentic development tools don't address them because they're focused on the loop, the orchestration, or the spec — not the verification layer underneath.
 
 ## The Payoff
 

@@ -7,7 +7,7 @@ nav_order: 8
 
 # AI-Assisted Testing
 
-Aver integrates with AI coding agents through a Claude Code plugin that combines agent skills with bash scripts wrapping the `gh` CLI. Scenarios and backlog items are stored as GitHub Issues, giving you full visibility outside agent sessions. This guide covers setup, what you get, and what a real session looks like.
+Aver integrates with AI coding agents through a Claude Code plugin that combines agent skills with bash scripts for managing scenarios and backlog items. Two backends are supported: GitHub Issues (via the `gh` CLI) and Linear. This guide covers setup, what you get, and what a real session looks like.
 
 ## The simplest integration
 
@@ -27,7 +27,7 @@ If that's all you need, stop here. Everything below adds structured workflow and
 
 ## Setting up the Claude Code plugin
 
-The `@averspec/agent-plugin` bundles two agent skills and a set of bash scripts for managing scenarios and backlog via GitHub Issues. Install it:
+The `@averspec/agent-plugin` bundles two agent skills and a set of bash scripts for managing scenarios and backlog. Install it:
 
 ```bash
 npm install --save-dev @averspec/agent-plugin
@@ -55,15 +55,65 @@ Add to your project's `.claude/settings.json`:
 
 This tells Claude Code to load the Aver skills when it opens your project.
 
-### 2. Configure GitHub Issue labels
+### 2. Choose a backend
 
-Run the label setup script once per repository:
+The plugin supports two backends for scenario and backlog tracking. Set the `AVER_BACKEND` environment variable to choose which one the scripts use:
 
 ```bash
+export AVER_BACKEND=gh      # GitHub Issues (default if unset)
+export AVER_BACKEND=linear  # Linear
+```
+
+#### GitHub Issues (default)
+
+Requires the `gh` CLI, authenticated to the repository:
+
+```bash
+# Verify authentication
+gh auth status
+
+# Run label setup once per repository
 ./node_modules/@averspec/agent-plugin/scripts/gh/setup-labels.sh
 ```
 
 This creates the `scenario`, `backlog`, `stage:captured`, `stage:characterized`, `stage:mapped`, `stage:specified`, `stage:implemented`, and priority/type labels that the scripts use to track scenarios and backlog items as GitHub Issues.
+
+Add script permissions to `.claude/settings.json`:
+
+```json
+{
+  "permissions": {
+    "allow": ["Bash(node_modules/@averspec/agent-plugin/scripts/gh/*)"]
+  }
+}
+```
+
+#### Linear
+
+Requires a [Linear API key](https://linear.app/settings/api). Run the interactive setup:
+
+```bash
+npx @averspec/agent-plugin setup
+```
+
+This will prompt for your API key, let you select your team, save credentials to `~/.config/aver/.env`, and optionally create the required labels in Linear.
+
+Alternatively, create `~/.config/aver/.env` (or `.env` in your project root) manually:
+
+```
+LINEAR_API_KEY=lin_api_...
+LINEAR_TEAM_ID=YOUR_TEAM_KEY
+```
+
+Set the backend and add script permissions to `.claude/settings.json`:
+
+```json
+{
+  "permissions": {
+    "allow": ["Bash(node_modules/@averspec/agent-plugin/scripts/linear/*)"]
+  }
+}
+```
 
 ### 3. Verify
 
@@ -73,9 +123,9 @@ Start Claude Code in your project and ask it to run `/aver:aver-workflow`. It sh
 
 ## What you get
 
-### Bash scripts (`scripts/gh/`)
+### Bash scripts
 
-The plugin includes bash scripts that wrap the `gh` CLI. The agent calls these during conversation to manage scenarios and backlog items stored as GitHub Issues:
+The plugin includes bash scripts in `scripts/gh/` and `scripts/linear/`. Both backends expose the same script names with the same arguments. The agent calls these during conversation to manage scenarios and backlog items:
 
 | Category | Scripts | Purpose |
 |----------|---------|---------|
@@ -166,19 +216,21 @@ captured → mapped → specified → implemented
 
 ## Managing scenarios outside agent sessions
 
-Since scenarios and backlog items are GitHub Issues, you can manage them with any tool that works with GitHub:
+Scenarios and backlog items live in your chosen backend, so you can manage them outside of agent sessions.
+
+**GitHub Issues:**
 
 ```bash
-# List scenarios
 gh issue list --label scenario
-
-# View a scenario
 gh issue view 42
-
-# List backlog items by priority
 gh issue list --label backlog --label P0
+```
 
-# Or use the convenience scripts directly
+**Linear:** Use the Linear app or API directly.
+
+**Either backend:**
+
+```bash
 ./node_modules/@averspec/agent-plugin/scripts/gh/scenario-list.sh
-./node_modules/@averspec/agent-plugin/scripts/gh/backlog-list.sh
+./node_modules/@averspec/agent-plugin/scripts/linear/scenario-list.sh
 ```

@@ -57,11 +57,11 @@ This tells Claude Code to load the Aver skills when it opens your project.
 
 ### 2. Choose a backend
 
-The plugin supports two backends for scenario and backlog tracking. Set the `AVER_BACKEND` environment variable to choose which one the scripts use:
+The plugin supports two backends for scenario and backlog tracking. Set `AVER_BACKEND` to choose which one the scripts use. Add it to your project `.env`, `~/.config/aver/.env`, or your Claude Code settings (`env` field):
 
-```bash
-export AVER_BACKEND=gh      # GitHub Issues (default if unset)
-export AVER_BACKEND=linear  # Linear
+```
+AVER_BACKEND=gh      # GitHub Issues (default if unset)
+AVER_BACKEND=linear  # Linear
 ```
 
 #### GitHub Issues (default)

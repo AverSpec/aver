@@ -7,9 +7,13 @@ nav_order: 2
 
 # The Tests You're Afraid to Refactor
 
-You start with unit tests. Then you add API tests because the integration matters. Then someone adds Playwright because the button didn't actually work. Now "create a task" lives in a unit factory, an API helper, a page object, and the implementation itself. Four descriptions of the same behavior, none of them connected.
+You've been on this project. Unit tests, API tests, E2E suite. The unit test checks the calculation. The API test checks the status code. The E2E test checks that the page renders. Each one tested a slice of the behavior at one level. Nobody tested the whole behavior at any level. A customer hits the gap before you do.
 
-It works until something changes. Rename a status, add a required field, change a default. Now you're updating all four places, running three suites, and hoping they still agree. The tests you wrote to make change safe are the thing making change hard.
+The domain is smeared across all of them. A validation here, a default there, an assertion about a JSON shape somewhere else. No single test can tell you whether the feature actually works. You just have a patchwork and you assume it adds up.
+
+And the tests are coupled to whatever seam was convenient at the time. The unit test is wired to a database call. The Playwright test is coupled to CSS selectors. None of them are coupled to what the system actually does. They're coupled to how it's built right now. So when you refactor, the tests break. Not because the behavior changed, but because the seams moved.
+
+That's the test suite you're afraid to refactor.
 
 ---
 

@@ -11,12 +11,16 @@ You start with unit tests. Then you add API tests because the integration matter
 
 It works until something changes. Rename a status, add a required field, change a default. Now you're updating all four places, running three suites, and hoping they still agree. The tests you wrote to make change safe are the thing making change hard.
 
+---
+
+## One behavior, one place
+
 ```bash
 npm install --save-dev @averspec/core vitest
 npx aver init
 ```
 
-Three files. Here's what's in them.
+Three files.
 
 ## The domain
 

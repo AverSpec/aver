@@ -326,6 +326,126 @@ describe('extractContract', () => {
       warnSpy.mockRestore()
     })
 
+    it('destructured parameter produces correlated binding', () => {
+      const destructuredDomain = defineDomain({
+        name: 'destructured-test',
+        actions: {
+          signUp: action<{ email: string }>({
+            telemetry: ({ email }) => ({
+              span: 'user.signup',
+              attributes: { 'user.email': email },
+            }),
+          }),
+        },
+        queries: {},
+        assertions: {},
+      })
+
+      const result = extractContract({
+        domain: destructuredDomain,
+        results: [{
+          testName: 'destructured access',
+          trace: [
+            traceEntry({
+              kind: 'action',
+              name: 'signUp',
+              payload: { email: 'test@example.com' },
+              telemetry: {
+                expected: { span: 'user.signup', attributes: { 'user.email': 'test@example.com' } },
+                matched: true,
+              },
+            }),
+          ],
+        }],
+      })
+
+      expect(result.entries[0].spans[0].attributes['user.email']).toEqual({
+        kind: 'correlated',
+        symbol: '$email',
+      })
+    })
+
+    it('renamed destructured parameter produces correlated binding', () => {
+      const renamedDomain = defineDomain({
+        name: 'renamed-test',
+        actions: {
+          signUp: action<{ email: string }>({
+            telemetry: ({ email: e }) => ({
+              span: 'user.signup',
+              attributes: { 'user.email': e },
+            }),
+          }),
+        },
+        queries: {},
+        assertions: {},
+      })
+
+      const result = extractContract({
+        domain: renamedDomain,
+        results: [{
+          testName: 'renamed destructured access',
+          trace: [
+            traceEntry({
+              kind: 'action',
+              name: 'signUp',
+              payload: { email: 'test@example.com' },
+              telemetry: {
+                expected: { span: 'user.signup', attributes: { 'user.email': 'test@example.com' } },
+                matched: true,
+              },
+            }),
+          ],
+        }],
+      })
+
+      expect(result.entries[0].spans[0].attributes['user.email']).toEqual({
+        kind: 'correlated',
+        symbol: '$email',
+      })
+    })
+
+    it('spread then access produces correlated binding', () => {
+      const spreadDomain = defineDomain({
+        name: 'spread-test',
+        actions: {
+          signUp: action<{ email: string }>({
+            telemetry: (p) => {
+              const copy = { ...p }
+              return {
+                span: 'user.signup',
+                attributes: { 'user.email': copy.email },
+              }
+            },
+          }),
+        },
+        queries: {},
+        assertions: {},
+      })
+
+      const result = extractContract({
+        domain: spreadDomain,
+        results: [{
+          testName: 'spread access',
+          trace: [
+            traceEntry({
+              kind: 'action',
+              name: 'signUp',
+              payload: { email: 'test@example.com' },
+              telemetry: {
+                expected: { span: 'user.signup', attributes: { 'user.email': 'test@example.com' } },
+                matched: true,
+              },
+            }),
+          ],
+        }],
+      })
+
+      expect(result.entries[0].spans[0].attributes['user.email']).toEqual({
+        kind: 'correlated',
+        symbol: '$email',
+      })
+    })
+
     it('parameterized tests produce multiple contract entries', () => {
       const results = [
         {

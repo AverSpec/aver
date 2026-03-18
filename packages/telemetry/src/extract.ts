@@ -98,6 +98,16 @@ function findMarker(domain: Domain, kind: 'action' | 'query' | 'assertion' | 'te
  * Run a TelemetryDeclaration<P> function with a Proxy that tracks which
  * payload fields are accessed and maps them to attribute keys.
  *
+ * Works with direct access (`p.title`), destructuring (`({ title }) => ...`),
+ * renamed destructuring (`({ title: t }) => ...`), and spread (`{...p}`).
+ *
+ * Known limitations:
+ * - String concatenation (`'/users/' + p.id`) is detected and warned.
+ * - Value transformation (`p.id.toString()`, `parseInt(p.value)`) silently
+ *   produces incorrect bindings because the sentinel is a string.
+ * - Conditional logic (`p.active ? 'yes' : 'no'`) always evaluates truthy
+ *   because sentinels are non-empty strings.
+ *
  * Returns a Map<attributeKey, paramFieldName>.
  */
 function trackFieldAccesses(

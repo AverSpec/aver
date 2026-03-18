@@ -44,6 +44,9 @@ export function buildMissingAdapterError(domain: Domain): string {
   )
 }
 
+/** Aver context property names that cannot be used as fixture names. */
+const AVER_RESERVED = new Set(['act', 'given', 'when', 'query', 'assert', 'then', 'trace'])
+
 export function shouldFilterOutDomain(domain: Domain): boolean {
   if (typeof process === 'undefined') return false
   const filter = process.env.AVER_DOMAIN
@@ -99,6 +102,22 @@ export function buildTestApi<D extends Domain>(
           buildTestApi(child.call(testImpl, ...args), domain, getEffectiveAdapters, globalSkipImpl, calledOps)
       }
 
+      // extend merges vitest fixture context with Aver's test context
+      if (prop === 'extend') {
+        return (fixtures: Record<string, unknown>) => {
+          for (const key of Object.keys(fixtures)) {
+            if (AVER_RESERVED.has(key)) {
+              throw new Error(
+                `fixture name "${key}" conflicts with Aver's test context. ` +
+                `Choose a different name for your fixture.`
+              )
+            }
+          }
+          const extended = child.call(testImpl, fixtures)
+          return buildTestApi(extended, domain, getEffectiveAdapters, globalSkipImpl, calledOps)
+        }
+      }
+
       // Everything else: recursively wrap (handles only, skip, concurrent, etc.)
       if (typeof child === 'function') {
         return buildTestApi(child, domain, getEffectiveAdapters, globalSkipImpl, calledOps)
@@ -116,6 +135,33 @@ function makeTestFn<D extends Domain>(
   globalSkipImpl?: any,
   calledOps?: CalledOps,
 ): (name: string, fn: (ctx: TestContext<D>) => Promise<void>) => void {
+  // Wraps the user's test fn to merge vitest fixture context (if any) with Aver context.
+  // When vitest resolves fixtures via test.extend(), it passes them as the first arg.
+  function wrapWithFixtureMerge(
+    userFn: (ctx: TestContext<D>) => Promise<void>,
+  ): (ctx: TestContext<D>) => Promise<void> {
+    return (userFn as any).__averWrapped ? userFn : Object.assign(
+      (averCtx: TestContext<D>) => userFn(averCtx),
+      { __averWrapped: true },
+    )
+  }
+
+  function registerTest(
+    adapter: Adapter,
+    testName: string,
+    userFn: (ctx: TestContext<D>) => Promise<void>,
+  ): void {
+    const wrappedFn = wrapWithFixtureMerge(userFn)
+    testImpl(testName, async (vitestCtx?: Record<string, unknown>) => {
+      await runTestWithAdapter(adapter, domain, testName, async (averCtx) => {
+        const merged = vitestCtx && typeof vitestCtx === 'object'
+          ? { ...vitestCtx, ...averCtx } as TestContext<D>
+          : averCtx
+        await wrappedFn(merged)
+      }, calledOps)
+    })
+  }
+
   return (name, fn) => {
     if (!testImpl) {
       throw new Error('Aver requires a test runner. Did you forget to run Vitest or Jest?')
@@ -131,29 +177,29 @@ function makeTestFn<D extends Domain>(
     const adapters = getEffectiveAdapters()
 
     if (adapters.length === 0) {
-      testImpl(name, async () => {
+      testImpl(name, async (vitestCtx?: Record<string, unknown>) => {
         await maybeAutoloadConfig()
         const a = findAdapter(domain)
         if (!a) throw new Error(buildMissingAdapterError(domain))
-        await runTestWithAdapter(a, domain, name, fn, calledOps)
+        await runTestWithAdapter(a, domain, name, async (averCtx) => {
+          const merged = vitestCtx && typeof vitestCtx === 'object'
+            ? { ...vitestCtx, ...averCtx } as TestContext<D>
+            : averCtx
+          await fn(merged)
+        }, calledOps)
       })
       return
     }
 
     if (adapters.length === 1) {
-      const a = adapters[0]
-      testImpl(name, async () => {
-        await runTestWithAdapter(a, domain, name, fn, calledOps)
-      })
+      registerTest(adapters[0], name, fn)
       return
     }
 
     // Multi-adapter: parameterized test names
     for (const a of adapters) {
       const adapterName = `${name} [${a.protocol.name}]`
-      testImpl(adapterName, async () => {
-        await runTestWithAdapter(a, domain, adapterName, fn, calledOps)
-      })
+      registerTest(a, adapterName, fn)
     }
   }
 }

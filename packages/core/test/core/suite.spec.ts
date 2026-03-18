@@ -415,6 +415,95 @@ describe('suite() — test modifier chains', () => {
   })
 })
 
+describe('suite() — test.extend()', () => {
+  const originalTest = (globalThis as any).test
+  const originalIt = (globalThis as any).it
+
+  afterEach(() => {
+    if (originalTest) (globalThis as any).test = originalTest
+    else delete (globalThis as any).test
+    if (originalIt) (globalThis as any).it = originalIt
+    else delete (globalThis as any).it
+    resetRegistry()
+  })
+
+  it('extend() merges fixture context with Aver context', async () => {
+    let receivedCtx: any
+    const fakeTest: any = (name: string, fn: any) => { fn({}) }
+    fakeTest.skip = () => {}
+    fakeTest.extend = (fixtures: any) => {
+      const extended: any = (name: string, fn: any) => {
+        const fixtureValues: any = {}
+        for (const [key, factory] of Object.entries(fixtures)) {
+          (factory as any)({}, (val: any) => { fixtureValues[key] = val })
+        }
+        fakeTest(name, (vitestCtx: any) => fn({ ...vitestCtx, ...fixtureValues }))
+      }
+      extended.skip = fakeTest.skip
+      return extended
+    }
+    ;(globalThis as any).test = fakeTest
+    registerAdapter(cartAdapter)
+    const { test: suiteTest } = suite(cart)
+
+    const extendedTest = (suiteTest as any).extend({
+      db: async ({}: any, use: any) => { await use('mock-db') },
+    })
+
+    await new Promise<void>((resolve) => {
+      extendedTest('with fixture', async (ctx: any) => {
+        receivedCtx = ctx
+        resolve()
+      })
+    })
+
+    expect(receivedCtx.act).toBeDefined()
+    expect(receivedCtx.given).toBeDefined()
+    expect(receivedCtx.when).toBeDefined()
+    expect(receivedCtx.then).toBeDefined()
+    expect(receivedCtx.assert).toBeDefined()
+    expect(receivedCtx.query).toBeDefined()
+    expect(receivedCtx.trace).toBeDefined()
+    expect(receivedCtx.db).toBe('mock-db')
+  })
+
+  it('extend() throws on collision with Aver reserved names', () => {
+    const fakeTest: any = (name: string, fn: any) => { fn({}) }
+    fakeTest.skip = () => {}
+    fakeTest.extend = (fixtures: any) => {
+      const extended: any = (name: string, fn: any) => fakeTest(name, fn)
+      extended.skip = fakeTest.skip
+      return extended
+    }
+    ;(globalThis as any).test = fakeTest
+    registerAdapter(cartAdapter)
+    const { test: suiteTest } = suite(cart)
+
+    expect(() => {
+      (suiteTest as any).extend({ act: async ({}: any, use: any) => { await use('conflict') } })
+    }).toThrow(/fixture name "act" conflicts with Aver/)
+  })
+
+  it('extend() throws on collision for all reserved names', () => {
+    const fakeTest: any = (name: string, fn: any) => { fn({}) }
+    fakeTest.skip = () => {}
+    fakeTest.extend = (fixtures: any) => {
+      const extended: any = (name: string, fn: any) => fakeTest(name, fn)
+      extended.skip = fakeTest.skip
+      return extended
+    }
+    ;(globalThis as any).test = fakeTest
+    registerAdapter(cartAdapter)
+    const { test: suiteTest } = suite(cart)
+
+    for (const name of ['act', 'given', 'when', 'query', 'assert', 'then', 'trace']) {
+      expect(() => {
+        (suiteTest as any).extend({ [name]: async ({}: any, use: any) => { await use('x') } })
+      }).toThrow(/conflicts with Aver/)
+    }
+  })
+})
+
 describe('suite() — domain filtering', () => {
   const originalTest = (globalThis as any).test
   const originalIt = (globalThis as any).it

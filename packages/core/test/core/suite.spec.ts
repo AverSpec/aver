@@ -484,6 +484,23 @@ describe('suite() — test.extend()', () => {
     }).toThrow(/fixture name "act" conflicts with Aver/)
   })
 
+  it('named config extend() checks for collisions', () => {
+    const fakeTest: any = (name: string, fn: any) => { fn({}) }
+    fakeTest.skip = () => {}
+    fakeTest.extend = (fixtures: any) => {
+      const extended: any = (name: string, fn: any) => fakeTest(name, fn)
+      extended.skip = fakeTest.skip
+      return extended
+    }
+    ;(globalThis as any).test = fakeTest
+    const config = { cart: [cart, cartAdapter] as const }
+    const { test: namedTest } = suite(config)
+
+    expect(() => {
+      (namedTest as any).extend({ query: async ({}: any, use: any) => { await use('conflict') } })
+    }).toThrow(/fixture name "query" conflicts with Aver/)
+  })
+
   it('extend() throws on collision for all reserved names', () => {
     const fakeTest: any = (name: string, fn: any) => { fn({}) }
     fakeTest.skip = () => {}

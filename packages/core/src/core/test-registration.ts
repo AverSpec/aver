@@ -45,7 +45,7 @@ export function buildMissingAdapterError(domain: Domain): string {
 }
 
 /** Aver context property names that cannot be used as fixture names. */
-const AVER_RESERVED = new Set(['act', 'given', 'when', 'query', 'assert', 'then', 'trace'])
+export const AVER_RESERVED = new Set(['act', 'given', 'when', 'query', 'assert', 'then', 'trace'])
 
 export function shouldFilterOutDomain(domain: Domain): boolean {
   if (typeof process === 'undefined') return false

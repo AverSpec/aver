@@ -7,7 +7,7 @@ import { computeCoverage, registerCoverageEnforcement } from './coverage'
 import type { VocabularyCoverage } from './coverage'
 import { createProxies } from './proxy'
 import type { CalledOps, ActProxy, QueryProxy, AssertProxy } from './proxy'
-import { getGlobalTest, getGlobalDescribe, buildTestApi, shouldFilterOutDomain, buildMissingAdapterError } from './test-registration'
+import { getGlobalTest, getGlobalDescribe, buildTestApi, shouldFilterOutDomain, buildMissingAdapterError, AVER_RESERVED } from './test-registration'
 import { runTest } from './test-runner'
 import type { AdapterEntry } from './test-runner'
 
@@ -128,8 +128,13 @@ function buildNamedTestApi<C extends SuiteConfig>(
       ([key, [domain, adapter]]) => [key, domain, adapter],
     )
 
-    testImpl(name, async () => {
-      await runTest(entries, name, fn as (ctx: any) => Promise<void>, calledOpsMap)
+    testImpl(name, async (vitestCtx?: Record<string, unknown>) => {
+      await runTest(entries, name, async (averCtx: any) => {
+        const merged = vitestCtx && typeof vitestCtx === 'object'
+          ? { ...vitestCtx, ...averCtx }
+          : averCtx
+        await (fn as (ctx: any) => Promise<void>)(merged)
+      }, calledOpsMap)
     })
   }
 
@@ -150,6 +155,21 @@ function buildNamedTestApi<C extends SuiteConfig>(
       if (prop === 'skipIf' || prop === 'runIf') {
         return (...args: any[]) =>
           buildNamedTestApi(child.call(testImpl, ...args), config, globalSkipImpl, calledOpsMap)
+      }
+
+      if (prop === 'extend') {
+        return (fixtures: Record<string, unknown>) => {
+          for (const key of Object.keys(fixtures)) {
+            if (AVER_RESERVED.has(key)) {
+              throw new Error(
+                `fixture name "${key}" conflicts with Aver's test context. ` +
+                `Choose a different name for your fixture.`
+              )
+            }
+          }
+          const extended = child.call(testImpl, fixtures)
+          return buildNamedTestApi(extended, config, globalSkipImpl, calledOpsMap)
+        }
       }
 
       if (typeof child === 'function') {

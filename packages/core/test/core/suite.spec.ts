@@ -333,6 +333,22 @@ describe('suite() — test modifier chains', () => {
     ])
   })
 
+  it('test.for registers parameterized tests', () => {
+    const { fakeTest, calls } = createFakeTest()
+    fakeTest.for = (cases: any[]) => {
+      return (name: string, _fn: any) => {
+        for (const c of cases) {
+          calls.push({ name: `${name} [${JSON.stringify(c)}]`, modifier: 'for' })
+        }
+      }
+    }
+    ;(globalThis as any).test = fakeTest
+    registerAdapter(cartAdapter)
+    const { test: suiteTest } = suite(cart)
+    ;(suiteTest as any).for([{ x: 1 }])('test %s', async () => {})
+    expect(calls).toEqual([{ name: 'test %s [{"x":1}]', modifier: 'for' }])
+  })
+
   it('test.skipIf(true) delegates to skip', () => {
     const { fakeTest, calls } = createFakeTest()
     ;(globalThis as any).test = fakeTest

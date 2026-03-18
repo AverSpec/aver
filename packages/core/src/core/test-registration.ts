@@ -70,10 +70,10 @@ export function buildTestApi<D extends Domain>(
       // todo is pass-through — no test body to wrap
       if (prop === 'todo') return child.bind(testImpl)
 
-      // each is a factory — wrap the *result* of calling it
-      if (prop === 'each') {
+      // each / for are factories — wrap the *result* of calling them
+      if (prop === 'each' || prop === 'for') {
         return (...args: any[]) =>
-          buildTestApi(testImpl.each(...args), domain, getEffectiveAdapters, globalSkipImpl, calledOps)
+          buildTestApi(testImpl[prop](...args), domain, getEffectiveAdapters, globalSkipImpl, calledOps)
       }
 
       // skipIf / runIf are factories — wrap the *result* of calling them

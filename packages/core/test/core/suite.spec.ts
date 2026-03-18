@@ -249,6 +249,138 @@ describe('suite().test() — callback API', () => {
   })
 })
 
+describe('suite() — test modifier chains', () => {
+  const originalTest = (globalThis as any).test
+  const originalIt = (globalThis as any).it
+
+  afterEach(() => {
+    if (originalTest) (globalThis as any).test = originalTest
+    else delete (globalThis as any).test
+    if (originalIt) (globalThis as any).it = originalIt
+    else delete (globalThis as any).it
+    resetRegistry()
+  })
+
+  function createFakeTest() {
+    const calls: Array<{ name: string; modifier?: string }> = []
+    const fakeTest: any = (name: string, _fn: any) => { calls.push({ name }) }
+    fakeTest.skip = (name: string, _fn: any) => { calls.push({ name, modifier: 'skip' }) }
+    fakeTest.only = (name: string, _fn: any) => { calls.push({ name, modifier: 'only' }) }
+    fakeTest.todo = (name: string) => { calls.push({ name, modifier: 'todo' }) }
+    fakeTest.fails = (name: string, _fn: any) => { calls.push({ name, modifier: 'fails' }) }
+    fakeTest.concurrent = Object.assign(
+      (name: string, _fn: any) => { calls.push({ name, modifier: 'concurrent' }) },
+      {
+        skip: (name: string, _fn: any) => { calls.push({ name, modifier: 'concurrent.skip' }) },
+        only: (name: string, _fn: any) => { calls.push({ name, modifier: 'concurrent.only' }) },
+      },
+    )
+    fakeTest.sequential = (name: string, _fn: any) => { calls.push({ name, modifier: 'sequential' }) }
+    fakeTest.each = (cases: any[]) => {
+      return (name: string, _fn: any) => {
+        for (const c of cases) {
+          calls.push({ name: `${name} [${c}]`, modifier: 'each' })
+        }
+      }
+    }
+    fakeTest.skipIf = (condition: any) => {
+      if (condition) return fakeTest.skip
+      return fakeTest
+    }
+    fakeTest.runIf = (condition: any) => {
+      if (condition) return fakeTest
+      return fakeTest.skip
+    }
+    return { fakeTest, calls }
+  }
+
+  it('test.skip registers via skip modifier', () => {
+    const { fakeTest, calls } = createFakeTest()
+    ;(globalThis as any).test = fakeTest
+    registerAdapter(cartAdapter)
+    const { test: suiteTest } = suite(cart)
+    ;(suiteTest as any).skip('skipped test', async () => {})
+    expect(calls).toEqual([{ name: 'skipped test', modifier: 'skip' }])
+  })
+
+  it('test.only registers via only modifier', () => {
+    const { fakeTest, calls } = createFakeTest()
+    ;(globalThis as any).test = fakeTest
+    registerAdapter(cartAdapter)
+    const { test: suiteTest } = suite(cart)
+    ;(suiteTest as any).only('focused test', async () => {})
+    expect(calls).toEqual([{ name: 'focused test', modifier: 'only' }])
+  })
+
+  it('test.todo registers without a body', () => {
+    const { fakeTest, calls } = createFakeTest()
+    ;(globalThis as any).test = fakeTest
+    registerAdapter(cartAdapter)
+    const { test: suiteTest } = suite(cart)
+    ;(suiteTest as any).todo('future test')
+    expect(calls).toEqual([{ name: 'future test', modifier: 'todo' }])
+  })
+
+  it('test.each registers parameterized tests', () => {
+    const { fakeTest, calls } = createFakeTest()
+    ;(globalThis as any).test = fakeTest
+    registerAdapter(cartAdapter)
+    const { test: suiteTest } = suite(cart)
+    ;(suiteTest as any).each(['a', 'b'])('test %s', async () => {})
+    expect(calls).toEqual([
+      { name: 'test %s [a]', modifier: 'each' },
+      { name: 'test %s [b]', modifier: 'each' },
+    ])
+  })
+
+  it('test.skipIf(true) delegates to skip', () => {
+    const { fakeTest, calls } = createFakeTest()
+    ;(globalThis as any).test = fakeTest
+    registerAdapter(cartAdapter)
+    const { test: suiteTest } = suite(cart)
+    ;(suiteTest as any).skipIf(true)('conditional test', async () => {})
+    expect(calls).toEqual([{ name: 'conditional test', modifier: 'skip' }])
+  })
+
+  it('test.skipIf(false) delegates to normal test', () => {
+    const { fakeTest, calls } = createFakeTest()
+    ;(globalThis as any).test = fakeTest
+    registerAdapter(cartAdapter)
+    const { test: suiteTest } = suite(cart)
+    ;(suiteTest as any).skipIf(false)('conditional test', async () => {})
+    expect(calls).toEqual([{ name: 'conditional test' }])
+  })
+
+  it('test.concurrent registers via concurrent modifier', () => {
+    const { fakeTest, calls } = createFakeTest()
+    ;(globalThis as any).test = fakeTest
+    registerAdapter(cartAdapter)
+    const { test: suiteTest } = suite(cart)
+    ;(suiteTest as any).concurrent('concurrent test', async () => {})
+    expect(calls).toEqual([{ name: 'concurrent test', modifier: 'concurrent' }])
+  })
+
+  it('test.concurrent.skip chains correctly', () => {
+    const { fakeTest, calls } = createFakeTest()
+    ;(globalThis as any).test = fakeTest
+    registerAdapter(cartAdapter)
+    const { test: suiteTest } = suite(cart)
+    ;(suiteTest as any).concurrent.skip('chained test', async () => {})
+    expect(calls).toEqual([{ name: 'chained test', modifier: 'concurrent.skip' }])
+  })
+
+  it('undefined modifiers return undefined (Jest compat)', () => {
+    const { fakeTest } = createFakeTest()
+    delete fakeTest.concurrent
+    delete fakeTest.skipIf
+    ;(globalThis as any).test = fakeTest
+    registerAdapter(cartAdapter)
+    const { test: suiteTest } = suite(cart)
+    expect((suiteTest as any).concurrent).toBeUndefined()
+    expect((suiteTest as any).skipIf).toBeUndefined()
+  })
+})
+
 describe('suite() — domain filtering', () => {
   const originalTest = (globalThis as any).test
   const originalIt = (globalThis as any).it

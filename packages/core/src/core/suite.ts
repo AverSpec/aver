@@ -102,6 +102,10 @@ function shouldFilterOutConfig(config: SuiteConfig): boolean {
   return !Object.values(config).some(([domain]) => domain.name === filter)
 }
 
+/**
+ * Wraps a test runner's `test` function for the named config (multi-domain) variant.
+ * Mirrors buildTestApi's Proxy pattern — see test-registration.ts for full documentation.
+ */
 function buildNamedTestApi<C extends SuiteConfig>(
   testImpl: any,
   config: C,

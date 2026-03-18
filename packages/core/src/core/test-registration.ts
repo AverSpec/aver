@@ -51,6 +51,23 @@ export function shouldFilterOutDomain(domain: Domain): boolean {
   return filter !== domain.name
 }
 
+/**
+ * Wraps a test runner's `test` function with Aver's adapter plumbing.
+ *
+ * Vitest's `test` is a recursive ChainableFunction — every modifier (skip, only,
+ * concurrent, sequential, fails, todo) returns another chainable with the same
+ * modifiers. We use a Proxy to intercept property access and recursively wrap
+ * each modifier so the final call (name, fn) always goes through runTestWithAdapter.
+ *
+ * Special cases:
+ * - `todo`: passthrough (no test body, just a label)
+ * - `each` / `for`: factories that return a test function — wrap the result
+ * - `skipIf` / `runIf`: factories that return a chainable — wrap the result
+ * - `extend`: merges vitest fixture context with Aver's test context
+ *
+ * Jest compatibility: Jest's `test` is flat (no chaining). The Proxy's recursive
+ * behavior is harmless — modifiers that don't exist return undefined.
+ */
 export function buildTestApi<D extends Domain>(
   testImpl: any,
   domain: D,

@@ -379,6 +379,24 @@ describe('suite() — test modifier chains', () => {
     expect((suiteTest as any).concurrent).toBeUndefined()
     expect((suiteTest as any).skipIf).toBeUndefined()
   })
+
+  it('named config suite test.skipIf delegates correctly', () => {
+    const { fakeTest, calls } = createFakeTest()
+    ;(globalThis as any).test = fakeTest
+    const config = { cart: [cart, cartAdapter] as const }
+    const { test: namedTest } = suite(config)
+    ;(namedTest as any).skipIf(true)('skipped', async () => {})
+    expect(calls).toEqual([{ name: 'skipped', modifier: 'skip' }])
+  })
+
+  it('named config suite test.runIf delegates correctly', () => {
+    const { fakeTest, calls } = createFakeTest()
+    ;(globalThis as any).test = fakeTest
+    const config = { cart: [cart, cartAdapter] as const }
+    const { test: namedTest } = suite(config)
+    ;(namedTest as any).runIf(false)('skipped', async () => {})
+    expect(calls).toEqual([{ name: 'skipped', modifier: 'skip' }])
+  })
 })
 
 describe('suite() — domain filtering', () => {

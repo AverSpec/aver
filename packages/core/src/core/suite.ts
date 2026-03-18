@@ -138,9 +138,14 @@ function buildNamedTestApi<C extends SuiteConfig>(
 
       if (prop === 'todo') return child.bind(testImpl)
 
-      if (prop === 'each') {
+      if (prop === 'each' || prop === 'for') {
         return (...args: any[]) =>
-          buildNamedTestApi(testImpl.each(...args), config, globalSkipImpl, calledOpsMap)
+          buildNamedTestApi(testImpl[prop](...args), config, globalSkipImpl, calledOpsMap)
+      }
+
+      if (prop === 'skipIf' || prop === 'runIf') {
+        return (...args: any[]) =>
+          buildNamedTestApi(child.call(testImpl, ...args), config, globalSkipImpl, calledOpsMap)
       }
 
       if (typeof child === 'function') {

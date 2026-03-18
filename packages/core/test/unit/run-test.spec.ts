@@ -293,7 +293,7 @@ describe('runTest (generalized)', () => {
       }
 
       expect(caughtError).toBeDefined()
-      expect(caughtError!.message).toContain('Action trace')
+      expect(caughtError!.message).toContain('Test steps')
     })
 
     it('error includes all protocol names in composed failures', async () => {

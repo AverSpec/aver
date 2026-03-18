@@ -655,7 +655,7 @@ describe('suite() — failure artifacts', () => {
     let caught: any
     await pending!.catch(e => { caught = e })
     expect(caught).toBeDefined()
-    expect(caught.message).toContain('Action trace (test):')
+    expect(caught.message).toContain('Test steps (test):')
   })
 })
 

@@ -382,7 +382,7 @@ export const averCoreAdapter = implement(averCore, {
     errorHasNoTrace: async (session) => {
       if (!session.lastSetupError)
         throw new Error('Expected a setup error but none occurred')
-      if (session.lastSetupError.includes('Action trace'))
+      if (session.lastSetupError.includes('Test steps'))
         throw new Error('Expected error to NOT contain action trace but it does')
     },
   },

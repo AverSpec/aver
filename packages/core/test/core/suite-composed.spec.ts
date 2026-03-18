@@ -368,7 +368,7 @@ describe('suite(config) [composed]', () => {
       await pending!.catch(e => { caught = e })
       expect(caught).toBeDefined()
       expect(caught.message).toContain('assertion failed')
-      expect(caught.message).toContain('Action trace')
+      expect(caught.message).toContain('Test steps')
       expect(caught.message).toContain('Admin.createProject')
       expect(caught.message).toContain('FailDomain.boom')
     })

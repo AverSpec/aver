@@ -59,8 +59,8 @@ export function enhanceComposedWithTrace(
   }
   const traceStr = formatTrace(trace, 'unknown')
   const header = protocolNames.length > 0
-    ? `Action trace (${protocolNames.join(', ')}):`
-    : 'Action trace:'
+    ? `Test steps (${protocolNames.join(', ')}):`
+    : 'Test steps:'
   const msg = error instanceof Error ? error.message : String(error)
   const enhanced = new Error(
     `${msg}\n\n${header}\n${traceStr}`

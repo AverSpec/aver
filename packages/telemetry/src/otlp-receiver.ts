@@ -88,6 +88,17 @@ export function createOtlpReceiver(options?: OtlpReceiverOptions): OtlpReceiver 
         res.end(JSON.stringify({ error: 'Invalid JSON body' }))
         return
       }
+      if (typeof body !== 'object' || body === null) {
+        res.writeHead(400, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ error: 'Expected JSON object with resourceSpans array' }))
+        return
+      }
+      if (body.resourceSpans !== undefined && !Array.isArray(body.resourceSpans)) {
+        res.writeHead(400, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ error: 'resourceSpans must be an array' }))
+        return
+      }
+
       for (const rs of body.resourceSpans ?? []) {
         for (const ss of rs.scopeSpans ?? []) {
           for (const span of ss.spans ?? []) {

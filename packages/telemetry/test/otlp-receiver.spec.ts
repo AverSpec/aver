@@ -150,6 +150,47 @@ describe('OtlpReceiver', () => {
     expect(json.error).toMatch(/Unsupported content-type/)
   })
 
+  describe('schema validation', () => {
+    it('returns 400 when body is a JSON primitive', async () => {
+      const res = await fetch(`http://localhost:${receiver.port}/v1/traces`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify('not an object'),
+      })
+
+      expect(res.status).toBe(400)
+      const json = await res.json()
+      expect(json.error).toMatch(/Expected JSON object/)
+    })
+
+    it('returns 400 when body is null', async () => {
+      const res = await fetch(`http://localhost:${receiver.port}/v1/traces`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: 'null',
+      })
+
+      expect(res.status).toBe(400)
+      const json = await res.json()
+      expect(json.error).toMatch(/Expected JSON object/)
+    })
+
+    it('returns 400 when resourceSpans is not an array', async () => {
+      const res = await postTraces(receiver.port, { resourceSpans: 'oops' })
+
+      expect(res.status).toBe(400)
+      const json = await res.json()
+      expect(json.error).toMatch(/resourceSpans must be an array/)
+    })
+
+    it('accepts body with no resourceSpans (empty export)', async () => {
+      const res = await postTraces(receiver.port, {})
+
+      expect(res.status).toBe(200)
+      expect(receiver.getSpans()).toHaveLength(0)
+    })
+  })
+
   it('stops cleanly', async () => {
     await receiver.stop()
     // Fetching after stop should fail

@@ -160,6 +160,7 @@ async function maybeAutoloadConfig(): Promise<void> {
     if (!existsSync(path)) continue
     try {
       await import(pathToFileURL(path).href)
+      console.log('[aver] Auto-loaded config from ' + filename)
     } catch (error) {
       throw new Error(
         `Found ${filename} but failed to load it. ` +

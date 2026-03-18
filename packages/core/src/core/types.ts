@@ -39,7 +39,7 @@ export interface QueryMarker<P = void, R = unknown> {
   readonly telemetry?: TelemetryDeclaration<P>
 }
 
-/** Marker for an assertion declaration. P = payload type (void if no payload). */
+/** Marker for an assertion declaration. P = payload type (void if no payload). "Assertion" spelling is intentional. */
 export interface AssertionMarker<P = void> {
   readonly kind: 'assertion'
   readonly __payload?: P

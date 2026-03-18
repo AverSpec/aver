@@ -1,6 +1,7 @@
 // packages/aver/test/core/protocol.spec.ts
 import { describe, it, expect } from 'vitest'
 import type { Protocol } from '../../src/core/protocol'
+import { withFixture } from '../../src/core/protocol'
 import { unit } from '../../src/protocols/unit'
 
 describe('Protocol interface', () => {
@@ -65,5 +66,45 @@ describe('unit()', () => {
   it('uses custom name when provided', () => {
     const proto = unit(() => ({ count: 0 }), 'in-memory')
     expect(proto.name).toBe('in-memory')
+  })
+})
+
+describe('withFixture()', () => {
+  it('preserves extensions from the original protocol', () => {
+    const extensions = {
+      approvals: { approve: async () => {} },
+    }
+
+    const proto: Protocol<void> = {
+      name: 'test',
+      async setup() {},
+      async teardown() {},
+      extensions,
+    }
+
+    const wrapped = withFixture(proto, {
+      before: async () => {},
+    })
+
+    expect(wrapped.extensions).toBe(proto.extensions)
+  })
+
+  it('extensions reference the original object, not a spread copy', () => {
+    const marker = { id: Symbol('original') }
+    const extensions = { custom: marker }
+
+    const proto: Protocol<void> = {
+      name: 'test',
+      async setup() {},
+      async teardown() {},
+      extensions: extensions as any,
+    }
+
+    const wrapped = withFixture(proto, {
+      after: async () => {},
+    })
+
+    // Strict identity — not a copy
+    expect(wrapped.extensions).toBe(extensions)
   })
 })

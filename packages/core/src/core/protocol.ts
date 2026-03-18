@@ -79,5 +79,8 @@ export function withFixture<C>(
     onTestStart: protocol.onTestStart?.bind(protocol),
     onTestFail: protocol.onTestFail?.bind(protocol),
     onTestEnd: protocol.onTestEnd?.bind(protocol),
+    // Preserve original extension references so class-based protocols
+    // that use `this` in extension methods aren't broken by the spread.
+    extensions: protocol.extensions,
   }
 }

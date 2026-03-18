@@ -164,14 +164,41 @@ function updateConfig(dir: string, name: string, kebab: string, protocol: string
     config = `${importLine}\n${config}`
   }
 
-  config = config.replace(
-    /adapters: \[(.*?)\]/s,
-    (match, inner) => {
-      const trimmed = inner.trim()
-      if (trimmed === '') return `adapters: [${adapterName}]`
-      return `adapters: [${trimmed}, ${adapterName}]`
-    },
-  )
+  const adaptersIdx = config.indexOf('adapters:')
+  if (adaptersIdx === -1) {
+    throw new Error('Could not find adapters: in aver.config.ts')
+  }
+
+  const openIdx = config.indexOf('[', adaptersIdx)
+  if (openIdx === -1) {
+    throw new Error('Could not find opening [ for adapters in aver.config.ts')
+  }
+
+  let depth = 1
+  let closeIdx = -1
+  for (let i = openIdx + 1; i < config.length; i++) {
+    if (config[i] === '[') depth++
+    else if (config[i] === ']') depth--
+    if (depth === 0) {
+      closeIdx = i
+      break
+    }
+  }
+
+  if (closeIdx === -1) {
+    throw new Error('Could not find matching ] for adapters in aver.config.ts')
+  }
+
+  const inner = config.substring(openIdx + 1, closeIdx).trim()
+  let newArrayContent: string
+  if (inner === '') {
+    newArrayContent = `[${adapterName}]`
+  } else {
+    const withoutTrailingComma = inner.replace(/,\s*$/, '')
+    newArrayContent = `[${withoutTrailingComma}, ${adapterName}]`
+  }
+
+  config = config.substring(0, openIdx) + newArrayContent + config.substring(closeIdx + 1)
 
   writeFileSync(configPath, config)
 }

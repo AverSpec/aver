@@ -136,6 +136,135 @@ describe('verifyCorrelation', () => {
       expect(result.violations[0].kind).toBe('attribute-mismatch')
     })
 
+    it('multi-key correlations: all shared attributes must match', () => {
+      const trace: TraceEntry[] = [
+        makeEntry(
+          'checkout',
+          { 'order.id': '123', 'tenant.id': 'acme', 'region': 'us-east-1' },
+          {
+            name: 'order.checkout',
+            attributes: { 'order.id': '123', 'tenant.id': 'acme', 'region': 'us-east-1' },
+            traceId: 'aaa', spanId: '001',
+          },
+        ),
+        makeEntry(
+          'fulfillOrder',
+          { 'order.id': '123', 'tenant.id': 'acme', 'region': 'us-east-1' },
+          {
+            name: 'order.fulfill',
+            attributes: { 'order.id': '123', 'tenant.id': 'acme', 'region': 'us-east-1' },
+            traceId: 'aaa', spanId: '002',
+          },
+        ),
+      ]
+
+      const result = verifyCorrelation(trace)
+      expect(result.groups).toHaveLength(3)
+      const keys = result.groups.map(g => g.key).sort()
+      expect(keys).toEqual(['order.id', 'region', 'tenant.id'])
+      expect(result.violations).toHaveLength(0)
+    })
+
+    it('multi-key correlations: mismatch on one key reports violation only for that key', () => {
+      const trace: TraceEntry[] = [
+        makeEntry(
+          'checkout',
+          { 'order.id': '123', 'tenant.id': 'acme', 'region': 'us-east-1' },
+          {
+            name: 'order.checkout',
+            attributes: { 'order.id': '123', 'tenant.id': 'acme', 'region': 'us-east-1' },
+            traceId: 'aaa', spanId: '001',
+          },
+        ),
+        makeEntry(
+          'fulfillOrder',
+          { 'order.id': '123', 'tenant.id': 'acme', 'region': 'us-east-1' },
+          {
+            name: 'order.fulfill',
+            attributes: { 'order.id': '123', 'tenant.id': 'acme', 'region': 'eu-west-1' },
+            traceId: 'aaa', spanId: '002',
+          },
+        ),
+      ]
+
+      const result = verifyCorrelation(trace)
+      expect(result.groups).toHaveLength(3)
+      expect(result.violations).toHaveLength(1)
+      expect(result.violations[0].key).toBe('region')
+      expect(result.violations[0].message).toMatch(/eu-west-1/)
+    })
+
+    it('boolean attribute values form correlation groups', () => {
+      const trace: TraceEntry[] = [
+        makeEntry('enableFeature', { 'feature.enabled': 'true' }, {
+          name: 'feature.toggle',
+          attributes: { 'feature.enabled': 'true' },
+          traceId: 'aaa', spanId: '001',
+        }),
+        makeEntry('checkFeature', { 'feature.enabled': 'true' }, {
+          name: 'feature.check',
+          attributes: { 'feature.enabled': 'true' },
+          traceId: 'aaa', spanId: '002',
+        }),
+      ]
+
+      const result = verifyCorrelation(trace)
+      expect(result.groups).toHaveLength(1)
+      expect(result.groups[0].key).toBe('feature.enabled')
+      expect(result.groups[0].value).toBe('true')
+      expect(result.violations).toHaveLength(0)
+    })
+
+    it('boolean attribute value mismatch (actual boolean vs expected string) reports violation', () => {
+      const trace: TraceEntry[] = [
+        makeEntry('enableFeature', { 'feature.enabled': 'true' }, {
+          name: 'feature.toggle',
+          attributes: { 'feature.enabled': 'true' },
+          traceId: 'aaa', spanId: '001',
+        }),
+        makeEntry('checkFeature', { 'feature.enabled': 'true' }, {
+          name: 'feature.check',
+          attributes: { 'feature.enabled': true }, // boolean, not string
+          traceId: 'aaa', spanId: '002',
+        }),
+      ]
+
+      const result = verifyCorrelation(trace)
+      expect(result.violations).toHaveLength(1)
+      expect(result.violations[0].kind).toBe('attribute-mismatch')
+      expect(result.violations[0].key).toBe('feature.enabled')
+    })
+
+    it('matched telemetry with undefined matchedSpan reports attribute-mismatch', () => {
+      const trace: TraceEntry[] = [
+        makeEntry('checkout', { 'order.id': '123' }, {
+          name: 'order.checkout', attributes: { 'order.id': '123' },
+          traceId: 'aaa', spanId: '001',
+        }),
+        {
+          kind: 'action',
+          name: 'fulfillOrder',
+          payload: undefined,
+          status: 'pass',
+          telemetry: {
+            expected: { span: 'span.fulfillOrder', attributes: { 'order.id': '123' } },
+            matched: true,
+            matchedSpan: undefined,
+          },
+        },
+      ]
+
+      const result = verifyCorrelation(trace)
+      expect(result.groups).toHaveLength(1)
+      expect(result.violations).toHaveLength(1)
+      expect(result.violations[0]).toEqual(expect.objectContaining({
+        kind: 'attribute-mismatch',
+        key: 'order.id',
+      }))
+      expect(result.violations[0].message).toMatch(/not matched/)
+      expect(result.violations[0].message).toMatch(/fulfillOrder/)
+    })
+
     it('steps without telemetry are ignored', () => {
       const trace: TraceEntry[] = [
         makeEntry('checkout', { 'order.id': '123' }, {

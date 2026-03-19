@@ -2,8 +2,6 @@
 title: "CI Integration"
 ---
 
-# CI Integration
-
 Aver tests run in any CI system that supports Node.js. This guide covers GitHub Actions with JUnit reporting and Playwright browser testing.
 
 ## Basic Setup

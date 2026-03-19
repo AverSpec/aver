@@ -2,8 +2,6 @@
 title: "Stop Reviewing AI Code. Verify the Behavior."
 ---
 
-# Stop Reviewing AI Code. Verify the Behavior.
-
 *Why executable specs beat code review for agentic development*
 
 ## The Review Cycle Everyone Knows

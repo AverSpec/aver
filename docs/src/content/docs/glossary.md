@@ -2,8 +2,6 @@
 title: "Glossary"
 ---
 
-# Glossary
-
 Aver-specific terminology clarified.
 
 ## Core Concepts

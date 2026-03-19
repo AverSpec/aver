@@ -2,8 +2,6 @@
 title: "Scenario Pipeline"
 ---
 
-# Scenario Pipeline
-
 The scenario pipeline is a maturity model for behavioral specifications. It tracks what you know about a behavior -- from a vague observation all the way to a verified implementation. The pipeline exists to enforce one discipline: **you cannot implement what you have not yet understood.**
 
 This is not an AI feature. It is a team workflow tool. You can use it with sticky notes on a wall, shell scripts, or an AI agent. The stages are the discipline; the tooling is optional.
@@ -38,7 +36,7 @@ The behavior has been investigated. Code paths have been traced. You know what t
 
 ### Mapped
 
-The behavior has been through a structured conversation. Rules have been extracted, concrete examples generated, and questions captured. If you used Example Mapping, this is the stage where the cards hit the table. See the [Example Mapping](example-mapping) guide for the technique itself.
+The behavior has been through a structured conversation. Rules have been extracted, concrete examples generated, and questions captured. If you used Example Mapping, this is the stage where the cards hit the table. See the [Example Mapping](/guides/example-mapping/) guide for the technique itself.
 
 **What it means:** "The team agrees on the rules and has concrete examples. Open questions are tracked, not ignored."
 
@@ -104,7 +102,7 @@ The pipeline is a mental model. You can track stages on a whiteboard, in a sprea
 
 The pipeline maps naturally to collaborative practices:
 
-**Example Mapping sessions** produce mapped scenarios. A small group spends 25 minutes extracting rules, generating examples, and capturing questions. The output is a set of scenarios at the mapped stage with rules, examples, and (ideally few) questions attached. See the [Example Mapping](example-mapping) guide.
+**Example Mapping sessions** produce mapped scenarios. A small group spends 25 minutes extracting rules, generating examples, and capturing questions. The output is a set of scenarios at the mapped stage with rules, examples, and (ideally few) questions attached. See the [Example Mapping](/guides/example-mapping/) guide.
 
 **Specification sessions** produce domain vocabulary. Developers and testers name the actions, queries, and assertions that express the mapped rules. This is where the domain model takes shape.
 
@@ -123,4 +121,4 @@ The pipeline keeps an AI agent honest. Without it, an agent will happily generat
 
 The pipeline turns the agent from an autonomous code generator into a constrained collaborator. It writes code only for behaviors that have been understood, agreed upon, and specified.
 
-See the [AI-Assisted Testing](ai-assisted) guide for setup and detailed usage with Claude Code.
+See the [AI-Assisted Testing](/guides/ai-assisted/) guide for setup and detailed usage with Claude Code.

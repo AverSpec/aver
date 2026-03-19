@@ -13,6 +13,10 @@ export default defineConfig({
 			],
 			customCss: ['./src/styles/custom.css'],
 			head: [
+				{
+					tag: 'script',
+					content: `document.addEventListener('DOMContentLoaded',()=>{document.querySelectorAll('a[href^="http"]').forEach(a=>{if(!a.hostname.includes(location.hostname)){a.setAttribute('target','_blank');a.setAttribute('rel','noopener')}})})`,
+				},
 				...(import.meta.env.PROD && process.env.POSTHOG_API_KEY
 					? [
 							{
@@ -27,6 +31,7 @@ export default defineConfig({
 			],
 			sidebar: [
 				{ label: 'Home', slug: '' },
+				{ label: 'Getting Started', slug: 'guides/getting-started' },
 				{
 					label: 'Tutorials',
 					items: [
@@ -35,27 +40,38 @@ export default defineConfig({
 						{ label: 'Telemetry Verification', slug: 'tutorial-telemetry' },
 					],
 				},
-				{ label: 'Architecture', slug: 'architecture' },
 				{
 					label: 'Guides',
 					items: [
-						{ label: 'Getting Started', slug: 'guides/getting-started' },
 						{ label: 'Multi-Adapter Testing', slug: 'guides/multi-adapter' },
 						{ label: 'Approval Testing', slug: 'guides/approvals' },
-						{ label: 'Example Mapping', slug: 'guides/example-mapping' },
-						{ label: 'Scenario Pipeline', slug: 'guides/scenario-pipeline' },
 						{ label: 'Telemetry', slug: 'guides/telemetry' },
 						{ label: 'CI Integration', slug: 'guides/ci-integration' },
-						{ label: 'AI-Assisted Testing', slug: 'guides/ai-assisted' },
-						{ label: 'Example App', slug: 'guides/example-app' },
 						{ label: 'Test Styles', slug: 'guides/test-styles' },
-						{ label: 'Troubleshooting', slug: 'guides/troubleshooting' },
+						{ label: 'Example App', slug: 'guides/example-app' },
+						{ label: 'When to Use & Troubleshooting', slug: 'guides/troubleshooting' },
 					],
 				},
-				{ label: 'API Reference', slug: 'api' },
-				{ label: 'Glossary', slug: 'glossary' },
+				{
+					label: 'Methodology',
+					collapsed: true,
+					items: [
+						{ label: 'Example Mapping', slug: 'guides/example-mapping' },
+						{ label: 'Scenario Pipeline', slug: 'guides/scenario-pipeline' },
+						{ label: 'AI-Assisted Testing', slug: 'guides/ai-assisted' },
+					],
+				},
+				{
+					label: 'Reference',
+					items: [
+						{ label: 'API', slug: 'api' },
+						{ label: 'Architecture', slug: 'architecture' },
+						{ label: 'Glossary', slug: 'glossary' },
+					],
+				},
 				{
 					label: 'Articles',
+					collapsed: true,
 					items: [
 						{ label: 'Introducing Aver', slug: 'articles/introducing-aver' },
 						{ label: "The Tests You're Afraid to Refactor", slug: 'articles/tests-afraid-to-refactor' },

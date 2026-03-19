@@ -2,8 +2,6 @@
 title: "Tutorial: Telemetry Verification"
 ---
 
-# Tutorial: Telemetry Verification
-
 Your API returns the right data. Your tests pass. Then production goes dark — a span is missing, a trace is disconnected, and the relationships between operations are silently destroyed. Nobody noticed because no test checked observability.
 
 Observability data is made powerful by context. A checkout span alone tells you little. A checkout span connected to a payment span connected to a fulfillment span — all sharing an order ID, all in the same trace — tells you the whole story. When those connections break, your dashboards go dark and your agents can't validate what they shipped.
@@ -14,7 +12,7 @@ This tutorial shows how Aver treats those relationships as a testable contract. 
 3. Fix the instrumentation so tests pass
 4. See Aver automatically detect broken trace correlation — the relational seams between operations
 
-This builds on the pricing domain from the [main tutorial](tutorial). If you have not done that tutorial, skim Step 2 (domain) and Step 4 (unit adapter) first.
+This builds on the pricing domain from the [main tutorial](/tutorial/). If you have not done that tutorial, skim Step 2 (domain) and Step 4 (unit adapter) first.
 
 ---
 
@@ -201,7 +199,7 @@ FAIL  tests/pricing.spec.ts > basic invoice total [unit]
 
 Error: Telemetry mismatch: expected span 'pricing.add-line-item' not found
 
-Action trace (unit):
+Test steps (unit):
   [FAIL] GIVEN  pricing.addLineItem({"product":"Widget","quantity":2,"unitPrice":10})
            ⚠ telemetry: expected span 'pricing.add-line-item' not found
 ```
@@ -258,7 +256,7 @@ AVER_TELEMETRY_MODE=fail npx aver run tests/pricing.spec.ts
 ```
 PASS  tests/pricing.spec.ts > basic invoice total [unit]
 
-Action trace (unit):
+Test steps (unit):
   [PASS] GIVEN  pricing.addLineItem({"product":"Widget","quantity":2,"unitPrice":10})
            ✓ telemetry: pricing.add-line-item {"product.name":"Widget"}
   [PASS] WHEN   pricing.addLineItem({"product":"Gadget","quantity":1,"unitPrice":5})
@@ -421,6 +419,6 @@ No new test assertions. No telemetry-specific test code. The declarations live o
 
 ## Next steps
 
-- [Telemetry reference](guides/telemetry) — collector setup, correlation design, span naming conventions
-- [Multi-Adapter Testing](guides/multi-adapter) — run the same domain against unit, HTTP, and browser adapters
-- [Architecture](architecture) — the three-layer model and how telemetry fits in
+- [Telemetry reference](/guides/telemetry/) — collector setup, correlation design, span naming conventions
+- [Multi-Adapter Testing](/guides/multi-adapter/) — run the same domain against unit, HTTP, and browser adapters
+- [Architecture](/architecture/) — the three-layer model and how telemetry fits in

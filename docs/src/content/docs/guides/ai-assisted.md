@@ -2,8 +2,6 @@
 title: "AI-Assisted Testing"
 ---
 
-# AI-Assisted Testing
-
 Aver integrates with AI coding agents through a Claude Code plugin that combines agent skills with bash scripts for managing scenarios and backlog items. Two backends are supported: GitHub Issues (via the `gh` CLI) and Linear. This guide covers setup, what you get, and what a real session looks like.
 
 ## The simplest integration
@@ -13,7 +11,7 @@ Any agent that can run shell commands can use Aver as a verification layer:
 ```bash
 npx aver run
 # Exit 0 = all behavioral specs pass
-# Non-zero = failures with action traces
+# Non-zero = failures with test steps
 ```
 
 Define your domain vocabulary, write acceptance tests, and let the agent implement code until `aver run` passes. This works with Claude Code, Cursor, Cline, Aider, or any agent that can run tests.
@@ -161,7 +159,7 @@ captured → characterized → mapped → specified → implemented
 
 **Hard blocks**: The agent cannot advance a scenario without human confirmation. Questions must be resolved before moving from `mapped` to `specified`. Vocabulary names must be approved before implementation begins.
 
-See the [Scenario Pipeline guide](scenario-pipeline) for the methodology behind these stages.
+See the [Scenario Pipeline guide](/guides/scenario-pipeline/) for the methodology behind these stages.
 
 ---
 

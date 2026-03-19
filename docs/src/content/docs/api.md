@@ -2,8 +2,6 @@
 title: "API Reference"
 ---
 
-# API Reference
-
 All public exports from the `@averspec/core` package.
 
 ## Domain Definition
@@ -113,7 +111,7 @@ TypeScript enforces that every action, query, and assertion declared in the doma
 
 ### `unit(factory)`
 
-Built-in protocol for in-memory testing. Zero dependencies.
+Built-in protocol for testing against your code's public interfaces directly. Zero dependencies.
 
 ```typescript
 import { unit } from '@averspec/core'
@@ -193,7 +191,7 @@ const { test } = suite(cart, unitAdapter)
 | `assert` | `AssertProxy` | Programmatic access to assertions |
 | `setup` | `() => Promise<void>` | Manual setup (for programmatic use) |
 | `teardown` | `() => Promise<void>` | Manual teardown (for programmatic use) |
-| `getTrace` | `() => TraceEntry[]` | Get the current action trace |
+| `getTrace` | `() => TraceEntry[]` | Get the current test steps |
 | `getCoverage` | `() => VocabularyCoverage` | Get vocabulary coverage stats |
 | `getPlannedTests` | `(name) => PlannedTest[]` | Preview what test names would be registered |
 
@@ -221,7 +219,7 @@ The callback receives a `TestContext`:
 | `query` | `QueryProxy<D>` | Typed proxy for queries |
 | `assert` | `AssertProxy<D>` | Typed proxy for assertions |
 | `then` | `AssertProxy<D>` | Alias for `assert` — verification steps (Given-When-Then) |
-| `trace` | `() => TraceEntry[]` | Returns the current action trace (callable) |
+| `trace` | `() => TraceEntry[]` | Returns the current test steps (callable) |
 
 ---
 

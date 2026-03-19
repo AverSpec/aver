@@ -2,8 +2,6 @@
 title: "Approval Testing"
 ---
 
-# Approval Testing
-
 ## Overview
 
 `@averspec/approvals` provides two approval modes:

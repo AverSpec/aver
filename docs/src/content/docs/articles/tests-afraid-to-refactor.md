@@ -2,8 +2,6 @@
 title: "The Tests You're Afraid to Refactor"
 ---
 
-# The Tests You're Afraid to Refactor
-
 You've been on this project. Unit tests, API tests, E2E suite. The unit test checks the calculation. The API test checks the status code. The E2E test checks that the page renders. Each one tested a slice of the behavior at one level. Nobody tested the whole behavior at any level. A customer hits the gap before you do.
 
 The domain is smeared across all of them. A validation here, a default there, an assertion about a JSON shape somewhere else. No single test can tell you whether the feature actually works. You just have a patchwork and you assume it adds up.
@@ -166,4 +164,4 @@ That's a real bug at a real boundary. The domain says tasks start in backlog. Th
 
 Change the behavior in one place. The tests tell you everywhere it breaks.
 
-[How it works](introducing-aver) · [Legacy code tutorial](../tutorial) · [Greenfield tutorial](../tutorial-greenfield) · [GitHub](https://github.com/AverSpec/aver)
+[How it works](/articles/introducing-aver/) · [Legacy code tutorial](/tutorial/) · [Greenfield tutorial](/tutorial-greenfield/) · [GitHub](https://github.com/AverSpec/aver)

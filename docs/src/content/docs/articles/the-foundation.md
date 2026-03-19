@@ -2,8 +2,6 @@
 title: "The Foundation Nobody's Building"
 ---
 
-# The Foundation Nobody's Building
-
 *Why agentic coding multiplies your process — good or bad*
 
 ## The Data Is In

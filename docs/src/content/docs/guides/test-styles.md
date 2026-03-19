@@ -2,8 +2,6 @@
 title: "Test Styles"
 ---
 
-# Test Styles: given/when/then vs act/assert
-
 Aver supports two styles for writing tests. Both are first-class — neither is wrong.
 Choose based on who reads the test and what it's expressing.
 

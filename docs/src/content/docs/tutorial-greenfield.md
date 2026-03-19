@@ -2,8 +2,6 @@
 title: "Tutorial: Greenfield"
 ---
 
-# Tutorial: Building a Domain from Scratch
-
 This tutorial walks you through building a domain-driven test suite for a new feature. No legacy code, no approvals — just the clean path from domain vocabulary to multi-adapter tests. It takes about 10 minutes.
 
 You'll build a task board tested at two levels:
@@ -121,7 +119,7 @@ These tests won't pass yet. There's no adapter.
 
 ## Step 4: Build the unit adapter
 
-An adapter binds domain vocabulary to a real implementation. Start with the `unit` protocol — in-memory, sub-millisecond:
+An adapter binds domain vocabulary to a real implementation. Start with the `unit` protocol, which calls your code's public interfaces directly:
 
 ```typescript
 // adapters/task-board.unit.ts
@@ -362,8 +360,8 @@ The domain vocabulary is the stable center. Tests compose vocabulary into scenar
 
 ## Next steps
 
-- [Tutorial: Legacy Code](tutorial) — start from untested code with characterization tests
-- [Architecture](architecture) — how the three-layer model works and why
-- [Multi-Adapter Testing](guides/multi-adapter) — adding Playwright, filtering by adapter
-- [Telemetry Tutorial](tutorial-telemetry) — add observability verification
-- [Example Mapping](guides/example-mapping) — discover domain vocabulary through structured conversation
+- [Tutorial: Legacy Code](/tutorial/) — start from untested code with characterization tests
+- [Architecture](/architecture/) — how the three-layer model works and why
+- [Multi-Adapter Testing](/guides/multi-adapter/) — adding Playwright, filtering by adapter
+- [Telemetry Tutorial](/tutorial-telemetry/) — add observability verification
+- [Example Mapping](/guides/example-mapping/) — discover domain vocabulary through structured conversation

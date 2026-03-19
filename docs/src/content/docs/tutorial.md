@@ -2,11 +2,9 @@
 title: "Tutorial"
 ---
 
-# Tutorial: From Legacy Code to Multi-Adapter Tests
-
 This tutorial takes you from untested legacy code to a domain-driven test suite running against two adapters. It takes about 15 minutes.
 
-> **Starting from scratch?** If you don't have existing code to characterize, try the [greenfield tutorial](tutorial-greenfield) instead.
+> **Starting from scratch?** If you don't have existing code to characterize, try the [greenfield tutorial](/tutorial-greenfield/) instead.
 
 You'll build a real test suite that:
 1. Locks in existing behavior with approval tests
@@ -172,7 +170,7 @@ These tests won't pass yet — there's no adapter.
 
 ## Step 4: Build the unit adapter
 
-An adapter binds domain vocabulary to a real implementation. Start with the `unit` protocol for in-memory testing:
+An adapter binds domain vocabulary to a real implementation. Start with the `unit` protocol, which calls your code's public interfaces directly:
 
 ```typescript
 // adapters/pricing.unit.ts
@@ -405,7 +403,7 @@ The domain vocabulary is the stable center. Tests compose vocabulary into scenar
 
 ## Next steps
 
-- [Architecture](architecture) — how the three-layer model works and why
-- [Getting Started](guides/getting-started) — install, scaffold, and configure a fresh project
-- [Multi-Adapter Testing](guides/multi-adapter) — adding Playwright and protocol-specific tests
-- [CI Integration](guides/ci-integration) — running aver tests in your pipeline
+- [Architecture](/architecture/) — how the three-layer model works and why
+- [Getting Started](/guides/getting-started/) — install, scaffold, and configure a fresh project
+- [Multi-Adapter Testing](/guides/multi-adapter/) — adding Playwright and protocol-specific tests
+- [CI Integration](/guides/ci-integration/) — running aver tests in your pipeline

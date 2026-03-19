@@ -2,8 +2,6 @@
 title: "Example Mapping"
 ---
 
-# Example Mapping
-
 Example Mapping is a structured conversation technique created by Matt Wynne. A small group spends 25 minutes around a story, discovering what they actually need to build before writing any code. The output is shared understanding, not software.
 
 The technique uses four card types:
@@ -26,7 +24,7 @@ Run an Example Mapping session when:
 - Characterization tests reveal surprising behavior you cannot explain.
 - The team disagrees about how something should work.
 
-If you have already completed the [Tutorial](../tutorial), you saw how characterization tests expose implicit rules in legacy code. Example Mapping is the complementary technique: it discovers rules through conversation before any code exists.
+If you have already completed the [Tutorial](/tutorial/), you saw how characterization tests expose implicit rules in legacy code. Example Mapping is the complementary technique: it discovers rules through conversation before any code exists.
 
 ## Running a session
 
@@ -48,7 +46,7 @@ When the timer runs out, count your cards. The ratio of colors tells you whether
 
 ## Worked example: invoice discount calculation
 
-This example uses the invoice pricing domain from the [Tutorial](../tutorial). Imagine a session where three people sit down to map the discount calculation feature.
+This example uses the invoice pricing domain from the [Tutorial](/tutorial/). Imagine a session where three people sit down to map the discount calculation feature.
 
 **Story**: Invoice discount calculation
 
@@ -87,7 +85,7 @@ Each card type maps to an Aver concept:
 
 The story card itself does not map to a specific artifact. It is the context that holds everything together -- the name you give to the test file or the domain module.
 
-Take Rule 1's two examples and write them as Aver tests. The domain and adapter from the [Tutorial](../tutorial) already support these:
+Take Rule 1's two examples and write them as Aver tests. The domain and adapter from the [Tutorial](/tutorial/) already support these:
 
 ```typescript
 import { suite } from '@averspec/core'
@@ -143,5 +141,5 @@ When Question 1 ("per-product or per-order?") gets answered, it will generate a 
 
 ## Next steps
 
-- Build the domain vocabulary from your mapped scenarios: [Tutorial](../tutorial)
-- Learn how AI skills can help facilitate mapping sessions: [AI-Assisted Testing](ai-assisted)
+- Build the domain vocabulary from your mapped scenarios: [Tutorial](/tutorial/)
+- Learn how AI skills can help facilitate mapping sessions: [AI-Assisted Testing](/guides/ai-assisted/)

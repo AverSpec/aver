@@ -2,8 +2,6 @@
 title: "Architecture"
 ---
 
-# Architecture
-
 Aver implements a three-layer acceptance testing architecture inspired by Dave Farley's work on continuous delivery and the Screenplay pattern from Serenity.js.
 
 The name "aver" means "to declare with confidence" — your tests aver that the system behaves as intended.
@@ -16,7 +14,7 @@ Domain (what)  →  Adapter (how)  →  Test (verify)
 
 **Domain** declares the vocabulary of a bounded context — what the system does, in business language. No implementation details. Just names and type signatures for actions, queries, and assertions.
 
-**Adapter** binds the vocabulary to a real implementation via a protocol. One adapter per interaction mode: unit (in-memory), HTTP (API), Playwright (browser). The `adapt()` function enforces at compile time that every domain operation has a handler.
+**Adapter** binds the vocabulary to a real implementation via a protocol. One adapter per interaction mode: unit (direct code interfaces), HTTP (API), Playwright (browser). The `adapt()` function enforces at compile time that every domain operation has a handler.
 
 **Test** composes domain operations into scenarios. Tests never import adapters — they speak only domain language. The suite resolves adapters from configuration at runtime.
 
@@ -42,10 +40,10 @@ Assertions could be expressed as query + expect, but they earn their place becau
 
 ### Given/When/Then
 
-Tests can use `given`, `when`, and `then` as narrative aliases for `act` and `assert`. They call the same adapter handlers — the difference is in trace labeling:
+Tests can use `given`, `when`, and `then` as narrative aliases for `act` and `assert`. They call the same adapter handlers — the difference is in step labeling:
 
 ```
-Action trace (unit):
+Test steps (unit):
   [PASS] GIVEN  ShoppingCart.addItem({"name":"Widget","qty":2})  12ms
   [PASS] WHEN   ShoppingCart.checkout()  45ms
   [PASS] THEN   ShoppingCart.totalCharged({"amount":35})  2ms
@@ -55,7 +53,7 @@ Action trace (unit):
 
 A protocol manages session lifecycle. It creates a context in `setup()` that every adapter handler receives as its first argument, and cleans up in `teardown()`.
 
-For the `unit` protocol, the context is your in-memory object. For `playwright`, it's a Playwright `Page`. For `http`, it's an HTTP client pointed at a running server.
+For the `unit` protocol, the context is your domain object. For `playwright`, it's a Playwright `Page`. For `http`, it's an HTTP client pointed at a running server.
 
 Protocols can also hook into test lifecycle events: `onTestStart` runs before each test body, `onTestFail` runs on failure and can return attachments (screenshots, logs), and `onTestEnd` runs after each test for cleanup.
 
@@ -63,7 +61,7 @@ Aver ships three protocols:
 
 | Protocol | Context | Use Case |
 |:---------|:--------|:---------|
-| `unit(factory)` | Your object | In-memory / unit-speed testing |
+| `unit(factory)` | Your object | Direct interface testing |
 | `http({ baseUrl })` | HTTP client | API-level testing |
 | `playwright()` | Playwright `Page` | Browser UI testing |
 
@@ -136,12 +134,12 @@ Extensions inherit all vocabulary from the parent. An adapter for the extended d
 
 ## Error reporting
 
-On failure, Aver shows the action trace — every domain operation leading to the error:
+On failure, Aver shows the test steps — every domain operation leading to the error:
 
 ```
 FAIL  shopping-cart.spec.ts > full checkout flow [unit]
 
-Action trace (unit):
+Test steps (unit):
   [PASS] GIVEN  ShoppingCart.addItem({"name":"Widget","qty":2})  12ms
   [PASS] THEN   ShoppingCart.hasItems({"count":1})  1ms
   [PASS] QUERY  ShoppingCart.cartTotal()  0ms
@@ -162,7 +160,7 @@ Two verification layers run automatically:
 1. **Per-step**: After each operation, verify a matching span exists with the expected name and attributes
 2. **End-of-test correlation**: After all steps, verify that correlated steps (shared attribute key + value) are causally connected — same traceId or span links
 
-This catches instrumentation bugs that behavioral tests miss: the API returns the right data, but the spans are missing, misnamed, or disconnected. The `@averspec/telemetry` package extends this to production — extract a behavioral contract from passing tests, then verify that production traces conform to the same contract. See the [telemetry guide](guides/telemetry) for details.
+This catches instrumentation bugs that behavioral tests miss: the API returns the right data, but the spans are missing, misnamed, or disconnected. The `@averspec/telemetry` package extends this to production — extract a behavioral contract from passing tests, then verify that production traces conform to the same contract. See the [telemetry guide](/guides/telemetry/) for details.
 
 ## Design principles
 

@@ -2,8 +2,6 @@
 title: "Introducing Aver"
 ---
 
-# Introducing Aver: Domain-Driven Acceptance Testing for TypeScript
-
 ## The Testing Infrastructure Everyone Keeps Rebuilding
 
 Every project of sufficient complexity eventually builds a domain language for its tests. You've seen it happen — probably more than once. The Playwright suite grows to forty tests and someone says, "We should extract a page object." The API tests start sharing setup functions and someone builds a test data factory. The integration suite gets its own little DSL for describing workflows: `createUser`, `loginAs`, `submitOrder`, `verifyOrderStatus`.

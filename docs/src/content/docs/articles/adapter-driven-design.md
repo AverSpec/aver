@@ -2,8 +2,6 @@
 title: "Your Adapter Is a Design Review"
 ---
 
-# Your Adapter Is a Design Review
-
 ## The Accidental Domain Critic
 
 When you write an acceptance test adapter, you're doing something you didn't intend: you're reviewing your domain API.

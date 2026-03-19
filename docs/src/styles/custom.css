@@ -1,0 +1,13 @@
+/* Aver branding — emerald accent */
+
+:root {
+	--sl-color-accent-low: #064e3b;
+	--sl-color-accent: #059669;
+	--sl-color-accent-high: #d1fae5;
+}
+
+:root[data-theme='light'] {
+	--sl-color-accent-low: #d1fae5;
+	--sl-color-accent: #059669;
+	--sl-color-accent-high: #064e3b;
+}

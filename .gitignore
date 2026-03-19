@@ -8,10 +8,8 @@ dist/
 .claude/settings.local.json
 .claude-plugin/
 test-results/
-docs/_site/
 docs/plans/
-docs/.jekyll-cache/
-docs/Gemfile.lock
+docs/.astro/
 .worktrees/
 .env
 .env.local

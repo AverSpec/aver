@@ -183,8 +183,6 @@ The cost model determines when Aver earns its keep.
 
 ## AI agent integration
 
-BDD has always worked in two loops. The outer loop is the acceptance test — a behavioral spec that stays red while you build. The inner loop is TDD — red, green, refactor until the outer loop goes green.
+Aver's domain layer naturally separates what an AI agent is good at (generating code, iterating until tests pass) from what requires human judgment (deciding what the system should do, naming the vocabulary). The human defines the outer loop — domain specs in business language. The agent works the inner loop — implementing code until `aver run` passes.
 
-AI coding agents are natural inner-loop workers. They generate code, run tests, and iterate. But the outer loop — deciding what the system should do, naming the vocabulary, choosing which behaviors to verify — requires human judgment. An agent implementing against a vague prompt can produce code that works and is completely wrong. An agent implementing against a domain-driven acceptance test can only succeed by making the spec pass.
-
-Aver gives you a way to define that outer loop. The human writes domain vocabulary and acceptance tests in business language. The agent implements adapters and production code until `aver run` passes. The spec is the constraint; the agent works within it. See [AI-Assisted Testing](/guides/ai-assisted/) for setup and workflow details.
+See [AI-Assisted Testing](/guides/ai-assisted/) for the full rationale and setup.

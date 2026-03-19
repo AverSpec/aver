@@ -183,13 +183,8 @@ The cost model determines when Aver earns its keep.
 
 ## AI agent integration
 
-`aver run` returning exit code 0 is a machine-verifiable success criterion. Any agent framework that can run shell commands can use Aver as its verification layer:
+BDD has always worked in two loops. The outer loop is the acceptance test — a behavioral spec that stays red while you build. The inner loop is TDD — red, green, refactor until the outer loop goes green.
 
-1. Define domain vocabulary and write behavioral specs
-2. Have your agent implement code
-3. Run `npx aver run` — exit 0 means the implementation satisfies the spec
-4. Exit non-zero gives the agent failing tests to work from
+AI coding agents are natural inner-loop workers. They generate code, run tests, and iterate. But the outer loop — deciding what the system should do, naming the vocabulary, choosing which behaviors to verify — requires human judgment. An agent implementing against a vague prompt can produce code that works and is completely wrong. An agent implementing against a domain-driven acceptance test can only succeed by making the spec pass.
 
-This works with Claude Code, Cursor, Cline, Aider, or any agent that can run tests. The domain vocabulary defines correctness; `aver run` verifies it.
-
-Aver also ships an `@averspec/agent-plugin` for Claude Code that provides workflow skills for scenario management, telemetry design, and OTel context propagation, plus bash scripts for issue tracking via GitHub Issues or Linear.
+Aver gives you a way to define that outer loop. The human writes domain vocabulary and acceptance tests in business language. The agent implements adapters and production code until `aver run` passes. The spec is the constraint; the agent works within it. See [AI-Assisted Testing](/guides/ai-assisted/) for setup and workflow details.

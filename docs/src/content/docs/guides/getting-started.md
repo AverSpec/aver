@@ -49,7 +49,7 @@ test('order processing output', async () => {
 })
 ```
 
-Run `AVER_APPROVE=1 npx vitest run` to create baselines, then run normally to verify against them. Baselines are stored in `__approvals__/` next to your test file — commit them to source control. You now have a safety net.
+Run `npx aver approve` to create baselines, then `npx aver run` to verify against them. Baselines are stored in `__approvals__/` next to your test file — commit them to source control. You now have a safety net.
 
 > `approve()` is also exported as `characterize()` if that reads better for your characterization tests.
 

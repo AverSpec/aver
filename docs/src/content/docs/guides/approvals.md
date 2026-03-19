@@ -4,36 +4,37 @@ title: "Approval Testing"
 
 ## Overview
 
-`@averspec/approvals` provides two approval modes:
+`@averspec/approvals` provides two ways to lock in behavior as a baseline:
 
-- **`approve(value)`** — structural approval (text/JSON diff)
-- **`approve.visual('name')`** — visual approval (screenshot + pixel diff)
+**`approve(value)`** — Serializes a value (object, string, array) to text and compares it against a stored `.approved.txt` file. On first run there's no baseline, so the test fails. You review the output, approve it, and future runs diff against that baseline. Any structural change to the output fails the test until you explicitly approve the new version. Good for API responses, computed results, configuration snapshots — anything you can serialize.
 
-Both use the same workflow: baseline → compare → diff → approve.
+**`approve.visual('name')`** — Takes a screenshot via the protocol's screenshotter (e.g., Playwright) and compares it pixel-by-pixel against a stored `.approved.png`. Same workflow: first run captures, subsequent runs diff. Produces a visual diff image highlighting changed pixels. Good for UI regressions — layout shifts, missing elements, style changes.
+
+Both follow the same cycle: baseline → compare → diff → approve.
 
 ```ts
 import { approve } from '@averspec/approvals'
 
-// Structural: approve a data value
+// Structural: serialize and diff a data value
 await approve(taskList, { name: 'tasks' })
 
-// Visual: approve what the screen looks like
+// Visual: screenshot and pixel-diff the current screen
 await approve.visual('board-with-task')
 ```
 
-> `approve` is also exported as `characterize` — same function, alternative name for characterization test contexts: `import { characterize } from '@averspec/approvals'`
-
 ## `characterize()` vs `approve()`
 
-`characterize()` and `approve()` are the same function — they behave identically at runtime. The distinction is purely about communicating intent to future readers of your test code. Use `characterize()` during discovery: "I don't know if this output is correct yet, but I'm locking it in as a baseline so I'll notice if it changes." Use `approve()` in steady state: "I have reviewed this output and confirmed it is the desired behavior." As your understanding of the system solidifies, you can rename `characterize()` calls to `approve()` to signal that the baseline has been deliberately validated.
+`characterize()` and `approve()` are the same function — `import { characterize } from '@averspec/approvals'`. The difference is intent. Use `characterize()` when you're locking in behavior you haven't fully validated yet: "I don't know if this output is correct, but I want to know if it changes." Use `approve()` when you've reviewed the baseline and confirmed it's the desired behavior.
+
+One workflow that can emerge from this: start with `characterize()` on legacy code, and as you gain understanding, rename calls to `approve()` to mark that the baseline has been deliberately validated. Whether your team adopts that convention depends on how much you value the signal in your test code — it's there if you want it.
 
 ## Workflow
 
 1. First run: test fails with "Baseline missing"
-2. Run with `AVER_APPROVE=1` to create the baseline
+2. Run `npx aver approve` to create the baseline
 3. Subsequent runs: auto-compare against baseline
 4. On mismatch: diff files generated, test fails
-5. Run with `AVER_APPROVE=1` again to update the baseline
+5. Run `npx aver approve` again to update the baseline
 
 ## Visual Approvals
 

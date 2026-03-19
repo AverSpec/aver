@@ -569,7 +569,7 @@ await approve({ count: 42 })                    // default name "approval"
 await approve(reportText, { name: 'report' })   // named approval
 ```
 
-First run fails with "Baseline missing". Run `AVER_APPROVE=1 npx vitest run` or `npx aver approve` to create baselines.
+First run fails with "Baseline missing". Run `npx aver approve` to create baselines.
 
 Baselines are stored in `__approvals__/<test-name>/` next to the test file. Commit `.approved` files; gitignore `.received` and `.diff` files.
 
@@ -629,7 +629,7 @@ const proto = playwright({
 
 - **Vitest and Jest** work out of the box — both catch thrown errors as assertion failures
 - **Other test runners** need to support standard `Error`-based assertions (most do)
-- Set the `AVER_APPROVE` environment variable to update baselines: `AVER_APPROVE=1` writes received values as the new baselines instead of comparing. The `aver approve` CLI command sets this automatically.
+- Run `npx aver approve` to update baselines. Under the hood this sets `AVER_APPROVE=1`, which tells `approve()` to write received values as the new baselines instead of comparing.
 
 ---
 

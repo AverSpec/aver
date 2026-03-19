@@ -2,21 +2,21 @@
 title: "AI-Assisted Testing"
 ---
 
-Aver integrates with AI coding agents through a Claude Code plugin that combines agent skills with bash scripts for managing scenarios and backlog items. Two backends are supported: GitHub Issues (via the `gh` CLI) and Linear. This guide covers setup, what you get, and what a real session looks like.
+## The outer loop and the inner loop
 
-## The simplest integration
+BDD has always worked in two loops. The outer loop is the acceptance test — a behavioral specification that stays red while you build. The inner loop is TDD — red, green, refactor on the code underneath until the outer loop goes green.
 
-Any agent that can run shell commands can use Aver as a verification layer:
+AI coding agents fit naturally into the inner loop. They're good at generating code, running tests, and iterating until something passes. But the outer loop — deciding *what* the system should do, naming the vocabulary, choosing what to test — that's where human judgment matters. An agent that writes code against a vague prompt can produce something that works and is completely wrong. An agent that implements code against a domain-driven acceptance test can only succeed by making the spec pass.
 
-```bash
-npx aver run
-# Exit 0 = all behavioral specs pass
-# Non-zero = failures with test steps
-```
+Aver gives you a way to write that outer loop as executable specs. The human defines the domain vocabulary and writes acceptance tests in business language. The agent implements adapters and production code until `aver run` passes. The spec is the constraint. The agent works within it.
 
-Define your domain vocabulary, write acceptance tests, and let the agent implement code until `aver run` passes. This works with Claude Code, Cursor, Cline, Aider, or any agent that can run tests.
+This is the collaboration model described in [Stop Reviewing AI Code](/articles/stop-reviewing/) and [The Foundation Nobody's Building](/articles/the-foundation/) — move verification from code review to the test runner.
 
-If that's all you need, stop here. Everything below adds structured workflow and scenario management on top.
+## Using Aver with any agent
+
+Any agent that can run shell commands can use Aver as a verification layer. Define your domain, write your acceptance tests, and let the agent implement until `aver run` passes. This works with Claude Code, Cursor, Cline, Aider, or anything that can run tests.
+
+If that's all you need, stop here. Everything below adds structured workflow and scenario management on top via a Claude Code plugin.
 
 ---
 

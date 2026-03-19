@@ -48,6 +48,6 @@ The adapter must implement every domain operation with matching generics. A comm
 
 ### "Approval tests always fail"
 
-Run `AVER_APPROVE=1 npx vitest run` (or `npx aver approve`) to regenerate baselines. Approvals fail when the output has changed since the baseline was captured — this is intentional. Review the diff, confirm the new output is correct, then approve to update the stored baseline.
+Run `npx aver approve` to regenerate baselines. Approvals fail when the output has changed since the baseline was captured — this is intentional. Review the diff, confirm the new output is correct, then approve to update the stored baseline.
 
-If baselines aren't being written at all, check that the `__approvals__/` directory is writable and that you're running with `AVER_APPROVE=1` (not `AVER_APPROVALS=1` — the variable name is singular).
+If baselines aren't being written at all, check that the `__approvals__/` directory is writable and that you're running `aver approve`, not `aver run`.

@@ -81,7 +81,7 @@ test('invoice without discount', async () => {
 Create the baselines:
 
 ```bash
-AVER_APPROVE=1 npx vitest run tests/invoice-characterization.spec.ts
+npx aver approve tests/invoice-characterization.spec.ts
 ```
 
 This serializes each result and writes it to an `__approvals__/` directory next to your test file — one `.approved` file per `approve()` call, named after the test. Objects are stored as stable-sorted JSON; strings as plain text. Every subsequent run compares against those baselines. Any change to the function's output fails the test with a diff.

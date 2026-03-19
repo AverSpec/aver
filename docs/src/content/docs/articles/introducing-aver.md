@@ -278,7 +278,7 @@ And once the vocabulary is explicit, it becomes infrastructure. It's the specifi
 
 Aver is a synthesis of ideas I've admired — and borrowed from — for years.
 
-**[Dave Farley's acceptance test architecture](https://www.davefarley.net/?p=186).** In *Continuous Delivery* (2010) and his later talks, Farley describes a four-layer model that separates test intent from implementation through a "domain-specific language" layer and a "protocol driver" layer. Aver's three-layer model — domain, adapter, test — is a direct simplification, with TypeScript's type system replacing the ceremony of Java-era patterns.
+**[Dave Farley's acceptance test architecture](https://www.youtube.com/watch?v=JDD5EEJgpHU).** In *Continuous Delivery* (2010) and his later talks, Farley describes a four-layer model that separates test intent from implementation through a "domain-specific language" layer and a "protocol driver" layer. Aver's three-layer model — domain, adapter, test — is a direct simplification, with TypeScript's type system replacing the ceremony of Java-era patterns.
 
 **Cucumber and Gherkin.** Aslak Hellesøy, Matt Wynne, and the BDD community demonstrated that tests should speak domain language. The vocabulary insight is foundational. So is the workflow: Cucumber was always the outer acceptance loop, with RSpec or minitest driving the implementation underneath. Nobody argued that Cucumber replaced unit tests — they served different purposes at different granularities. Aver sits in that same outer-loop position, with the same complement to TDD. Where it diverges is in the mechanism: typed functions and phantom types instead of regex step matching and natural language parsing.
 

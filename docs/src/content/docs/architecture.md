@@ -2,7 +2,7 @@
 title: "Architecture"
 ---
 
-Aver implements a three-layer acceptance testing architecture inspired by [Dave Farley's four-layer model](https://www.davefarley.net/?p=186) and the [Screenplay pattern](https://serenity-js.org/handbook/design/screenplay-pattern/) from Serenity.js.
+Aver implements a three-layer acceptance testing architecture inspired by [Dave Farley's four-layer model](https://www.youtube.com/watch?v=JDD5EEJgpHU) and the [Screenplay pattern](https://serenity-js.org/handbook/design/screenplay-pattern/) from Serenity.js.
 
 The name "aver" means "to declare with confidence" — your tests aver that the system behaves as intended.
 

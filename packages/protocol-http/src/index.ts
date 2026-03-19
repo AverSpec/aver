@@ -14,6 +14,8 @@ export interface HttpOptions {
   timeout?: number
   /** Default headers to include with every request */
   defaultHeaders?: Record<string, string>
+  /** Log request method, path, status, and timing to console */
+  debug?: boolean
 }
 
 /**
@@ -66,6 +68,7 @@ export function http(options: HttpOptions): Protocol<HttpContext> {
             () => controller.abort(new Error(`Request timed out after ${timeout}ms`)),
             timeout,
           )
+          const start = options.debug ? Date.now() : 0
           try {
             const response = await fetch(url, {
               method,
@@ -76,6 +79,9 @@ export function http(options: HttpOptions): Protocol<HttpContext> {
               body: body !== undefined ? JSON.stringify(body) : undefined,
               signal: controller.signal,
             })
+            if (options.debug) {
+              console.log(`[aver:http] ${method} ${path} -> ${response.status} (${Date.now() - start}ms)`)
+            }
             return response
           } catch (err) {
             const original = err instanceof Error ? err : new Error(String(err))

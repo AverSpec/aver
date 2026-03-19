@@ -278,13 +278,13 @@ And once the vocabulary is explicit, it becomes infrastructure. It's the specifi
 
 Aver is a synthesis of ideas I've admired — and borrowed from — for years.
 
-**Dave Farley's acceptance test architecture.** In *Continuous Delivery* (2010) and his later talks, Farley describes a four-layer model that separates test intent from implementation through a "domain-specific language" layer and a "protocol driver" layer. Aver's three-layer model — domain, adapter, test — is a direct simplification, with TypeScript's type system replacing the ceremony of Java-era patterns.
+**[Dave Farley's acceptance test architecture](https://www.davefarley.net/?p=186).** In *Continuous Delivery* (2010) and his later talks, Farley describes a four-layer model that separates test intent from implementation through a "domain-specific language" layer and a "protocol driver" layer. Aver's three-layer model — domain, adapter, test — is a direct simplification, with TypeScript's type system replacing the ceremony of Java-era patterns.
 
 **Cucumber and Gherkin.** Aslak Hellesøy, Matt Wynne, and the BDD community demonstrated that tests should speak domain language. The vocabulary insight is foundational. So is the workflow: Cucumber was always the outer acceptance loop, with RSpec or minitest driving the implementation underneath. Nobody argued that Cucumber replaced unit tests — they served different purposes at different granularities. Aver sits in that same outer-loop position, with the same complement to TDD. Where it diverges is in the mechanism: typed functions and phantom types instead of regex step matching and natural language parsing.
 
 **Michael Feathers and legacy code.** *Working Effectively with Legacy Code* (2004) introduced characterization tests and the concept of *seams* — points where you can alter behavior without editing production code. Legacy systems often can't be unit-tested because internal seams don't exist yet. Aver's adapters create *external* seams — at the UI, at the API — that don't require internal refactoring to get that first test in place. As you refactor and create better internal structure, you add adapters at the new seams that emerge.
 
-Aver also draws on Antony Marcano and Jan Molak's [Screenplay pattern](https://serenity-js.org/) (separating *what* from *how* at the test level, without class hierarchies) and Llewellyn Falco's [ApprovalTests](https://approvaltests.com/) (baseline comparison with explicit approval workflows).
+Aver also draws on Antony Marcano and Jan Molak's [Screenplay pattern](https://serenity-js.org/handbook/design/screenplay-pattern/) (separating *what* from *how* at the test level, without class hierarchies) and Llewellyn Falco's [ApprovalTests](https://approvaltests.com/) (baseline comparison with explicit approval workflows).
 
 ## When Aver Is Overkill
 

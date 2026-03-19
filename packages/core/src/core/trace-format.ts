@@ -20,7 +20,7 @@ export function formatTrace(trace: TraceEntry[], domainName: string): string {
       if (e.payload !== undefined) {
         try {
           const json = JSON.stringify(e.payload)
-          payloadStr = json.length > 60 ? json.substring(0, 57) + '...' : json
+          payloadStr = (e.status === 'fail' || json.length <= 60) ? json : json.substring(0, 57) + '...'
         } catch {
           payloadStr = '[unserializable]'
         }

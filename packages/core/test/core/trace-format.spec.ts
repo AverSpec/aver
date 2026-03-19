@@ -49,6 +49,25 @@ describe('formatTrace', () => {
     expect(output).toContain('42ms')
   })
 
+  it('truncates long payloads on passing steps', () => {
+    const trace: TraceEntry[] = [
+      { kind: 'action', category: 'act', name: 'doThing', payload: { data: 'a'.repeat(100) }, status: 'pass' },
+    ]
+    const output = formatTrace(trace, 'Test')
+    expect(output).toContain('...')
+    expect(output).not.toContain('a'.repeat(100))
+  })
+
+  it('shows full payload on failing steps', () => {
+    const longValue = 'a'.repeat(100)
+    const trace: TraceEntry[] = [
+      { kind: 'assertion', category: 'then', name: 'check', payload: { data: longValue }, status: 'fail', error: new Error('mismatch') },
+    ]
+    const output = formatTrace(trace, 'Test')
+    expect(output).toContain(longValue)
+    expect(output).not.toMatch(/\.\.\."?\)/)
+  })
+
   it('handles test kind entries without category', () => {
     const trace: TraceEntry[] = [
       { kind: 'test', name: 'hook-error:onTestFail', payload: undefined, status: 'fail', error: new Error('hook broke') },

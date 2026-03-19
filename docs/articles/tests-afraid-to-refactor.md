@@ -28,7 +28,7 @@ Three files.
 
 ## The domain
 
-A contract. The domain says what the system does. It says nothing about how.
+A contract for what the system does. Nothing about how.
 
 ```typescript
 import { defineDomain, action, query, assertion } from '@averspec/core'
@@ -144,7 +144,7 @@ export const httpAdapter = implement(taskBoard, {
 })
 ```
 
-Register both adapters in `aver.config.ts`. Run again:
+Register both adapters in `aver.config.ts`. Run again. Same tests, didn't touch them:
 
 ```
  ✓ create a task in backlog [unit]          1ms
@@ -152,8 +152,6 @@ Register both adapters in `aver.config.ts`. Run again:
  ✓ move task through workflow [unit]        1ms
  ✓ move task through workflow [http]       11ms
 ```
-
-Same tests. Didn't touch them.
 
 ## When things disagree
 

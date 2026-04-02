@@ -11,6 +11,9 @@ importers:
       '@anthropic-ai/claude-agent-sdk':
         specifier: ^0.2.63
         version: 0.2.63(zod@4.3.6)
+      '@averspec/core':
+        specifier: workspace:^
+        version: link:packages/core
       '@types/node':
         specifier: ^22.19.13
         version: 22.19.13

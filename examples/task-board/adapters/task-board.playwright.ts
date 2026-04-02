@@ -4,6 +4,13 @@ import { taskBoard } from '../domains/task-board.js'
 import { createServer } from '../src/server/index.js'
 import type { Server } from 'node:http'
 import { expect } from '@playwright/test'
+import { existsSync } from 'node:fs'
+import { resolve, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { execSync } from 'node:child_process'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const exampleRoot = resolve(__dirname, '..')
 
 let server: Server | undefined
 let baseUrl: string | undefined
@@ -19,6 +26,10 @@ const proto = playwright({
 // Use withFixture to manage server lifecycle + navigate after each setup
 const protocolWithServer = withFixture(proto, {
   async before() {
+    const distPath = resolve(exampleRoot, 'dist')
+    if (!existsSync(distPath)) {
+      execSync('pnpm run build', { cwd: exampleRoot, stdio: 'pipe' })
+    }
     const { app } = createServer()
     server = await new Promise<Server>(resolve => {
       const s = app.listen(0, () => resolve(s))

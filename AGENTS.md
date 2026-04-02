@@ -18,7 +18,7 @@ After completing backlog items or bug fixes, always commit separately per item, 
 pnpm --filter @averspec/core run build
 ```
 
-CLI entry: `node packages/core/dist/cli.js` (ESM)
+CLI entry: `pnpm exec aver` (or `node packages/core/dist/cli.js`)
 
 ## Testing
 
@@ -26,7 +26,7 @@ CLI entry: `node packages/core/dist/cli.js` (ESM)
 pnpm exec aver run
 ```
 
-Expected failures: 7 Playwright tests (need browser).
+Playwright browser tests auto-build the example frontend on first run. Install browsers with `npx playwright install` (plus `sudo npx playwright install-deps` for system libraries).
 
 - Always use `aver run` to execute tests, not `vitest run` directly.
 - Always use `aver approve` to update approval baselines, not `AVER_APPROVE=1 vitest run`.

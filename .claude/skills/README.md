@@ -2,20 +2,17 @@
 
 Empty on purpose.
 
-What used to live here — `headless-dispatch`, `panel-review`, `autonomous-tdd`, `backlog-sweep`,
-`backlog-wave` — was general engineering practice wearing this repo's clothes, reachable only from
-this one checkout. It moved to the `agent-console` plugin, which is installed machine-wide, so
-those practices now apply everywhere instead of here alone. Their coupling to Aver turned out to
-be one line each: a save path under `.aver/plans/`, a test command named after the product.
+General engineering practices — dispatching parallel workers, panel review, autonomous TDD,
+backlog sweeping and wave execution — used to live here, which made them reachable from this
+checkout and nowhere else. They were never specific to this project: the coupling was a save path
+and a test command. They now live in a separate, general-purpose skill bundle so they apply to any
+repository.
 
-`backlog-wave` was not ported. It read a Linear API key from `~/.config/aver/.env`, and that
-backlog moved to GitHub Issues; the wave discipline it described is in `backlog` and
-`parallel-queue`.
+**What stays here** is in `packages/agent-plugin/skills/` and ships with the product: the scenario
+pipeline and the sessions that drive it (`aver-workflow`), and telemetry declarations on domains
+(`telemetry`). Those are apparatus — a pipeline, a vocabulary, a runner — rather than practice.
 
-**What stays Aver's** is in `packages/agent-plugin/skills/` and ships with the product: the
-scenario pipeline and the sessions that drive it (`aver-workflow`), and telemetry declarations on
-domains (`telemetry`). Those are apparatus — a pipeline, a vocabulary, a runner — rather than
-practice.
-
-Nothing in Aver depends on the console plugin. The reference goes one way, and that is the point:
-the practices are useful without Aver, and Aver works without them.
+The distinction is worth keeping: practices like characterization testing, specification by
+example and ubiquitous language belong to everyone and work with a text editor and a test runner.
+A framework applies them in a particular way, and owns that particular way and nothing more.
+Nothing in this repository depends on any external skill bundle.
